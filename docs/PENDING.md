@@ -125,15 +125,22 @@ aplicar primary_color a los acentos del panel admin.
 ### D. Microsite / portada branded por operador (pedido 2026-06-14)
 Hoy /book/<slug> entra directo al wizard de reservas. El usuario quiere que sea
 una PÁGINA PRINCIPAL del operador con su marca completa: logo, colores, slogan,
-hero, (servicios/flota/testimonios opcionales) y un botón "Reservar" + un QR
-para instalar la PWA de ESE operador. Cada empresa personaliza su portada.
+hero, **sus servicios**, y un botón "Reservar" + un QR para instalar la PWA de
+ESE operador. Cada empresa personaliza su portada.
 Plan:
 1. Campos nuevos en companies (o settings.site): tagline/slogan, hero_image,
    about/description, redes. UI en Configuración → "Marca/Portada".
-2. Ruta de portada del operador (p.ej. /book/<slug> muestra la portada y
+2. **Servicios configurables desde el dashboard** (REQUISITO 2026-06-14): cada
+   operador define la lista de servicios que ofrece (ej. traslado aeropuerto,
+   chofer por horas, bodas/eventos, corporativo) con título, descripción e
+   ícono/imagen. Modelo: tabla `company_services` (company_id, title, desc,
+   icon/image, sort_order, is_active) con CRUD en Configuración → Portada
+   (mismo patrón de edición inline que Flota/Zonas). Esos servicios se
+   renderizan en una sección del microsite. i18n + brand.* obligatorios.
+3. Ruta de portada del operador (p.ej. /book/<slug> muestra la portada y
    /book/<slug>/reservar abre el wizard), con la marca aplicada (ya tenemos
    logo + primary_color).
-3. QR para PWA: generar QR (lib qrcode) que apunte al portal; al abrirlo en
+4. QR para PWA: generar QR (lib qrcode) que apunte al portal; al abrirlo en
    móvil ofrece "instalar app". DEPENDE de la PWA (Fase 2A) para instalación;
    el QR al portal de reservas se puede generar desde ya.
 Es un mini-CMS por operador — feature mediana, se cruza con la PWA branded (C.4).
