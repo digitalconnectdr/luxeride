@@ -17,13 +17,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Páginas de reserva de cada empresa activa
   try {
     const admin = createAdminClient()
-    const { data: companies } = await admin
-      .from('companies')
-      .select('slug, updated_at')
-      .eq('status', 'active')
-      .limit(500)
+    const [{ data: companiesRaw }, { data: servicedTypes }] = await Promise.all([
+      admin.from('companies').select('id, slug, updated_at').eq('status', 'active').limit(500),
+      admin.from('vehicle_types').select('company_id').eq('is_active', true),
+    ])
+    const servicedIds = new Set((servicedTypes ?? []).map((v) => v.company_id))
+    const companies = (companiesRaw ?? []).filter((c) => servicedIds.has(c.id))
 
-    for (const c of companies ?? []) {
+    for (const c of companies) {
       entries.push({
         url: `${BASE}/book/${c.slug}`,
         lastModified: c.updated_at ? new Date(c.updated_at) : new Date(),

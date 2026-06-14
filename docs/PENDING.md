@@ -41,8 +41,17 @@
   - Export CSV respeta el idioma (obs. 9).
   - Dashboard 100% i18n + gráfico de semana inicia DOMINGO (obs. 11).
   - Marca centralizada en lib/brand.ts (obs. 13).
-  - Logo del sidebar enlaza al dashboard; empresa demo fuera del directorio
-    (obs. 7 logo, obs. 8). Mensaje de "regla de precio" ahora accionable.
+  - Logo del sidebar enlaza al dashboard (obs. 7). Mensaje de "regla de
+    precio" ahora accionable.
+  - Directorio del landing + sitemap ahora muestran solo empresas CON servicio
+    (≥1 tipo de vehículo activo), no por status — así la empresa contenedora
+    del super-admin (vacía) no aparece (obs. 8, corregido). NO se suspenden
+    empresas.
+  - Aclaración importante: hay 2 empresas — "LuxeRide" (slug luxeride, cuenta
+    super_admin, vacía) y "LuxeRide Platform" (slug luxeride-platform, la
+    operadora con el vehículo/tipo/precio). El booking real es
+    /book/luxeride-platform. Pendiente decisión del usuario: consolidar /
+    renombrar para usar el slug "luxeride" en la operadora.
 
 ## ⬜ Pendientes del USUARIO (configuración)
 
@@ -92,6 +101,12 @@ realtime + geolocalización. Plan para una fase dedicada:
 3. Disponibles tanto en web como en la futura PWA (reutilizan el backend).
 
 ## ⬜ Backlog de DESARROLLO (próximas sesiones, en orden sugerido)
+
+0. **Limpieza de marca**: migrar los ~40 literales "LuxeRide" / "JPRS Digital
+   Connect" que quedan hardcodeados (titles de metadata, páginas auth /
+   super-admin / booking / payment / track) a `lib/brand.ts` (`brand.name`,
+   `brand.poweredBy`). Objetivo: renombrar el sistema cambiando un solo lugar.
+   Regla vigente: todo lo NUEVO ya debe usar brand.* (no hardcodear).
 
 1. **2ª pasada i18n** (~1 sesión): conectar al diccionario las páginas
    nativas en español para EN/PT — bookings lista/detalle/nueva, dispatch

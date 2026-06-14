@@ -41,12 +41,14 @@ export default async function LandingPage() {
   const t = dict.landing
 
   const admin = createAdminClient()
-  const { data: companies } = await admin
-    .from('companies')
-    .select('name, slug, city')
-    .eq('status', 'active')
-    .order('name')
-    .limit(12)
+  // Solo empresas listas para reservar: activas Y con al menos un tipo de
+  // vehículo activo (excluye empresas vacías como la del super-admin).
+  const [{ data: activeCompanies }, { data: servicedTypes }] = await Promise.all([
+    admin.from('companies').select('id, name, slug, city').eq('status', 'active').order('name').limit(50),
+    admin.from('vehicle_types').select('company_id').eq('is_active', true),
+  ])
+  const servicedIds = new Set((servicedTypes ?? []).map((v) => v.company_id))
+  const companies = (activeCompanies ?? []).filter((c) => servicedIds.has(c.id)).slice(0, 12)
 
   return (
     <div className="min-h-screen bg-[#0c0b0a] text-white antialiased overflow-x-hidden">
