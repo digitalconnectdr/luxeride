@@ -96,9 +96,10 @@ del landing se ELIMINÓ (queda comentado en app/page.tsx). El landing solo vende
 el software; cada operador usa su propio /book/su-slug. Implicaciones:
 - El **widget embebible** (backlog #2) sube de prioridad: es como cada operador
   pone reservas en SU web.
-- **SEO de operadores**: ya no se indexan desde LuxeRide (sitemap solo landing).
-  Para posicionarse, cada operador necesita dominio propio → refuerza la
-  necesidad de comprar un dominio (ver sección C).
+- **SEO de operadores**: cada portal /book/<slug> SÍ se indexa bajo el dominio
+  de LuxeRide (sitemap + generateMetadata con title/description/OG por empresa).
+  El operador aparece en buscadores SIN dominio propio. El dominio propio
+  (sección C niveles 2-3) sigue siendo un plus de marca/URL, no un requisito SEO.
 - La **PWA** debe ser **branded por empresa**, no genérica (ver sección C.4).
 
 ### C. White-label avanzado: link corto + dominio + PWA branded (pedido 2026-06-14)

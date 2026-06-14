@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import { isStripeConfigured } from '@/lib/stripe/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
+import { getAppUrl } from '@/lib/app-url'
 import { BookingWizard } from './booking-wizard'
 
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
@@ -11,16 +12,38 @@ interface Props {
   params: { slug: string }
 }
 
+// SEO por operador: cada portal /book/<slug> es indexable bajo el dominio de
+// LuxeRide, con título, descripción y Open Graph propios de la empresa — así
+// el operador aparece en buscadores sin necesitar dominio propio.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('name')
+    .select('name, city, logo_url')
     .eq('slug', params.slug)
     .single()
 
+  if (!company) return { title: 'Reservación | LuxeRide' }
+
+  const cityPart = company.city ? ` · ${company.city}` : ''
+  const inCity = company.city ? ` en ${company.city}` : ''
+  const title = `${company.name} — Reserva tu traslado de lujo${cityPart}`
+  const description = `Reserva en línea con ${company.name}: traslados al aeropuerto, chofer ejecutivo y transporte premium${inCity}. Cotización al instante, pago seguro y seguimiento en vivo.`
+  const url = `${getAppUrl()}/book/${params.slug}`
+
   return {
-    title: company ? `Reservar con ${company.name} | LuxeRide` : 'Reservación | LuxeRide',
+    title,
+    description,
+    alternates: { canonical: url },
+    robots: { index: true, follow: true },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'website',
+      siteName: company.name,
+      images: company.logo_url ? [{ url: company.logo_url }] : undefined,
+    },
   }
 }
 
