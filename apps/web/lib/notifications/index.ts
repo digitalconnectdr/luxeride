@@ -36,6 +36,7 @@ async function sendEmail(
   subject: string,
   body: string,
   companyName?: string | null,
+  branding?: { logoUrl?: string | null; brandColor?: string | null },
 ): Promise<{ ok: boolean; providerId?: string; error?: string }> {
   if (!isResendConfigured()) {
     return { ok: false, error: 'RESEND_API_KEY no configurada' }
@@ -51,7 +52,7 @@ async function sendEmail(
       to,
       subject,
       text: body, // fallback para clientes sin HTML
-      html: wrapEmailHtml({ body, companyName, heading: subject }),
+      html: wrapEmailHtml({ body, companyName, heading: subject, logoUrl: branding?.logoUrl, brandColor: branding?.brandColor }),
     })
 
     if (error) return { ok: false, error: error.message }
@@ -124,7 +125,7 @@ export async function notify(params: NotifyParams): Promise<{ sent: boolean }> {
     // Settings de la empresa: ¿canal habilitado? ¿tipo habilitado?
     const { data: company } = await admin
       .from('companies')
-      .select('settings, name')
+      .select('settings, name, logo_url, primary_color')
       .eq('id', params.companyId)
       .single()
 
@@ -154,7 +155,10 @@ export async function notify(params: NotifyParams): Promise<{ sent: boolean }> {
     // Enviar
     let result: { ok: boolean; providerId?: string; error?: string }
     if (params.channel === 'email') {
-      result = await sendEmail(params.recipient, subject ?? 'LuxeRide', body, company?.name)
+      result = await sendEmail(params.recipient, subject ?? 'LuxeRide', body, company?.name, {
+        logoUrl: (company as { logo_url?: string | null })?.logo_url ?? null,
+        brandColor: (company as { primary_color?: string | null })?.primary_color ?? null,
+      })
     } else if (params.channel === 'sms') {
       result = await sendSms(params.recipient, body)
     } else {

@@ -89,6 +89,12 @@ realtime + geolocalización. Plan para una fase dedicada:
 4. Clasificación de eventualidades: tabla `booking_events` (tipo, actor,
    motivo, timestamp) para trazabilidad completa cliente↔conductor.
 
+### ✅ White-label por empresa (2026-06-14) — HECHO
+Cada empresa personaliza su marca: Configuración → "Marca" (logo + color).
+Aplicado en portal /book/[slug], emails y tracking. Storage bucket "branding".
+Decisión: el directorio del landing se mantiene como marketplace (lista las
+empresas con servicio). Pendiente futuro: dominio propio por empresa.
+
 ### B. Calificaciones + chat (obs. 12)
 1. **Calificaciones bidireccionales**: bookings.rating ya existe (cliente→
    conductor). Agregar driver_rating (conductor→cliente) + promedio en el

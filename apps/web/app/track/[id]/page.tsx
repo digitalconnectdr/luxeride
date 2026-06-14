@@ -35,7 +35,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   if (!booking) return notFound()
 
   const [companyRes, driverRes, vehicleRes] = await Promise.all([
-    admin.from('companies').select('name, phone, primary_color').eq('id', booking.company_id).single(),
+    admin.from('companies').select('name, phone, primary_color, logo_url').eq('id', booking.company_id).single(),
     booking.driver_id
       ? admin.from('user_profiles').select('first_name').eq('id', booking.driver_id).single()
       : Promise.resolve({ data: null }),
@@ -44,7 +44,11 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
       : Promise.resolve({ data: null }),
   ])
 
-  const company = companyRes.data
+  const company = companyRes.data as { name: string; phone: string | null; primary_color: string | null; logo_url: string | null } | null
+  const brandColor = company?.primary_color ?? '#e9c176'
+  const logoUrl = company?.logo_url ?? null
+  const companyName = company?.name ?? 'LuxeRide'
+  const initial = companyName.trim().charAt(0).toUpperCase() || 'L'
   const driver = driverRes.data as { first_name: string } | null
   const vehicle = vehicleRes.data as { make: string; model: string; color: string | null; plate_number: string } | null
 
@@ -56,17 +60,25 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const isActive = !isTerminal && booking.status !== 'completed'
 
   return (
-    <div className="min-h-screen bg-[#141313] text-white">
+    <div className="min-h-screen bg-[#141313] text-white" style={{ ['--brand' as string]: brandColor }}>
       {isActive && <AutoRefresh seconds={30} />}
 
       <div className="max-w-md mx-auto px-5 py-10 space-y-6">
         {/* Header */}
         <div className="text-center">
-          <div className="w-10 h-10 rounded-full bg-[#e9c176] flex items-center justify-center mx-auto mb-3">
-            <span className="text-gray-900 font-bold text-sm leading-none">L</span>
-          </div>
-          <h1 className="font-playfair text-xl font-semibold">{company?.name ?? 'LuxeRide'}</h1>
-          <p className="font-mono text-sm text-[#e9c176] mt-2">{booking.booking_number}</p>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt={companyName} className="h-10 max-w-[180px] object-contain mx-auto mb-3" />
+          ) : (
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3"
+              style={{ backgroundColor: brandColor }}
+            >
+              <span className="text-gray-900 font-bold text-sm leading-none">{initial}</span>
+            </div>
+          )}
+          <h1 className="font-playfair text-xl font-semibold">{companyName}</h1>
+          <p className="font-mono text-sm text-[var(--brand)] mt-2">{booking.booking_number}</p>
           <p className="text-xs text-white/40 mt-1">
             {new Date(booking.scheduled_at).toLocaleString(localeTag, {
               weekday: 'long', month: 'long', day: 'numeric',
@@ -83,7 +95,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
             </p>
             {company?.phone && (
               <p className="text-sm text-white/50 mt-2">
-                {t.questions} <a href={`tel:${company.phone}`} className="text-[#e9c176]">{company.phone}</a>
+                {t.questions} <a href={`tel:${company.phone}`} className="text-[var(--brand)]">{company.phone}</a>
               </p>
             )}
           </div>
@@ -101,14 +113,14 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
                         <div
                           className={`w-4 h-4 rounded-full shrink-0 mt-0.5 ${
                             done
-                              ? 'bg-[#e9c176]'
+                              ? 'bg-[var(--brand)]'
                               : current
-                                ? 'bg-[#e9c176] ring-4 ring-[#e9c176]/20 animate-pulse'
+                                ? 'bg-[var(--brand)] ring-4 ring-white/20 animate-pulse'
                                 : 'bg-white/15'
                           }`}
                         />
                         {i < STATUS_KEYS.length - 1 && (
-                          <div className={`w-0.5 h-8 ${done ? 'bg-[#e9c176]/60' : 'bg-white/10'}`} />
+                          <div className={`w-0.5 h-8 ${done ? 'bg-[var(--brand)]' : 'bg-white/10'}`} />
                         )}
                       </div>
                       <p
@@ -138,7 +150,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
                 {vehicle && (
                   <p className="text-sm text-white/50 mt-1">
                     {vehicle.color ? `${vehicle.color} ` : ''}{vehicle.make} {vehicle.model} ·{' '}
-                    <span className="font-mono text-[#e9c176]">{vehicle.plate_number}</span>
+                    <span className="font-mono text-[var(--brand)]">{vehicle.plate_number}</span>
                   </p>
                 )}
               </div>
@@ -158,7 +170,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
               if (!addr) return null
               return (
                 <div key={i}>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#e9c176]/60 mb-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--brand)]/60 mb-1">
                     ◆ {i + 1}
                   </p>
                   <p className="text-white/70">{addr}</p>
@@ -174,7 +186,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
         {company?.phone && !isTerminal && (
           <p className="text-center text-xs text-white/40">
             {t.needHelp}{' '}
-            <a href={`tel:${company.phone}`} className="text-[#e9c176] hover:underline">
+            <a href={`tel:${company.phone}`} className="text-[var(--brand)] hover:underline">
               {company.phone}
             </a>
           </p>
