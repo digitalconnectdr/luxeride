@@ -1,6 +1,6 @@
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
-import { inviteTeamMemberAction } from '@/app/actions/team'
+import { TeamInviteForm } from '@/components/admin/team-invite-form'
 import { TeamMemberActiveToggle, TeamMemberRoleSelect } from '@/components/admin/team-controls'
 import { getDict } from '@/lib/i18n/server'
 import type { UserRole } from '@/lib/auth/permissions'
@@ -14,11 +14,6 @@ const ROLE_BADGE: Record<string, string> = {
   customer:       'bg-gray-50 text-gray-600 border-gray-200',
 }
 
-const inputCls =
-  'w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 ' +
-  'text-sl-on-surface placeholder:text-sl-on-surface-muted/50 ' +
-  'focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze'
-
 export default async function TeamPage() {
   const user = await requireRole('company_owner', 'company_admin')
   const isOwner = user.role === 'company_owner'
@@ -30,8 +25,6 @@ export default async function TeamPage() {
     .eq('company_id', user.company_id!)
     .order('created_at', { ascending: true })
 
-  // void cast — TypeScript void-callback rule
-  const teamAction: (fd: FormData) => void = inviteTeamMemberAction
   const t = getDict().admin.team
 
   return (
@@ -51,48 +44,7 @@ export default async function TeamPage() {
       </div>
 
       {/* Invite Form */}
-      <div className="bg-sl-surface border border-sl-outline-variant rounded-xl p-5 mb-6">
-        <h2 className="text-sm font-semibold text-sl-on-surface mb-4">{t.inviteTitle}</h2>
-        <form action={teamAction}>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.firstName} *</label>
-              <input name="first_name" required placeholder="Jane" className={inputCls} />
-            </div>
-            <div>
-              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.lastName} *</label>
-              <input name="last_name" required placeholder="Smith" className={inputCls} />
-            </div>
-            <div>
-              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.email} *</label>
-              <input name="email" type="email" required placeholder="jane@example.com" className={inputCls} />
-            </div>
-            <div>
-              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.phone}</label>
-              <input name="phone" type="tel" placeholder="+1 (555) 000-0000" className={inputCls} />
-            </div>
-            <div>
-              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.role} *</label>
-              <select name="role" required className={inputCls}>
-                <option value="">{t.selectRole}</option>
-                {isOwner && <option value="company_admin">{t.roles.company_admin}</option>}
-                <option value="dispatcher">{t.roles.dispatcher}</option>
-                <option value="accounting">{t.roles.accounting}</option>
-                <option value="driver">{t.roles.driver}</option>
-                <option value="customer">{t.roles.customer}</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors"
-            >
-              {t.send}
-            </button>
-          </div>
-        </form>
-      </div>
+      <TeamInviteForm t={t} isOwner={isOwner} />
 
       {/* Members Table */}
       {!members || members.length === 0 ? (

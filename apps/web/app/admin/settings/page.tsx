@@ -237,14 +237,14 @@ export default async function SettingsPage({
 
       {/* ── Cancellation Policy (F1.10) ── */}
       <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
-        <h2 className="text-sm font-semibold text-sl-on-surface mb-2">Cancellation Policy</h2>
+        <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.policyTitle}</h2>
         <p className="text-xs text-sl-on-surface-muted mb-5">
-          Los cargos se aplican automáticamente al cancelar o marcar no-show según estas reglas.
+          {t.policyDesc}
         </p>
         <form action={policyAction} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>Cancelación gratis hasta (horas antes)</label>
+              <label className={labelCls}>{t.freeCancelHours}</label>
               <input
                 name="free_cancellation_hours"
                 type="number"
@@ -255,7 +255,7 @@ export default async function SettingsPage({
               />
             </div>
             <div>
-              <label className={labelCls}>Cargo por cancelación tardía (%)</label>
+              <label className={labelCls}>{t.lateCancelPct}</label>
               <input
                 name="late_cancellation_fee_pct"
                 type="number"
@@ -267,7 +267,7 @@ export default async function SettingsPage({
               />
             </div>
             <div>
-              <label className={labelCls}>Cargo por no-show (%)</label>
+              <label className={labelCls}>{t.noShowPct}</label>
               <input
                 name="no_show_fee_pct"
                 type="number"
@@ -279,7 +279,7 @@ export default async function SettingsPage({
               />
             </div>
             <div>
-              <label className={labelCls}>Modificaciones hasta (horas antes)</label>
+              <label className={labelCls}>{t.modificationHours}</label>
               <input
                 name="modification_min_hours"
                 type="number"
@@ -292,7 +292,7 @@ export default async function SettingsPage({
           </div>
           <div className="flex justify-end pt-1">
             <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
-              Save Policy
+              {t.savePolicy}
             </button>
           </div>
         </form>
@@ -300,7 +300,7 @@ export default async function SettingsPage({
 
       {/* ── Payments / Stripe Connect ── */}
       <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
-        <h2 className="text-sm font-semibold text-sl-on-surface mb-2">Payments — Stripe Connect</h2>
+        <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.paymentsTitle}</h2>
 
         {searchParams.stripe_error && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
@@ -312,27 +312,21 @@ export default async function SettingsPage({
         {searchParams.connect === 'return' && (
           <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
             <p className="text-sm text-green-700 font-medium">
-              Volviste de Stripe. Usa &quot;Actualizar estado&quot; para confirmar el onboarding.
+              {t.returnedFromStripe}
             </p>
           </div>
         )}
-        <p className="text-xs text-sl-on-surface-muted mb-2">
-          Cada empresa conecta <strong>su propia cuenta de Stripe</strong> — los pagos de tus
-          clientes se depositan directo en <strong>tu cuenta bancaria</strong>, no en la de la plataforma.
-        </p>
+        <p className="text-xs text-sl-on-surface-muted mb-2">{t.paymentsIntro}</p>
         <ul className="text-xs text-sl-on-surface-muted mb-5 space-y-1 list-disc pl-4">
-          <li>No necesitas API keys ni configuración técnica: un clic y Stripe te guía (datos del negocio + cuenta bancaria).</li>
-          <li>Tarjetas, Apple Pay y Google Pay quedan habilitados automáticamente en tu link de reservas.</li>
-          <li>Los cobros en efectivo, Zelle o transferencia se registran manualmente en cada reservación.</li>
+          <li>{t.paymentsBullet1}</li>
+          <li>{t.paymentsBullet2}</li>
+          <li>{t.paymentsBullet3}</li>
         </ul>
 
         {!stripeReady ? (
           <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3">
-            <p className="text-sm text-yellow-800 font-medium">Stripe no está configurado</p>
-            <p className="text-xs text-yellow-700 mt-1">
-              El administrador de la plataforma debe configurar las API keys de Stripe
-              (STRIPE_SECRET_KEY) para habilitar pagos online.
-            </p>
+            <p className="text-sm text-yellow-800 font-medium">{t.stripeNotReady}</p>
+            <p className="text-xs text-yellow-700 mt-1">{t.stripeNotReadyHint}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -346,7 +340,7 @@ export default async function SettingsPage({
                       : 'bg-gray-100 text-gray-600'
                 }`}
               >
-                {onboarded ? '✓ Conectado' : hasConnect ? 'Onboarding incompleto' : 'No conectado'}
+                {onboarded ? t.connected : hasConnect ? t.onboardingIncomplete : t.notConnected}
               </span>
               {hasConnect && (
                 <span className="text-xs font-mono text-sl-on-surface-muted">
@@ -362,7 +356,7 @@ export default async function SettingsPage({
                     type="submit"
                     className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors"
                   >
-                    {hasConnect ? 'Continuar onboarding →' : 'Conectar con Stripe →'}
+                    {hasConnect ? t.continueOnboarding : t.connectStripe}
                   </button>
                 </form>
               )}
@@ -372,7 +366,7 @@ export default async function SettingsPage({
                     type="submit"
                     className="px-4 py-2 text-sm font-medium border border-sl-outline-variant text-sl-on-surface rounded-lg hover:border-bronze transition-colors"
                   >
-                    Actualizar estado
+                    {t.refreshStatus}
                   </button>
                 </form>
               )}

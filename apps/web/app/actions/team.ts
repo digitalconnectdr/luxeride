@@ -3,6 +3,7 @@
 // SECURITY: Solo company_owner y company_admin pueden gestionar el equipo.
 // No se expone SUPABASE_SERVICE_ROLE_KEY al cliente — solo en Server Actions.
 
+import { randomBytes } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
@@ -16,9 +17,23 @@ const ASSIGNABLE_ROLES: UserRole[] = [
   'customer',
 ]
 
+export type InviteResult = {
+  success: boolean
+  error?: string
+  tempPassword?: string
+  email?: string
+}
+
+// Genera una contraseña temporal legible (cumple el mínimo de Supabase).
+function generateTempPassword(): string {
+  return 'Lx' + randomBytes(9).toString('base64url').replace(/[^a-zA-Z0-9]/g, '') + '9'
+}
+
+// useFormState-compatible: (prevState, formData)
 export async function inviteTeamMemberAction(
+  _prev: InviteResult | null,
   formData: FormData,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<InviteResult> {
   const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
@@ -41,45 +56,50 @@ export async function inviteTeamMemberAction(
   }
 
   const admin = createAdminClient()
+  const tempPassword = generateTempPassword()
 
-  // Invite via Supabase Auth (sends email to user)
-  const { data: authData, error: authError } = await admin.auth.admin.inviteUserByEmail(email, {
-    data: {
-      company_id: user.company_id,
-      role,
-      first_name: firstName,
-      last_name:  lastName,
-    },
-  })
-
-  if (authError) {
-    console.error('[inviteTeamMemberAction] auth error', authError)
-    if (authError.message?.includes('already registered')) {
-      return { success: false, error: 'Este email ya está registrado' }
-    }
-    return { success: false, error: 'Error al enviar la invitación' }
-  }
-
-  // Create profile immediately (active = false until invite accepted)
-  if (authData.user) {
-    const { error: profileError } = await admin.from('user_profiles').insert({
-      id:         authData.user.id,
+  // Alta directa: el correo de invitación de Supabase no está configurado, así
+  // que creamos el usuario activo con una contraseña temporal que el admin le
+  // entrega al miembro (luego puede cambiarla con "¿Olvidaste tu contraseña?").
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    email,
+    password: tempPassword,
+    email_confirm: true,
+    user_metadata: {
       company_id: user.company_id,
       role,
       first_name: firstName,
       last_name:  lastName,
       phone:      phone ?? undefined,
-      is_active:  false,   // activated when they accept the invite
-    })
+    },
+  })
 
-    if (profileError) {
-      console.error('[inviteTeamMemberAction] profile error', profileError)
-      // Non-fatal: auth invite sent, profile will be created on first login via trigger
+  if (authError || !authData.user) {
+    console.error('[inviteTeamMemberAction] auth error', authError)
+    if (authError?.message?.toLowerCase().includes('already')) {
+      return { success: false, error: 'Este email ya está registrado' }
     }
+    return { success: false, error: 'Error al crear el miembro del equipo' }
+  }
+
+  // Asegurar el perfil (el trigger lo crea desde metadata; reforzamos
+  // phone + is_active por si acaso).
+  const { error: profileError } = await admin.from('user_profiles').upsert({
+    id:         authData.user.id,
+    company_id: user.company_id,
+    role,
+    first_name: firstName,
+    last_name:  lastName,
+    phone:      phone ?? undefined,
+    is_active:  true,
+  })
+
+  if (profileError) {
+    console.error('[inviteTeamMemberAction] profile error', profileError)
   }
 
   revalidatePath('/admin/team')
-  return { success: true }
+  return { success: true, tempPassword, email }
 }
 
 export async function updateTeamMemberRoleAction(

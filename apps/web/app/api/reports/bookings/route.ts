@@ -4,6 +4,7 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
+import { getDict } from '@/lib/i18n/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -49,15 +50,20 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Query failed' }, { status: 500 })
   }
 
+  // Encabezados y estados según el idioma activo (cookie luxeride_locale)
+  const dict = getDict()
+  const c = dict.admin.reportsCsv
+  const statusLabels = dict.adminDashboard.statuses as Record<string, string>
+
   const header = [
-    'booking_number', 'status', 'type', 'passenger_name', 'passenger_phone',
-    'passenger_email', 'scheduled_at', 'completed_at', 'pickup_address',
-    'dropoff_address', 'distance_miles', 'duration_minutes', 'base_amount',
-    'total_amount', 'currency', 'created_at',
+    c.bookingNumber, c.status, c.type, c.passengerName, c.passengerPhone,
+    c.passengerEmail, c.scheduledAt, c.completedAt, c.pickupAddress,
+    c.dropoffAddress, c.distanceMiles, c.durationMinutes, c.baseAmount,
+    c.totalAmount, c.currency, c.createdAt,
   ]
 
   const rows = (bookings ?? []).map((b) => [
-    b.booking_number, b.status, b.type, b.passenger_name, b.passenger_phone,
+    b.booking_number, statusLabels[b.status] ?? b.status, b.type, b.passenger_name, b.passenger_phone,
     b.passenger_email, b.scheduled_at, b.completed_at,
     (b.pickup_location as { address?: string } | null)?.address ?? '',
     (b.dropoff_location as { address?: string } | null)?.address ?? '',

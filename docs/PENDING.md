@@ -32,6 +32,17 @@
 - **Producción viva**: main ahora contiene todo develop (historias unidas
   con merge -s ours). Push a main = deploy de producción en
   https://getluxeride.vercel.app (público, sin login de Vercel).
+- **Ronda de fixes 2026-06-14** (observaciones del usuario):
+  - Edición en Flota (tipos), Zonas (+ campo radio), Aeropuertos y Reglas de
+    precio — antes solo se podía crear/eliminar (obs. 1,3,4,5).
+  - Equipo: alta directa con contraseña temporal en vez del email de
+    invitación que no llegaba (obs. 2).
+  - Pagos/Política en Configuración traducidos EN/ES/PT (obs. 6).
+  - Export CSV respeta el idioma (obs. 9).
+  - Dashboard 100% i18n + gráfico de semana inicia DOMINGO (obs. 11).
+  - Marca centralizada en lib/brand.ts (obs. 13).
+  - Logo del sidebar enlaza al dashboard; empresa demo fuera del directorio
+    (obs. 7 logo, obs. 8). Mensaje de "regla de precio" ahora accionable.
 
 ## ⬜ Pendientes del USUARIO (configuración)
 
@@ -49,6 +60,36 @@
    (/api/stripe/webhook) + habilitar Connect en dashboard.stripe.com.
 5. **Twilio** (SMS) cuando se quiera activar.
 6. Probar /super-admin/subscriptions con el usuario super_admin.
+
+## ⬜ Funciones grandes pospuestas (decisión 2026-06-14: bugs primero)
+
+Observaciones 10 y 12 del usuario — features nuevas que requieren tablas +
+realtime + geolocalización. Plan para una fase dedicada:
+
+### A. Dispatch avanzado (obs. 10)
+1. **Mapa en vivo** en el Dispatch Board: ubicación de conductores
+   (drivers.current_lat/lng vía web push del navegador del conductor o la
+   futura PWA) + pins de los pickups pendientes. Usar Google Maps JS
+   (ya tenemos la key) o Mapbox. Realtime de Supabase para mover los pines.
+2. **Estados de rechazo / incidente**: agregar a booking status
+   `rejected_by_driver`, `rejected_by_customer`, `driver_incident`. Migración
+   del enum + UI en el board + registro en audit_log. Notificar a la otra parte.
+3. **Reasignación de conductor**: acción "Reasignar" en un viaje ya asignado
+   (libera al conductor 1, asigna al 2, registra motivo en audit_log, notifica
+   a cliente + ambos conductores). Ya existe assignDriverToVehicle como base.
+4. Clasificación de eventualidades: tabla `booking_events` (tipo, actor,
+   motivo, timestamp) para trazabilidad completa cliente↔conductor.
+
+### B. Calificaciones + chat (obs. 12)
+1. **Calificaciones bidireccionales**: bookings.rating ya existe (cliente→
+   conductor). Agregar driver_rating (conductor→cliente) + promedio en el
+   perfil del conductor (drivers.avg_rating) y métricas (puntualidad,
+   cancelaciones) para el ranking interno.
+2. **Chat cliente↔conductor**: tabla `booking_messages` (booking_id, sender,
+   body, created_at) con RLS (cliente y conductor del viaje + admins de la
+   empresa). Realtime para el hilo. Auditable: los admins ven todos los hilos
+   de su empresa (cumple el requisito de auditoría del usuario).
+3. Disponibles tanto en web como en la futura PWA (reutilizan el backend).
 
 ## ⬜ Backlog de DESARROLLO (próximas sesiones, en orden sugerido)
 
