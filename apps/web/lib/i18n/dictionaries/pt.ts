@@ -353,6 +353,40 @@ export const pt: Dictionary = {
     settings: 'Configurações',
   },
 
+  adminDashboard: {
+    title: 'Painel',
+    welcome: 'Bem-vindo',
+    kpis: {
+      vehicles: 'Veículos',
+      available: 'Disponíveis',
+      drivers: 'Motoristas',
+      pending: 'Pendentes',
+      active: 'Ativas',
+      today: 'Hoje',
+    },
+    revenueMonth: 'Receita do mês (concluídas)',
+    revenueToday: 'Receita de hoje',
+    completedMonth: 'Concluídas (mês)',
+    trendWeek: 'Reservas — esta semana',
+    next24h: 'Próximas 24 horas',
+    noUpcoming: 'Sem viagens agendadas.',
+    recent: 'Reservas recentes',
+    viewAll: 'Ver todas →',
+    noBookings: 'Ainda não há reservas.',
+    createFirst: 'Criar primeira reserva →',
+    dayLabels: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+    statuses: {
+      pending: 'Pendente',
+      assigned: 'Atribuído',
+      en_route: 'A caminho',
+      arrived: 'Chegou',
+      in_progress: 'Em viagem',
+      completed: 'Concluído',
+      cancelled: 'Cancelado',
+      no_show: 'Não compareceu',
+    },
+  },
+
   admin: {
     fleet: {
       title: 'Frota',

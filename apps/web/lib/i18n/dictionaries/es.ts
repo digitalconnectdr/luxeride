@@ -353,6 +353,40 @@ export const es: Dictionary = {
     settings: 'Configuración',
   },
 
+  adminDashboard: {
+    title: 'Panel',
+    welcome: 'Bienvenido',
+    kpis: {
+      vehicles: 'Vehículos',
+      available: 'Disponibles',
+      drivers: 'Conductores',
+      pending: 'Pendientes',
+      active: 'Activas',
+      today: 'Hoy',
+    },
+    revenueMonth: 'Ingresos del mes (completados)',
+    revenueToday: 'Ingresos de hoy',
+    completedMonth: 'Completadas (mes)',
+    trendWeek: 'Reservaciones — esta semana',
+    next24h: 'Próximas 24 horas',
+    noUpcoming: 'Sin viajes programados.',
+    recent: 'Reservaciones recientes',
+    viewAll: 'Ver todas →',
+    noBookings: 'No hay reservaciones aún.',
+    createFirst: 'Crear primera reservación →',
+    dayLabels: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+    statuses: {
+      pending: 'Pendiente',
+      assigned: 'Asignado',
+      en_route: 'En ruta',
+      arrived: 'Llegó',
+      in_progress: 'En viaje',
+      completed: 'Completado',
+      cancelled: 'Cancelado',
+      no_show: 'No apareció',
+    },
+  },
+
   admin: {
     fleet: {
       title: 'Flota',

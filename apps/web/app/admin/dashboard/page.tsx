@@ -2,8 +2,11 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
+import { getDict, getLocale } from '@/lib/i18n/server'
+import { LOCALE_BCP47 } from '@/lib/i18n/config'
+import { brand } from '@/lib/brand'
 
-export const metadata: Metadata = { title: 'Dashboard | LuxeRide' }
+export const metadata: Metadata = { title: `Dashboard | ${brand.name}` }
 
 export default async function AdminDashboardPage() {
   const user = await requireRole(
@@ -15,6 +18,9 @@ export default async function AdminDashboardPage() {
   )
 
   const companyId = user.company_id
+  const locale = getLocale()
+  const t = getDict(locale).adminDashboard
+  const dateLocale = LOCALE_BCP47[locale]
 
   // Fetch fleet + driver + booking stats
   let stats = { vehicles: 0, driversAvail: 0, fleet: 0 }
@@ -32,7 +38,9 @@ export default async function AdminDashboardPage() {
     monthStart.setDate(1)
     monthStart.setHours(0, 0, 0, 0)
     const next24h = new Date(Date.now() + 24 * 3_600_000)
-    const weekAgo = new Date(todayStart.getTime() - 6 * 24 * 3_600_000)
+    // Semana actual con inicio en DOMINGO (getDay(): 0=Dom … 6=Sáb)
+    const weekStart = new Date(todayStart)
+    weekStart.setDate(todayStart.getDate() - todayStart.getDay())
 
     const activeStatuses = ['pending', 'assigned', 'en_route', 'arrived', 'in_progress'] as const
 
@@ -66,7 +74,7 @@ export default async function AdminDashboardPage() {
         .from('bookings')
         .select('created_at')
         .eq('company_id', companyId)
-        .gte('created_at', weekAgo.toISOString()),
+        .gte('created_at', weekStart.toISOString()),
       admin
         .from('bookings')
         .select('id, booking_number, status, passenger_name, scheduled_at, total_amount')
@@ -104,13 +112,14 @@ export default async function AdminDashboardPage() {
         .reduce((s, b) => s + Number(b.total_amount ?? 0), 0),
     }
 
-    // Tendencia: reservaciones creadas por día, últimos 7 días
-    const DAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+    // Tendencia: reservaciones creadas por día de la semana actual (Dom→Sáb).
+    // El índice i ES el día de la semana, así que el orden y las etiquetas
+    // (localizadas) siempre arrancan en domingo.
     weekTrend = Array.from({ length: 7 }, (_, i) => {
-      const dayStart = new Date(weekAgo.getTime() + i * 24 * 3_600_000)
+      const dayStart = new Date(weekStart.getTime() + i * 24 * 3_600_000)
       const dayEnd = new Date(dayStart.getTime() + 24 * 3_600_000)
       return {
-        day: DAY_LABELS[dayStart.getDay()],
+        day: t.dayLabels[i],
         count: (weekRows ?? []).filter((b) => {
           const created = new Date(b.created_at)
           return created >= dayStart && created < dayEnd
@@ -132,11 +141,7 @@ export default async function AdminDashboardPage() {
     cancelled:   'bg-red-100 text-red-600',
     no_show:     'bg-red-100 text-red-600',
   }
-  const STATUS_LABELS: Record<string, string> = {
-    pending: 'Pendiente', assigned: 'Asignado', en_route: 'En ruta',
-    arrived: 'Llegó', in_progress: 'En viaje', completed: 'Completado',
-    cancelled: 'Cancelado', no_show: 'No apareció',
-  }
+  const STATUS_LABELS: Record<string, string> = t.statuses
 
   // ── Diseño "Ivory": claro refinado, acento bronce #8a6520 (legible sobre
   // fondo claro, reemplaza al dorado #e9c176 que no contrastaba), tarjetas
@@ -148,14 +153,14 @@ export default async function AdminDashboardPage() {
       {/* Header */}
       <div className="flex items-end justify-between flex-wrap gap-2">
         <div>
-          <h1 className="font-playfair text-3xl font-semibold text-[#1d1b18]">Dashboard</h1>
+          <h1 className="font-playfair text-3xl font-semibold text-[#1d1b18]">{t.title}</h1>
           <p className="text-sm text-[#75716a] mt-1">
-            Bienvenido, {user.profile.first_name} —{' '}
+            {t.welcome}, {user.profile.first_name} —{' '}
             <span className="text-[#8a6520] font-medium capitalize">{user.role.replace(/_/g, ' ')}</span>
           </p>
         </div>
         <p className="text-xs font-medium text-[#8a6520] capitalize">
-          {new Date().toLocaleDateString('es-DO', {
+          {new Date().toLocaleDateString(dateLocale, {
             weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
           })}
         </p>
@@ -164,12 +169,12 @@ export default async function AdminDashboardPage() {
       {/* KPIs — fila compacta de 6 */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
         {[
-          { label: 'Vehículos',   value: stats.vehicles,            href: '/admin/fleet' },
-          { label: 'Disponibles', value: stats.fleet,               href: '/admin/fleet' },
-          { label: 'Conductores', value: stats.driversAvail,        href: '/admin/drivers' },
-          { label: 'Pendientes',  value: bookingStats.pending,      href: '/admin/bookings?status=pending', accent: true },
-          { label: 'Activas',     value: bookingStats.active,       href: '/admin/bookings' },
-          { label: 'Hoy',         value: bookingStats.today,        href: '/admin/bookings' },
+          { label: t.kpis.vehicles,  value: stats.vehicles,       href: '/admin/fleet' },
+          { label: t.kpis.available, value: stats.fleet,          href: '/admin/fleet' },
+          { label: t.kpis.drivers,   value: stats.driversAvail,   href: '/admin/drivers' },
+          { label: t.kpis.pending,   value: bookingStats.pending, href: '/admin/bookings?status=pending', accent: true },
+          { label: t.kpis.active,    value: bookingStats.active,  href: '/admin/bookings' },
+          { label: t.kpis.today,     value: bookingStats.today,   href: '/admin/bookings' },
         ].map((card) => (
           <Link
             key={card.label}
@@ -190,7 +195,7 @@ export default async function AdminDashboardPage() {
       <div className="bg-white border border-[#e5e1d8] border-l-[3px] border-l-[#8a6520] rounded-r-xl px-6 py-5 flex flex-wrap items-center gap-x-10 gap-y-4">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520]">
-            Ingresos del mes (completados)
+            {t.revenueMonth}
           </p>
           <p className="text-4xl font-playfair font-semibold text-[#1d1b18] mt-1">
             ${revenue.month.toFixed(2)}
@@ -199,7 +204,7 @@ export default async function AdminDashboardPage() {
         <div className="h-10 w-px bg-[#e5e1d8] hidden sm:block" />
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
-            Ingresos de hoy
+            {t.revenueToday}
           </p>
           <p className="text-2xl font-playfair font-semibold text-[#1d1b18] mt-1">
             ${revenue.today.toFixed(2)}
@@ -208,7 +213,7 @@ export default async function AdminDashboardPage() {
         <div className="h-10 w-px bg-[#e5e1d8] hidden sm:block" />
         <Link href="/admin/bookings?status=completed" className="group">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
-            Completadas (mes)
+            {t.completedMonth}
           </p>
           <p className="text-2xl font-playfair font-semibold text-[#1d1b18] mt-1 group-hover:text-[#8a6520] transition-colors">
             {companyId ? bookingStats.completedMonth : '—'}
@@ -221,7 +226,7 @@ export default async function AdminDashboardPage() {
         {/* Tendencia */}
         <div className="bg-white border border-[#e5e1d8] rounded-xl p-6">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] mb-4">
-            Reservaciones — últimos 7 días
+            {t.trendWeek}
           </p>
           <div className="flex items-end justify-between gap-2 h-28">
             {weekTrend.map((d, i) => {
@@ -245,12 +250,12 @@ export default async function AdminDashboardPage() {
         <div className="bg-white border border-[#e5e1d8] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[#f0ede5]">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
-              Próximas 24 horas
+              {t.next24h}
             </p>
           </div>
           {upcomingBookings.length === 0 ? (
             <p className="p-6 text-sm text-[#75716a] text-center">
-              Sin viajes programados.
+              {t.noUpcoming}
             </p>
           ) : (
             <div className="divide-y divide-[#f0ede5]">
@@ -265,7 +270,7 @@ export default async function AdminDashboardPage() {
                     <span className="text-xs text-[#75716a] truncate">{b.passenger_name ?? '—'}</span>
                   </div>
                   <span className="text-xs font-medium text-[#1d1b18] shrink-0">
-                    {new Date(b.scheduled_at).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(b.scheduled_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </Link>
               ))}
@@ -278,21 +283,21 @@ export default async function AdminDashboardPage() {
       <div className="bg-white border border-[#e5e1d8] rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#f0ede5]">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#75716a]">
-            Reservaciones recientes
+            {t.recent}
           </p>
           <Link href="/admin/bookings" className="text-xs font-medium text-[#8a6520] hover:underline">
-            Ver todas →
+            {t.viewAll}
           </Link>
         </div>
 
         {recentBookings.length === 0 ? (
           <div className="p-6 text-center">
-            <p className="text-sm text-[#75716a]">No hay reservaciones aún.</p>
+            <p className="text-sm text-[#75716a]">{t.noBookings}</p>
             <Link
               href="/admin/bookings/new"
               className="mt-2 inline-block text-sm font-medium text-[#8a6520] hover:underline"
             >
-              Crear primera reservación →
+              {t.createFirst}
             </Link>
           </div>
         ) : (

@@ -26,6 +26,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { logoutAction } from '@/app/actions/auth'
+import { brand } from '@/lib/brand'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
@@ -159,7 +160,11 @@ export function AdminSidebar({
       {/* Wordmark + toggle */}
       <div className={`py-5 border-b border-sl-outline-variant ${collapsed ? 'px-0' : 'px-5'}`}>
         <div className={`flex items-center ${collapsed ? 'flex-col gap-3' : 'justify-between gap-2'}`}>
-          <div className={`flex items-center gap-2.5 min-w-0 ${collapsed ? 'justify-center' : ''}`}>
+          <Link
+            href="/admin/dashboard"
+            title={nav.dashboard}
+            className={`flex items-center gap-2.5 min-w-0 hover:opacity-80 transition-opacity ${collapsed ? 'justify-center' : ''}`}
+          >
             <div className="w-6 h-6 rounded-full bg-gold flex items-center justify-center shrink-0">
               <span className="text-gray-900 font-bold text-[10px] leading-none">L</span>
             </div>
@@ -168,7 +173,7 @@ export function AdminSidebar({
                 {companyName}
               </span>
             )}
-          </div>
+          </Link>
           <button
             type="button"
             onClick={toggle}
@@ -261,8 +266,8 @@ export function AdminSidebar({
               </button>
             </form>
             <p className="mt-3 pt-3 border-t border-sl-outline-variant text-[9px] uppercase tracking-[0.18em] text-sl-on-surface-muted/70">
-              LuxeRide · Powered by
-              <span className="block text-bronze/80">JPRS Digital Connect</span>
+              {brand.name} · Powered by
+              <span className="block text-bronze/80">{brand.poweredBy}</span>
             </p>
           </>
         )}

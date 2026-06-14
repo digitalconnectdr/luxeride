@@ -351,6 +351,40 @@ export const en = {
     settings: 'Settings',
   },
 
+  adminDashboard: {
+    title: 'Dashboard',
+    welcome: 'Welcome',
+    kpis: {
+      vehicles: 'Vehicles',
+      available: 'Available',
+      drivers: 'Chauffeurs',
+      pending: 'Pending',
+      active: 'Active',
+      today: 'Today',
+    },
+    revenueMonth: 'Revenue this month (completed)',
+    revenueToday: 'Revenue today',
+    completedMonth: 'Completed (month)',
+    trendWeek: 'Reservations — this week',
+    next24h: 'Next 24 hours',
+    noUpcoming: 'No scheduled trips.',
+    recent: 'Recent reservations',
+    viewAll: 'View all →',
+    noBookings: 'No reservations yet.',
+    createFirst: 'Create your first reservation →',
+    dayLabels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    statuses: {
+      pending: 'Pending',
+      assigned: 'Assigned',
+      en_route: 'En route',
+      arrived: 'Arrived',
+      in_progress: 'In progress',
+      completed: 'Completed',
+      cancelled: 'Cancelled',
+      no_show: 'No-show',
+    },
+  },
+
   admin: {
     fleet: {
       title: 'Fleet',

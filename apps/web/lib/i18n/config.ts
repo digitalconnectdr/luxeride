@@ -13,6 +13,13 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   pt: 'Português',
 }
 
+// Etiqueta BCP-47 para Intl / toLocale*String (formato de fechas, horas, números)
+export const LOCALE_BCP47: Record<Locale, string> = {
+  en: 'en-US',
+  es: 'es-DO',
+  pt: 'pt-BR',
+}
+
 export function isLocale(value: string | undefined | null): value is Locale {
   return !!value && (LOCALES as readonly string[]).includes(value)
 }
