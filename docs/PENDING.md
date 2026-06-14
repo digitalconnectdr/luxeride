@@ -122,7 +122,15 @@ del cliente. Plan por niveles (de menor a mayor esfuerzo):
 Branding en dashboard: ✅ logo en el sidebar (2026-06-14). Falta (opcional)
 aplicar primary_color a los acentos del panel admin.
 
-### D. Microsite / portada branded por operador (pedido 2026-06-14)
+### D. Microsite / portada branded por operador (✅ HECHO 2026-06-14)
+IMPLEMENTADO: el link corto /<slug> muestra una micropágina del operador con
+hero (logo/slogan/imagen), sección de servicios, "sobre nosotros", formulario
+de reserva embebido y QR. Configurable desde Configuración → Portada + Servicios.
+Migración 17 (companies: tagline/hero_image_url/about + tabla company_services).
+Falta (mejora futura): más bloques de portada (galería de flota, testimonios),
+y enlazar el QR a la PWA cuando exista (Fase 2A). Plan original abajo (cumplido):
+
+
 Hoy /book/<slug> entra directo al wizard de reservas. El usuario quiere que sea
 una PÁGINA PRINCIPAL del operador con su marca completa: logo, colores, slogan,
 hero, **sus servicios**, y un botón "Reservar" + un QR para instalar la PWA de
