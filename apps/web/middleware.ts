@@ -21,7 +21,32 @@ type CookieItem = {
   }
 }
 
+// Primeros segmentos reservados por el sistema — NO son slugs de operador.
+// Si se agrega una página top-level nueva (ej. /terms), añadirla aquí.
+const RESERVED_SEGMENTS = new Set([
+  'admin', 'dispatcher', 'driver', 'corporate', 'account', 'super-admin',
+  'auth', 'api', 'track', 'payment', 'book',
+  'manifest', 'icon', 'favicon', 'opengraph-image',
+])
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // ── Link corto del operador: /<slug> → reescribe a /book/<slug> ──────────────
+  // Permite compartir getluxeride.vercel.app/revival en vez de /book/revival.
+  // Solo aplica a rutas de UN segmento, no reservadas y sin punto (no archivos).
+  const segments = pathname.split('/').filter(Boolean)
+  if (
+    segments.length === 1 &&
+    !RESERVED_SEGMENTS.has(segments[0]) &&
+    !segments[0].includes('.') &&
+    /^[a-z0-9-]+$/.test(segments[0])
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = `/book/${segments[0]}`
+    return NextResponse.rewrite(url)
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   // No <Database> generic — middleware only checks auth and role, uses type casts.
@@ -49,8 +74,6 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  const { pathname } = request.nextUrl
 
   // ── Auth pages: redirect logged-in users to their dashboard ──────────────────
   if (pathname.startsWith('/auth') && !pathname.startsWith('/auth/callback')) {

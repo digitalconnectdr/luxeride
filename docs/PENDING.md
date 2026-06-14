@@ -107,9 +107,9 @@ Hoy el link de un operador es `getluxeride.vercel.app/book/<slug>` y el slug ya
 se deriva del nombre (ej. "Revival" → /book/revival). El usuario quiere links
 más cortos/branded y que la PWA + dashboard + app conductor muestren la marca
 del cliente. Plan por niveles (de menor a mayor esfuerzo):
-1. **Path corto** `/<slug>` (sin /book/): middleware reescribe `/<slug>` →
-   `/book/<slug>` si el slug es una empresa (validar contra reservas del
-   sistema /admin, /auth, etc.). Rápido.
+1. ✅ **Path corto** `/<slug>` (HECHO 2026-06-14): middleware reescribe
+   `/<slug>` → `/book/<slug>` (excluye rutas reservadas). Es el canónico
+   (canonical/OG/JSON-LD/sitemap). Tarjeta "Tu enlace de reservas" en Config.
 2. **Subdominio** `<slug>.dominio.com`: requiere dominio propio (no
    *.vercel.app) + wildcard domain en Vercel + middleware que lea el subdominio
    (host header) y resuelva la empresa. Es el estándar SaaS.

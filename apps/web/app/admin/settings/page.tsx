@@ -13,7 +13,9 @@ import {
 } from '@/app/actions/payments'
 import { isStripeConfigured } from '@/lib/stripe/server'
 import { BrandingForm } from '@/components/admin/branding-form'
+import { BookingLinkCard } from '@/components/admin/booking-link-card'
 import { getDict } from '@/lib/i18n/server'
+import { getAppUrl } from '@/lib/app-url'
 
 const TIMEZONES = [
   'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
@@ -59,7 +61,7 @@ export default async function SettingsPage({
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('name, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, logo_url, primary_color')
+    .select('name, slug, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, logo_url, primary_color')
     .eq('id', user.company_id)
     .single()
 
@@ -104,6 +106,11 @@ export default async function SettingsPage({
         <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface">{t.title}</h1>
         <p className="mt-1 text-sm text-sl-on-surface-muted">{t.subtitle}</p>
       </div>
+
+      {/* ── Link de reservas del operador ── */}
+      {company.slug && (
+        <BookingLinkCard t={t} url={`${getAppUrl()}/${company.slug}`} />
+      )}
 
       {/* ── Company Information ── */}
       <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">

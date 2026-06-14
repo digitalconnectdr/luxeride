@@ -593,6 +593,10 @@ export const en = {
     settings: {
       title: 'Settings',
       subtitle: 'Manage your company profile and platform preferences.',
+      bookingLinkTitle: 'Your booking link',
+      bookingLinkDesc: 'Share this link with your clients to receive reservations.',
+      copyLink: 'Copy',
+      copiedLink: 'Copied',
       companyInfo: 'Company Information',
       companyName: 'Company Name',
       phone: 'Phone',

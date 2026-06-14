@@ -595,6 +595,10 @@ export const es: Dictionary = {
     settings: {
       title: 'Configuración',
       subtitle: 'Administra el perfil de tu empresa y las preferencias de la plataforma.',
+      bookingLinkTitle: 'Tu enlace de reservas',
+      bookingLinkDesc: 'Comparte este enlace con tus clientes para recibir reservaciones.',
+      copyLink: 'Copiar',
+      copiedLink: 'Copiado',
       companyInfo: 'Información de la empresa',
       companyName: 'Nombre de la empresa',
       phone: 'Teléfono',

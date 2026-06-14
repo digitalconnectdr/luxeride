@@ -30,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     for (const c of companies) {
       entries.push({
-        url: `${BASE}/book/${c.slug}`,
+        url: `${BASE}/${c.slug}`, // link corto canónico del operador
         lastModified: c.updated_at ? new Date(c.updated_at) : new Date(),
         changeFrequency: 'weekly',
         priority: 0.8,

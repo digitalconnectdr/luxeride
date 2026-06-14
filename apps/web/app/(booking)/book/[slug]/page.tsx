@@ -29,7 +29,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const inCity = company.city ? ` en ${company.city}` : ''
   const title = `${company.name} — Reserva tu traslado de lujo${cityPart}`
   const description = `Reserva en línea con ${company.name}: traslados al aeropuerto, chofer ejecutivo y transporte premium${inCity}. Cotización al instante, pago seguro y seguimiento en vivo.`
-  const url = `${getAppUrl()}/book/${params.slug}`
+  // Canónico = link corto del operador (/<slug>), no /book/<slug>
+  const url = `${getAppUrl()}/${params.slug}`
 
   return {
     title,
@@ -63,7 +64,7 @@ export default async function PublicBookingPage({ params }: Props) {
   // Datos estructurados (Schema.org) — los leen Google/Bing para "rich results"
   // y los crawlers de IA (ChatGPT, Perplexity, etc.) para entender y recomendar
   // el negocio del operador.
-  const companyUrl = `${getAppUrl()}/book/${company.slug}`
+  const companyUrl = `${getAppUrl()}/${company.slug}`
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
