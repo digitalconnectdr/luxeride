@@ -1,6 +1,6 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-06-11. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-06-14. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
 ## ✅ Completado (Phase 1 + mejoras)
@@ -43,10 +43,8 @@
   - Marca centralizada en lib/brand.ts (obs. 13).
   - Logo del sidebar enlaza al dashboard (obs. 7). Mensaje de "regla de
     precio" ahora accionable.
-  - Directorio del landing + sitemap ahora muestran solo empresas CON servicio
-    (≥1 tipo de vehículo activo), no por status — así la empresa contenedora
-    del super-admin (vacía) no aparece (obs. 8, corregido). NO se suspenden
-    empresas.
+  - Directorio del landing ELIMINADO (decisión white-label puro, ver abajo).
+    El sitemap quedó reducido al landing del software.
   - Aclaración importante: hay 2 empresas — "LuxeRide" (slug luxeride, cuenta
     super_admin, vacía) y "LuxeRide Platform" (slug luxeride-platform, la
     operadora con el vehículo/tipo/precio). El booking real es
@@ -91,9 +89,17 @@ realtime + geolocalización. Plan para una fase dedicada:
 
 ### ✅ White-label por empresa (2026-06-14) — HECHO
 Cada empresa personaliza su marca: Configuración → "Marca" (logo + color).
-Aplicado en portal /book/[slug], emails y tracking. Storage bucket "branding".
-Decisión: el directorio del landing se mantiene como marketplace (lista las
-empresas con servicio). Pendiente futuro: dominio propio por empresa.
+Aplicado en portal /book/[slug], emails, tracking y logo en el sidebar del
+panel. Storage bucket "branding".
+**DECISIÓN DE NEGOCIO 2026-06-14: white-label PURO.** El directorio/marketplace
+del landing se ELIMINÓ (queda comentado en app/page.tsx). El landing solo vende
+el software; cada operador usa su propio /book/su-slug. Implicaciones:
+- El **widget embebible** (backlog #2) sube de prioridad: es como cada operador
+  pone reservas en SU web.
+- **SEO de operadores**: ya no se indexan desde LuxeRide (sitemap solo landing).
+  Para posicionarse, cada operador necesita dominio propio → refuerza la
+  necesidad de comprar un dominio (ver sección C).
+- La **PWA** debe ser **branded por empresa**, no genérica (ver sección C.4).
 
 ### C. White-label avanzado: link corto + dominio + PWA branded (pedido 2026-06-14)
 Hoy el link de un operador es `getluxeride.vercel.app/book/<slug>` y el slug ya
@@ -151,6 +157,8 @@ aplicar primary_color a los acentos del panel admin.
    si funciona bien, recién entonces se hace la versión nativa) —
    manifest.json + service worker + installable en iOS/Android, push web,
    offline básico para el driver. Detalle en docs/PHASE-2-MOBILE.md (Fase 2A).
+   AJUSTE 2026-06-14: por white-label puro, el manifest debe ser DINÁMICO por
+   empresa (nombre/iconos/theme_color del cliente), no genérico — ver sección C.4.
 7. **Fase 2B móvil nativo** (driver app primero, SOLO si la PWA valida bien)
    — plan en docs/PHASE-2-MOBILE.md.
 8. Gaps mayores: QuickBooks, e-signatures, farm-in/farm-out, promo codes,
