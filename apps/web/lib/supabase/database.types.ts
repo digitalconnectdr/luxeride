@@ -88,6 +88,9 @@ export type Database = {
           plan: CompanyPlan
           logo_url: string | null
           primary_color: string | null
+          tagline: string | null
+          hero_image_url: string | null
+          about: string | null
           phone: string | null
           email: string | null
           address: string | null
@@ -114,6 +117,9 @@ export type Database = {
           plan?: CompanyPlan | undefined
           logo_url?: string | null | undefined
           primary_color?: string | null | undefined
+          tagline?: string | null | undefined
+          hero_image_url?: string | null | undefined
+          about?: string | null | undefined
           phone?: string | null | undefined
           email?: string | null | undefined
           address?: string | null | undefined
@@ -140,6 +146,9 @@ export type Database = {
           plan?: CompanyPlan | undefined
           logo_url?: string | null | undefined
           primary_color?: string | null | undefined
+          tagline?: string | null | undefined
+          hero_image_url?: string | null | undefined
+          about?: string | null | undefined
           phone?: string | null | undefined
           email?: string | null | undefined
           address?: string | null | undefined
@@ -416,6 +425,47 @@ export type Database = {
           shop_name?: string | null | undefined
           notes?: string | null | undefined
           created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── company_services (microsite del operador) ────────────────────────────
+      company_services: {
+        Row: {
+          id: string
+          company_id: string
+          title: string
+          description: string | null
+          icon: string | null
+          image_url: string | null
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          title: string
+          description?: string | null | undefined
+          icon?: string | null | undefined
+          image_url?: string | null | undefined
+          sort_order?: number | undefined
+          is_active?: boolean | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          title?: string | undefined
+          description?: string | null | undefined
+          icon?: string | null | undefined
+          image_url?: string | null | undefined
+          sort_order?: number | undefined
+          is_active?: boolean | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
         }
         Relationships: []
       }

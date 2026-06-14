@@ -32,8 +32,8 @@ export default async function BookingLayout({
       style={{ ['--brand' as string]: brandColor }}
     >
       {/* Header con la marca de la empresa */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-20">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -54,14 +54,13 @@ export default async function BookingLayout({
         </div>
       </header>
 
-      {/* Contenido — MapsProvider para AddressInput */}
+      {/* Contenido full-width — el microsite controla el ancho de cada sección.
+          MapsProvider envuelve todo para el AddressInput del wizard embebido. */}
       <MapsProvider>
-        <main className="max-w-2xl mx-auto px-6 py-8">
-          {children}
-        </main>
+        <main>{children}</main>
       </MapsProvider>
 
-      <footer className="max-w-2xl mx-auto px-6 pb-8 text-center">
+      <footer className="max-w-2xl mx-auto px-6 py-8 text-center">
         <p className="text-[10px] uppercase tracking-[0.25em] text-gray-400">
           {companyName} · Powered by {brand.name}
         </p>

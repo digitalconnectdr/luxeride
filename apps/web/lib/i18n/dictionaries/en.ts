@@ -315,6 +315,16 @@ export const en = {
     autoRefresh: 'This page refreshes automatically every 30 seconds.',
   },
 
+  microsite: {
+    bookNow: 'Book now',
+    ourServices: 'Our services',
+    aboutTitle: 'About us',
+    bookTitle: 'Reserve your ride',
+    scanTitle: 'Book from your phone',
+    scanDesc: 'Scan to open the booking page on your mobile.',
+    call: 'Call',
+  },
+
   payment: {
     successTitle: 'Payment received!',
     successBody:

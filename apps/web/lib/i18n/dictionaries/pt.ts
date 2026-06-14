@@ -317,6 +317,16 @@ export const pt: Dictionary = {
     autoRefresh: 'Esta página atualiza automaticamente a cada 30 segundos.',
   },
 
+  microsite: {
+    bookNow: 'Reservar agora',
+    ourServices: 'Nossos serviços',
+    aboutTitle: 'Sobre nós',
+    bookTitle: 'Reserve sua viagem',
+    scanTitle: 'Reserve pelo celular',
+    scanDesc: 'Escaneie para abrir a página de reservas no seu telefone.',
+    call: 'Ligar',
+  },
+
   payment: {
     successTitle: 'Pagamento recebido!',
     successBody:
