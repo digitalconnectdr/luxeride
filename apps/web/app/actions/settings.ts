@@ -148,6 +148,78 @@ export async function updatePolicySettingsAction(
   return { success: true }
 }
 
+// ── White-label: logo + color de marca de la empresa ─────────────────────────
+
+export type BrandingResult = { success: boolean; error?: string; logoUrl?: string | null }
+
+const MIME_EXT: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/svg+xml': 'svg',
+  'image/webp': 'webp',
+}
+
+export async function updateBrandingAction(
+  _prev: BrandingResult | null,
+  formData: FormData,
+): Promise<BrandingResult> {
+  const user = await requireRole('company_owner')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const primaryColor = (formData.get('primary_color') as string ?? '').trim()
+  const logo = formData.get('logo') as File | null
+  const removeLogo = formData.get('remove_logo') === 'true'
+
+  const admin = createAdminClient()
+  const updates: { primary_color?: string; logo_url?: string | null } = {}
+
+  if (/^#[0-9a-fA-F]{6}$/.test(primaryColor)) {
+    updates.primary_color = primaryColor
+  }
+
+  if (removeLogo) {
+    updates.logo_url = null
+  } else if (logo && logo.size > 0) {
+    if (logo.size > 2_000_000) {
+      return { success: false, error: 'El logo no puede superar 2 MB.' }
+    }
+    const ext = MIME_EXT[logo.type]
+    if (!ext) {
+      return { success: false, error: 'Formato no válido. Usa PNG, JPG, SVG o WebP.' }
+    }
+    const path = `${user.company_id}/logo.${ext}`
+    const buffer = Buffer.from(await logo.arrayBuffer())
+    const { error: upErr } = await admin.storage
+      .from('branding')
+      .upload(path, buffer, { contentType: logo.type, upsert: true })
+    if (upErr) {
+      console.error('[updateBrandingAction] upload', upErr)
+      return { success: false, error: 'Error al subir el logo.' }
+    }
+    const { data: pub } = admin.storage.from('branding').getPublicUrl(path)
+    // cache-bust para que el navegador tome la versión nueva
+    updates.logo_url = `${pub.publicUrl}?v=${Date.now()}`
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return { success: true }
+  }
+
+  const { error } = await admin
+    .from('companies')
+    .update(updates)
+    .eq('id', user.company_id)
+
+  if (error) {
+    console.error('[updateBrandingAction]', error)
+    return { success: false, error: 'Error al guardar la marca.' }
+  }
+
+  revalidatePath('/admin/settings')
+  revalidatePath('/book', 'layout')
+  return { success: true, logoUrl: updates.logo_url }
+}
+
 export async function updateGratuitySettingsAction(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {

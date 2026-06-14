@@ -64,7 +64,7 @@ function StepIndicator({ current, steps }: { current: number; steps: string[] })
         <div key={i} className="flex items-center gap-2">
           <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
             i < current ? 'bg-green-500 text-white' :
-            i === current ? 'bg-[#0071e3] text-white' :
+            i === current ? 'bg-[var(--brand)] text-white' :
             'bg-gray-200 text-gray-400'
           }`}>
             {i < current ? '✓' : i + 1}
@@ -311,8 +311,8 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
                       onClick={() => setGratuityPct(pct)}
                       className={`px-4 py-2 text-sm font-semibold rounded-xl border transition-colors ${
                         gratuityPct === pct
-                          ? 'bg-[#0071e3] text-white border-[#0071e3]'
-                          : 'bg-white text-[#1d1d1f] border-gray-200 hover:border-[#0071e3]'
+                          ? 'bg-[var(--brand)] text-white border-[var(--brand)]'
+                          : 'bg-white text-[#1d1d1f] border-gray-200 hover:border-[var(--brand)]'
                       }`}
                     >
                       {pct === 0 ? dict.noTip : `${pct}%`}
@@ -324,7 +324,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
             <button
               onClick={handlePayOnline}
               disabled={isPending}
-              className="px-8 py-3.5 bg-[#0071e3] text-white font-semibold rounded-2xl hover:bg-[#0077ed] disabled:opacity-50 transition-colors text-sm"
+              className="px-8 py-3.5 bg-[var(--brand)] text-white font-semibold rounded-2xl hover:opacity-90 disabled:opacity-50 transition-colors text-sm"
             >
               {isPending ? dict.redirecting : dict.payOnline}
             </button>
@@ -369,7 +369,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
             <select
               name="booking_type"
               defaultValue="one_way"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
             >
               <option value="one_way">{dict.types.one_way}</option>
               <option value="airport_pickup">{dict.types.airport_pickup}</option>
@@ -388,7 +388,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               name="scheduled_at"
               required
               min={new Date().toISOString().slice(0, 16)}
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
             />
           </div>
 
@@ -457,7 +457,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
           <button
             type="submit"
             disabled={isPending}
-            className="w-full py-3.5 bg-[#0071e3] text-white font-semibold rounded-2xl hover:bg-[#0077ed] disabled:opacity-50 transition-colors text-sm"
+            className="w-full py-3.5 bg-[var(--brand)] text-white font-semibold rounded-2xl hover:opacity-90 disabled:opacity-50 transition-colors text-sm"
           >
             {isPending ? dict.calculating : dict.seePrices}
           </button>
@@ -498,7 +498,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
                 className={`w-full text-left bg-white border rounded-2xl p-4 transition-all ${
                   q.noPrice
                     ? 'border-gray-200 opacity-50 cursor-not-allowed'
-                    : 'border-gray-200 hover:border-[#0071e3] hover:shadow-sm cursor-pointer'
+                    : 'border-gray-200 hover:border-[var(--brand)] hover:shadow-sm cursor-pointer'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -569,7 +569,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               name="name"
               required
               placeholder="Juan Pérez"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
             />
           </div>
 
@@ -582,7 +582,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               name="phone"
               required
               placeholder="+1 809 000 0000"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
             />
           </div>
 
@@ -594,7 +594,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               type="email"
               name="email"
               placeholder="juan@example.com"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
             />
           </div>
 
@@ -608,7 +608,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               defaultValue={1}
               min={1}
               max={selectedQuote?.vehicleType.capacity ?? 20}
-              className="w-28 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              className="w-28 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
             />
           </div>
 
@@ -621,7 +621,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
                 type="text"
                 name="flight_number"
                 placeholder="AA1234"
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
               />
             </div>
           )}
@@ -634,7 +634,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               name="instructions"
               rows={2}
               placeholder={dict.instructionsPlaceholder}
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 resize-none"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 resize-none"
             />
           </div>
 
@@ -648,13 +648,13 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
             <button
               type="button"
               onClick={() => { setStep(1); setError('') }}
-              className="px-5 py-3 border border-gray-200 text-sm font-medium rounded-xl hover:border-[#0071e3] transition-colors text-[#1d1d1f]"
+              className="px-5 py-3 border border-gray-200 text-sm font-medium rounded-xl hover:border-[var(--brand)] transition-colors text-[#1d1d1f]"
             >
               {dict.back}
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 bg-[#0071e3] text-white font-semibold rounded-2xl hover:bg-[#0077ed] transition-colors text-sm"
+              className="flex-1 py-3 bg-[var(--brand)] text-white font-semibold rounded-2xl hover:opacity-90 transition-colors text-sm"
             >
               {dict.continue}
             </button>
@@ -746,14 +746,14 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
           <div className="flex gap-3">
             <button
               onClick={() => { setStep(2); setError('') }}
-              className="px-5 py-3 border border-gray-200 text-sm font-medium rounded-xl hover:border-[#0071e3] transition-colors text-[#1d1d1f]"
+              className="px-5 py-3 border border-gray-200 text-sm font-medium rounded-xl hover:border-[var(--brand)] transition-colors text-[#1d1d1f]"
             >
               {dict.back}
             </button>
             <button
               onClick={handleConfirm}
               disabled={isPending}
-              className="flex-1 py-3.5 bg-[#0071e3] text-white font-semibold rounded-2xl hover:bg-[#0077ed] disabled:opacity-50 transition-colors text-sm"
+              className="flex-1 py-3.5 bg-[var(--brand)] text-white font-semibold rounded-2xl hover:opacity-90 disabled:opacity-50 transition-colors text-sm"
             >
               {isPending ? dict.confirming : dict.confirmBooking}
             </button>

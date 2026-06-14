@@ -12,6 +12,7 @@ import {
   refreshConnectStatusAction,
 } from '@/app/actions/payments'
 import { isStripeConfigured } from '@/lib/stripe/server'
+import { BrandingForm } from '@/components/admin/branding-form'
 import { getDict } from '@/lib/i18n/server'
 
 const TIMEZONES = [
@@ -58,7 +59,7 @@ export default async function SettingsPage({
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('name, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded')
+    .select('name, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, logo_url, primary_color')
     .eq('id', user.company_id)
     .single()
 
@@ -161,6 +162,13 @@ export default async function SettingsPage({
           </div>
         </form>
       </section>
+
+      {/* ── Brand / White-label ── */}
+      <BrandingForm
+        t={t}
+        currentLogo={company.logo_url ?? null}
+        currentColor={company.primary_color ?? '#e9c176'}
+      />
 
       {/* ── Booking Settings ── */}
       <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
