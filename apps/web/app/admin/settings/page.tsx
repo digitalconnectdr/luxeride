@@ -14,6 +14,8 @@ import {
 import { isStripeConfigured } from '@/lib/stripe/server'
 import { BrandingForm } from '@/components/admin/branding-form'
 import { BookingLinkCard } from '@/components/admin/booking-link-card'
+import { CoverForm } from '@/components/admin/cover-form'
+import { ServicesManager, type Service } from '@/components/admin/services-manager'
 import { getDict } from '@/lib/i18n/server'
 import { getAppUrl } from '@/lib/app-url'
 
@@ -61,11 +63,18 @@ export default async function SettingsPage({
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('name, slug, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, logo_url, primary_color')
+    .select('name, slug, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, logo_url, primary_color, tagline, hero_image_url, about')
     .eq('id', user.company_id)
     .single()
 
   if (!company) return <p className="p-8 text-sl-on-surface-muted">Empresa no encontrada.</p>
+
+  const { data: servicesRaw } = await admin
+    .from('company_services')
+    .select('id, title, description, icon, is_active')
+    .eq('company_id', user.company_id)
+    .order('sort_order')
+  const services = (servicesRaw ?? []) as Service[]
 
   const settings = (company.settings as {
     booking?: {
@@ -97,7 +106,9 @@ export default async function SettingsPage({
   const stripeReady = isStripeConfigured()
   const hasConnect  = Boolean(company.stripe_connect_account_id)
   const onboarded   = Boolean(company.stripe_connect_onboarded)
-  const t = getDict().admin.settings
+  const adminDict = getDict().admin
+  const t = adminDict.settings
+  const actions = adminDict.actions
 
   return (
     <div className="p-8 max-w-[1400px] mx-auto space-y-8">
@@ -176,6 +187,17 @@ export default async function SettingsPage({
         currentLogo={company.logo_url ?? null}
         currentColor={company.primary_color ?? '#e9c176'}
       />
+
+      {/* ── Portada / Microsite ── */}
+      <CoverForm
+        t={t}
+        tagline={company.tagline ?? null}
+        about={company.about ?? null}
+        heroImage={company.hero_image_url ?? null}
+      />
+
+      {/* ── Servicios del microsite ── */}
+      <ServicesManager t={t} actions={actions} services={services} />
 
       {/* ── Booking Settings ── */}
       <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
