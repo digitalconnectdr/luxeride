@@ -18,6 +18,8 @@ export async function createZoneAction(
   const name = (formData.get('name') as string ?? '').trim()
   const type = (formData.get('type') as string ?? 'standard').trim()
   const color = (formData.get('color') as string ?? '#e9c176').trim()
+  const radiusRaw = parseFloat(formData.get('radius_miles') as string)
+  const radius = isNaN(radiusRaw) || radiusRaw <= 0 ? null : radiusRaw
 
   if (!name) return { success: false, error: 'Nombre requerido' }
 
@@ -27,6 +29,7 @@ export async function createZoneAction(
     name,
     type,
     color,
+    radius_miles: radius,
   })
 
   if (error) {
@@ -48,13 +51,15 @@ export async function updateZoneAction(
   const name = (formData.get('name') as string ?? '').trim()
   const type = (formData.get('type') as string ?? '').trim()
   const color = (formData.get('color') as string ?? '').trim()
+  const radiusRaw = parseFloat(formData.get('radius_miles') as string)
+  const radius = isNaN(radiusRaw) || radiusRaw <= 0 ? null : radiusRaw
 
   if (!name) return { success: false, error: 'Nombre requerido' }
 
   const admin = createAdminClient()
   const { error } = await admin
     .from('service_zones')
-    .update({ name, type: type || undefined, color: color || undefined })
+    .update({ name, type: type || undefined, color: color || undefined, radius_miles: radius })
     .eq('id', zoneId)
     .eq('company_id', user.company_id)
 

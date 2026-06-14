@@ -388,6 +388,16 @@ export const es: Dictionary = {
   },
 
   admin: {
+    actions: {
+      edit: 'Editar',
+      delete: 'Eliminar',
+      save: 'Guardar',
+      cancel: 'Cancelar',
+      saving: 'Guardando…',
+      deleting: 'Eliminando…',
+      confirmDelete: '¿Eliminar este elemento? Esta acción no se puede deshacer.',
+      inUse: 'No se puede eliminar: está en uso.',
+    },
     fleet: {
       title: 'Flota',
       vehicles: 'vehículos',
@@ -437,6 +447,8 @@ export const es: Dictionary = {
       namePlaceholder: 'ej. Centro de la ciudad',
       typeLabel: 'Tipo',
       colorLabel: 'Color',
+      radiusLabel: 'Radio (mi)',
+      radiusPlaceholder: 'ej. 15',
       addButton: 'Agregar zona',
       empty: 'Aún no hay zonas de servicio.',
       emptyHint: 'Agrega tu primera zona arriba para definir áreas de precios.',

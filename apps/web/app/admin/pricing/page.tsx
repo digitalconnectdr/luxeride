@@ -1,18 +1,9 @@
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { createPricingRuleAction } from '@/app/actions/pricing'
-import { PricingRuleActiveToggle, PricingRuleDeleteButton } from '@/components/admin/pricing-controls'
+import { PricingRuleRow } from '@/components/admin/pricing-rule-row'
 import { getDict } from '@/lib/i18n/server'
 import { InfoTip } from '@/components/ui/info-tip'
-import type { PricingModel } from '@/lib/supabase/database.types'
-
-const MODEL_BADGE: Record<PricingModel, string> = {
-  flat_rate:  'bg-blue-50 text-blue-700 border-blue-200',
-  per_mile:   'bg-green-50 text-green-700 border-green-200',
-  per_km:     'bg-teal-50 text-teal-700 border-teal-200',
-  hourly:     'bg-purple-50 text-purple-700 border-purple-200',
-  zone_based: 'bg-amber-50 text-amber-700 border-amber-200',
-}
 
 export default async function PricingPage() {
   const user = await requireRole('company_owner', 'company_admin')
@@ -22,7 +13,7 @@ export default async function PricingPage() {
   const [{ data: rules }, { data: vehicleTypes }, { data: zones }] = await Promise.all([
     admin
       .from('pricing_rules')
-      .select('id, name, model, base_price, per_mile_rate, hourly_rate, minimum_fare, priority, is_active, vehicle_type_id')
+      .select('id, name, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, holiday_surcharge_pct, surge_enabled, surge_multiplier, priority, is_active, vehicle_type_id')
       .eq('company_id', user.company_id!)
       .order('priority', { ascending: false })
       .order('name', { ascending: true }),
@@ -45,7 +36,9 @@ export default async function PricingPage() {
 
   // void cast — TypeScript void-callback rule
   const pricingAction: (fd: FormData) => void = createPricingRuleAction
-  const t = getDict().admin.pricing
+  const dict = getDict().admin
+  const t = dict.pricing
+  const actions = dict.actions
 
   return (
     <div className="p-8 max-w-[1400px] mx-auto">
@@ -234,39 +227,14 @@ export default async function PricingPage() {
             </thead>
             <tbody className="divide-y divide-sl-outline-variant/40">
               {rules.map((rule) => (
-                <tr key={rule.id} className="hover:bg-sl-bg/40 transition-colors">
-                  <td className="px-5 py-3.5">
-                    <p className="font-medium text-sl-on-surface">{rule.name}</p>
-                    {rule.vehicle_type_id && (
-                      <p className="text-xs text-sl-on-surface-muted mt-0.5">
-                        {vtMap.get(rule.vehicle_type_id) ?? rule.vehicle_type_id}
-                      </p>
-                    )}
-                    {!rule.vehicle_type_id && (
-                      <p className="text-xs text-sl-on-surface-muted mt-0.5">{t.allVehicleTypes}</p>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <span className={`inline-flex text-xs font-medium px-2 py-0.5 rounded-full border ${MODEL_BADGE[rule.model as PricingModel] ?? ''}`}>
-                      {t.models[rule.model as PricingModel] ?? rule.model}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5 text-right font-medium text-sl-on-surface">
-                    ${Number(rule.base_price).toFixed(2)}
-                  </td>
-                  <td className="px-5 py-3.5 text-right text-sl-on-surface-muted">
-                    {rule.minimum_fare ? `$${Number(rule.minimum_fare).toFixed(2)}` : '—'}
-                  </td>
-                  <td className="px-5 py-3.5 text-center">
-                    <span className="text-xs font-mono text-sl-on-surface-muted">{rule.priority ?? 0}</span>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <PricingRuleActiveToggle ruleId={rule.id} isActive={rule.is_active} />
-                  </td>
-                  <td className="px-5 py-3.5 text-right">
-                    <PricingRuleDeleteButton ruleId={rule.id} />
-                  </td>
-                </tr>
+                <PricingRuleRow
+                  key={rule.id}
+                  rule={rule}
+                  vehicleTypes={vehicleTypes ?? []}
+                  vtName={rule.vehicle_type_id ? vtMap.get(rule.vehicle_type_id) ?? null : null}
+                  t={t}
+                  actions={actions}
+                />
               ))}
             </tbody>
           </table>

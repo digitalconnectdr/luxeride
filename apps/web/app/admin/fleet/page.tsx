@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
-import { VehicleStatusSelect, VehicleTypeActiveToggle } from '@/components/admin/fleet-controls'
+import { VehicleStatusSelect } from '@/components/admin/fleet-controls'
+import { VehicleTypeRow } from '@/components/admin/vehicle-type-row'
 import { AddVehicleTypeForm } from '@/components/admin/add-vehicle-type-form'
 import { getDict } from '@/lib/i18n/server'
 import type { VehicleStatus } from '@/lib/supabase/database.types'
@@ -53,7 +54,9 @@ export default async function FleetPage({ searchParams }: PageProps) {
   const typeMap   = Object.fromEntries(allTypes.map((t) => [t.id, t]))
   const driverMap = Object.fromEntries(allDrivers.map((d) => [d.id, d]))
 
-  const t = getDict().admin.fleet
+  const dict = getDict().admin
+  const t = dict.fleet
+  const actions = dict.actions
 
   const tabs = [
     { label: t.tabVehicles, value: 'vehicles' },
@@ -192,27 +195,7 @@ export default async function FleetPage({ searchParams }: PageProps) {
                 </thead>
                 <tbody className="divide-y divide-sl-outline-variant/50">
                   {allTypes.map((vt) => (
-                    <tr key={vt.id} className="hover:bg-sl-bg/40 transition-colors">
-                      <td className="px-5 py-4">
-                        <p className="font-medium text-sl-on-surface">{vt.name}</p>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="text-xs text-sl-on-surface-muted">
-                          {t.classes[vt.class as keyof typeof t.classes] ?? vt.class}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="text-xs text-sl-on-surface-muted">{vt.capacity} pax</span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="text-xs text-sl-on-surface-muted">
-                          {vt.amenities.length > 0 ? vt.amenities.join(', ') : '—'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <VehicleTypeActiveToggle typeId={vt.id} isActive={vt.is_active} labels={t.activeToggle} />
-                      </td>
-                    </tr>
+                    <VehicleTypeRow key={vt.id} vt={vt} fleet={t} actions={actions} />
                   ))}
                 </tbody>
               </table>

@@ -1,7 +1,7 @@
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { addCompanyAirportAction, createCustomAirportAction } from '@/app/actions/services'
-import { AirportActiveToggle, AirportRemoveButton } from '@/components/admin/airport-controls'
+import { AirportRow } from '@/components/admin/airport-row'
 import { getDict } from '@/lib/i18n/server'
 import { InfoTip } from '@/components/ui/info-tip'
 
@@ -34,7 +34,9 @@ export default async function AirportsPage() {
   // void cast — TypeScript void-callback rule
   const airportAction: (fd: FormData) => void = addCompanyAirportAction
   const customAirportAction: (fd: FormData) => void = createCustomAirportAction
-  const t = getDict().admin.airports
+  const dict = getDict().admin
+  const t = dict.airports
+  const actions = dict.actions
 
   const fieldCls =
     'text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface ' +
@@ -177,48 +179,16 @@ export default async function AirportsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-sl-outline-variant/40">
-              {companyAirports.map((ca) => {
-                const airport = airportsMap[ca.airport_id] ?? null
-                return (
-                  <tr key={ca.id} className="hover:bg-sl-bg/40 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <div>
-                        <span className="font-semibold text-sl-on-surface text-xs bg-sl-outline-variant/30 px-1.5 py-0.5 rounded mr-2">
-                          {airport?.iata_code}
-                        </span>
-                        <span className="text-sl-on-surface">{airport?.name}</span>
-                      </div>
-                      <p className="text-xs text-sl-on-surface-muted mt-0.5 pl-9">
-                        {airport?.city}, {airport?.country}
-                      </p>
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <span className="font-medium text-sl-on-surface">
-                        ${Number(ca.pickup_fee).toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <span className="font-medium text-sl-on-surface">
-                        ${Number(ca.dropoff_fee).toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {isAdmin ? (
-                        <AirportActiveToggle id={ca.id} isActive={ca.is_active} />
-                      ) : (
-                        <span className={`text-xs font-medium ${ca.is_active ? 'text-green-700' : 'text-gray-400'}`}>
-                          {ca.is_active ? t.active : t.inactive}
-                        </span>
-                      )}
-                    </td>
-                    {isAdmin && (
-                      <td className="px-5 py-3.5 text-right">
-                        <AirportRemoveButton id={ca.id} />
-                      </td>
-                    )}
-                  </tr>
-                )
-              })}
+              {companyAirports.map((ca) => (
+                <AirportRow
+                  key={ca.id}
+                  ca={ca}
+                  airport={airportsMap[ca.airport_id] ?? null}
+                  t={t}
+                  actions={actions}
+                  isAdmin={isAdmin}
+                />
+              ))}
             </tbody>
           </table>
         </div>

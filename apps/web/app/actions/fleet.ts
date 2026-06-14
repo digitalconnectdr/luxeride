@@ -43,6 +43,73 @@ export async function createVehicleTypeAction(
   return { success: true, id: data.id }
 }
 
+export async function updateVehicleTypeAction(
+  typeId: string,
+  _prev: FleetActionResult | null,
+  formData: FormData
+): Promise<FleetActionResult> {
+  const user = await requireRole('company_owner', 'company_admin')
+  if (!user.company_id) return { success: false, error: 'No company' }
+
+  const name     = (formData.get('name') as string ?? '').trim()
+  const cls      = formData.get('class') as VehicleClass
+  const capacity = parseInt(formData.get('capacity') as string, 10)
+  const raw      = (formData.get('amenities') as string ?? '').trim()
+  const amenities = raw ? raw.split(',').map((a) => a.trim()).filter(Boolean) : []
+
+  if (!name || !cls || isNaN(capacity) || capacity < 1) {
+    return { success: false, error: 'Name, class and capacity are required' }
+  }
+
+  const admin = createAdminClient()
+  // IDOR guard
+  const { data: type } = await admin
+    .from('vehicle_types')
+    .select('company_id')
+    .eq('id', typeId)
+    .single()
+  if (type?.company_id !== user.company_id) return { success: false, error: 'Not found' }
+
+  const { error } = await admin
+    .from('vehicle_types')
+    .update({ name, class: cls, capacity, amenities })
+    .eq('id', typeId)
+
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/admin/fleet')
+  return { success: true }
+}
+
+export async function deleteVehicleTypeAction(
+  typeId: string
+): Promise<FleetActionResult> {
+  const user = await requireRole('company_owner', 'company_admin')
+  if (!user.company_id) return { success: false, error: 'No company' }
+
+  const admin = createAdminClient()
+  const { data: type } = await admin
+    .from('vehicle_types')
+    .select('company_id')
+    .eq('id', typeId)
+    .single()
+  if (type?.company_id !== user.company_id) return { success: false, error: 'Not found' }
+
+  // No se puede eliminar si hay vehículos usando este tipo
+  const { count } = await admin
+    .from('vehicles')
+    .select('id', { count: 'exact', head: true })
+    .eq('vehicle_type_id', typeId)
+
+  if ((count ?? 0) > 0) {
+    return { success: false, error: 'IN_USE' }
+  }
+
+  const { error } = await admin.from('vehicle_types').delete().eq('id', typeId)
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/admin/fleet')
+  return { success: true }
+}
+
 export async function toggleVehicleTypeActive(
   typeId: string,
   isActive: boolean

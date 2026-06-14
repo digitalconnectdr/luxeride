@@ -193,7 +193,11 @@ export async function calculateQuoteAction(
 
   const rule = bestRule(rulesRaw as unknown as PricingRuleFields[], vehicleTypeId)
   if (!rule) {
-    return { success: false, error: 'No se encontró regla de precio para este vehículo' }
+    return {
+      success: false,
+      error:
+        'Este tipo de vehículo no tiene una regla de precio aplicable. En /admin/pricing crea una regla para este tipo de vehículo, o una regla general (selecciona "Todos los tipos").',
+    }
   }
 
   // Calcular ruta (incluye paradas intermedias si las hay)

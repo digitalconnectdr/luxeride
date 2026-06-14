@@ -386,6 +386,16 @@ export const en = {
   },
 
   admin: {
+    actions: {
+      edit: 'Edit',
+      delete: 'Delete',
+      save: 'Save',
+      cancel: 'Cancel',
+      saving: 'Saving…',
+      deleting: 'Deleting…',
+      confirmDelete: 'Delete this item? This cannot be undone.',
+      inUse: 'Cannot delete: it is in use.',
+    },
     fleet: {
       title: 'Fleet',
       vehicles: 'vehicles',
@@ -435,6 +445,8 @@ export const en = {
       namePlaceholder: 'e.g. Downtown Manhattan',
       typeLabel: 'Type',
       colorLabel: 'Color',
+      radiusLabel: 'Radius (mi)',
+      radiusPlaceholder: 'e.g. 15',
       addButton: 'Add Zone',
       empty: 'No service zones yet.',
       emptyHint: 'Add your first zone above to start defining pricing areas.',
