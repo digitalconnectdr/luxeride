@@ -54,11 +54,36 @@ export default async function PublicBookingPage({ params }: Props) {
 
   const { data: company } = await admin
     .from('companies')
-    .select('id, name, slug, status, currency, primary_color, phone, email, stripe_connect_onboarded, settings')
+    .select('id, name, slug, status, currency, primary_color, phone, email, city, address, logo_url, stripe_connect_onboarded, settings')
     .eq('slug', params.slug)
     .single()
 
   if (!company || company.status !== 'active') return notFound()
+
+  // Datos estructurados (Schema.org) — los leen Google/Bing para "rich results"
+  // y los crawlers de IA (ChatGPT, Perplexity, etc.) para entender y recomendar
+  // el negocio del operador.
+  const companyUrl = `${getAppUrl()}/book/${company.slug}`
+  const jsonLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    '@id': companyUrl,
+    name: company.name,
+    url: companyUrl,
+    priceRange: '$$$',
+    description: `${company.name} — servicio de transporte premium: traslados al aeropuerto, chofer ejecutivo y limusinas${company.city ? ` en ${company.city}` : ''}. Reserva en línea con cotización al instante.`,
+  }
+  if (company.logo_url) jsonLd.image = company.logo_url
+  if (company.phone) jsonLd.telephone = company.phone
+  if (company.email) jsonLd.email = company.email
+  if (company.city) jsonLd.areaServed = company.city
+  if (company.address || company.city) {
+    jsonLd.address = {
+      '@type': 'PostalAddress',
+      ...(company.address ? { streetAddress: company.address } : {}),
+      ...(company.city ? { addressLocality: company.city } : {}),
+    }
+  }
 
   const { data: vehicleTypes } = await admin
     .from('vehicle_types')
@@ -68,7 +93,12 @@ export default async function PublicBookingPage({ params }: Props) {
     .order('sort_order')
 
   return (
-    <BookingWizard
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <BookingWizard
       company={{
         id:           company.id,
         name:         company.name,
@@ -103,6 +133,7 @@ export default async function PublicBookingPage({ params }: Props) {
           defaultPct: g?.default_percentage ?? 20,
         }
       })()}
-    />
+      />
+    </>
   )
 }

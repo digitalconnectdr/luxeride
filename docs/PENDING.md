@@ -122,6 +122,32 @@ del cliente. Plan por niveles (de menor a mayor esfuerzo):
 Branding en dashboard: ✅ logo en el sidebar (2026-06-14). Falta (opcional)
 aplicar primary_color a los acentos del panel admin.
 
+### D. Microsite / portada branded por operador (pedido 2026-06-14)
+Hoy /book/<slug> entra directo al wizard de reservas. El usuario quiere que sea
+una PÁGINA PRINCIPAL del operador con su marca completa: logo, colores, slogan,
+hero, (servicios/flota/testimonios opcionales) y un botón "Reservar" + un QR
+para instalar la PWA de ESE operador. Cada empresa personaliza su portada.
+Plan:
+1. Campos nuevos en companies (o settings.site): tagline/slogan, hero_image,
+   about/description, redes. UI en Configuración → "Marca/Portada".
+2. Ruta de portada del operador (p.ej. /book/<slug> muestra la portada y
+   /book/<slug>/reservar abre el wizard), con la marca aplicada (ya tenemos
+   logo + primary_color).
+3. QR para PWA: generar QR (lib qrcode) que apunte al portal; al abrirlo en
+   móvil ofrece "instalar app". DEPENDE de la PWA (Fase 2A) para instalación;
+   el QR al portal de reservas se puede generar desde ya.
+Es un mini-CMS por operador — feature mediana, se cruza con la PWA branded (C.4).
+
+### E. SEO para IA + todos los buscadores (pedido 2026-06-14)
+- ✅ Buscadores: el SEO (meta tags, OG, sitemap, canonical, robots) es estándar
+  → sirve para Google, Bing, DuckDuckGo, Brave, Ecosia, etc. (no solo Google).
+  Pendiente usuario: enviar el sitemap también en Bing Webmaster Tools.
+- ✅ IA: JSON-LD LocalBusiness por operador (2026-06-14) → ChatGPT, Perplexity,
+  Claude, Gemini pueden entender y recomendar cada operador. robots no bloquea
+  GPTBot/PerplexityBot/etc.
+- Opcional futuro: llms.txt (índice para LLMs) + más tipos Schema (Review,
+  AggregateRating cuando existan calificaciones) para recomendaciones más ricas.
+
 ### B. Calificaciones + chat (obs. 12)
 1. **Calificaciones bidireccionales**: bookings.rating ya existe (cliente→
    conductor). Agregar driver_rating (conductor→cliente) + promedio en el
