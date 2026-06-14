@@ -17,20 +17,22 @@ export default async function AdminLayout({
     'accounting',
   )
 
-  // Fetch company name for sidebar header
+  // Fetch company name + branding for sidebar header
   let companyName = 'Dashboard'
+  let logoUrl: string | null = null
   if (user.company_id) {
     try {
       const admin = createAdminClient()
       const { data, error } = await admin
         .from('companies')
-        .select('name')
+        .select('name, logo_url')
         .eq('id', user.company_id)
         .single()
       if (error) {
         console.error('[admin/layout] companies query error:', JSON.stringify(error))
-      } else if (data?.name) {
-        companyName = data.name
+      } else if (data) {
+        if (data.name) companyName = data.name
+        logoUrl = (data as { logo_url?: string | null }).logo_url ?? null
       }
     } catch (err) {
       console.error('[admin/layout] companies query THREW:', err)
@@ -50,6 +52,7 @@ export default async function AdminLayout({
       {/* ── Sidebar colapsable (client) ── */}
       <AdminSidebar
         companyName={companyName}
+        logoUrl={logoUrl}
         roleLabel={user.role.replace(/_/g, ' ')}
         userName={`${user.profile.first_name} ${user.profile.last_name}`}
         userEmail={user.email}

@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
-import { createAdminClient } from '@/lib/supabase/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { Reveal, RevealStagger, RevealItem } from '@/components/landing/reveal'
@@ -40,15 +39,8 @@ export default async function LandingPage() {
   const dict = getDict(locale)
   const t = dict.landing
 
-  const admin = createAdminClient()
-  // Solo empresas listas para reservar: activas Y con al menos un tipo de
-  // vehículo activo (excluye empresas vacías como la del super-admin).
-  const [{ data: activeCompanies }, { data: servicedTypes }] = await Promise.all([
-    admin.from('companies').select('id, name, slug, city').eq('status', 'active').order('name').limit(50),
-    admin.from('vehicle_types').select('company_id').eq('is_active', true),
-  ])
-  const servicedIds = new Set((servicedTypes ?? []).map((v) => v.company_id))
-  const companies = (activeCompanies ?? []).filter((c) => servicedIds.has(c.id)).slice(0, 12)
+  // Directorio de operadores (marketplace) desactivado — ver sección comentada
+  // más abajo. LuxeRide es white-label: el landing solo vende el software.
 
   return (
     <div className="min-h-screen bg-[#0c0b0a] text-white antialiased overflow-x-hidden">
@@ -75,9 +67,6 @@ export default async function LandingPage() {
             </a>
             <a href="#faq" className="hidden md:block text-[13px] text-white/55 hover:text-[#e9c176] transition-colors">
               {t.nav.faq}
-            </a>
-            <a href="#book" className="hidden lg:block text-[13px] text-white/55 hover:text-[#e9c176] transition-colors">
-              {t.nav.book}
             </a>
             <LanguageSwitcher current={locale} variant="dark" />
             <Link href="/auth/login" className="hidden sm:block text-[13px] text-white/55 hover:text-white transition-colors">
@@ -420,7 +409,12 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── Directorio de reservas ── */}
+      {/* ── Directorio de reservas (marketplace) ─────────────────────────────
+          DESACTIVADO 2026-06-14 — decisión de negocio: LuxeRide es white-label
+          puro; el landing solo vende el software. Cada operador usa su propio
+          link /book/su-slug. Para reactivar el modelo marketplace, descomentar
+          esta sección, el link "#book" del nav y el query `companies` arriba.
+
       <section id="book" className="border-t border-white/[0.06] bg-[#0a0908]">
         <div className="max-w-[1200px] mx-auto px-6 py-24 text-center">
           <Reveal>
@@ -455,6 +449,7 @@ export default async function LandingPage() {
           )}
         </div>
       </section>
+      ──────────────────────────────────────────────────────────────────────── */}
 
       {/* ── CTA final ── */}
       <section className="border-t border-white/[0.06] relative overflow-hidden">

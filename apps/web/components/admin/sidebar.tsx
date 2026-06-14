@@ -47,6 +47,7 @@ interface NavSection {
 
 interface Props {
   companyName: string
+  logoUrl?: string | null
   roleLabel: string
   userName: string
   userEmail: string
@@ -62,6 +63,7 @@ interface Props {
 
 export function AdminSidebar({
   companyName,
+  logoUrl,
   roleLabel,
   userName,
   userEmail,
@@ -165,9 +167,16 @@ export function AdminSidebar({
             title={nav.dashboard}
             className={`flex items-center gap-2.5 min-w-0 hover:opacity-80 transition-opacity ${collapsed ? 'justify-center' : ''}`}
           >
-            <div className="w-6 h-6 rounded-full bg-gold flex items-center justify-center shrink-0">
-              <span className="text-gray-900 font-bold text-[10px] leading-none">L</span>
-            </div>
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt={companyName} className="w-6 h-6 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-gold flex items-center justify-center shrink-0">
+                <span className="text-gray-900 font-bold text-[10px] leading-none">
+                  {companyName.trim().charAt(0).toUpperCase() || 'L'}
+                </span>
+              </div>
+            )}
             {!collapsed && (
               <span className="font-playfair text-sm font-semibold text-sl-on-surface truncate">
                 {companyName}

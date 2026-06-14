@@ -95,6 +95,26 @@ Aplicado en portal /book/[slug], emails y tracking. Storage bucket "branding".
 Decisión: el directorio del landing se mantiene como marketplace (lista las
 empresas con servicio). Pendiente futuro: dominio propio por empresa.
 
+### C. White-label avanzado: link corto + dominio + PWA branded (pedido 2026-06-14)
+Hoy el link de un operador es `getluxeride.vercel.app/book/<slug>` y el slug ya
+se deriva del nombre (ej. "Revival" → /book/revival). El usuario quiere links
+más cortos/branded y que la PWA + dashboard + app conductor muestren la marca
+del cliente. Plan por niveles (de menor a mayor esfuerzo):
+1. **Path corto** `/<slug>` (sin /book/): middleware reescribe `/<slug>` →
+   `/book/<slug>` si el slug es una empresa (validar contra reservas del
+   sistema /admin, /auth, etc.). Rápido.
+2. **Subdominio** `<slug>.dominio.com`: requiere dominio propio (no
+   *.vercel.app) + wildcard domain en Vercel + middleware que lea el subdominio
+   (host header) y resuelva la empresa. Es el estándar SaaS.
+3. **Dominio propio del cliente** `reservas.suempresa.com`: Vercel custom
+   domains por empresa (límite en plan Hobby; requiere upgrade).
+4. **PWA branded por empresa** (se cruza con Fase 2A PWA): manifest dinámico
+   por empresa (nombre, iconos = logo del cliente, theme_color = primary_color)
+   servido según slug/subdominio, para que "instalar app" muestre la marca del
+   cliente. La app del conductor (Fase 2B) hereda el mismo branding.
+Branding en dashboard: ✅ logo en el sidebar (2026-06-14). Falta (opcional)
+aplicar primary_color a los acentos del panel admin.
+
 ### B. Calificaciones + chat (obs. 12)
 1. **Calificaciones bidireccionales**: bookings.rating ya existe (cliente→
    conductor). Agregar driver_rating (conductor→cliente) + promedio en el
