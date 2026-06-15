@@ -18,12 +18,14 @@ export function ReviewsCarousel({
   rating,
   total,
   title,
+  reviewsLabel,
   brandColor,
 }: {
   reviews: GoogleReview[]
   rating: number | null
   total: number | null
   title: string
+  reviewsLabel: string
   brandColor: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -39,7 +41,7 @@ export function ReviewsCarousel({
               <div className="flex items-center gap-3 mt-3">
                 <span className="text-2xl font-semibold" style={{ color: brandColor }}>{rating.toFixed(1)}</span>
                 <Stars rating={rating} color={brandColor} />
-                {total != null && <span className="text-sm text-white/50">· {total} reseñas en Google</span>}
+                {total != null && <span className="text-sm text-white/50">· {total} {reviewsLabel}</span>}
               </div>
             )}
           </div>

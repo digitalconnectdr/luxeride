@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { updateSiteAction } from '@/app/actions/microsite'
+import { InfoTip } from '@/components/ui/info-tip'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 
 type SettingsDict = Dictionary['admin']['settings']
@@ -111,7 +112,7 @@ export function CoverForm({
             <p className="text-[11px] text-sl-on-surface-muted mt-1">{t.whatsappHint}</p>
           </div>
           <div>
-            <label className="block text-xs text-sl-on-surface-muted mb-1">{t.placeIdLabel}</label>
+            <label className="block text-xs text-sl-on-surface-muted mb-1">{t.placeIdLabel}<InfoTip text={t.placeIdInfo} /></label>
             <input name="google_place_id" defaultValue={placeId ?? ''} placeholder="ChIJ…" className={inputCls} />
             <p className="text-[11px] text-sl-on-surface-muted mt-1">{t.placeIdHint}</p>
           </div>

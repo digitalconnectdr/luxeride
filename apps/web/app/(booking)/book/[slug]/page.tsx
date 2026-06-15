@@ -247,6 +247,7 @@ export default async function OperatorMicrosite({ params }: Props) {
           rating={googleReviews.rating}
           total={googleReviews.total}
           title={t.reviewsTitle}
+          reviewsLabel={t.reviewsOnGoogle}
           brandColor={brandColor}
         />
       )}
