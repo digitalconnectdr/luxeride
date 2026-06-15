@@ -317,6 +317,8 @@ export const en = {
 
   microsite: {
     bookNow: 'Book now',
+    ourFleet: 'Our fleet',
+    pax: 'passengers',
     ourServices: 'Our services',
     aboutTitle: 'About us',
     bookTitle: 'Reserve your ride',

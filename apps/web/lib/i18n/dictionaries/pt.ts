@@ -319,6 +319,8 @@ export const pt: Dictionary = {
 
   microsite: {
     bookNow: 'Reservar agora',
+    ourFleet: 'Nossa frota',
+    pax: 'passageiros',
     ourServices: 'Nossos serviços',
     aboutTitle: 'Sobre nós',
     bookTitle: 'Reserve sua viagem',

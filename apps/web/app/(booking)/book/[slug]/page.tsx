@@ -195,6 +195,41 @@ export default async function OperatorMicrosite({ params }: Props) {
         </section>
       )}
 
+      {/* ── FLOTA ── */}
+      {(vehicleTypes ?? []).length > 0 && (
+        <section className="bg-white border-b border-[#ece8df]">
+          <div className="max-w-5xl mx-auto px-6 py-16">
+            <h2 className="font-playfair text-2xl sm:text-3xl font-semibold text-[#1d1b18] text-center mb-10">
+              {t.ourFleet}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {(vehicleTypes ?? []).map((vt) => (
+                <div key={vt.id} className="rounded-2xl border border-[#ece8df] overflow-hidden bg-white">
+                  {vt.base_image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={vt.base_image_url} alt={vt.name} className="w-full h-44 object-cover" />
+                  ) : (
+                    <div
+                      className="w-full h-44 flex items-center justify-center text-5xl"
+                      style={{ backgroundColor: `${brandColor}12` }}
+                    >
+                      🚘
+                    </div>
+                  )}
+                  <div className="p-5">
+                    <h3 className="font-playfair font-semibold text-lg text-[#1d1b18]">{vt.name}</h3>
+                    <p className="text-sm text-[#75716a] mt-1">{vt.capacity} {t.pax}</p>
+                    {(vt.amenities ?? []).length > 0 && (
+                      <p className="text-xs text-[#9a958b] mt-2">{(vt.amenities ?? []).join(' · ')}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── ABOUT ── */}
       {about && (
         <section className="bg-white border-b border-[#ece8df]">
