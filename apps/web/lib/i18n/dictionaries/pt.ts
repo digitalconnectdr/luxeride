@@ -327,6 +327,21 @@ export const pt: Dictionary = {
     scanTitle: 'Reserve pelo celular',
     scanDesc: 'Escaneie para abrir a página de reservas no seu telefone.',
     call: 'Ligar',
+    contact: 'Fale conosco',
+    whyTitle: 'A diferença',
+    stepsTitle: 'Reserve em 3 passos',
+    reviewsTitle: 'O que dizem nossos clientes',
+    features: [
+      { title: 'Frota premium', desc: 'Veículos de alto padrão, impecáveis e mantidos no detalhe.' },
+      { title: 'Motoristas profissionais', desc: 'Discretos, multilíngues e dedicados ao seu conforto e segurança.' },
+      { title: 'Voos monitorados', desc: 'Acompanhamos seu voo ao vivo para ajustar o embarque sem estresse.' },
+      { title: 'Experiência impecável', desc: 'Da reserva à chegada, tudo flui com elegância.' },
+    ],
+    steps: [
+      { title: 'Reserve', desc: 'Complete sua viagem online ou por WhatsApp em menos de um minuto.' },
+      { title: 'Confirmação', desc: 'Receba a confirmação com os dados do seu motorista e veículo.' },
+      { title: 'Aproveite', desc: 'Seu motorista chega pontual. Relaxe e aproveite o trajeto.' },
+    ],
   },
 
   payment: {

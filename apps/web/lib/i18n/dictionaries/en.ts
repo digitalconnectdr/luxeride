@@ -325,6 +325,21 @@ export const en = {
     scanTitle: 'Book from your phone',
     scanDesc: 'Scan to open the booking page on your mobile.',
     call: 'Call',
+    contact: 'Contact us',
+    whyTitle: 'The difference',
+    stepsTitle: 'Book in 3 steps',
+    reviewsTitle: 'What our clients say',
+    features: [
+      { title: 'Premium fleet', desc: 'High-end vehicles, impeccable and maintained to the detail.' },
+      { title: 'Professional chauffeurs', desc: 'Discreet, multilingual and dedicated to your comfort and safety.' },
+      { title: 'Flights monitored', desc: 'We track your flight live to adjust the pickup, stress-free.' },
+      { title: 'Seamless experience', desc: 'From booking to arrival, everything flows with elegance.' },
+    ],
+    steps: [
+      { title: 'Book', desc: 'Complete your trip online or via WhatsApp in under a minute.' },
+      { title: 'Confirmation', desc: 'Receive confirmation with your chauffeur and vehicle details.' },
+      { title: 'Enjoy', desc: 'Your chauffeur arrives on time. Relax and enjoy the ride.' },
+    ],
   },
 
   payment: {

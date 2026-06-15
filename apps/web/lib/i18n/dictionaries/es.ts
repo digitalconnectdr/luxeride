@@ -327,6 +327,21 @@ export const es: Dictionary = {
     scanTitle: 'Reserva desde tu móvil',
     scanDesc: 'Escanea para abrir la página de reservas en tu teléfono.',
     call: 'Llamar',
+    contact: 'Contáctanos',
+    whyTitle: 'La diferencia',
+    stepsTitle: 'Reserva en 3 pasos',
+    reviewsTitle: 'Lo que dicen nuestros clientes',
+    features: [
+      { title: 'Flota premium', desc: 'Vehículos de alta gama, impecables y mantenidos al detalle.' },
+      { title: 'Choferes profesionales', desc: 'Discretos, multilingües y dedicados a tu comodidad y seguridad.' },
+      { title: 'Vuelos monitoreados', desc: 'Seguimos tu vuelo en vivo para ajustar la recogida sin estrés.' },
+      { title: 'Experiencia impecable', desc: 'De la reserva a la llegada, todo fluye con elegancia.' },
+    ],
+    steps: [
+      { title: 'Reserva', desc: 'Completa tu viaje en línea o por WhatsApp en menos de un minuto.' },
+      { title: 'Confirmación', desc: 'Recibes la confirmación con los datos de tu chofer y vehículo.' },
+      { title: 'Disfruta', desc: 'Tu chofer llega puntual. Relájate y disfruta el trayecto.' },
+    ],
   },
 
   payment: {
