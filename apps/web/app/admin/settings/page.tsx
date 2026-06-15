@@ -194,6 +194,8 @@ export default async function SettingsPage({
         tagline={company.tagline ?? null}
         about={company.about ?? null}
         heroImage={company.hero_image_url ?? null}
+        whatsapp={((company.settings as { site?: { whatsapp?: string } } | null)?.site)?.whatsapp ?? null}
+        placeId={((company.settings as { site?: { googlePlaceId?: string } } | null)?.site)?.googlePlaceId ?? null}
       />
 
       {/* ── Servicios del microsite ── */}

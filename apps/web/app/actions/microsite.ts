@@ -5,6 +5,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
+import type { Json } from '@/lib/supabase/database.types'
 
 const MIME_EXT: Record<string, string> = {
   'image/png': 'png',
@@ -25,13 +26,23 @@ export async function updateSiteAction(
 
   const tagline = ((formData.get('tagline') as string) ?? '').trim().slice(0, 140) || null
   const about = ((formData.get('about') as string) ?? '').trim().slice(0, 2000) || null
+  const whatsapp = ((formData.get('whatsapp') as string) ?? '').trim().slice(0, 30) || null
+  const googlePlaceId = ((formData.get('google_place_id') as string) ?? '').trim().slice(0, 120) || null
   const hero = formData.get('hero_image') as File | null
   const removeHero = formData.get('remove_hero') === 'true'
 
   const admin = createAdminClient()
-  const updates: { tagline: string | null; about: string | null; hero_image_url?: string | null } = {
+
+  // Merge en settings.site (whatsapp + google place id)
+  const { data: current } = await admin.from('companies').select('settings').eq('id', user.company_id).single()
+  const settings = (current?.settings as Record<string, unknown>) ?? {}
+  const site = (settings.site as Record<string, unknown>) ?? {}
+  const mergedSettings = { ...settings, site: { ...site, whatsapp, googlePlaceId } }
+
+  const updates: { tagline: string | null; about: string | null; hero_image_url?: string | null; settings: Json } = {
     tagline,
     about,
+    settings: mergedSettings as Json,
   }
 
   if (removeHero) {

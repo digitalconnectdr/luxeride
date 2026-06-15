@@ -30,11 +30,15 @@ export function CoverForm({
   tagline,
   about,
   heroImage,
+  whatsapp,
+  placeId,
 }: {
   t: SettingsDict
   tagline: string | null
   about: string | null
   heroImage: string | null
+  whatsapp: string | null
+  placeId: string | null
 }) {
   const [state, formAction] = useFormState(updateSiteAction, null)
   const [preview, setPreview] = useState<string | null>(null)
@@ -98,6 +102,19 @@ export function CoverForm({
         <div>
           <label className="block text-xs text-sl-on-surface-muted mb-1">{t.aboutLabel}</label>
           <textarea name="about" defaultValue={about ?? ''} placeholder={t.aboutPlaceholder} rows={4} maxLength={2000} className={`${inputCls} resize-y`} />
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-4 pt-2 border-t border-sl-outline-variant/50">
+          <div>
+            <label className="block text-xs text-sl-on-surface-muted mb-1">{t.whatsappLabel}</label>
+            <input name="whatsapp" defaultValue={whatsapp ?? ''} placeholder="18091234567" className={inputCls} />
+            <p className="text-[11px] text-sl-on-surface-muted mt-1">{t.whatsappHint}</p>
+          </div>
+          <div>
+            <label className="block text-xs text-sl-on-surface-muted mb-1">{t.placeIdLabel}</label>
+            <input name="google_place_id" defaultValue={placeId ?? ''} placeholder="ChIJ…" className={inputCls} />
+            <p className="text-[11px] text-sl-on-surface-muted mt-1">{t.placeIdHint}</p>
+          </div>
         </div>
 
         <div className="flex justify-end">

@@ -7,7 +7,9 @@ import { isStripeConfigured } from '@/lib/stripe/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { getAppUrl } from '@/lib/app-url'
 import { brand } from '@/lib/brand'
+import { fetchGoogleReviews } from '@/lib/reviews/google'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
+import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { BookingWizard } from './booking-wizard'
 
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
@@ -63,9 +65,11 @@ export default async function OperatorMicrosite({ params }: Props) {
     .single()
   if (!company || company.status !== 'active') return notFound()
 
-  const [{ data: vehicleTypes }, { data: servicesRaw }] = await Promise.all([
+  const placeId = ((company.settings as { site?: { googlePlaceId?: string } } | null)?.site)?.googlePlaceId
+  const [{ data: vehicleTypes }, { data: servicesRaw }, googleReviews] = await Promise.all([
     admin.from('vehicle_types').select('id, name, class, capacity, amenities, base_image_url').eq('company_id', company.id).eq('is_active', true).order('sort_order'),
     admin.from('company_services').select('id, title, description, icon, image_url').eq('company_id', company.id).eq('is_active', true).order('sort_order'),
+    fetchGoogleReviews(placeId, locale),
   ])
 
   const services = (servicesRaw ?? []) as CompanyService[]
@@ -75,8 +79,7 @@ export default async function OperatorMicrosite({ params }: Props) {
   const tagline = (company as { tagline?: string | null }).tagline ?? null
   const about = (company as { about?: string | null }).about ?? null
   const logoUrl = (company as { logo_url?: string | null }).logo_url ?? null
-  const initial = company.name.trim().charAt(0).toUpperCase() || 'L'
-  const site = ((company.settings as { site?: { whatsapp?: string } } | null)?.site) ?? {}
+  const site = ((company.settings as { site?: { whatsapp?: string; googlePlaceId?: string } } | null)?.site) ?? {}
   const waNumber = (site.whatsapp ?? '').replace(/[^0-9]/g, '')
 
   const shortUrl = `${getAppUrl()}/${company.slug}`
@@ -107,16 +110,8 @@ export default async function OperatorMicrosite({ params }: Props) {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-[#0b0b0c]/80 backdrop-blur border-b border-white/5">
         <div className="max-w-[1500px] mx-auto px-6 lg:px-10 py-4 flex items-center justify-between">
-          <a href="#top" className="flex items-center gap-2.5 min-w-0">
-            {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt={company.name} className="h-8 max-w-[160px] object-contain" />
-            ) : (
-              <>
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 font-playfair text-lg" style={{ color: brandColor }}>{initial}</span>
-                <span className="font-playfair text-lg font-semibold truncate">{company.name}</span>
-              </>
-            )}
+          <a href="#top" className="flex items-baseline gap-2 min-w-0">
+            <span className="font-playfair text-xl sm:text-2xl font-semibold tracking-[0.12em] truncate">{company.name}</span>
           </a>
           <nav className="flex items-center gap-5 sm:gap-7 text-[13px] text-white/70">
             {services.length > 0 && <a href="#servicios" className="hidden md:block hover:text-white transition-colors">{t.ourServices}</a>}
@@ -245,12 +240,23 @@ export default async function OperatorMicrosite({ params }: Props) {
         </div>
       </section>
 
+      {/* Reseñas de Google */}
+      {googleReviews.reviews.length > 0 && (
+        <ReviewsCarousel
+          reviews={googleReviews.reviews}
+          rating={googleReviews.rating}
+          total={googleReviews.total}
+          title={t.reviewsTitle}
+          brandColor={brandColor}
+        />
+      )}
+
       {/* Reservar + QR */}
       <section id="reservar" className="py-24 bg-[#0e0e10] border-t border-white/5 scroll-mt-16">
         <div className="max-w-[1300px] mx-auto px-6 lg:px-10 grid lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] gap-10 items-start">
           <div>
             <h2 className="font-playfair text-3xl sm:text-4xl font-semibold italic mb-8">{t.bookTitle}</h2>
-            <div className="bg-white rounded-2xl p-6 sm:p-8">
+            <div className="bg-[#ebe7df] rounded-2xl p-6 sm:p-8 border border-white/10 shadow-2xl shadow-black/40">
               <BookingWizard
                 company={{ id: company.id, name: company.name, slug: company.slug, currency: (company.currency as string | null) ?? 'USD', primaryColor: brandColor, phone: (company.phone as string | null) ?? null, email: (company.email as string | null) ?? null }}
                 vehicleTypes={fleet.map((vt) => ({ id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null }))}
@@ -280,14 +286,7 @@ export default async function OperatorMicrosite({ params }: Props) {
       {/* Footer */}
       <footer className="bg-[#080809] border-t border-white/5 py-12">
         <div className="max-w-[1500px] mx-auto px-6 lg:px-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt={company.name} className="h-7 max-w-[140px] object-contain" />
-            ) : (
-              <span className="font-playfair tracking-[0.15em] font-semibold">{company.name}</span>
-            )}
-          </div>
+          <span className="font-playfair text-lg tracking-[0.15em] font-semibold">{company.name}</span>
           <p className="text-[10px] uppercase tracking-[0.25em] text-white/30">Powered by {brand.name}</p>
         </div>
       </footer>
