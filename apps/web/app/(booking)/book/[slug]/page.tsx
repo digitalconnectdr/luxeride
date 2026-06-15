@@ -258,7 +258,7 @@ export default async function OperatorMicrosite({ params }: Props) {
         <div className="max-w-[1300px] mx-auto px-6 lg:px-10 grid lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] gap-10 items-start">
           <div>
             <h2 className="font-playfair text-3xl sm:text-4xl font-semibold italic mb-8">{t.bookTitle}</h2>
-            <Reveal className="bg-[#ebe7df] rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black/40">
+            <Reveal className="bg-[#ebe7df] rounded-2xl p-6 sm:p-8 border border-white/10 shadow-2xl shadow-black/40">
               <BookingWizard
                 company={{ id: company.id, name: company.name, slug: company.slug, currency: (company.currency as string | null) ?? 'USD', primaryColor: brandColor, phone: (company.phone as string | null) ?? null, email: (company.email as string | null) ?? null }}
                 vehicleTypes={fleet.map((vt) => ({ id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null }))}
