@@ -10,6 +10,7 @@ import { brand } from '@/lib/brand'
 import { fetchGoogleReviews } from '@/lib/reviews/google'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
+import { Reveal } from '@/components/landing/reveal'
 import { BookingWizard } from './booking-wizard'
 
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
@@ -97,10 +98,10 @@ export default async function OperatorMicrosite({ params }: Props) {
   if (services.length) jsonLd.makesOffer = services.map((s) => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name: s.title, description: s.description ?? undefined } }))
 
   const sectionTitle = (title: string) => (
-    <div className="text-center mb-14">
+    <Reveal className="text-center mb-14">
       <h2 className="font-playfair text-3xl sm:text-4xl font-semibold italic">{title}</h2>
       <div className="mx-auto mt-4 h-px w-20" style={{ backgroundColor: brandColor }} />
-    </div>
+    </Reveal>
   )
 
   return (
@@ -124,10 +125,10 @@ export default async function OperatorMicrosite({ params }: Props) {
 
       {/* Hero */}
       <section id="top" className="relative isolate min-h-[86vh] flex items-center overflow-hidden">
-        <Image src={heroImg} alt="" fill priority sizes="100vw" className="object-cover -z-10" />
+        <Image src={heroImg} alt="" fill priority sizes="100vw" className="object-cover -z-10 animate-kenburns" />
         <div className="absolute inset-0 -z-10" style={{ background: 'linear-gradient(90deg, rgba(11,11,12,0.94) 0%, rgba(11,11,12,0.6) 52%, rgba(11,11,12,0.25) 100%)' }} />
         <div className="max-w-[1500px] mx-auto px-6 lg:px-10 w-full">
-          <div className="max-w-2xl">
+          <Reveal className="max-w-2xl">
             <p className="text-sm uppercase tracking-[0.35em] mb-5" style={{ color: brandColor }}>{company.city || 'Premium transportation'}</p>
             <h1 className="font-playfair text-4xl sm:text-6xl font-semibold leading-[1.05] italic">
               {tagline || company.name}
@@ -144,7 +145,7 @@ export default async function OperatorMicrosite({ params }: Props) {
                 <a href={`tel:${company.phone}`} className="px-7 py-3.5 rounded-full text-sm font-semibold border border-white/30 hover:bg-white/10 transition-colors">{t.call}</a>
               )}
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 
@@ -156,8 +157,8 @@ export default async function OperatorMicrosite({ params }: Props) {
             <div className="space-y-16">
               {services.map((s, i) => (
                 <div key={s.id} className="grid lg:grid-cols-2 gap-10 items-center">
-                  <div className={`relative h-72 rounded-2xl overflow-hidden ${i % 2 === 1 ? 'lg:order-2' : ''}`}>
-                    <Image src={s.image_url || DEFAULT_CARS[i % DEFAULT_CARS.length]} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover" />
+                  <div className={`group relative h-72 rounded-2xl overflow-hidden ${i % 2 === 1 ? 'lg:order-2' : ''}`}>
+                    <Image src={s.image_url || DEFAULT_CARS[i % DEFAULT_CARS.length]} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
                   </div>
                   <div>
                     {s.icon && <span className="text-3xl">{s.icon}</span>}
@@ -204,9 +205,9 @@ export default async function OperatorMicrosite({ params }: Props) {
             {sectionTitle(t.ourFleet)}
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {fleet.map((v, i) => (
-                <div key={v.id} className="rounded-2xl overflow-hidden border border-white/10 bg-white/[0.02]">
-                  <div className="relative h-52">
-                    <Image src={v.base_image_url || DEFAULT_CARS[i % DEFAULT_CARS.length]} alt={v.name} fill sizes="(max-width:1024px) 50vw, 33vw" className="object-cover" />
+                <div key={v.id} className="group rounded-2xl overflow-hidden border border-white/10 bg-white/[0.02] hover:border-white/20 transition-colors">
+                  <div className="relative h-52 overflow-hidden">
+                    <Image src={v.base_image_url || DEFAULT_CARS[i % DEFAULT_CARS.length]} alt={v.name} fill sizes="(max-width:1024px) 50vw, 33vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
                   </div>
                   <div className="p-6">
                     <h3 className="font-playfair text-xl font-semibold">{v.name}</h3>
@@ -257,7 +258,7 @@ export default async function OperatorMicrosite({ params }: Props) {
         <div className="max-w-[1300px] mx-auto px-6 lg:px-10 grid lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] gap-10 items-start">
           <div>
             <h2 className="font-playfair text-3xl sm:text-4xl font-semibold italic mb-8">{t.bookTitle}</h2>
-            <div className="bg-[#ebe7df] rounded-2xl p-6 sm:p-8 border border-white/10 shadow-2xl shadow-black/40">
+            <Reveal className="bg-[#ebe7df] rounded-2xl p-6 sm:p-8 border border-white/10 shadow-2xl shadow-black/40">
               <BookingWizard
                 company={{ id: company.id, name: company.name, slug: company.slug, currency: (company.currency as string | null) ?? 'USD', primaryColor: brandColor, phone: (company.phone as string | null) ?? null, email: (company.email as string | null) ?? null }}
                 vehicleTypes={fleet.map((vt) => ({ id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null }))}
@@ -270,7 +271,7 @@ export default async function OperatorMicrosite({ params }: Props) {
                   return { enabled: (g?.enabled ?? true) && !requiresDeposit, options: g?.options ?? [15, 18, 20, 25], defaultPct: g?.default_percentage ?? 20 }
                 })()}
               />
-            </div>
+            </Reveal>
           </div>
           <div className="lg:sticky lg:top-24 rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -280,3 +280,12 @@
     display: none;
   }
 }
+
+/* Microsite — zoom lento "Ken Burns" en el hero */
+@keyframes kenburns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.09); }
+}
+.animate-kenburns {
+  animation: kenburns 20s ease-out forwards;
+}
