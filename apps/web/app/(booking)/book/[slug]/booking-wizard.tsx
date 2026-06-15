@@ -6,6 +6,7 @@
 // Paso 4: Confirmación + creación
 
 import { useState, useTransition } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { AddressInput } from '@/components/maps/address-input'
 import {
   getPublicVehicleQuotesAction,
@@ -359,6 +360,14 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
 
       <StepIndicator current={step} steps={dict.steps} />
 
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={step}
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -24 }}
+          transition={{ duration: 0.28, ease: 'easeOut' }}
+        >
       {/* ─── PASO 0: Ruta ──────────────────────────────────────────────────── */}
       {step === 0 && (
         <form onSubmit={handleRouteSubmit} className="space-y-5">
@@ -764,6 +773,8 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
           </p>
         </div>
       )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   )
 }
