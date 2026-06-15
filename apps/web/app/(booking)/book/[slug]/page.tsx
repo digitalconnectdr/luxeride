@@ -285,10 +285,53 @@ export default async function OperatorMicrosite({ params }: Props) {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#080809] border-t border-white/5 py-12">
-        <div className="max-w-[1500px] mx-auto px-6 lg:px-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="font-playfair text-lg tracking-[0.15em] font-semibold">{company.name}</span>
-          <p className="text-[10px] uppercase tracking-[0.25em] text-white/30">Powered by {brand.name}</p>
+      <footer className="bg-[#080809] border-t border-white/5">
+        <div className="max-w-[1500px] mx-auto px-6 lg:px-10 py-16">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12">
+            {/* Marca */}
+            <div className="lg:col-span-5">
+              <span className="font-playfair text-2xl font-semibold tracking-[0.14em]">{company.name}</span>
+              {tagline && <p className="mt-4 text-sm text-white/45 max-w-sm leading-relaxed">{tagline}</p>}
+              <div className="mt-6 flex items-center gap-3">
+                {company.phone && (
+                  <a href={`tel:${company.phone}`} aria-label={t.call} className="h-9 w-9 rounded-full border border-white/15 flex items-center justify-center text-sm hover:bg-white/10 transition-colors" style={{ color: brandColor }}>☎</a>
+                )}
+                {company.email && (
+                  <a href={`mailto:${company.email}`} aria-label="Email" className="h-9 w-9 rounded-full border border-white/15 flex items-center justify-center text-sm hover:bg-white/10 transition-colors" style={{ color: brandColor }}>✉</a>
+                )}
+                {waNumber && (
+                  <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="h-9 w-9 rounded-full border border-white/15 flex items-center justify-center text-sm hover:bg-white/10 transition-colors text-green-400">●</a>
+                )}
+              </div>
+            </div>
+
+            {/* Explora */}
+            <div className="lg:col-span-3">
+              <h4 className="text-[11px] uppercase tracking-[0.25em] text-white/40 mb-4">{t.footerExplore}</h4>
+              <ul className="space-y-2.5 text-sm text-white/60">
+                {services.length > 0 && <li><a href="#servicios" className="hover:text-white transition-colors">{t.ourServices}</a></li>}
+                {fleet.length > 0 && <li><a href="#flota" className="hover:text-white transition-colors">{t.ourFleet}</a></li>}
+                <li><a href="#reservar" className="hover:text-white transition-colors">{t.bookTitle}</a></li>
+              </ul>
+            </div>
+
+            {/* Contacto */}
+            <div className="lg:col-span-4">
+              <h4 className="text-[11px] uppercase tracking-[0.25em] text-white/40 mb-4">{t.footerContact}</h4>
+              <ul className="space-y-2.5 text-sm text-white/60">
+                {company.phone && <li><a href={`tel:${company.phone}`} className="hover:text-white transition-colors">{company.phone}</a></li>}
+                {company.email && <li><a href={`mailto:${company.email}`} className="hover:text-white transition-colors">{company.email}</a></li>}
+                {waNumber && <li><a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">WhatsApp</a></li>}
+                {company.city && <li className="text-white/45">{company.city}</li>}
+              </ul>
+            </div>
+          </div>
+
+          {/* Barra inferior */}
+          <div className="mt-14 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-white/35">© {new Date().getFullYear()} {company.name}. {t.rights}</p>
+            <p className="text-[10px] uppercase tracking-[0.25em] text-white/30">Powered by {brand.name}</p>
+          </div>
         </div>
       </footer>
     </div>
