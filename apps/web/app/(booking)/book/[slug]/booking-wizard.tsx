@@ -60,26 +60,49 @@ interface Props {
 
 function StepIndicator({ current, steps }: { current: number; steps: string[] }) {
   return (
-    <div className="flex items-center gap-2 mb-8">
-      {steps.map((label, i) => (
-        <div key={i} className="flex items-center gap-2">
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-            i < current ? 'bg-green-500 text-white' :
-            i === current ? 'bg-[var(--brand)] text-white' :
-            'bg-gray-200 text-gray-400'
-          }`}>
-            {i < current ? '✓' : i + 1}
+    <div className="flex items-start">
+      {steps.map((label, i) => {
+        const done = i < current
+        const active = i === current
+        return (
+          <div key={i} className="flex-1 flex flex-col items-center relative min-w-0">
+            {/* Línea conectora hacia el siguiente paso */}
+            {i < steps.length - 1 && (
+              <div className="absolute top-[19px] left-1/2 w-full h-[3px] rounded-full bg-white/12 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500 ease-out"
+                  style={{ width: done ? '100%' : '0%', backgroundColor: 'var(--brand)', boxShadow: done ? '0 0 10px -1px var(--brand)' : 'none' }}
+                />
+              </div>
+            )}
+            {/* Círculo */}
+            <div
+              className={`relative z-10 h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+                done || active ? 'text-white' : 'text-white/40 border border-white/25 bg-[#101015]'
+              }`}
+              style={
+                done || active
+                  ? {
+                      backgroundColor: 'var(--brand)',
+                      boxShadow: active
+                        ? '0 0 0 4px rgba(255,255,255,0.07), 0 0 24px -2px var(--brand)'
+                        : '0 0 14px -3px var(--brand)',
+                    }
+                  : undefined
+              }
+            >
+              {done ? '✓' : i + 1}
+            </div>
+            {/* Etiquetas */}
+            <p className={`mt-3 text-[10px] uppercase tracking-[0.15em] ${active ? 'text-white/70' : 'text-white/30'}`}>
+              {String(i + 1).padStart(2, '0')}
+            </p>
+            <p className={`text-xs font-medium text-center px-1 ${active ? 'text-white' : done ? 'text-white/60' : 'text-white/35'}`}>
+              {label}
+            </p>
           </div>
-          <span className={`text-xs font-medium hidden sm:block ${
-            i === current ? 'text-[#1d1d1f]' : 'text-gray-400'
-          }`}>
-            {label}
-          </span>
-          {i < steps.length - 1 && (
-            <div className={`h-0.5 w-8 mx-1 rounded ${i < current ? 'bg-green-400' : 'bg-gray-200'}`} />
-          )}
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -351,15 +374,17 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
 
   return (
     <div>
-      <div className="mb-4">
-        <h1 className="text-2xl font-semibold text-[#1d1d1f]">
+      {/* Header oscuro con el stepper (estilo glow moderno) */}
+      <div className="bg-gradient-to-b from-[#17171d] to-[#0d0d12] px-6 sm:px-8 pt-7 pb-8">
+        <h1 className="text-xl font-semibold text-white text-center">
           {dict.bookWith} {company.name}
         </h1>
-        <p className="text-sm text-gray-500 mt-1">{dict.premiumService}</p>
+        <p className="text-xs text-white/40 text-center mt-1 mb-9">{dict.premiumService}</p>
+        <StepIndicator current={step} steps={dict.steps} />
       </div>
 
-      <StepIndicator current={step} steps={dict.steps} />
-
+      {/* Cuerpo claro con los campos del paso */}
+      <div className="px-6 sm:px-8 py-7">
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
@@ -775,6 +800,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
       )}
         </motion.div>
       </AnimatePresence>
+      </div>
     </div>
   )
 }
