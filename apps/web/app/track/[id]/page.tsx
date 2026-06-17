@@ -84,6 +84,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const showChat = !!booking.driver_id && !isTerminal
   const canCancel = CANCELLABLE.has(booking.status)
   const canReport = !!booking.driver_id && REPORTABLE.has(booking.status)
+  const canAddStop = ACTIVE.has(booking.status)
 
   return (
     <div className="min-h-screen bg-[#0f0e0e] text-white" style={{ ['--brand' as string]: brandColor }}>
@@ -275,7 +276,8 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
             brandColor={brandColor}
             canCancel={canCancel}
             canReport={canReport}
-            labels={{ cancel: t.cancel, report: t.report }}
+            canAddStop={canAddStop}
+            labels={{ cancel: t.cancel, report: t.report, addStop: t.addStop }}
           />
         )}
 

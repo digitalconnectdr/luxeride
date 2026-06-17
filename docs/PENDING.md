@@ -192,8 +192,34 @@ Pedido del usuario: el link de seguimiento se veía muy básico y faltaban accio
   dispatcher gestiona. Migración 18. Falta (mejora): vista admin de reportes.
 - ✅ **No-show del conductor**: driverNoShowAction (solo desde `arrived`) + botón
   con confirmación en components/driver/trip-actions.tsx.
+- ✅ **Cancelación respeta la política** (2026-06-16): cancelTripByClientAction
+  ahora usa parsePolicy + computeCancellationFee (mismo motor F1.10 que el admin)
+  e inserta booking_fees si aplica. El panel de cancelar muestra un PREVIEW del
+  cargo (gratis vs % según anticipación) vía getCancellationPreviewAction.
+- ✅ **Parada durante el viaje con re-cotización y cobro** (2026-06-16):
+  addTripStopAction (cliente) y driverAddTripStopAction (conductor) agregan un
+  waypoint a un viaje en curso. Recalculan la RUTA con coordenadas (AddressInput
+  + calculateRoute) y el COSTO con calculateFare → respeta TODOS los modelos de
+  precio (flat_rate/per_mile/per_km/hourly/zone_based). El extra se suma a
+  total_amount + booking_fees('route_change_fee') y se avisa por el chat. Si el
+  viaje ya tenía pago con tarjeta exitoso y la empresa tiene Connect, se genera
+  un Stripe Checkout SOLO por la diferencia (createStopChargeIfPaidOnline) y el
+  cliente paga; si pagaba al conductor, el extra se suma al total que cobra.
+  quoteTripStopAction muestra el costo ANTES de confirmar. UI: track-actions.tsx
+  (cliente) y driver-add-stop.tsx (conductor). El conductor ve los waypoints en
+  su ruta. Pendiente (mejora): re-cotización para round_trip/hourly con reglas
+  especiales y tarifa fija por parada configurable.
 - Relación con Sección A (obs.10): versión enfocada. Pendiente aún el sistema
-  completo de eventos (booking_events) + estados rejected_by_* + mapa en vivo.
+  completo de eventos (booking_events) + estados rejected_by_* + mapa en vivo +
+  re-cotización automática al agregar parada (hoy el costo extra lo ajusta el
+  operador manualmente).
+
+### F. Pago al momento de la reserva (2026-06-16)
+✅ El wizard ahora ofrece "Confirmar y pagar ahora" (Stripe Checkout) además de
+"Reservar y pagar después", SOLO cuando el operador tiene Stripe Connect
+onboarded (onlinePaymentsEnabled). No se piden datos de tarjeta en el formulario
+(va por la página segura de Stripe, por PCI). Antes el pago online solo aparecía
+en la pantalla de éxito; ahora es parte del paso de confirmación.
 
 ## ⬜ Backlog de DESARROLLO (próximas sesiones, en orden sugerido)
 

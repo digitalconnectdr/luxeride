@@ -262,7 +262,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
 
   // ─── PASO 4: Confirmar ────────────────────────────────────────────────────
 
-  function handleConfirm() {
+  function handleConfirm(payNow = false) {
     if (!selectedQuote) return
     setError('')
 
@@ -290,6 +290,16 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
       if (!result.success || !result.data) {
         setError(result.error ?? 'Error al crear reservación')
         return
+      }
+
+      // Pago al momento de reservar: crea la reserva y va directo a Stripe Checkout
+      if (payNow && onlinePaymentsEnabled) {
+        const pay = await createPublicCheckoutAction(company.slug, result.data.bookingId, gratuityPct || undefined)
+        if (pay.success && pay.data) {
+          window.location.href = pay.data.url
+          return
+        }
+        // Si falla el pago online, igual confirmamos la reserva (pagará después)
       }
 
       setConfirmation(result.data)
@@ -812,21 +822,49 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
             </p>
           )}
 
-          <div className="flex gap-3">
-            <button
-              onClick={() => { setStep(2); setError('') }}
-              className="px-5 py-3 border border-gray-200 text-sm font-medium rounded-xl hover:border-[var(--brand)] transition-colors text-[#1d1d1f]"
-            >
-              {dict.back}
-            </button>
-            <button
-              onClick={handleConfirm}
-              disabled={isPending}
-              className="flex-1 py-3.5 bg-[var(--brand)] text-white font-semibold rounded-2xl hover:opacity-90 disabled:opacity-50 transition-colors text-sm"
-            >
-              {isPending ? dict.confirming : dict.confirmBooking}
-            </button>
-          </div>
+          {onlinePaymentsEnabled ? (
+            <div className="space-y-2.5">
+              <button
+                onClick={() => handleConfirm(true)}
+                disabled={isPending}
+                className="w-full py-3.5 bg-[var(--brand)] text-white font-semibold rounded-2xl hover:opacity-90 disabled:opacity-50 transition-colors text-sm"
+              >
+                {isPending ? dict.confirming : dict.confirmAndPay}
+              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setStep(2); setError('') }}
+                  disabled={isPending}
+                  className="px-5 py-3 border border-gray-200 text-sm font-medium rounded-xl hover:border-[var(--brand)] transition-colors text-[#1d1d1f]"
+                >
+                  {dict.back}
+                </button>
+                <button
+                  onClick={() => handleConfirm(false)}
+                  disabled={isPending}
+                  className="flex-1 py-3 border border-gray-200 text-[#1d1d1f] font-medium rounded-2xl hover:border-[var(--brand)] disabled:opacity-50 transition-colors text-sm"
+                >
+                  {dict.reserveOnly}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setStep(2); setError('') }}
+                className="px-5 py-3 border border-gray-200 text-sm font-medium rounded-xl hover:border-[var(--brand)] transition-colors text-[#1d1d1f]"
+              >
+                {dict.back}
+              </button>
+              <button
+                onClick={() => handleConfirm(false)}
+                disabled={isPending}
+                className="flex-1 py-3.5 bg-[var(--brand)] text-white font-semibold rounded-2xl hover:opacity-90 disabled:opacity-50 transition-colors text-sm"
+              >
+                {isPending ? dict.confirming : dict.confirmBooking}
+              </button>
+            </div>
+          )}
 
           <p className="text-xs text-center text-gray-400">
             {dict.confirmNote}

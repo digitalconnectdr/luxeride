@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { logoutAction } from '@/app/actions/auth'
 import { BookingStatusBadge } from '@/components/bookings/booking-status-badge'
 import { DriverTripActions } from '@/components/driver/trip-actions'
+import { DriverAddStop } from '@/components/driver/driver-add-stop'
 import { TripChat } from '@/components/trip/trip-chat'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
@@ -17,7 +18,7 @@ export default async function DriverTripsPage() {
   const admin = createAdminClient()
   const { data: trips } = await admin
     .from('bookings')
-    .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location')
+    .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints')
     .eq('driver_id', user.id)
     .in('status', ['assigned', 'en_route', 'arrived', 'in_progress'])
     .order('scheduled_at')
@@ -67,6 +68,11 @@ export default async function DriverTripsPage() {
                 </p>
                 <div className="text-sm space-y-1">
                   <p className="text-sl-on-surface-muted">▲ {pickup}</p>
+                  {Array.isArray(t.waypoints) && t.waypoints.map((w, i) => {
+                    const addr = (w as { address?: string } | null)?.address
+                    if (!addr) return null
+                    return <p key={i} className="text-gold">◆ Parada {i + 1}: {addr}</p>
+                  })}
                   <p className="text-sl-on-surface-muted">▼ {dropoff}</p>
                 </div>
                 <div className="text-sm pt-2 border-t border-sl-outline-variant flex items-center justify-between">
@@ -78,6 +84,8 @@ export default async function DriverTripsPage() {
                   )}
                 </div>
                 <DriverTripActions bookingId={t.id} status={t.status} />
+
+                <DriverAddStop bookingId={t.id} />
 
                 <TripChat
                   bookingId={t.id}
