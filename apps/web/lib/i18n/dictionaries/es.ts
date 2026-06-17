@@ -236,6 +236,8 @@ export const es: Dictionary = {
       hourly: 'Por hora',
     },
     dateTime: 'Fecha y hora',
+    time: 'Hora',
+    pickFlightTime: '¿Vuelo retrasado? Usa la hora estimada de aterrizaje.',
     pickupLabel: 'Pickup — ¿Dónde te recogemos?',
     pickupPlaceholder: 'Dirección de recogida...',
     dropoffLabel: 'Destino — ¿A dónde vas?',
@@ -292,6 +294,7 @@ export const es: Dictionary = {
     selectPickup: 'Selecciona la dirección de pickup del dropdown de sugerencias',
     selectDropoff: 'Selecciona la dirección de destino del dropdown de sugerencias',
     selectDateTime: 'Selecciona fecha y hora',
+    selectTime: 'Selecciona la hora',
   },
 
   tracking: {

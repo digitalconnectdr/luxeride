@@ -234,6 +234,8 @@ export const en = {
       hourly: 'Hourly',
     },
     dateTime: 'Date & time',
+    time: 'Time',
+    pickFlightTime: 'Flight delayed? Use the estimated landing time.',
     pickupLabel: 'Pickup — Where do we get you?',
     pickupPlaceholder: 'Pickup address...',
     dropoffLabel: 'Destination — Where are you going?',
@@ -290,6 +292,7 @@ export const en = {
     selectPickup: 'Select the pickup address from the suggestions dropdown',
     selectDropoff: 'Select the destination address from the suggestions dropdown',
     selectDateTime: 'Select date and time',
+    selectTime: 'Select time',
   },
 
   tracking: {

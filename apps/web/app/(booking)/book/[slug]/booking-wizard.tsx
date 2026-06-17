@@ -5,7 +5,7 @@
 // Paso 3: Datos del pasajero
 // Paso 4: Confirmación + creación
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AddressInput } from '@/components/maps/address-input'
 import {
@@ -60,26 +60,44 @@ interface Props {
 
 function StepIndicator({ current, steps }: { current: number; steps: string[] }) {
   return (
-    <div className="flex items-center gap-2 mb-8">
-      {steps.map((label, i) => (
-        <div key={i} className="flex items-center gap-2">
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-            i < current ? 'bg-green-500 text-white' :
-            i === current ? 'bg-[var(--brand)] text-white' :
-            'bg-gray-200 text-gray-400'
-          }`}>
-            {i < current ? '✓' : i + 1}
+    <div className="flex items-start mb-8">
+      {steps.map((label, i) => {
+        const done = i < current
+        const active = i === current
+        return (
+          <div key={i} className="flex-1 flex flex-col items-center relative min-w-0">
+            {/* Línea de progreso hacia el siguiente paso */}
+            {i < steps.length - 1 && (
+              <div className="absolute top-[17px] left-1/2 w-full h-[3px] rounded-full bg-gray-200 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500 ease-out"
+                  style={{ width: done ? '100%' : '0%', backgroundColor: 'var(--brand)' }}
+                />
+              </div>
+            )}
+            {/* Círculo del paso */}
+            <div
+              className={`relative z-10 h-9 w-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+                done || active ? 'text-white' : 'text-gray-400 bg-gray-100 border border-gray-200'
+              }`}
+              style={
+                done || active
+                  ? {
+                      backgroundColor: 'var(--brand)',
+                      boxShadow: active ? '0 0 0 4px color-mix(in srgb, var(--brand) 20%, transparent)' : 'none',
+                    }
+                  : undefined
+              }
+            >
+              {done ? '✓' : i + 1}
+            </div>
+            {/* Etiqueta */}
+            <p className={`mt-2.5 text-xs font-medium text-center px-1 leading-tight ${active ? 'text-[#1d1d1f]' : done ? 'text-gray-500' : 'text-gray-400'}`}>
+              {label}
+            </p>
           </div>
-          <span className={`text-xs font-medium hidden sm:block ${
-            i === current ? 'text-[#1d1d1f]' : 'text-gray-400'
-          }`}>
-            {label}
-          </span>
-          {i < steps.length - 1 && (
-            <div className={`h-0.5 w-8 mx-1 rounded ${i < current ? 'bg-green-400' : 'bg-gray-200'}`} />
-          )}
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -114,6 +132,27 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
   })
   const [confirmation, setConfirmation] = useState<BookingResult | null>(null)
 
+  // Hora local de hoy (para el min del input de fecha)
+  const todayStr = useMemo(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }, [])
+
+  // Intervalos de 15 min (00:00 → 23:45), etiquetas en el idioma del cliente
+  const timeOptions = useMemo(() => {
+    const opts: { value: string; label: string }[] = []
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        const value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+        const label = new Date(2000, 0, 1, h, m).toLocaleTimeString(localeTag, {
+          hour: 'numeric', minute: '2-digit',
+        })
+        opts.push({ value, label })
+      }
+    }
+    return opts
+  }, [localeTag])
+
   // ─── PASO 1: Ruta ─────────────────────────────────────────────────────────
 
   function handleRouteSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -135,8 +174,11 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
       return
     }
 
-    const scheduledAt = fd.get('scheduled_at') as string
-    if (!scheduledAt) { setError(dict.selectDateTime); return }
+    const dateStr = (fd.get('date') as string)?.trim()
+    const timeStr = (fd.get('time') as string)?.trim()
+    if (!dateStr) { setError(dict.selectDateTime); return }
+    if (!timeStr) { setError(dict.selectTime); return }
+    const scheduledAt = `${dateStr}T${timeStr}`
 
     // Multi-stop: recolectar paradas (cada una debe venir del autocomplete)
     const stops: { address: string; lat: number; lng: number }[] = []
@@ -388,17 +430,35 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">
-              {dict.dateTime}
-            </label>
-            <input
-              type="datetime-local"
-              name="scheduled_at"
-              required
-              min={new Date().toISOString().slice(0, 16)}
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">
+                {dict.date}
+              </label>
+              <input
+                type="date"
+                name="date"
+                required
+                min={todayStr}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">
+                {dict.time}
+              </label>
+              <select
+                name="time"
+                required
+                defaultValue=""
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              >
+                <option value="" disabled>—:—</option>
+                {timeOptions.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div>
@@ -440,7 +500,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
             <button
               type="button"
               onClick={() => setStopCount((c) => c + 1)}
-              className="text-sm font-medium text-[#0071e3] hover:underline"
+              className="w-full py-2.5 text-sm font-medium text-[var(--brand)] border border-dashed border-gray-300 rounded-xl hover:border-[var(--brand)] hover:bg-[var(--brand)]/5 transition-colors"
             >
               {dict.addStop}
             </button>
