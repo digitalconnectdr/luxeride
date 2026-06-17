@@ -87,21 +87,27 @@ export default async function FleetPage({ searchParams }: PageProps) {
 
       {/* Tabs */}
       <div className="flex items-center gap-0.5 bg-sl-surface-high border border-sl-outline-variant rounded-xl p-1 w-fit">
-        {tabs.map((t) => (
+        {tabs.map((tb) => (
           <Link
-            key={t.value}
-            href={`/admin/fleet${t.value !== 'vehicles' ? `?tab=${t.value}` : ''}`}
+            key={tb.value}
+            href={`/admin/fleet${tb.value !== 'vehicles' ? `?tab=${tb.value}` : ''}`}
             className={[
               'px-4 py-1.5 rounded-lg text-xs font-medium transition-all',
-              tab === t.value
+              tab === tb.value
                 ? 'bg-gold text-gray-900'
                 : 'text-sl-on-surface-muted hover:text-sl-on-surface',
             ].join(' ')}
           >
-            {t.label}
+            {tb.label}
           </Link>
         ))}
       </div>
+
+      {/* Aclaración de la pestaña activa (tipos ≠ vehículos) */}
+      <p className="flex items-start gap-2 text-xs text-sl-on-surface-muted -mt-2 max-w-2xl">
+        <span className="text-bronze shrink-0">ⓘ</span>
+        {tab === 'types' ? t.tabTypesHelp : t.tabVehiclesHelp}
+      </p>
 
       {/* ── VEHICLES TAB ── */}
       {tab === 'vehicles' && (

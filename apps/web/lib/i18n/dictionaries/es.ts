@@ -510,6 +510,8 @@ export const es: Dictionary = {
       addVehicle: '+ Agregar vehículo',
       tabVehicles: 'Vehículos',
       tabTypes: 'Tipos de vehículo',
+      tabVehiclesHelp: 'Autos físicos reales (placa, color) que asignas a un conductor para un viaje.',
+      tabTypesHelp: 'Categorías que ofreces (precio, amenidades y foto). Es lo que el cliente ve en tu sitio y elige al reservar — puedes tener una categoría aunque aún no tengas un auto físico de ese tipo.',
       saving: 'Guardando…',
       unassigned: 'Sin asignar',
       statuses: {
