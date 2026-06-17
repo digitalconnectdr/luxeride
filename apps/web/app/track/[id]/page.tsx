@@ -157,26 +157,31 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
       {/* Banda dorada superior */}
       <div className="h-px w-full" style={{ background: goldRule }} />
 
-      {/* Selector de idioma */}
-      <div className="max-w-5xl mx-auto px-5 pt-4 flex justify-end">
-        <LanguageSwitcher current={locale} variant="dark" />
-      </div>
-
       <div className="max-w-5xl mx-auto px-5 pt-6 pb-12">
-        {/* ── Header ── */}
-        <header className="text-center mb-6">
-          {logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt={companyName} className="h-10 max-w-[170px] object-contain mx-auto mb-4" />
-          ) : (
-            <div className="w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: brandColor }}>
-              <span className="text-[#08080a] font-bold text-base leading-none">{initial}</span>
+        {/* ── Header: barra de marca horizontal ── */}
+        <header className="flex items-center justify-between gap-x-4 gap-y-3 mb-8 flex-wrap">
+          {/* Marca: logo + nombre + subtítulo como un solo bloque */}
+          <div className="flex items-center gap-3 min-w-0">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt={companyName} className="h-10 max-w-[120px] object-contain shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: brandColor }}>
+                <span className="text-[#08080a] font-bold text-base leading-none">{initial}</span>
+              </div>
+            )}
+            <div className="min-w-0 border-l border-white/10 pl-3">
+              <h1 className="font-playfair text-lg sm:text-xl font-medium tracking-[0.02em] truncate">{companyName}</h1>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-white/40 mt-0.5">{t.title}</p>
             </div>
-          )}
-          <h1 className="font-playfair text-xl font-medium tracking-[0.02em]">{companyName}</h1>
-          <div className="inline-flex items-center gap-2 mt-3 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-white/40">{t.bookingRef}</span>
-            <span className="font-mono text-xs" style={{ color: brandColor }}>{booking.booking_number}</span>
+          </div>
+          {/* Referencia + idioma a la derecha */}
+          <div className="flex items-center gap-3 ml-auto">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5">
+              <span className="hidden sm:inline text-[10px] uppercase tracking-[0.2em] text-white/40">{t.bookingRef}</span>
+              <span className="font-mono text-xs" style={{ color: brandColor }}>{booking.booking_number}</span>
+            </div>
+            <LanguageSwitcher current={locale} variant="dark" />
           </div>
         </header>
 
@@ -342,6 +347,18 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
           </div>
         </section>
 
+        {/* Agregar parada — contextual, justo debajo de la ruta */}
+        {canAddStop && (
+          <TrackActions
+            bookingId={booking.id}
+            brandColor={brandColor}
+            canCancel={false}
+            canReport={false}
+            canAddStop={true}
+            labels={{ cancel: t.cancel, report: t.report, addStop: t.addStop }}
+          />
+        )}
+
         {/* ── 5. Conductor + vehículo ── */}
         {driver && !isTerminal && (
           <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
@@ -401,15 +418,15 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
         </div>{/* fin columna derecha */}
         </div>{/* fin grid control center */}
 
-        {/* ── 7. Acciones ── */}
-        {!isTerminal && (
+        {/* ── 7. Acciones secundarias (reportar / cancelar) ── */}
+        {!isTerminal && (canReport || canCancel) && (
           <div className="mt-6 max-w-md mx-auto">
             <TrackActions
               bookingId={booking.id}
               brandColor={brandColor}
               canCancel={canCancel}
               canReport={canReport}
-              canAddStop={canAddStop}
+              canAddStop={false}
               labels={{ cancel: t.cancel, report: t.report, addStop: t.addStop }}
             />
           </div>
