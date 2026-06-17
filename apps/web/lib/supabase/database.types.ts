@@ -470,6 +470,76 @@ export type Database = {
         Relationships: []
       }
 
+      // ── trip_messages ───────────────────────────────────────────────────────
+      trip_messages: {
+        Row: {
+          id: string
+          booking_id: string
+          company_id: string
+          sender: 'client' | 'driver'
+          body: string
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          booking_id: string
+          company_id: string
+          sender: 'client' | 'driver'
+          body: string
+          read_at?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          booking_id?: string | undefined
+          company_id?: string | undefined
+          sender?: 'client' | 'driver' | undefined
+          body?: string | undefined
+          read_at?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── trip_reports ────────────────────────────────────────────────────────
+      trip_reports: {
+        Row: {
+          id: string
+          booking_id: string
+          company_id: string
+          driver_id: string | null
+          category: string
+          reason: string
+          resolved_at: string | null
+          resolved_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          booking_id: string
+          company_id: string
+          driver_id?: string | null | undefined
+          category?: string | undefined
+          reason: string
+          resolved_at?: string | null | undefined
+          resolved_by?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          booking_id?: string | undefined
+          company_id?: string | undefined
+          driver_id?: string | null | undefined
+          category?: string | undefined
+          reason?: string | undefined
+          resolved_at?: string | null | undefined
+          resolved_by?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── service_zones ───────────────────────────────────────────────────────
       service_zones: {
         Row: {

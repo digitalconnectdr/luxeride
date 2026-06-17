@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { logoutAction } from '@/app/actions/auth'
 import { BookingStatusBadge } from '@/components/bookings/booking-status-badge'
 import { DriverTripActions } from '@/components/driver/trip-actions'
+import { TripChat } from '@/components/trip/trip-chat'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
 export const metadata: Metadata = { title: 'Mis Viajes | LuxeRide' }
@@ -77,6 +78,21 @@ export default async function DriverTripsPage() {
                   )}
                 </div>
                 <DriverTripActions bookingId={t.id} status={t.status} />
+
+                <TripChat
+                  bookingId={t.id}
+                  side="driver"
+                  brandColor="#e9c176"
+                  labels={{
+                    title: 'Chat con el pasajero',
+                    subtitle: 'Coordina recogida, retrasos o cambios.',
+                    placeholder: 'Escribe un mensaje…',
+                    send: 'Enviar',
+                    empty: 'Sin mensajes todavía.',
+                    you: 'Tú',
+                    them: t.passenger_name ?? 'Pasajero',
+                  }}
+                />
               </div>
             )
           })

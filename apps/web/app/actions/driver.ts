@@ -94,3 +94,41 @@ export async function driverAdvanceTripAction(
   revalidatePath('/driver/trips')
   return { success: true }
 }
+
+// ─── No-show: el pasajero no se presentó ──────────────────────────────────────
+// Solo válido cuando el conductor ya llegó al punto (status = 'arrived').
+
+export async function driverNoShowAction(
+  bookingId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('driver')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const admin = createAdminClient()
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('id, status')
+    .eq('id', bookingId)
+    .eq('company_id', user.company_id)
+    .eq('driver_id', user.id)
+    .single()
+
+  if (!booking) return { success: false, error: 'Viaje no encontrado o no asignado a ti' }
+  if (booking.status !== 'arrived') {
+    return { success: false, error: 'Solo puedes marcar no-show después de llegar al punto de recogida' }
+  }
+
+  const { error } = await admin
+    .from('bookings')
+    .update({ status: 'no_show', no_show_at: new Date().toISOString() })
+    .eq('id', bookingId)
+    .eq('driver_id', user.id)
+
+  if (error) {
+    console.error('[driverNoShowAction]', error)
+    return { success: false, error: 'Error al marcar no-show' }
+  }
+
+  revalidatePath('/driver/trips')
+  return { success: true }
+}

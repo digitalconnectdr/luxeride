@@ -167,12 +167,33 @@ Es un mini-CMS por operador — feature mediana, se cruza con la PWA branded (C.
 1. **Calificaciones bidireccionales**: bookings.rating ya existe (cliente→
    conductor). Agregar driver_rating (conductor→cliente) + promedio en el
    perfil del conductor (drivers.avg_rating) y métricas (puntualidad,
-   cancelaciones) para el ranking interno.
-2. **Chat cliente↔conductor**: tabla `booking_messages` (booking_id, sender,
-   body, created_at) con RLS (cliente y conductor del viaje + admins de la
-   empresa). Realtime para el hilo. Auditable: los admins ven todos los hilos
-   de su empresa (cumple el requisito de auditoría del usuario).
+   cancelaciones) para el ranking interno.  ⬜ PENDIENTE.
+2. ✅ **Chat cliente↔conductor (HECHO 2026-06-16)**: implementado como tabla
+   `trip_messages` (booking_id, company_id, sender 'client'|'driver', body,
+   created_at) en vez del nombre tentativo `booking_messages`. RLS: el conductor
+   asignado lee/escribe sus viajes; admin/owner/dispatcher LEEN (auditable ✅).
+   El pasajero escribe sin login vía server actions con service-role validando
+   el UUID de la reserva (capability URL). UI: panel de chat en /track/[id]
+   (lado cliente) y en /driver/trips (lado conductor), con polling cada 8s.
+   Componente reutilizable components/trip/trip-chat.tsx. Migración 18.
+   Falta (mejora): realtime de Supabase en vez de polling; vista admin de hilos.
 3. Disponibles tanto en web como en la futura PWA (reutilizan el backend).
+
+### B-bis. Seguimiento del pasajero: rediseño + cancelar + reportar (HECHO 2026-06-16)
+Pedido del usuario: el link de seguimiento se veía muy básico y faltaban acciones.
+- ✅ **Rediseño /track/[id]**: encabezado con referencia, estado actual destacado
+  (pulse), timeline con horas por etapa (check al completar), tarjeta de conductor
+  + vehículo + placa, ruta con conectores, contacto. Sigue siendo dark premium.
+- ✅ **Cancelar viaje (cliente)**: server action cancelTripByClientAction (usa el
+  status `cancelled` existente; permitido en pending/assigned/en_route/arrived).
+  Componente components/trip/track-actions.tsx con confirmación + motivo.
+- ✅ **Reportar al conductor**: tabla `trip_reports` (category false_arrival/
+  no_contact/unsafe/other + reason) + reportDriverAction. RLS: admin/owner/
+  dispatcher gestiona. Migración 18. Falta (mejora): vista admin de reportes.
+- ✅ **No-show del conductor**: driverNoShowAction (solo desde `arrived`) + botón
+  con confirmación en components/driver/trip-actions.tsx.
+- Relación con Sección A (obs.10): versión enfocada. Pendiente aún el sistema
+  completo de eventos (booking_events) + estados rejected_by_* + mapa en vivo.
 
 ## ⬜ Backlog de DESARROLLO (próximas sesiones, en orden sugerido)
 
