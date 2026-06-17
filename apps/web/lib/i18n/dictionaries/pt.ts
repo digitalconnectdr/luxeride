@@ -336,6 +336,11 @@ export const pt: Dictionary = {
     openInMaps: 'Abrir no Maps',
     copy: 'Copiar',
     copied: '✓ Copiado',
+    routeEstimate: '{miles} mi · {min} min',
+    driverRole: 'Motorista profissional',
+    shareTrip: 'Compartilhar viagem',
+    shareCopied: '✓ Link copiado',
+    mapAlt: 'Mapa da rota',
     chat: {
       title: 'Mensagens com seu motorista',
       subtitle: 'Voo atrasado ou alguma mudança? Avise por aqui.',

@@ -264,6 +264,21 @@ Pedido del usuario: el link de seguimiento se veía muy básico y faltaban accio
   - Acuses de lectura del chat ("visto/respondió") → trip_messages.read_at existe
     pero falta marcar leído del lado del conductor.
 
+### B-quinquies. Tracking "Premium Trip Control Center" (2026-06-17)
+Sobre las observaciones del usuario para el link de seguimiento:
+- ✅ Idioma EN/ES/PT en la página, frase contextual por estado, "Paso X de 6",
+  pickup/destino con "Abrir en Maps" + "Copiar", chat con respuestas rápidas,
+  jerarquía de acciones (cancelar de-enfatizado). (commit 1a62baa)
+- ✅ **Mapa estático elegante** (pickup A + destino B + ruta, estilo oscuro) con
+  fallback si la "Maps Static API" no está habilitada (StaticMap onError).
+  REQUIERE habilitar "Maps Static API" en la misma key de Google.
+- ✅ **ETA/distancia** de la ruta (de distance_miles/duration_minutes del quote).
+- ✅ Tarjeta del chofer: subtítulo "Chofer profesional" + botón "Compartir viaje"
+  (navigator.share con fallback a copiar enlace).
+- ⬜ FASE 2 (necesitan datos/infra nuevos): tracking GPS en vivo del conductor
+  (Sección A), foto + ⭐rating + idiomas del chofer (rating = B.1; foto/idiomas =
+  campos nuevos de perfil), acuses de lectura del chat ("visto/respondió").
+
 ### F. Pago al momento de la reserva (2026-06-16)
 ✅ El wizard ahora ofrece "Confirmar y pagar ahora" (Stripe Checkout) además de
 "Reservar y pagar después", SOLO cuando el operador tiene Stripe Connect

@@ -334,6 +334,11 @@ export const en = {
     openInMaps: 'Open in Maps',
     copy: 'Copy',
     copied: '✓ Copied',
+    routeEstimate: '{miles} mi · {min} min',
+    driverRole: 'Professional chauffeur',
+    shareTrip: 'Share trip',
+    shareCopied: '✓ Link copied',
+    mapAlt: 'Route map',
     chat: {
       title: 'Messages with your chauffeur',
       subtitle: 'Flight delayed or any change? Let them know here.',

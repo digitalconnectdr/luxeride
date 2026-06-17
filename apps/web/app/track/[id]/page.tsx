@@ -6,6 +6,8 @@ import { AutoRefresh } from './auto-refresh'
 import { TrackActions } from '@/components/trip/track-actions'
 import { TripChat } from '@/components/trip/trip-chat'
 import { CopyButton } from '@/components/trip/copy-button'
+import { StaticMap } from '@/components/trip/static-map'
+import { ShareButton } from '@/components/trip/share-button'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 
 export const metadata: Metadata = { title: 'Trip Tracking | LuxeRide' }
@@ -35,7 +37,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const admin = createAdminClient()
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, booking_number, status, scheduled_at, pickup_location, dropoff_location, waypoints, driver_id, vehicle_id, company_id, passenger_name, dispatched_at, en_route_at, arrived_at, started_at, completed_at')
+    .select('id, booking_number, status, scheduled_at, pickup_location, dropoff_location, waypoints, driver_id, vehicle_id, company_id, passenger_name, distance_miles, duration_minutes, dispatched_at, en_route_at, arrived_at, started_at, completed_at')
     .eq('id', params.id)
     .single()
 
@@ -59,8 +61,41 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const driver = driverRes.data as { first_name: string } | null
   const vehicle = vehicleRes.data as { make: string; model: string; color: string | null; plate_number: string } | null
 
-  const pickup  = (booking.pickup_location as { address?: string } | null)?.address ?? '—'
-  const dropoff = (booking.dropoff_location as { address?: string } | null)?.address ?? '—'
+  const pLoc = booking.pickup_location as { address?: string; lat?: number; lng?: number } | null
+  const dLoc = booking.dropoff_location as { address?: string; lat?: number; lng?: number } | null
+  const pickup  = pLoc?.address ?? '—'
+  const dropoff = dLoc?.address ?? '—'
+
+  // Mapa estático elegante (pickup A + destino B + ruta). Se oculta si la
+  // "Maps Static API" no está habilitada (StaticMap maneja el onError).
+  const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  const haveCoords =
+    typeof pLoc?.lat === 'number' && typeof pLoc?.lng === 'number' &&
+    typeof dLoc?.lat === 'number' && typeof dLoc?.lng === 'number'
+  let mapSrc: string | null = null
+  let dirHref = ''
+  if (haveCoords && mapsKey) {
+    const bc = (company?.primary_color ?? '#c9a24b').replace('#', '0x')
+    const p = `${pLoc!.lat},${pLoc!.lng}`
+    const d = `${dLoc!.lat},${dLoc!.lng}`
+    const style = [
+      'feature:all|element:geometry|color:0x1a1a1d',
+      'feature:all|element:labels.text.fill|color:0x9a9a9a',
+      'feature:all|element:labels.text.stroke|color:0x131316',
+      'feature:road|element:geometry|color:0x2c2c31',
+      'feature:water|element:geometry|color:0x0e0e12',
+      'feature:poi|visibility:off',
+      'feature:transit|visibility:off',
+    ].map((s) => `&style=${encodeURIComponent(s)}`).join('')
+    mapSrc =
+      'https://maps.googleapis.com/maps/api/staticmap?size=600x280&scale=2&maptype=roadmap' +
+      `&markers=${encodeURIComponent(`size:mid|color:${bc}|label:A|${p}`)}` +
+      `&markers=${encodeURIComponent(`size:mid|color:0xffffff|label:B|${d}`)}` +
+      `&path=${encodeURIComponent(`color:${bc}cc|weight:3|${p}|${d}`)}` +
+      style +
+      `&key=${mapsKey}`
+    dirHref = `https://www.google.com/maps/dir/?api=1&origin=${p}&destination=${d}`
+  }
 
   const isTerminal = booking.status in t.terminal
   const isCompleted = booking.status === 'completed'
@@ -181,6 +216,11 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
           )}
         </div>
 
+        {/* ── Mapa de la ruta ── */}
+        {mapSrc && !isTerminal && (
+          <StaticMap src={mapSrc} href={dirHref} alt={t.mapAlt} openLabel={t.openInMaps} />
+        )}
+
         {/* ── Timeline ── */}
         {!isTerminal && (
           <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6">
@@ -234,8 +274,9 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
               </div>
               <div className="min-w-0">
                 <p className="font-medium truncate">{driver.first_name}</p>
+                <p className="text-[11px] text-white/40">{t.driverRole}</p>
                 {vehicle && (
-                  <p className="text-sm text-white/50 truncate">
+                  <p className="text-sm text-white/50 truncate mt-0.5">
                     {vehicle.color ? `${vehicle.color} ` : ''}{vehicle.make} {vehicle.model}
                   </p>
                 )}
@@ -246,6 +287,9 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
                   <p className="font-mono text-sm" style={{ color: brandColor }}>{vehicle.plate_number}</p>
                 </div>
               )}
+            </div>
+            <div className="mt-4 pt-4 border-t border-white/[0.06] flex justify-end">
+              <ShareButton label={t.shareTrip} copiedLabel={t.shareCopied} brandColor={brandColor} />
             </div>
           </section>
         )}
@@ -321,6 +365,13 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
               )}
             </div>
           </div>
+          {booking.distance_miles != null && booking.duration_minutes != null && (
+            <p className="text-[11px] text-white/40 pt-3 mt-1 border-t border-white/[0.06]">
+              {t.routeEstimate
+                .replace('{miles}', Number(booking.distance_miles).toFixed(1))
+                .replace('{min}', String(booking.duration_minutes))}
+            </p>
+          )}
         </section>
 
         {/* ── Acciones del pasajero ── */}
