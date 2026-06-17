@@ -299,6 +299,7 @@ export const en = {
 
   tracking: {
     title: 'Trip tracking',
+    currentStatus: 'Current status',
     statuses: {
       pending: 'Reservation received',
       assigned: 'Chauffeur assigned',

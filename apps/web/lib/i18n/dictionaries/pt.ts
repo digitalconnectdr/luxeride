@@ -301,6 +301,7 @@ export const pt: Dictionary = {
 
   tracking: {
     title: 'Rastreamento da viagem',
+    currentStatus: 'Status atual',
     statuses: {
       pending: 'Reserva recebida',
       assigned: 'Motorista designado',

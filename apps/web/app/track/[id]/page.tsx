@@ -158,16 +158,19 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
       <div className="h-px w-full" style={{ background: goldRule }} />
 
       <div className="max-w-5xl mx-auto px-5 pt-6 pb-12">
-        {/* ── Header: barra de marca horizontal ── */}
-        <header className="flex items-center justify-between gap-x-4 gap-y-3 mb-8 flex-wrap">
-          {/* Marca: logo + nombre + subtítulo como un solo bloque */}
+        {/* ── Header: barra de marca horizontal con división ── */}
+        <header className="flex items-center justify-between gap-x-4 gap-y-3 mb-8 pb-5 border-b border-white/[0.08] flex-wrap">
+          {/* Marca: logo (en caja controlada) + nombre + subtítulo */}
           <div className="flex items-center gap-3 min-w-0">
             {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt={companyName} className="h-10 max-w-[120px] object-contain shrink-0" />
+              // Caja premium: tamaño fijo, fondo claro, redondeada → ningún logo rompe el diseño
+              <div className="h-12 w-12 rounded-xl bg-white p-1.5 shadow-sm shadow-black/30 flex items-center justify-center shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={logoUrl} alt={companyName} className="max-h-full max-w-full object-contain" />
+              </div>
             ) : (
-              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: brandColor }}>
-                <span className="text-[#08080a] font-bold text-base leading-none">{initial}</span>
+              <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-black/30" style={{ backgroundColor: brandColor }}>
+                <span className="text-[#08080a] font-bold text-lg leading-none">{initial}</span>
               </div>
             )}
             <div className="min-w-0 border-l border-white/10 pl-3">
@@ -207,7 +210,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ backgroundColor: brandColor }} />
                 <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: brandColor }} />
               </span>
-              <span className="text-[10px] uppercase tracking-[0.25em] text-white/45">{t.title}</span>
+              <span className="text-[10px] uppercase tracking-[0.25em] text-white/45">{t.currentStatus}</span>
             </span>
           )}
           <p className={`font-playfair text-2xl font-medium tracking-[-0.01em] ${isTerminal ? 'text-red-400' : isCompleted ? 'text-green-400' : 'text-white'}`}>
