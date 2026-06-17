@@ -341,6 +341,10 @@ export const es: Dictionary = {
     shareTrip: 'Compartir viaje',
     shareCopied: '✓ Enlace copiado',
     mapAlt: 'Mapa de la ruta',
+    lastUpdate: 'Última actualización',
+    scheduledLabel: 'Programado',
+    message: 'Mensaje',
+    routeTitle: 'Tu ruta',
     chat: {
       title: 'Mensajes con tu conductor',
       subtitle: '¿Vuelo retrasado o algún cambio? Avísale aquí.',

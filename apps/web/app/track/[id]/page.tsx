@@ -136,6 +136,10 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const progressText = t.progressLabel
     .replace('{n}', String(currentIdx + 1))
     .replace('{total}', String(STATUS_KEYS.length))
+  const lastUpdateStamp = stampByStatus[booking.status]
+  const scheduledFull = new Date(booking.scheduled_at).toLocaleString(localeTag, {
+    weekday: 'long', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
   const mapsUrl = (addr: string) =>
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`
 
@@ -174,11 +178,6 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
             <span className="text-[10px] uppercase tracking-[0.2em] text-white/40">{t.bookingRef}</span>
             <span className="font-mono text-xs" style={{ color: brandColor }}>{booking.booking_number}</span>
           </div>
-          <p className="text-xs text-white/40 mt-3">
-            {new Date(booking.scheduled_at).toLocaleString(localeTag, {
-              weekday: 'long', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
-            })}
-          </p>
         </header>
 
         {/* ── Estado actual destacado ── */}
@@ -209,6 +208,12 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
           {!isTerminal && (
             <p className="text-[10px] uppercase tracking-[0.25em] text-white/35 mt-3">{progressText}</p>
           )}
+          {!isTerminal && (
+            <div className="mt-4 pt-3 border-t border-white/[0.06] text-[11px] text-white/40 space-y-0.5">
+              <p>{t.scheduledLabel}: <span className="text-white/60">{scheduledFull}</span></p>
+              {lastUpdateStamp && <p>{t.lastUpdate}: <span className="text-white/60">{fmtTime(lastUpdateStamp)}</span></p>}
+            </div>
+          )}
           {isTerminal && company?.phone && (
             <p className="text-sm text-white/50 mt-3">
               {t.questions} <a href={`tel:${company.phone}`} className="lux-link" style={{ color: brandColor }}>{company.phone}</a>
@@ -216,12 +221,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
           )}
         </div>
 
-        {/* ── Mapa de la ruta ── */}
-        {mapSrc && !isTerminal && (
-          <StaticMap src={mapSrc} href={dirHref} alt={t.mapAlt} openLabel={t.openInMaps} />
-        )}
-
-        {/* ── Timeline ── */}
+        {/* ── 3. Progreso del viaje ── */}
         {!isTerminal && (
           <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6">
             <div className="space-y-0">
@@ -264,7 +264,74 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
           </section>
         )}
 
-        {/* ── Conductor + vehículo ── */}
+        {/* ── 4. Ruta + mapa ── */}
+        <section className="space-y-4">
+          {mapSrc && !isTerminal && (
+            <StaticMap src={mapSrc} href={dirHref} alt={t.mapAlt} openLabel={t.openInMaps} />
+          )}
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-3 text-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">{t.routeTitle}</p>
+            {/* Pickup */}
+            <div className="flex gap-3">
+              <div className="flex flex-col items-center pt-1">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: brandColor }} />
+                <span className="w-px flex-1 bg-white/10 my-1" />
+              </div>
+              <div className="flex-1 pb-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40 mb-0.5">{t.pickup}</p>
+                <p className="text-white/80">{pickup}</p>
+                {pickup !== '—' && (
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <a href={mapsUrl(pickup)} target="_blank" rel="noopener noreferrer" className="text-[11px] font-medium" style={{ color: brandColor }}>{t.openInMaps} ↗</a>
+                    <CopyButton text={pickup} label={t.copy} copiedLabel={t.copied} />
+                  </div>
+                )}
+              </div>
+            </div>
+            {Array.isArray(booking.waypoints) &&
+              booking.waypoints.map((w, i) => {
+                const addr = (w as { address?: string } | null)?.address
+                if (!addr) return null
+                return (
+                  <div key={i} className="flex gap-3">
+                    <div className="flex flex-col items-center pt-1">
+                      <span className="w-2 h-2 rotate-45" style={{ backgroundColor: `${brandColor}99` }} />
+                      <span className="w-px flex-1 bg-white/10 my-1" />
+                    </div>
+                    <div className="flex-1 pb-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] mb-0.5" style={{ color: `${brandColor}aa` }}>◆ {i + 1}</p>
+                      <p className="text-white/70">{addr}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            {/* Destino */}
+            <div className="flex gap-3">
+              <div className="flex flex-col items-center pt-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-white/60" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40 mb-0.5">{t.destination}</p>
+                <p className="text-white/80">{dropoff}</p>
+                {dropoff !== '—' && (
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <a href={mapsUrl(dropoff)} target="_blank" rel="noopener noreferrer" className="text-[11px] font-medium" style={{ color: brandColor }}>{t.openInMaps} ↗</a>
+                    <CopyButton text={dropoff} label={t.copy} copiedLabel={t.copied} />
+                  </div>
+                )}
+              </div>
+            </div>
+            {booking.distance_miles != null && booking.duration_minutes != null && (
+              <p className="text-[11px] text-white/40 pt-3 mt-1 border-t border-white/[0.06]">
+                {t.routeEstimate
+                  .replace('{miles}', Number(booking.distance_miles).toFixed(1))
+                  .replace('{min}', String(booking.duration_minutes))}
+              </p>
+            )}
+          </div>
+        </section>
+
+        {/* ── 5. Conductor + vehículo ── */}
         {driver && !isTerminal && (
           <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40 mb-4">{t.yourDriver}</p>
@@ -288,93 +355,39 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
                 </div>
               )}
             </div>
-            <div className="mt-4 pt-4 border-t border-white/[0.06] flex justify-end">
+            <div className="mt-4 pt-4 border-t border-white/[0.06] flex items-center gap-2">
+              {showChat && (
+                <a href="#trip-chat" className="flex-1 text-center rounded-full border border-white/15 px-3.5 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 transition-colors">
+                  {t.message}
+                </a>
+              )}
               <ShareButton label={t.shareTrip} copiedLabel={t.shareCopied} brandColor={brandColor} />
             </div>
           </section>
         )}
 
-        {/* ── Chat con el conductor ── */}
+        {/* ── 6. Mensajes ── */}
         {showChat && (
-          <TripChat
-            bookingId={booking.id}
-            side="client"
-            brandColor={brandColor}
-            quickReplies={t.chat.quick}
-            labels={{
-              title: t.chat.title,
-              subtitle: t.chat.subtitle,
-              placeholder: t.chat.placeholder,
-              send: t.chat.send,
-              empty: t.chat.empty,
-              you: t.chat.you,
-              them: t.chat.driver,
-            }}
-          />
+          <div id="trip-chat" className="scroll-mt-6">
+            <TripChat
+              bookingId={booking.id}
+              side="client"
+              brandColor={brandColor}
+              quickReplies={t.chat.quick}
+              labels={{
+                title: t.chat.title,
+                subtitle: t.chat.subtitle,
+                placeholder: t.chat.placeholder,
+                send: t.chat.send,
+                empty: t.chat.empty,
+                you: t.chat.you,
+                them: t.chat.driver,
+              }}
+            />
+          </div>
         )}
 
-        {/* ── Ruta ── */}
-        <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-3 text-sm">
-          {/* Pickup */}
-          <div className="flex gap-3">
-            <div className="flex flex-col items-center pt-1">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: brandColor }} />
-              <span className="w-px flex-1 bg-white/10 my-1" />
-            </div>
-            <div className="flex-1 pb-1">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40 mb-0.5">{t.pickup}</p>
-              <p className="text-white/80">{pickup}</p>
-              {pickup !== '—' && (
-                <div className="flex items-center gap-3 mt-1.5">
-                  <a href={mapsUrl(pickup)} target="_blank" rel="noopener noreferrer" className="text-[11px] font-medium" style={{ color: brandColor }}>{t.openInMaps} ↗</a>
-                  <CopyButton text={pickup} label={t.copy} copiedLabel={t.copied} />
-                </div>
-              )}
-            </div>
-          </div>
-          {Array.isArray(booking.waypoints) &&
-            booking.waypoints.map((w, i) => {
-              const addr = (w as { address?: string } | null)?.address
-              if (!addr) return null
-              return (
-                <div key={i} className="flex gap-3">
-                  <div className="flex flex-col items-center pt-1">
-                    <span className="w-2 h-2 rotate-45" style={{ backgroundColor: `${brandColor}99` }} />
-                    <span className="w-px flex-1 bg-white/10 my-1" />
-                  </div>
-                  <div className="flex-1 pb-1">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] mb-0.5" style={{ color: `${brandColor}aa` }}>◆ {i + 1}</p>
-                    <p className="text-white/70">{addr}</p>
-                  </div>
-                </div>
-              )
-            })}
-          {/* Destino */}
-          <div className="flex gap-3">
-            <div className="flex flex-col items-center pt-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-white/60" />
-            </div>
-            <div className="flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40 mb-0.5">{t.destination}</p>
-              <p className="text-white/80">{dropoff}</p>
-              {dropoff !== '—' && (
-                <div className="flex items-center gap-3 mt-1.5">
-                  <a href={mapsUrl(dropoff)} target="_blank" rel="noopener noreferrer" className="text-[11px] font-medium" style={{ color: brandColor }}>{t.openInMaps} ↗</a>
-                  <CopyButton text={dropoff} label={t.copy} copiedLabel={t.copied} />
-                </div>
-              )}
-            </div>
-          </div>
-          {booking.distance_miles != null && booking.duration_minutes != null && (
-            <p className="text-[11px] text-white/40 pt-3 mt-1 border-t border-white/[0.06]">
-              {t.routeEstimate
-                .replace('{miles}', Number(booking.distance_miles).toFixed(1))
-                .replace('{min}', String(booking.duration_minutes))}
-            </p>
-          )}
-        </section>
-
-        {/* ── Acciones del pasajero ── */}
+        {/* ── 7. Acciones ── */}
         {!isTerminal && (
           <TrackActions
             bookingId={booking.id}

@@ -339,6 +339,10 @@ export const en = {
     shareTrip: 'Share trip',
     shareCopied: '✓ Link copied',
     mapAlt: 'Route map',
+    lastUpdate: 'Last update',
+    scheduledLabel: 'Scheduled',
+    message: 'Message',
+    routeTitle: 'Your route',
     chat: {
       title: 'Messages with your chauffeur',
       subtitle: 'Flight delayed or any change? Let them know here.',
