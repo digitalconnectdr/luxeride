@@ -85,13 +85,13 @@ export default async function ReservarPage({ params }: { params: { slug: string 
         </aside>
 
         {/* Formulario en pantalla completa */}
-        <section className="flex flex-col items-center px-5 sm:px-8 py-12 lg:py-16">
-          <div className="w-full max-w-xl">
+        <section className="flex flex-col items-center px-5 sm:px-8 py-12 lg:py-14">
+          <div className="w-full max-w-md">
             <div className="lg:hidden mb-6">
               <span className="block h-px w-12 mb-5" style={{ background: `linear-gradient(90deg, ${brandColor}, transparent)` }} />
               <h1 className="font-playfair text-3xl font-medium tracking-[-0.01em]">{tagline || company.name}</h1>
             </div>
-            <div className="rounded-[1.25rem] bg-[#f1ece3] p-6 sm:p-8 shadow-2xl shadow-black/50 ring-1 ring-white/5">
+            <div className="rounded-2xl bg-[#f1ece3] p-5 sm:p-6 shadow-2xl shadow-black/50 ring-1 ring-white/5">
               <BookingWizard
                 company={{ id: company.id, name: company.name, slug: company.slug, currency: (company.currency as string | null) ?? 'USD', primaryColor: brandColor, phone: (company.phone as string | null) ?? null, email: (company.email as string | null) ?? null }}
                 vehicleTypes={fleet.map((vt) => ({ id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null }))}

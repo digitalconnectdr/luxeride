@@ -422,7 +422,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
         >
       {/* ─── PASO 0: Ruta ──────────────────────────────────────────────────── */}
       {step === 0 && (
-        <form onSubmit={handleRouteSubmit} className="space-y-5">
+        <form onSubmit={handleRouteSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">
               {dict.serviceType}
@@ -626,7 +626,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
 
       {/* ─── PASO 2: Pasajero ──────────────────────────────────────────────── */}
       {step === 2 && (
-        <form onSubmit={handlePassengerSubmit} className="space-y-5">
+        <form onSubmit={handlePassengerSubmit} className="space-y-4">
           {selectedQuote && (
             <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -743,7 +743,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
 
       {/* ─── PASO 3: Confirmación ──────────────────────────────────────────── */}
       {step === 3 && selectedQuote && (
-        <div className="space-y-5">
+        <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4 text-sm">
             <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">
               {dict.summary}

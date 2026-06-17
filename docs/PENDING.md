@@ -235,6 +235,19 @@ Pedido del usuario: el link de seguimiento se veía muy básico y faltaban accio
   tabla esté en la publicación + autorización), se agregó polling cada 12s como
   respaldo confiable, igual que los portales de cliente/conductor.
 
+### B-quater. Micrositio: legibilidad + foto de vehículos (2026-06-17)
+- ✅ **"La diferencia" legible**: el texto iba sobre la foto del hero (overlay /92
+  insuficiente) → ahora fondo sólido #0a0a0d + foto al 40% con degradado casi
+  opaco del lado del texto; cuerpo a white/75.
+- ✅ **Foto por tipo de vehículo (base_image_url)**: NO existía UI para subirla, por
+  eso la flota mostraba una foto genérica que no coincidía con el nombre (ej. "G63
+  AMG" con una SUV cualquiera). Ahora:
+  - Subida de imagen en Flota → editar/crear tipo de vehículo (bucket "branding",
+    PNG/JPG/WebP ≤5 MB) vía uploadVehicleImage en actions/fleet.ts.
+  - El micrositio usa base_image_url cuando existe; si NO hay foto, muestra un
+    PLACEHOLDER elegante (ícono por clase) en vez de un auto que no corresponde.
+  - i18n EN/ES/PT: fleet.typeForm.image/imageHint/imageRemove/imageCurrent.
+
 ### F. Pago al momento de la reserva (2026-06-16)
 ✅ El wizard ahora ofrece "Confirmar y pagar ahora" (Stripe Checkout) además de
 "Reservar y pagar después", SOLO cuando el operador tiene Stripe Connect

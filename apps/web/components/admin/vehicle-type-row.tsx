@@ -23,6 +23,7 @@ interface VehicleType {
   capacity: number
   amenities: string[]
   is_active: boolean
+  base_image_url?: string | null
 }
 
 const inputCls =
@@ -86,6 +87,27 @@ export function VehicleTypeRow({
             <div className="space-y-1 flex-1 min-w-[180px]">
               <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{fleet.typeForm.amenities}</label>
               <input name="amenities" defaultValue={vt.amenities.join(', ')} placeholder={fleet.typeForm.amenitiesPlaceholder} className={`${inputCls} w-full`} />
+            </div>
+            {/* Foto del vehículo (se muestra en el micrositio) */}
+            <div className="space-y-1 min-w-[200px]">
+              <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{fleet.typeForm.image}</label>
+              <div className="flex items-center gap-2">
+                {vt.base_image_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={vt.base_image_url} alt={fleet.typeForm.imageCurrent} className="h-10 w-14 object-cover rounded-md border border-sl-outline-variant shrink-0" />
+                )}
+                <input
+                  name="image"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="text-[11px] text-sl-on-surface-muted file:mr-2 file:rounded-md file:border-0 file:bg-gold file:px-2.5 file:py-1 file:text-[11px] file:font-semibold file:text-gray-900 hover:file:bg-gold/90 file:cursor-pointer"
+                />
+              </div>
+              {vt.base_image_url && (
+                <label className="flex items-center gap-1.5 text-[10px] text-sl-on-surface-muted">
+                  <input type="checkbox" name="remove_image" value="true" /> {fleet.typeForm.imageRemove}
+                </label>
+              )}
             </div>
             <div className="flex items-center gap-3 pb-1">
               <button type="submit" disabled={isPending} className="px-4 py-2 text-sm font-semibold bg-gold text-gray-900 rounded-lg hover:bg-gold/90 disabled:opacity-60 transition-all">

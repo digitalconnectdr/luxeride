@@ -11,6 +11,36 @@ export type FleetActionResult = {
   id?: string
 }
 
+const MIME_EXT: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+}
+
+// Sube la foto del tipo de vehículo al bucket "branding" y devuelve la URL
+// pública (o un objeto de error). Devuelve undefined si no hay archivo.
+async function uploadVehicleImage(
+  admin: ReturnType<typeof createAdminClient>,
+  companyId: string,
+  typeId: string,
+  file: File,
+): Promise<{ url?: string; error?: string }> {
+  if (file.size > 5_000_000) return { error: 'La imagen no puede superar 5 MB.' }
+  const ext = MIME_EXT[file.type]
+  if (!ext) return { error: 'Formato no válido. Usa PNG, JPG o WebP.' }
+  const path = `${companyId}/vehicle-${typeId}.${ext}`
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const { error: upErr } = await admin.storage
+    .from('branding')
+    .upload(path, buffer, { contentType: file.type, upsert: true })
+  if (upErr) {
+    console.error('[uploadVehicleImage]', upErr)
+    return { error: 'Error al subir la imagen.' }
+  }
+  const { data: pub } = admin.storage.from('branding').getPublicUrl(path)
+  return { url: `${pub.publicUrl}?v=${Date.now()}` }
+}
+
 // ── Vehicle Types ─────────────────────────────────────────────────────────────
 
 export async function createVehicleTypeAction(
@@ -39,7 +69,15 @@ export async function createVehicleTypeAction(
 
   if (error) return { success: false, error: error.message }
 
+  // Imagen opcional al crear
+  const image = formData.get('image') as File | null
+  if (image && image.size > 0) {
+    const up = await uploadVehicleImage(admin, user.company_id, data.id, image)
+    if (up.url) await admin.from('vehicle_types').update({ base_image_url: up.url }).eq('id', data.id)
+  }
+
   revalidatePath('/admin/fleet')
+  revalidatePath('/book', 'layout')
   return { success: true, id: data.id }
 }
 
@@ -70,13 +108,26 @@ export async function updateVehicleTypeAction(
     .single()
   if (type?.company_id !== user.company_id) return { success: false, error: 'Not found' }
 
+  const updates: { name: string; class: VehicleClass; capacity: number; amenities: string[]; base_image_url?: string | null } = {
+    name, class: cls, capacity, amenities,
+  }
+  const image = formData.get('image') as File | null
+  if (formData.get('remove_image') === 'true') {
+    updates.base_image_url = null
+  } else if (image && image.size > 0) {
+    const up = await uploadVehicleImage(admin, user.company_id, typeId, image)
+    if (up.error) return { success: false, error: up.error }
+    updates.base_image_url = up.url
+  }
+
   const { error } = await admin
     .from('vehicle_types')
-    .update({ name, class: cls, capacity, amenities })
+    .update(updates)
     .eq('id', typeId)
 
   if (error) return { success: false, error: error.message }
   revalidatePath('/admin/fleet')
+  revalidatePath('/book', 'layout') // refrescar el micrositio del operador
   return { success: true }
 }
 

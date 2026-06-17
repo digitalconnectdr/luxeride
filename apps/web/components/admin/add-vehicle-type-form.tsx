@@ -63,6 +63,16 @@ export function AddVehicleTypeForm({
           <label className="text-xs text-sl-on-surface-muted">{labels.amenities}</label>
           <input name="amenities" type="text" placeholder={labels.amenitiesPlaceholder} className={inputCls} />
         </div>
+        <div className="space-y-1 sm:col-span-2 lg:col-span-4">
+          <label className="text-xs text-sl-on-surface-muted">{labels.image}</label>
+          <input
+            name="image"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="block w-full text-xs text-sl-on-surface-muted file:mr-3 file:rounded-lg file:border-0 file:bg-gold file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gray-900 hover:file:bg-gold/90 file:cursor-pointer"
+          />
+          <p className="text-[10px] text-sl-on-surface-muted">{labels.imageHint}</p>
+        </div>
 
         <div className="sm:col-span-2 lg:col-span-4 flex justify-end">
           <button

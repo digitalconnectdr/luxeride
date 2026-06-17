@@ -16,6 +16,11 @@ const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-
 const U = (slug: string) => `https://unsplash.com/photos/${slug}/download?force=true&w=1600`
 const DEFAULT_HERO = U('9XVJ-Jq7Ke8')
 const DEFAULT_CARS = [U('NjQmytqwDGs'), U('9XVJ-Jq7Ke8'), U('7I8qdKTHDp4'), U('4Dofvf-eUMs'), U('FZ5MkHkeyKM')]
+// Ícono por clase para el placeholder cuando el operador aún no subió foto del
+// vehículo (evita mostrar una foto que NO corresponde al nombre).
+const CLASS_ICON: Record<string, string> = {
+  sedan: '🚗', suv: '🚙', van: '🚐', limousine: '🚘', sprinter: '🚐', bus: '🚌', exotic: '🏎️',
+}
 
 interface Props {
   params: { slug: string }
@@ -187,9 +192,10 @@ export default async function OperatorMicrosite({ params }: Props) {
       )}
 
       {/* La diferencia */}
-      <section className="lux-grain relative isolate py-28 lg:py-32 overflow-hidden">
-        <Image src={heroImg} alt="" fill sizes="100vw" className="object-cover -z-10" />
-        <div className="absolute inset-0 -z-10 bg-[#08080a]/92" />
+      <section className="lux-grain relative isolate py-28 lg:py-32 overflow-hidden bg-[#0a0a0d]">
+        <Image src={heroImg} alt="" fill sizes="100vw" className="object-cover -z-10 opacity-40" />
+        {/* Degradado casi opaco del lado del texto para garantizar legibilidad */}
+        <div className="absolute inset-0 -z-10" style={{ background: 'linear-gradient(90deg, rgba(10,10,13,0.7) 0%, rgba(10,10,13,0.9) 45%, rgba(10,10,13,0.98) 100%)' }} />
         <div className="max-w-[1300px] mx-auto px-6 lg:px-10 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <Reveal className="relative h-80 lg:h-[26rem] rounded-[1.25rem] overflow-hidden ring-1 ring-white/10">
             <Image src={fleet[0]?.base_image_url || DEFAULT_CARS[0]} alt="" fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover" />
@@ -203,8 +209,8 @@ export default async function OperatorMicrosite({ params }: Props) {
                 <div key={f.title} className="flex gap-5">
                   <span className="mt-3 h-px w-7 shrink-0" style={{ backgroundColor: brandColor }} />
                   <div>
-                    <h3 className="font-playfair text-lg font-medium">{f.title}</h3>
-                    <p className="text-sm text-white/60 mt-1.5 leading-relaxed max-w-md">{f.desc}</p>
+                    <h3 className="font-playfair text-lg font-medium text-white">{f.title}</h3>
+                    <p className="text-sm text-white/75 mt-1.5 leading-relaxed max-w-md">{f.desc}</p>
                   </div>
                 </div>
               ))}
@@ -223,8 +229,17 @@ export default async function OperatorMicrosite({ params }: Props) {
                 <Reveal key={v.id}>
                   <article className="group rounded-[1.25rem] overflow-hidden border border-white/[0.08] bg-white/[0.015] hover:bg-white/[0.03] transition-colors h-full">
                     <div className="relative h-56 overflow-hidden">
-                      <Image src={v.base_image_url || DEFAULT_CARS[i % DEFAULT_CARS.length]} alt={v.name} fill sizes="(max-width:1024px) 50vw, 33vw" className="object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-105" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                      {v.base_image_url ? (
+                        <>
+                          <Image src={v.base_image_url} alt={v.name} fill sizes="(max-width:1024px) 50vw, 33vw" className="object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-105" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                        </>
+                      ) : (
+                        // Placeholder elegante: sin foto real → no mostramos un auto que no corresponde
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/[0.07] via-transparent to-transparent">
+                          <span className="text-6xl opacity-30 transition-transform duration-700 group-hover:scale-110">{CLASS_ICON[v.class] ?? '🚗'}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="relative p-6">
                       <span className="absolute left-6 top-0 h-px w-0 group-hover:w-10 transition-all duration-500" style={{ backgroundColor: brandColor }} />
