@@ -289,3 +289,55 @@
 .animate-kenburns {
   animation: kenburns 20s ease-out forwards;
 }
+
+/* ── Micrositio premium ─────────────────────────────────────────────────────── */
+
+/* Grano de película muy sutil para profundidad cinematográfica (capa superpuesta) */
+.lux-grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Subrayado animado para enlaces de navegación / acentos */
+.lux-link {
+  position: relative;
+}
+.lux-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  height: 1px;
+  width: 100%;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s cubic-bezier(0.21, 0.65, 0.36, 1);
+}
+.lux-link:hover::after {
+  transform: scaleX(1);
+}
+
+/* El zoom Ken Burns respeta prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-kenburns {
+    animation: none;
+  }
+}
+
+/* Indicador de scroll del hero */
+@keyframes lux-scroll-cue {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50%      { transform: translateY(6px); opacity: 1; }
+}
+.lux-scroll-cue {
+  animation: lux-scroll-cue 2.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lux-scroll-cue { animation: none; }
+}
