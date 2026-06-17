@@ -145,7 +145,7 @@ export async function deleteVehicleTypeAction(
     .single()
   if (type?.company_id !== user.company_id) return { success: false, error: 'Not found' }
 
-  // No se puede eliminar si hay vehículos usando este tipo
+  // No se puede eliminar si hay vehículos REALES usando este tipo
   const { count } = await admin
     .from('vehicles')
     .select('id', { count: 'exact', head: true })
@@ -155,9 +155,19 @@ export async function deleteVehicleTypeAction(
     return { success: false, error: 'IN_USE' }
   }
 
+  // Limpiar dependencias eliminables (reglas de precio y cotizaciones de ESTE
+  // tipo) que de otro modo bloquean el delete por foreign key.
+  await admin.from('pricing_rules').delete().eq('vehicle_type_id', typeId)
+  await admin.from('price_quotes').delete().eq('vehicle_type_id', typeId)
+
   const { error } = await admin.from('vehicle_types').delete().eq('id', typeId)
-  if (error) return { success: false, error: error.message }
+  if (error) {
+    // Suele ser por reservas que usaron este tipo (se conservan por historial).
+    console.error('[deleteVehicleTypeAction]', error)
+    return { success: false, error: 'IN_USE' }
+  }
   revalidatePath('/admin/fleet')
+  revalidatePath('/book', 'layout')
   return { success: true }
 }
 
