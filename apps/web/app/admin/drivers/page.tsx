@@ -57,6 +57,23 @@ export default async function DriversPage() {
     console.error('[drivers/page] drivers query THREW:', err)
   }
 
+  // Conteo de viajes COMPLETADOS por conductor (dinámico = siempre correcto,
+  // no depende de incrementar drivers.total_trips al completar).
+  const tripCounts: Record<string, number> = {}
+  try {
+    const { data } = await admin
+      .from('bookings')
+      .select('driver_id')
+      .eq('company_id', companyId)
+      .eq('status', 'completed')
+      .not('driver_id', 'is', null)
+    for (const b of data ?? []) {
+      if (b.driver_id) tripCounts[b.driver_id] = (tripCounts[b.driver_id] ?? 0) + 1
+    }
+  } catch (err) {
+    console.error('[drivers/page] trips count THREW:', err)
+  }
+
   const allProfiles = profilesData ?? []
   const driverMap   = Object.fromEntries((driversData ?? []).map((d) => [d.id, d]))
 
@@ -146,10 +163,10 @@ export default async function DriversPage() {
                       )}
                     </td>
 
-                    {/* Trips */}
+                    {/* Trips — conteo dinámico de viajes completados */}
                     <td className="px-5 py-4">
                       <span className="text-xs text-sl-on-surface-muted">
-                        {dr?.total_trips ?? 0}
+                        {tripCounts[p.id] ?? 0}
                       </span>
                     </td>
 

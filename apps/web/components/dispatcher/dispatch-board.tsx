@@ -94,6 +94,14 @@ export function DispatchBoard({ companyId, initialBookings, drivers }: Props) {
     }
   }, [companyId, router])
 
+  // ── Respaldo de polling: si Realtime no está habilitado en el proyecto, el
+  // board igual se mantiene al día (mismo enfoque que los portales de cliente
+  // y conductor). Re-fetch cada 12s.
+  useEffect(() => {
+    const id = setInterval(() => router.refresh(), 12000)
+    return () => clearInterval(id)
+  }, [router])
+
   // ── Acciones ────────────────────────────────────────────────────────────────
 
   function advance(bookingId: string, to: BookingStatus) {

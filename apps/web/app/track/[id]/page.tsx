@@ -50,7 +50,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   ])
 
   const company = companyRes.data as { name: string; phone: string | null; primary_color: string | null; logo_url: string | null } | null
-  const brandColor = company?.primary_color ?? '#e9c176'
+  const brandColor = company?.primary_color ?? '#c9a24b'
   const logoUrl = company?.logo_url ?? null
   const companyName = company?.name ?? 'LuxeRide'
   const initial = companyName.trim().charAt(0).toUpperCase() || 'L'
@@ -64,8 +64,20 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const isCompleted = booking.status === 'completed'
   const currentIdx = STATUS_KEYS.findIndex((k) => k === booking.status)
   const isActive = ACTIVE.has(booking.status)
+  // Auto-refresh ESCALONADO por cercanía al viaje, para no saturar el sistema con
+  // reservas hechas con días de antelación:
+  //   • Viaje en movimiento (en_route/arrived/in_progress) o a ≤2h → cada 15s
+  //   • A ≤24h (capta la asignación del conductor el día previo)     → cada 60s
+  //   • A más de 24h (reserva lejana, pending/assigned)              → sin polling
+  const hoursUntilTrip = (new Date(booking.scheduled_at).getTime() - Date.now()) / 3_600_000
+  const inMotion = ['en_route', 'arrived', 'in_progress'].includes(booking.status)
+  let pollSeconds = 0
+  if (!isTerminal && !isCompleted) {
+    if (inMotion || hoursUntilTrip <= 2) pollSeconds = 15
+    else if (hoursUntilTrip <= 24) pollSeconds = 60
+  }
+  const shouldPoll = pollSeconds > 0
 
-  // Horas por etapa (para el timeline detallado)
   const stampByStatus: Record<string, string | null> = {
     assigned: booking.dispatched_at,
     en_route: booking.en_route_at,
@@ -76,7 +88,6 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const fmtTime = (iso: string) =>
     new Date(iso).toLocaleTimeString(localeTag, { hour: '2-digit', minute: '2-digit' })
 
-  // Estado actual (encabezado destacado)
   const currentLabel = isTerminal
     ? t.terminal[booking.status as keyof typeof t.terminal]
     : t.statuses[booking.status as keyof typeof t.statuses]
@@ -86,65 +97,70 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const canReport = !!booking.driver_id && REPORTABLE.has(booking.status)
   const canAddStop = ACTIVE.has(booking.status)
 
-  return (
-    <div className="min-h-screen bg-[#0f0e0e] text-white" style={{ ['--brand' as string]: brandColor }}>
-      {isActive && <AutoRefresh seconds={30} />}
+  const goldRule = `linear-gradient(90deg, transparent, ${brandColor}, transparent)`
 
-      <div className="max-w-md mx-auto px-5 py-10 space-y-5">
+  return (
+    <div className="min-h-screen bg-[#08080a] text-white antialiased selection:bg-[var(--brand)]/30" style={{ ['--brand' as string]: brandColor }}>
+      {shouldPoll && <AutoRefresh seconds={pollSeconds} />}
+
+      {/* Banda dorada superior */}
+      <div className="h-px w-full" style={{ background: goldRule }} />
+
+      <div className="max-w-md mx-auto px-5 py-12 space-y-6">
         {/* ── Header ── */}
-        <div className="text-center">
+        <header className="text-center">
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt={companyName} className="h-9 max-w-[160px] object-contain mx-auto mb-3" />
+            <img src={logoUrl} alt={companyName} className="h-10 max-w-[170px] object-contain mx-auto mb-4" />
           ) : (
-            <div className="w-9 h-9 rounded-full flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: brandColor }}>
-              <span className="text-gray-900 font-bold text-sm leading-none">{initial}</span>
+            <div className="w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: brandColor }}>
+              <span className="text-[#08080a] font-bold text-base leading-none">{initial}</span>
             </div>
           )}
-          <h1 className="font-playfair text-lg font-semibold">{companyName}</h1>
-          <div className="inline-flex items-center gap-1.5 mt-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1">
-            <span className="text-[10px] uppercase tracking-widest text-white/40">{t.bookingRef}</span>
-            <span className="font-mono text-xs text-[var(--brand)]">{booking.booking_number}</span>
+          <h1 className="font-playfair text-xl font-medium tracking-[0.02em]">{companyName}</h1>
+          <div className="inline-flex items-center gap-2 mt-3 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-white/40">{t.bookingRef}</span>
+            <span className="font-mono text-xs" style={{ color: brandColor }}>{booking.booking_number}</span>
           </div>
-          <p className="text-xs text-white/40 mt-2">
+          <p className="text-xs text-white/40 mt-3">
             {new Date(booking.scheduled_at).toLocaleString(localeTag, {
               weekday: 'long', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
             })}
           </p>
-        </div>
+        </header>
 
         {/* ── Estado actual destacado ── */}
         <div
-          className={`rounded-2xl p-5 text-center border ${
+          className={`relative overflow-hidden rounded-2xl p-6 text-center border ${
             isTerminal
-              ? 'border-red-500/30 bg-red-500/10'
+              ? 'border-red-500/25 bg-red-500/[0.07]'
               : isCompleted
-                ? 'border-green-500/30 bg-green-500/10'
-                : 'border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02]'
+                ? 'border-green-500/25 bg-green-500/[0.07]'
+                : 'border-white/10 bg-gradient-to-b from-white/[0.07] to-transparent'
           }`}
         >
           {!isTerminal && !isCompleted && (
-            <span className="inline-flex items-center gap-2 mb-2">
-              <span className="relative flex h-2.5 w-2.5">
+            <span className="inline-flex items-center gap-2 mb-3">
+              <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ backgroundColor: brandColor }} />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ backgroundColor: brandColor }} />
+                <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: brandColor }} />
               </span>
-              <span className="text-[10px] uppercase tracking-widest text-white/40">{t.title}</span>
+              <span className="text-[10px] uppercase tracking-[0.25em] text-white/45">{t.title}</span>
             </span>
           )}
-          <p className={`text-lg font-semibold ${isTerminal ? 'text-red-400' : isCompleted ? 'text-green-400' : 'text-white'}`}>
+          <p className={`font-playfair text-2xl font-medium tracking-[-0.01em] ${isTerminal ? 'text-red-400' : isCompleted ? 'text-green-400' : 'text-white'}`}>
             {isCompleted ? '✓ ' : ''}{currentLabel}
           </p>
           {isTerminal && company?.phone && (
-            <p className="text-sm text-white/50 mt-2">
-              {t.questions} <a href={`tel:${company.phone}`} className="text-[var(--brand)]">{company.phone}</a>
+            <p className="text-sm text-white/50 mt-3">
+              {t.questions} <a href={`tel:${company.phone}`} className="lux-link" style={{ color: brandColor }}>{company.phone}</a>
             </p>
           )}
         </div>
 
-        {/* ── Timeline (oculto en estados terminales) ── */}
+        {/* ── Timeline ── */}
         {!isTerminal && (
-          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+          <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6">
             <div className="space-y-0">
               {STATUS_KEYS.map((key, i) => {
                 const done = i < currentIdx
@@ -154,47 +170,47 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
                   <div key={key} className="flex gap-4">
                     <div className="flex flex-col items-center">
                       <div
-                        className={`w-4 h-4 rounded-full shrink-0 mt-0.5 flex items-center justify-center ${
+                        className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center transition-colors ${
                           done
-                            ? 'bg-[var(--brand)]'
+                            ? 'text-[#08080a]'
                             : current
-                              ? 'bg-[var(--brand)] ring-4 ring-[var(--brand)]/20 animate-pulse'
-                              : 'bg-white/15'
+                              ? 'ring-4 ring-[var(--brand)]/20'
+                              : 'bg-white/[0.08] border border-white/15'
                         }`}
+                        style={done || current ? { backgroundColor: brandColor } : undefined}
                       >
-                        {done && <span className="text-gray-900 text-[9px] leading-none font-bold">✓</span>}
+                        {done && <span className="text-[10px] leading-none font-bold">✓</span>}
+                        {current && <span className="h-1.5 w-1.5 rounded-full bg-[#08080a]" />}
                       </div>
                       {i < STATUS_KEYS.length - 1 && (
-                        <div className={`w-0.5 h-8 ${done ? 'bg-[var(--brand)]' : 'bg-white/10'}`} />
+                        <div className="w-px h-9" style={{ background: done ? brandColor : 'rgba(255,255,255,0.1)' }} />
                       )}
                     </div>
-                    <div className="pb-6 -mt-0.5">
-                      <p className={`text-sm ${current ? 'font-semibold text-white' : done ? 'text-white/60' : 'text-white/30'}`}>
+                    <div className="pb-7 -mt-px">
+                      <p className={`text-sm ${current ? 'font-semibold text-white' : done ? 'text-white/70' : 'text-white/30'}`}>
                         {t.statuses[key]}
                       </p>
                       {(done || current) && stamp && (
-                        <p className="text-[11px] text-white/30 mt-0.5">{fmtTime(stamp)}</p>
+                        <p className="text-[11px] text-white/35 mt-0.5 font-mono">{fmtTime(stamp)}</p>
                       )}
                     </div>
                   </div>
                 )
               })}
             </div>
-          </div>
+          </section>
         )}
 
         {/* ── Conductor + vehículo ── */}
         {driver && !isTerminal && (
-          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40 mb-3">
-              {t.yourDriver}
-            </p>
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 text-gray-900 font-bold" style={{ backgroundColor: brandColor }}>
+          <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40 mb-4">{t.yourDriver}</p>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-[#08080a] font-bold ring-2 ring-white/10" style={{ backgroundColor: brandColor }}>
                 {driver.first_name.trim().charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <p className="font-semibold truncate">{driver.first_name}</p>
+                <p className="font-medium truncate">{driver.first_name}</p>
                 {vehicle && (
                   <p className="text-sm text-white/50 truncate">
                     {vehicle.color ? `${vehicle.color} ` : ''}{vehicle.make} {vehicle.model}
@@ -203,12 +219,12 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
               </div>
               {vehicle && (
                 <div className="ml-auto text-right shrink-0">
-                  <p className="text-[10px] uppercase tracking-widest text-white/30">{t.plate}</p>
-                  <p className="font-mono text-sm text-[var(--brand)]">{vehicle.plate_number}</p>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-white/30">{t.plate}</p>
+                  <p className="font-mono text-sm" style={{ color: brandColor }}>{vehicle.plate_number}</p>
                 </div>
               )}
             </div>
-          </div>
+          </section>
         )}
 
         {/* ── Chat con el conductor ── */}
@@ -230,14 +246,14 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
         )}
 
         {/* ── Ruta ── */}
-        <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 space-y-3 text-sm">
+        <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-3 text-sm">
           <div className="flex gap-3">
             <div className="flex flex-col items-center pt-1">
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: brandColor }} />
               <span className="w-px flex-1 bg-white/10 my-1" />
             </div>
             <div className="flex-1 pb-1">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40 mb-0.5">{t.pickup}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40 mb-0.5">{t.pickup}</p>
               <p className="text-white/80">{pickup}</p>
             </div>
           </div>
@@ -248,11 +264,11 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
               return (
                 <div key={i} className="flex gap-3">
                   <div className="flex flex-col items-center pt-1">
-                    <span className="w-2 h-2 rotate-45 bg-white/40" />
+                    <span className="w-2 h-2 rotate-45" style={{ backgroundColor: `${brandColor}99` }} />
                     <span className="w-px flex-1 bg-white/10 my-1" />
                   </div>
                   <div className="flex-1 pb-1">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--brand)]/60 mb-0.5">◆ {i + 1}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] mb-0.5" style={{ color: `${brandColor}aa` }}>◆ {i + 1}</p>
                     <p className="text-white/70">{addr}</p>
                   </div>
                 </div>
@@ -263,11 +279,11 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
               <span className="w-2.5 h-2.5 rounded-sm bg-white/60" />
             </div>
             <div className="flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40 mb-0.5">{t.destination}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40 mb-0.5">{t.destination}</p>
               <p className="text-white/80">{dropoff}</p>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* ── Acciones del pasajero ── */}
         {!isTerminal && (
@@ -285,10 +301,10 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
         {company?.phone && !isTerminal && (
           <p className="text-center text-xs text-white/40">
             {t.needHelp}{' '}
-            <a href={`tel:${company.phone}`} className="text-[var(--brand)] hover:underline">{company.phone}</a>
+            <a href={`tel:${company.phone}`} className="lux-link" style={{ color: brandColor }}>{company.phone}</a>
           </p>
         )}
-        {isActive && (
+        {shouldPoll && (
           <p className="text-center text-[10px] text-white/25">{t.autoRefresh}</p>
         )}
       </div>

@@ -3,7 +3,6 @@ import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import QRCode from 'qrcode'
 import { createAdminClient } from '@/lib/supabase/server'
-import { isStripeConfigured } from '@/lib/stripe/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { getAppUrl } from '@/lib/app-url'
 import { brand } from '@/lib/brand'
@@ -82,6 +81,7 @@ export default async function OperatorMicrosite({ params }: Props) {
   const logoUrl = (company as { logo_url?: string | null }).logo_url ?? null
   const site = ((company.settings as { site?: { whatsapp?: string; googlePlaceId?: string } } | null)?.site) ?? {}
   const waNumber = (site.whatsapp ?? '').replace(/[^0-9]/g, '')
+  const reservarUrl = `/book/${company.slug}/reservar`
 
   const shortUrl = `${getAppUrl()}/${company.slug}`
   const qrDataUrl = await QRCode.toDataURL(shortUrl, { width: 220, margin: 1, color: { dark: '#0a0a0c', light: '#ffffff' } })
@@ -120,7 +120,7 @@ export default async function OperatorMicrosite({ params }: Props) {
             {services.length > 0 && <a href="#servicios" className="hidden md:inline-block lux-link hover:text-white transition-colors">{t.ourServices}</a>}
             {fleet.length > 0 && <a href="#flota" className="hidden md:inline-block lux-link hover:text-white transition-colors">{t.ourFleet}</a>}
             <LanguageSwitcher current={locale} variant="dark" />
-            <a href="#reservar" className="px-5 py-2 rounded-full text-[#08080a] font-semibold text-xs tracking-wide transition-transform hover:scale-[1.04]" style={{ backgroundColor: brandColor }}>{t.bookNow}</a>
+            <a href={reservarUrl} className="px-5 py-2 rounded-full text-[#08080a] font-semibold text-xs tracking-wide transition-transform hover:scale-[1.04]" style={{ backgroundColor: brandColor }}>{t.bookNow}</a>
           </nav>
         </div>
       </header>
@@ -141,7 +141,7 @@ export default async function OperatorMicrosite({ params }: Props) {
             </h1>
             {about && <p className="mt-7 text-lg text-white/70 leading-relaxed max-w-xl line-clamp-3">{about}</p>}
             <div className="mt-10 flex flex-wrap items-center gap-x-4 gap-y-3">
-              <a href="#reservar" className="px-8 py-4 rounded-full text-[#08080a] text-sm font-semibold tracking-wide transition-transform hover:scale-[1.03]" style={{ backgroundColor: brandColor }}>{t.bookNow} →</a>
+              <a href={reservarUrl} className="px-8 py-4 rounded-full text-[#08080a] text-sm font-semibold tracking-wide transition-transform hover:scale-[1.03]" style={{ backgroundColor: brandColor }}>{t.bookNow} →</a>
               {waNumber && (
                 <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="px-8 py-4 rounded-full text-sm font-medium border border-white/25 hover:border-white/50 hover:bg-white/5 transition-colors inline-flex items-center gap-2">
                   <span className="text-green-400 text-[10px]">●</span> WhatsApp
@@ -176,7 +176,7 @@ export default async function OperatorMicrosite({ params }: Props) {
                       {s.icon && <span className="text-3xl block mb-4 opacity-90">{s.icon}</span>}
                       <h3 className="font-playfair text-[1.75rem] lg:text-[2rem] font-medium tracking-[-0.01em] mb-5">{s.title}</h3>
                       {s.description && <p className="text-white/60 leading-relaxed text-[15px] max-w-lg">{s.description}</p>}
-                      <a href="#reservar" className="lux-link inline-block mt-7 text-sm font-semibold" style={{ color: brandColor }}>{t.bookNow} →</a>
+                      <a href={reservarUrl} className="lux-link inline-block mt-7 text-sm font-semibold" style={{ color: brandColor }}>{t.bookNow} →</a>
                     </div>
                   </div>
                 </Reveal>
@@ -274,37 +274,28 @@ export default async function OperatorMicrosite({ params }: Props) {
         />
       )}
 
-      {/* Reservar + QR */}
-      <section id="reservar" className="py-28 lg:py-32 bg-[#0b0b0e] border-t border-white/[0.06] scroll-mt-16">
-        <div className="max-w-[1300px] mx-auto px-6 lg:px-10 grid lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] gap-10 lg:gap-14 items-start">
-          <div>
+      {/* Reservar (CTA → página de reserva en pantalla completa) + QR */}
+      <section id="reservar" className="lux-grain relative isolate py-28 lg:py-32 overflow-hidden border-t border-white/[0.06] scroll-mt-16">
+        <Image src={heroImg} alt="" fill sizes="100vw" className="object-cover -z-10" />
+        <div className="absolute inset-0 -z-10 bg-[#08080a]/90" />
+        <div className="max-w-[1300px] mx-auto px-6 lg:px-10 grid lg:grid-cols-[1.5fr_1fr] gap-12 lg:gap-16 items-center">
+          <Reveal>
             <span className="block h-px w-12 mb-6" style={{ background: `linear-gradient(90deg, ${brandColor}, transparent)` }} />
-            <h2 className="font-playfair text-[2rem] sm:text-4xl font-medium tracking-[-0.01em] mb-2">{t.bookTitle}</h2>
-            <p className="text-sm text-white/50 mb-8">{t.scanDesc}</p>
-            <Reveal className="rounded-[1.25rem] bg-[#f1ece3] p-6 sm:p-8 shadow-2xl shadow-black/50 ring-1 ring-white/5">
-              <BookingWizard
-                company={{ id: company.id, name: company.name, slug: company.slug, currency: (company.currency as string | null) ?? 'USD', primaryColor: brandColor, phone: (company.phone as string | null) ?? null, email: (company.email as string | null) ?? null }}
-                vehicleTypes={fleet.map((vt) => ({ id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null }))}
-                onlinePaymentsEnabled={isStripeConfigured() && Boolean(company.stripe_connect_onboarded)}
-                dict={dict.wizard}
-                localeTag={LOCALE_TAGS[locale] ?? 'en-US'}
-                gratuity={(() => {
-                  const g = (company.settings as { gratuity?: { enabled?: boolean; options?: number[]; default_percentage?: number }; booking?: { require_deposit?: boolean } } | null)?.gratuity
-                  const requiresDeposit = Boolean((company.settings as { booking?: { require_deposit?: boolean } } | null)?.booking?.require_deposit)
-                  return { enabled: (g?.enabled ?? true) && !requiresDeposit, options: g?.options ?? [15, 18, 20, 25], defaultPct: g?.default_percentage ?? 20 }
-                })()}
-              />
-            </Reveal>
-          </div>
-          <div className="lg:sticky lg:top-24 rounded-[1.25rem] border border-white/[0.08] bg-white/[0.02] p-8 text-center">
+            <h2 className="font-playfair text-[2.25rem] sm:text-5xl font-medium tracking-[-0.015em] leading-[1.05] text-balance">{t.bookTitle}</h2>
+            <p className="mt-5 text-lg text-white/65 leading-relaxed max-w-md">{t.bookCta}</p>
+            <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <a href={reservarUrl} className="px-8 py-4 rounded-full text-[#08080a] text-sm font-semibold tracking-wide transition-transform hover:scale-[1.03]" style={{ backgroundColor: brandColor }}>{t.bookNow} →</a>
+              {company.phone && (
+                <a href={`tel:${company.phone}`} className="lux-link text-sm font-medium text-white/80 hover:text-white transition-colors">{t.call}: {company.phone}</a>
+              )}
+            </div>
+          </Reveal>
+          <Reveal className="lg:justify-self-end rounded-[1.25rem] border border-white/[0.08] bg-white/[0.03] backdrop-blur-sm p-8 text-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={qrDataUrl} alt="QR" className="w-44 h-44 mx-auto rounded-2xl bg-white p-2.5 shadow-lg shadow-black/40" />
             <h3 className="mt-6 font-playfair text-lg font-medium">{t.scanTitle}</h3>
             <p className="mt-1.5 text-sm text-white/50">{t.scanDesc}</p>
-            {company.phone && (
-              <a href={`tel:${company.phone}`} className="lux-link mt-6 inline-block text-sm font-semibold" style={{ color: brandColor }}>{t.call}: {company.phone}</a>
-            )}
-          </div>
+          </Reveal>
         </div>
       </section>
 
@@ -335,7 +326,7 @@ export default async function OperatorMicrosite({ params }: Props) {
               <ul className="space-y-3 text-sm text-white/60">
                 {services.length > 0 && <li><a href="#servicios" className="lux-link hover:text-white transition-colors">{t.ourServices}</a></li>}
                 {fleet.length > 0 && <li><a href="#flota" className="lux-link hover:text-white transition-colors">{t.ourFleet}</a></li>}
-                <li><a href="#reservar" className="lux-link hover:text-white transition-colors">{t.bookTitle}</a></li>
+                <li><a href={reservarUrl} className="lux-link hover:text-white transition-colors">{t.bookTitle}</a></li>
               </ul>
             </div>
 

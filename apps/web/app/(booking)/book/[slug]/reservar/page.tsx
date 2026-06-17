@@ -1,0 +1,114 @@
+import type { Metadata } from 'next'
+import Image from 'next/image'
+import { notFound } from 'next/navigation'
+import { createAdminClient } from '@/lib/supabase/server'
+import { isStripeConfigured } from '@/lib/stripe/server'
+import { getLocale, getDict } from '@/lib/i18n/server'
+import { LanguageSwitcher } from '@/components/i18n/language-switcher'
+import { BookingWizard } from '../booking-wizard'
+
+export const metadata: Metadata = {
+  title: 'Reserva | LuxeRide',
+  robots: { index: false, follow: true }, // canónico es el micrositio /<slug>
+}
+
+const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
+const DEFAULT_HERO = 'https://unsplash.com/photos/9XVJ-Jq7Ke8/download?force=true&w=1400'
+
+export default async function ReservarPage({ params }: { params: { slug: string } }) {
+  const locale = getLocale()
+  const dict = getDict(locale)
+  const t = dict.microsite
+  const admin = createAdminClient()
+
+  const { data: company } = await admin
+    .from('companies')
+    .select('id, name, slug, status, currency, primary_color, phone, email, logo_url, tagline, hero_image_url, stripe_connect_onboarded, settings')
+    .eq('slug', params.slug)
+    .single()
+  if (!company || company.status !== 'active') return notFound()
+
+  const { data: vehicleTypes } = await admin
+    .from('vehicle_types')
+    .select('id, name, class, capacity, amenities, base_image_url')
+    .eq('company_id', company.id)
+    .eq('is_active', true)
+    .order('sort_order')
+
+  const fleet = vehicleTypes ?? []
+  const brandColor = (company.primary_color as string | null) || '#c9a24b'
+  const heroImg = (company as { hero_image_url?: string | null }).hero_image_url || DEFAULT_HERO
+  const tagline = (company as { tagline?: string | null }).tagline ?? null
+  const logoUrl = (company as { logo_url?: string | null }).logo_url ?? null
+
+  const gratuity = (() => {
+    const g = (company.settings as { gratuity?: { enabled?: boolean; options?: number[]; default_percentage?: number }; booking?: { require_deposit?: boolean } } | null)?.gratuity
+    const requiresDeposit = Boolean((company.settings as { booking?: { require_deposit?: boolean } } | null)?.booking?.require_deposit)
+    return { enabled: (g?.enabled ?? true) && !requiresDeposit, options: g?.options ?? [15, 18, 20, 25], defaultPct: g?.default_percentage ?? 20 }
+  })()
+
+  return (
+    <div className="min-h-screen bg-[#08080a] text-white antialiased selection:bg-[var(--brand)]/30" style={{ ['--brand' as string]: brandColor }}>
+      <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent, ${brandColor}55, transparent)` }} />
+
+      {/* Header slim */}
+      <header className="sticky top-0 z-40 bg-[#08080a]/85 backdrop-blur-md border-b border-white/[0.06]">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <a href={`/${company.slug}`} className="lux-link text-sm text-white/70 hover:text-white transition-colors">← {company.name}</a>
+          <LanguageSwitcher current={locale} variant="dark" />
+        </div>
+      </header>
+
+      <main className="grid lg:grid-cols-2">
+        {/* Panel de marca (desktop) */}
+        <aside className="lux-grain relative hidden lg:flex flex-col justify-end overflow-hidden min-h-[calc(100vh-57px)] sticky top-[57px]">
+          <Image src={heroImg} alt="" fill sizes="50vw" className="object-cover -z-10" />
+          <div className="absolute inset-0 -z-10" style={{ background: 'linear-gradient(180deg, rgba(8,8,10,0.55) 0%, rgba(8,8,10,0.35) 40%, rgba(8,8,10,0.95) 100%)' }} />
+          <div className="p-12 xl:p-16">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt={company.name} className="h-11 max-w-[200px] object-contain mb-7" />
+            ) : null}
+            <span className="block h-px w-12 mb-6" style={{ background: `linear-gradient(90deg, ${brandColor}, transparent)` }} />
+            <h1 className="font-playfair text-4xl xl:text-[2.75rem] font-medium leading-[1.08] tracking-[-0.015em] text-balance">
+              {tagline || company.name}
+            </h1>
+            <ul className="mt-9 space-y-3 text-sm text-white/65">
+              {t.features.slice(0, 3).map((f) => (
+                <li key={f.title} className="flex items-center gap-3">
+                  <span className="h-px w-5 shrink-0" style={{ backgroundColor: brandColor }} />
+                  {f.title}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
+
+        {/* Formulario en pantalla completa */}
+        <section className="flex flex-col items-center px-5 sm:px-8 py-12 lg:py-16">
+          <div className="w-full max-w-xl">
+            <div className="lg:hidden mb-6">
+              <span className="block h-px w-12 mb-5" style={{ background: `linear-gradient(90deg, ${brandColor}, transparent)` }} />
+              <h1 className="font-playfair text-3xl font-medium tracking-[-0.01em]">{tagline || company.name}</h1>
+            </div>
+            <div className="rounded-[1.25rem] bg-[#f1ece3] p-6 sm:p-8 shadow-2xl shadow-black/50 ring-1 ring-white/5">
+              <BookingWizard
+                company={{ id: company.id, name: company.name, slug: company.slug, currency: (company.currency as string | null) ?? 'USD', primaryColor: brandColor, phone: (company.phone as string | null) ?? null, email: (company.email as string | null) ?? null }}
+                vehicleTypes={fleet.map((vt) => ({ id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null }))}
+                onlinePaymentsEnabled={isStripeConfigured() && Boolean(company.stripe_connect_onboarded)}
+                dict={dict.wizard}
+                localeTag={LOCALE_TAGS[locale] ?? 'en-US'}
+                gratuity={gratuity}
+              />
+            </div>
+            {company.phone && (
+              <p className="text-center text-xs text-white/40 mt-6">
+                {t.call}: <a href={`tel:${company.phone}`} className="lux-link" style={{ color: brandColor }}>{company.phone}</a>
+              </p>
+            )}
+          </div>
+        </section>
+      </main>
+    </div>
+  )
+}

@@ -214,6 +214,27 @@ Pedido del usuario: el link de seguimiento se veía muy básico y faltaban accio
   re-cotización automática al agregar parada (hoy el costo extra lo ajusta el
   operador manualmente).
 
+### B-ter. Ajustes UX 2026-06-17 (pruebas en producción del usuario)
+- ✅ **Reserva en pantalla completa**: nueva página /book/<slug>/reservar (premium,
+  2 columnas: panel de marca + wizard centrado). Los CTAs del micrositio ("Reservar
+  ahora", hero, servicios, footer) enlazan ahí en vez de la card embebida (que se
+  veía muy grande). El micrositio ahora cierra con una sección CTA + QR.
+- ✅ **Tracking elevado a premium**: /track/[id] con Playfair, oro hairline, grano,
+  timeline refinado (check dorado + horas), tarjeta de conductor con anillo. Mismo
+  lenguaje visual que el micrositio.
+- ✅ **Auto-refresh del tracking ESCALONADO** (2026-06-17): para no saturar con
+  reservas a días vista, el polling entra por cercanía al viaje — en movimiento o
+  a ≤2h → 15s; a ≤24h → 60s; a >24h → sin polling. Resuelve la observación del
+  usuario (una reserva a 7 días no consume nada hasta acercarse) y a la vez arregla
+  el bug de que en `pending` no actualizaba (LXR-2026-00002).
+- ✅ **Gráfica "Reservaciones — esta semana"**: las barras usaban height:% contra un
+  contenedor de altura auto (no resolvía) → se agregó una pista de altura fija.
+- ✅ **Conductores · Viajes**: mostraba drivers.total_trips (columna no incrementada)
+  → ahora cuenta los viajes COMPLETADOS dinámicamente por conductor.
+- ✅ **Dispatch Board en vivo**: además del Supabase Realtime (que depende de que la
+  tabla esté en la publicación + autorización), se agregó polling cada 12s como
+  respaldo confiable, igual que los portales de cliente/conductor.
+
 ### F. Pago al momento de la reserva (2026-06-16)
 ✅ El wizard ahora ofrece "Confirmar y pagar ahora" (Stripe Checkout) además de
 "Reservar y pagar después", SOLO cuando el operador tiene Stripe Connect

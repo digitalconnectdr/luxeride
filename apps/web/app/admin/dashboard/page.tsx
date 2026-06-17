@@ -228,17 +228,20 @@ export default async function AdminDashboardPage() {
           <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] mb-4">
             {t.trendWeek}
           </p>
-          <div className="flex items-end justify-between gap-2 h-28">
+          <div className="flex items-end justify-between gap-2">
             {weekTrend.map((d, i) => {
               const max = Math.max(1, ...weekTrend.map((x) => x.count))
-              const h = Math.round((d.count / max) * 100)
+              const h = (d.count / max) * 100
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                  <span className="text-[10px] text-[#75716a]">{d.count || ''}</span>
-                  <div
-                    className="w-full rounded-t-md bg-[#8a6520]/70 min-h-[3px] transition-all"
-                    style={{ height: `${Math.max(3, h)}%` }}
-                  />
+                  <span className="text-[10px] font-medium text-[#8a6520] h-3">{d.count || ''}</span>
+                  {/* Pista de altura fija: el % de la barra resuelve contra ella */}
+                  <div className="w-full h-20 flex items-end">
+                    <div
+                      className="w-full rounded-t-md bg-[#8a6520]/70 transition-all"
+                      style={{ height: d.count ? `${Math.max(8, h)}%` : '0%' }}
+                    />
+                  </div>
                   <span className="text-[10px] text-[#75716a]">{d.day}</span>
                 </div>
               )
