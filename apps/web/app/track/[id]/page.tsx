@@ -158,13 +158,13 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
       <div className="h-px w-full" style={{ background: goldRule }} />
 
       {/* Selector de idioma */}
-      <div className="max-w-md mx-auto px-5 pt-4 flex justify-end">
+      <div className="max-w-5xl mx-auto px-5 pt-4 flex justify-end">
         <LanguageSwitcher current={locale} variant="dark" />
       </div>
 
-      <div className="max-w-md mx-auto px-5 pt-6 pb-12 space-y-6">
+      <div className="max-w-5xl mx-auto px-5 pt-6 pb-12">
         {/* ── Header ── */}
-        <header className="text-center">
+        <header className="text-center mb-6">
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logoUrl} alt={companyName} className="h-10 max-w-[170px] object-contain mx-auto mb-4" />
@@ -179,6 +179,12 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
             <span className="font-mono text-xs" style={{ color: brandColor }}>{booking.booking_number}</span>
           </div>
         </header>
+
+        {/* Control center: 1 columna en móvil, 2 en desktop */}
+        <div className="grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-6 items-start">
+
+        {/* ── Columna izquierda: estado + progreso (fija en desktop) ── */}
+        <div className="space-y-6 lg:sticky lg:top-6">
 
         {/* ── Estado actual destacado ── */}
         <div
@@ -263,6 +269,11 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
             </div>
           </section>
         )}
+
+        </div>{/* fin columna izquierda */}
+
+        {/* ── Columna derecha: ruta + chofer + chat ── */}
+        <div className="space-y-6">
 
         {/* ── 4. Ruta + mapa ── */}
         <section className="space-y-4">
@@ -387,28 +398,35 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
           </div>
         )}
 
+        </div>{/* fin columna derecha */}
+        </div>{/* fin grid control center */}
+
         {/* ── 7. Acciones ── */}
         {!isTerminal && (
-          <TrackActions
-            bookingId={booking.id}
-            brandColor={brandColor}
-            canCancel={canCancel}
-            canReport={canReport}
-            canAddStop={canAddStop}
-            labels={{ cancel: t.cancel, report: t.report, addStop: t.addStop }}
-          />
+          <div className="mt-6 max-w-md mx-auto">
+            <TrackActions
+              bookingId={booking.id}
+              brandColor={brandColor}
+              canCancel={canCancel}
+              canReport={canReport}
+              canAddStop={canAddStop}
+              labels={{ cancel: t.cancel, report: t.report, addStop: t.addStop }}
+            />
+          </div>
         )}
 
         {/* ── Contacto / footer ── */}
-        {company?.phone && !isTerminal && (
-          <p className="text-center text-xs text-white/40">
-            {t.needHelp}{' '}
-            <a href={`tel:${company.phone}`} className="lux-link" style={{ color: brandColor }}>{company.phone}</a>
-          </p>
-        )}
-        {shouldPoll && (
-          <p className="text-center text-[10px] text-white/25">{t.autoRefresh}</p>
-        )}
+        <div className="mt-8 space-y-2">
+          {company?.phone && !isTerminal && (
+            <p className="text-center text-xs text-white/40">
+              {t.needHelp}{' '}
+              <a href={`tel:${company.phone}`} className="lux-link" style={{ color: brandColor }}>{company.phone}</a>
+            </p>
+          )}
+          {shouldPoll && (
+            <p className="text-center text-[10px] text-white/25">{t.autoRefresh}</p>
+          )}
+        </div>
       </div>
     </div>
   )
