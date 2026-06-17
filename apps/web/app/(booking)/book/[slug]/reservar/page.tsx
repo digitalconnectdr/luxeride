@@ -39,7 +39,6 @@ export default async function ReservarPage({ params }: { params: { slug: string 
   const brandColor = (company.primary_color as string | null) || '#c9a24b'
   const heroImg = (company as { hero_image_url?: string | null }).hero_image_url || DEFAULT_HERO
   const tagline = (company as { tagline?: string | null }).tagline ?? null
-  const logoUrl = (company as { logo_url?: string | null }).logo_url ?? null
 
   const gratuity = (() => {
     const g = (company.settings as { gratuity?: { enabled?: boolean; options?: number[]; default_percentage?: number }; booking?: { require_deposit?: boolean } } | null)?.gratuity
@@ -65,10 +64,7 @@ export default async function ReservarPage({ params }: { params: { slug: string 
           <Image src={heroImg} alt="" fill sizes="50vw" className="object-cover -z-10" />
           <div className="absolute inset-0 -z-10" style={{ background: 'linear-gradient(180deg, rgba(8,8,10,0.55) 0%, rgba(8,8,10,0.35) 40%, rgba(8,8,10,0.95) 100%)' }} />
           <div className="p-12 xl:p-16">
-            {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt={company.name} className="h-11 max-w-[200px] object-contain mb-7" />
-            ) : null}
+            <p className="text-xs uppercase tracking-[0.32em] text-white/75 mb-5">{company.name}</p>
             <span className="block h-px w-12 mb-6" style={{ background: `linear-gradient(90deg, ${brandColor}, transparent)` }} />
             <h1 className="font-playfair text-4xl xl:text-[2.75rem] font-medium leading-[1.08] tracking-[-0.015em] text-balance">
               {tagline || company.name}
@@ -85,8 +81,8 @@ export default async function ReservarPage({ params }: { params: { slug: string 
         </aside>
 
         {/* Formulario en pantalla completa */}
-        <section className="flex flex-col items-center px-5 sm:px-8 py-12 lg:py-14">
-          <div className="w-full max-w-md">
+        <section className="flex flex-col items-center px-5 sm:px-8 py-8 lg:py-10">
+          <div className="w-full max-w-lg">
             <div className="lg:hidden mb-6">
               <span className="block h-px w-12 mb-5" style={{ background: `linear-gradient(90deg, ${brandColor}, transparent)` }} />
               <h1 className="font-playfair text-3xl font-medium tracking-[-0.01em]">{tagline || company.name}</h1>

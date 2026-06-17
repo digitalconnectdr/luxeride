@@ -322,6 +322,18 @@ export const en = {
     vehicleLabel: 'Vehicle',
     plate: 'Plate',
     callDriver: 'Call',
+    headline: {
+      pending: 'We received your reservation. Your chauffeur will be assigned soon.',
+      assigned: '{driver} has been assigned to your trip.',
+      en_route: '{driver} is on the way to your pickup point.',
+      arrived: '{driver} is waiting at your pickup point.',
+      in_progress: 'Trip in progress to your destination.',
+      completed: 'Trip completed. Thank you for riding with us!',
+    },
+    progressLabel: 'Step {n} of {total}',
+    openInMaps: 'Open in Maps',
+    copy: 'Copy',
+    copied: '✓ Copied',
     chat: {
       title: 'Messages with your chauffeur',
       subtitle: 'Flight delayed or any change? Let them know here.',
@@ -330,6 +342,7 @@ export const en = {
       empty: 'No messages yet. Write to your chauffeur if anything changes (for example, a flight delay).',
       you: 'You',
       driver: 'Chauffeur',
+      quick: ['My flight is delayed', "I'm at the exit", 'Please wait 10 minutes', 'I need help with luggage'],
     },
     cancel: {
       action: 'Cancel trip',

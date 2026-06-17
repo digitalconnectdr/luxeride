@@ -27,13 +27,13 @@ export function TripChat({
   side,
   labels,
   brandColor = '#e9c176',
-  open: openProp,
+  quickReplies,
 }: {
   bookingId: string
   side: 'client' | 'driver'
   labels: ChatLabels
   brandColor?: string
-  open?: boolean
+  quickReplies?: string[]
 }) {
   const [messages, setMessages] = useState<TripMessage[]>([])
   const [draft, setDraft] = useState('')
@@ -65,9 +65,8 @@ export function TripChat({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages.length])
 
-  function handleSend(e: React.FormEvent) {
-    e.preventDefault()
-    const body = draft.trim()
+  function send(raw: string) {
+    const body = raw.trim()
     if (!body) return
     setError('')
     setDraft('')
@@ -83,6 +82,11 @@ export function TripChat({
       }
       await load()
     })
+  }
+
+  function handleSend(e: React.FormEvent) {
+    e.preventDefault()
+    send(draft)
   }
 
   return (
@@ -120,23 +124,41 @@ export function TripChat({
         )}
       </div>
 
-      <form onSubmit={handleSend} className="flex items-center gap-2 p-3 border-t border-white/10">
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder={labels.placeholder}
-          maxLength={2000}
-          className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
-        />
-        <button
-          type="submit"
-          disabled={isPending || !draft.trim()}
-          className="shrink-0 rounded-full px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-40 transition-opacity"
-          style={{ backgroundColor: brandColor }}
-        >
-          {labels.send}
-        </button>
-      </form>
+      <div className="border-t border-white/10">
+        {/* Respuestas rápidas */}
+        {quickReplies && quickReplies.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 px-3 pt-3">
+            {quickReplies.map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => send(q)}
+                disabled={isPending}
+                className="text-[11px] rounded-full border border-white/15 px-2.5 py-1 text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-40 transition-colors"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        )}
+        <form onSubmit={handleSend} className="flex items-center gap-2 p-3">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={labels.placeholder}
+            maxLength={2000}
+            className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
+          />
+          <button
+            type="submit"
+            disabled={isPending || !draft.trim()}
+            className="shrink-0 rounded-full px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-40 transition-opacity"
+            style={{ backgroundColor: brandColor }}
+          >
+            {labels.send}
+          </button>
+        </form>
+      </div>
 
       {error && <p className="px-4 pb-3 text-xs text-red-400">{error}</p>}
     </div>

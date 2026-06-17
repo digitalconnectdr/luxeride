@@ -324,6 +324,18 @@ export const pt: Dictionary = {
     vehicleLabel: 'Veículo',
     plate: 'Placa',
     callDriver: 'Ligar',
+    headline: {
+      pending: 'Recebemos sua reserva. Em breve atribuiremos seu motorista.',
+      assigned: '{driver} foi atribuído à sua viagem.',
+      en_route: '{driver} está a caminho do ponto de embarque.',
+      arrived: '{driver} está esperando no ponto de embarque.',
+      in_progress: 'Viagem em andamento até o seu destino.',
+      completed: 'Viagem concluída. Obrigado por viajar conosco!',
+    },
+    progressLabel: 'Passo {n} de {total}',
+    openInMaps: 'Abrir no Maps',
+    copy: 'Copiar',
+    copied: '✓ Copiado',
     chat: {
       title: 'Mensagens com seu motorista',
       subtitle: 'Voo atrasado ou alguma mudança? Avise por aqui.',
@@ -332,6 +344,7 @@ export const pt: Dictionary = {
       empty: 'Ainda não há mensagens. Escreva ao seu motorista se algo mudar (por exemplo, um atraso de voo).',
       you: 'Você',
       driver: 'Motorista',
+      quick: ['Meu voo está atrasado', 'Já estou na saída', 'Aguarde 10 minutos, por favor', 'Preciso de ajuda com a bagagem'],
     },
     cancel: {
       action: 'Cancelar viagem',

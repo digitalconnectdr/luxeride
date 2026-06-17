@@ -60,7 +60,7 @@ interface Props {
 
 function StepIndicator({ current, steps }: { current: number; steps: string[] }) {
   return (
-    <div className="flex items-start mb-8">
+    <div className="flex items-start mb-6">
       {steps.map((label, i) => {
         const done = i < current
         const active = i === current
@@ -404,10 +404,10 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
   return (
     <div>
       <div className="mb-4">
-        <h1 className="text-2xl font-semibold text-[#1d1d1f]">
+        <h1 className="text-lg sm:text-xl font-semibold text-[#1d1d1f] leading-snug">
           {dict.bookWith} {company.name}
         </h1>
-        <p className="text-sm text-gray-500 mt-1">{dict.premiumService}</p>
+        <p className="text-xs text-gray-500 mt-0.5">{dict.premiumService}</p>
       </div>
 
       <StepIndicator current={step} steps={dict.steps} />

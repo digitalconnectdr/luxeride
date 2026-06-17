@@ -5,6 +5,8 @@ import { getLocale, getDict } from '@/lib/i18n/server'
 import { AutoRefresh } from './auto-refresh'
 import { TrackActions } from '@/components/trip/track-actions'
 import { TripChat } from '@/components/trip/trip-chat'
+import { CopyButton } from '@/components/trip/copy-button'
+import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 
 export const metadata: Metadata = { title: 'Trip Tracking | LuxeRide' }
 export const dynamic = 'force-dynamic'
@@ -92,6 +94,16 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
     ? t.terminal[booking.status as keyof typeof t.terminal]
     : t.statuses[booking.status as keyof typeof t.statuses]
 
+  // Frase contextual ("Tu chofer te espera…") + progreso ("Paso X de 6")
+  const headlineText = (t.headline as Record<string, string>)[booking.status]
+    ?.replace('{driver}', driver?.first_name ?? '')
+    .trim()
+  const progressText = t.progressLabel
+    .replace('{n}', String(currentIdx + 1))
+    .replace('{total}', String(STATUS_KEYS.length))
+  const mapsUrl = (addr: string) =>
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`
+
   const showChat = !!booking.driver_id && !isTerminal
   const canCancel = CANCELLABLE.has(booking.status)
   const canReport = !!booking.driver_id && REPORTABLE.has(booking.status)
@@ -106,7 +118,12 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
       {/* Banda dorada superior */}
       <div className="h-px w-full" style={{ background: goldRule }} />
 
-      <div className="max-w-md mx-auto px-5 py-12 space-y-6">
+      {/* Selector de idioma */}
+      <div className="max-w-md mx-auto px-5 pt-4 flex justify-end">
+        <LanguageSwitcher current={locale} variant="dark" />
+      </div>
+
+      <div className="max-w-md mx-auto px-5 pt-6 pb-12 space-y-6">
         {/* ── Header ── */}
         <header className="text-center">
           {logoUrl ? (
@@ -151,6 +168,12 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
           <p className={`font-playfair text-2xl font-medium tracking-[-0.01em] ${isTerminal ? 'text-red-400' : isCompleted ? 'text-green-400' : 'text-white'}`}>
             {isCompleted ? '✓ ' : ''}{currentLabel}
           </p>
+          {!isTerminal && headlineText && (
+            <p className="text-sm text-white/60 mt-2.5 max-w-xs mx-auto leading-relaxed">{headlineText}</p>
+          )}
+          {!isTerminal && (
+            <p className="text-[10px] uppercase tracking-[0.25em] text-white/35 mt-3">{progressText}</p>
+          )}
           {isTerminal && company?.phone && (
             <p className="text-sm text-white/50 mt-3">
               {t.questions} <a href={`tel:${company.phone}`} className="lux-link" style={{ color: brandColor }}>{company.phone}</a>
@@ -233,6 +256,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
             bookingId={booking.id}
             side="client"
             brandColor={brandColor}
+            quickReplies={t.chat.quick}
             labels={{
               title: t.chat.title,
               subtitle: t.chat.subtitle,
@@ -247,6 +271,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
 
         {/* ── Ruta ── */}
         <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-3 text-sm">
+          {/* Pickup */}
           <div className="flex gap-3">
             <div className="flex flex-col items-center pt-1">
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: brandColor }} />
@@ -255,6 +280,12 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
             <div className="flex-1 pb-1">
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40 mb-0.5">{t.pickup}</p>
               <p className="text-white/80">{pickup}</p>
+              {pickup !== '—' && (
+                <div className="flex items-center gap-3 mt-1.5">
+                  <a href={mapsUrl(pickup)} target="_blank" rel="noopener noreferrer" className="text-[11px] font-medium" style={{ color: brandColor }}>{t.openInMaps} ↗</a>
+                  <CopyButton text={pickup} label={t.copy} copiedLabel={t.copied} />
+                </div>
+              )}
             </div>
           </div>
           {Array.isArray(booking.waypoints) &&
@@ -274,6 +305,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
                 </div>
               )
             })}
+          {/* Destino */}
           <div className="flex gap-3">
             <div className="flex flex-col items-center pt-1">
               <span className="w-2.5 h-2.5 rounded-sm bg-white/60" />
@@ -281,6 +313,12 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
             <div className="flex-1">
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40 mb-0.5">{t.destination}</p>
               <p className="text-white/80">{dropoff}</p>
+              {dropoff !== '—' && (
+                <div className="flex items-center gap-3 mt-1.5">
+                  <a href={mapsUrl(dropoff)} target="_blank" rel="noopener noreferrer" className="text-[11px] font-medium" style={{ color: brandColor }}>{t.openInMaps} ↗</a>
+                  <CopyButton text={dropoff} label={t.copy} copiedLabel={t.copied} />
+                </div>
+              )}
             </div>
           </div>
         </section>

@@ -248,6 +248,22 @@ Pedido del usuario: el link de seguimiento se veía muy básico y faltaban accio
     PLACEHOLDER elegante (ícono por clase) en vez de un auto que no corresponde.
   - i18n EN/ES/PT: fleet.typeForm.image/imageHint/imageRemove/imageCurrent.
 
+### B-quinque. Reserva full-screen + tracking premium (2026-06-17)
+- ✅ **Página de reserva**: logo crudo (fondo blanco que restaba elegancia) → wordmark
+  del nombre; card más ANCHA (max-w-lg) para que "Reservar con <empresa>" quepa en
+  una línea aunque el nombre sea largo, y más COMPACTA en alto (header/stepper/padding).
+- ✅ **Tracking premium (mejoras del usuario)**: frase contextual por estado ("{driver}
+  te espera en el punto de recogida"), progreso "Paso X de 6", selector de idioma
+  EN/ES/PT en la página, pickup/destino con "Abrir en Maps" + "Copiar" (CopyButton),
+  y chat con respuestas rápidas ("Mi vuelo está retrasado", etc.).
+- ⬜ **Fase 2 del tracking (pendiente, requiere datos/infra)**:
+  - Mapa en vivo / estático con vehículo + ruta + ETA → se cruza con Sección A
+    (GPS del conductor). Un mapa estático necesita habilitar Static Maps API.
+  - Tarjeta del chofer con foto, ⭐ rating e idiomas → rating es B.1 (calificaciones)
+    y faltan campos de perfil del conductor (foto/idiomas).
+  - Acuses de lectura del chat ("visto/respondió") → trip_messages.read_at existe
+    pero falta marcar leído del lado del conductor.
+
 ### F. Pago al momento de la reserva (2026-06-16)
 ✅ El wizard ahora ofrece "Confirmar y pagar ahora" (Stripe Checkout) además de
 "Reservar y pagar después", SOLO cuando el operador tiene Stripe Connect
