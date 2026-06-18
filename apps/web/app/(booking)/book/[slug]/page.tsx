@@ -198,8 +198,8 @@ export default async function OperatorMicrosite({ params }: Props) {
         <div className="absolute inset-0 -z-10" style={{ background: 'linear-gradient(90deg, rgba(10,10,13,0.7) 0%, rgba(10,10,13,0.9) 45%, rgba(10,10,13,0.98) 100%)' }} />
         <div className="max-w-[1300px] mx-auto px-6 lg:px-10 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <Reveal className="relative h-80 lg:h-[26rem] rounded-[1.25rem] overflow-hidden ring-1 ring-white/10">
-            {/* Imagen ESTÁTICA de "La diferencia" — NO se liga a la flota (no cambia al subir vehículos) */}
-            <Image src={DEFAULT_CARS[0]} alt="" fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover" />
+            {/* Imagen ESTÁTICA y DISTINTA de "La diferencia" — no se liga a la flota ni repite la de servicios */}
+            <Image src={DEFAULT_CARS[2]} alt="" fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
           </Reveal>
           <Reveal>
@@ -262,15 +262,13 @@ export default async function OperatorMicrosite({ params }: Props) {
           {sectionHeading(t.stepsTitle)}
           <div className="grid sm:grid-cols-3 gap-6">
             {t.steps.map((st, i) => (
-              <Reveal key={st.title}>
-                <div className="relative isolate rounded-[1.25rem] overflow-hidden h-72 flex items-end ring-1 ring-white/10">
-                  <Image src={DEFAULT_CARS[(i + 2) % DEFAULT_CARS.length]} alt="" fill sizes="(max-width:1024px) 100vw, 33vw" className="object-cover -z-10" />
-                  <div className="absolute inset-0 -z-10" style={{ background: 'linear-gradient(rgba(8,8,10,0.15), rgba(8,8,10,0.95))' }} />
-                  <div className="p-7">
-                    <p className="font-playfair text-[2.5rem] leading-none font-medium" style={{ color: brandColor }}>{String(i + 1).padStart(2, '0')}</p>
-                    <h3 className="font-playfair text-xl font-medium mt-3">{st.title}</h3>
-                    <p className="text-sm text-white/65 mt-2 leading-relaxed">{st.desc}</p>
-                  </div>
+              <Reveal key={st.title} className="h-full">
+                {/* Tarjeta numerada elegante (sin foto → evita repetir imágenes) */}
+                <div className="relative rounded-[1.25rem] h-full p-7 border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.01]">
+                  <p className="font-playfair text-[2.75rem] leading-none font-medium" style={{ color: brandColor }}>{String(i + 1).padStart(2, '0')}</p>
+                  <span className="block h-px w-10 my-5" style={{ background: `linear-gradient(90deg, ${brandColor}, transparent)` }} />
+                  <h3 className="font-playfair text-xl font-medium">{st.title}</h3>
+                  <p className="text-sm text-white/65 mt-2 leading-relaxed">{st.desc}</p>
                 </div>
               </Reveal>
             ))}
