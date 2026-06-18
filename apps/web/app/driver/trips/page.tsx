@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { logoutAction } from '@/app/actions/auth'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
+import { AutoRefresh } from '@/app/track/[id]/auto-refresh'
 import { DriverTripActions } from '@/components/driver/trip-actions'
 import { DriverAddStop } from '@/components/driver/driver-add-stop'
 import { TripChat } from '@/components/trip/trip-chat'
@@ -81,6 +82,8 @@ export default async function DriverTripsPage() {
 
   return (
     <div className="min-h-screen bg-[#f6f4ef] text-[#1d1b18] antialiased">
+      {/* Auto-refresh mientras hay viajes activos (capta cambios del dispatcher) */}
+      {!!trips?.length && <AutoRefresh seconds={15} />}
       <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent, ${brandColor}, transparent)` }} />
 
       {/* ── Header ── */}
