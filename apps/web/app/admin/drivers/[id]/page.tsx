@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { DriverAvailabilityToggle } from '@/components/admin/fleet-controls'
 import { UpdateDriverLicenseForm } from '@/components/admin/update-driver-license-form'
 
-export const metadata: Metadata = { title: 'Conductor | LuxeRide' }
+export const metadata: Metadata = { title: 'Conductor' }
 
 interface PageProps {
   params: { id: string }

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 
-export const metadata: Metadata = { title: 'Audit Log | LuxeRide' }
+export const metadata: Metadata = { title: 'Audit Log' }
 export const dynamic = 'force-dynamic'
 
 const ACTION_STYLES: Record<string, string> = {

@@ -60,7 +60,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const company = companyRes.data as { name: string; phone: string | null; primary_color: string | null; logo_url: string | null } | null
   const brandColor = company?.primary_color ?? '#c9a24b'
   const logoUrl = company?.logo_url ?? null
-  const companyName = company?.name ?? 'LuxeRide'
+  const companyName = company?.name ?? brand.name
   const initial = companyName.trim().charAt(0).toUpperCase() || 'L'
   const driver = driverRes.data as { first_name: string } | null
   const vehicle = vehicleRes.data as { make: string; model: string; color: string | null; plate_number: string } | null

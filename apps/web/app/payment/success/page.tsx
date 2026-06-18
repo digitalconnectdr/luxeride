@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { getDict } from '@/lib/i18n/server'
 
-export const metadata: Metadata = { title: 'Payment | LuxeRide' }
+export const metadata: Metadata = { title: 'Payment' }
 export const dynamic = 'force-dynamic'
 
 export default function PaymentSuccessPage({

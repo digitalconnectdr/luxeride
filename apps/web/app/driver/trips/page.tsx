@@ -3,6 +3,7 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { logoutAction } from '@/app/actions/auth'
 import { getLocale, getDict } from '@/lib/i18n/server'
+import { brand } from '@/lib/brand'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { AutoRefresh } from '@/app/track/[id]/auto-refresh'
 import { DriverTripActions } from '@/components/driver/trip-actions'
@@ -11,7 +12,7 @@ import { TripChat } from '@/components/trip/trip-chat'
 import { CopyButton } from '@/components/trip/copy-button'
 import { StaticMap } from '@/components/trip/static-map'
 
-export const metadata: Metadata = { title: 'Portal del conductor | LuxeRide' }
+export const metadata: Metadata = { title: 'Portal del conductor' }
 export const dynamic = 'force-dynamic'
 
 const STEP_KEYS = ['assigned', 'en_route', 'arrived', 'in_progress', 'completed'] as const
@@ -70,7 +71,7 @@ export default async function DriverTripsPage() {
 
   const co = company as { name: string; logo_url: string | null; primary_color: string | null; phone: string | null } | null
   const brandColor = co?.primary_color ?? '#c9a24b'
-  const companyName = co?.name ?? 'LuxeRide'
+  const companyName = co?.name ?? brand.name
   const logoUrl = co?.logo_url ?? null
   const dispatchPhone = co?.phone ?? null
   const driverName = user.profile.first_name

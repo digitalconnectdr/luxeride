@@ -5,9 +5,10 @@ import { getLocale, getDict } from '@/lib/i18n/server'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { Reveal, RevealStagger, RevealItem } from '@/components/landing/reveal'
 import { HeroMockup } from '@/components/landing/hero-mockup'
+import { brand, withBrand } from '@/lib/brand'
 
 export const metadata: Metadata = {
-  title: 'LuxeRide — Premium Transportation Software | by JPRS Digital Connect',
+  title: { absolute: `${brand.name} — Premium Transportation Software | by ${brand.poweredBy}` },
   description:
     'All-in-one platform for limousine, airport transfer and executive chauffeur companies: online reservations, live dispatch, card payments and corporate accounts.',
 }
@@ -49,12 +50,12 @@ export default async function LandingPage() {
         <div className="max-w-[1400px] mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] flex items-center justify-center shadow-[0_0_18px_rgba(233,193,118,0.35)]">
-              <span className="text-[#141313] font-playfair font-bold text-sm leading-none">L</span>
+              <span className="text-[#141313] font-playfair font-bold text-sm leading-none">{brand.name.charAt(0)}</span>
             </div>
             <div className="leading-tight">
-              <span className="font-playfair text-lg font-semibold tracking-wide">LuxeRide</span>
+              <span className="font-playfair text-lg font-semibold tracking-wide">{brand.name}</span>
               <p className="text-[8px] uppercase tracking-[0.25em] text-white/35">
-                by JPRS Digital Connect
+                by {brand.poweredBy}
               </p>
             </div>
           </div>
@@ -112,7 +113,7 @@ export default async function LandingPage() {
             </Reveal>
             <Reveal delay={0.2}>
               <p className="text-base sm:text-lg text-white/55 mt-6 leading-relaxed max-w-xl">
-                {t.hero.subtitle}
+                {withBrand(t.hero.subtitle)}
               </p>
             </Reveal>
             <Reveal delay={0.3}>
@@ -208,7 +209,7 @@ export default async function LandingPage() {
                   <div className="absolute bottom-4 left-5">
                     <span className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#e9c176]">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#e9c176]" />
-                      LuxeRide
+                      {brand.name}
                     </span>
                   </div>
                 </div>
@@ -401,7 +402,7 @@ export default async function LandingPage() {
                       +
                     </span>
                   </summary>
-                  <p className="px-6 pb-5 text-sm text-white/55 leading-relaxed">{item.a}</p>
+                  <p className="px-6 pb-5 text-sm text-white/55 leading-relaxed">{withBrand(item.a)}</p>
                 </details>
               </RevealItem>
             ))}
@@ -486,9 +487,9 @@ export default async function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
             <div className="flex items-center gap-2.5">
               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] flex items-center justify-center">
-                <span className="text-[#141313] font-playfair font-bold text-[10px] leading-none">L</span>
+                <span className="text-[#141313] font-playfair font-bold text-[10px] leading-none">{brand.name.charAt(0)}</span>
               </div>
-              <span className="font-playfair text-sm font-semibold">LuxeRide</span>
+              <span className="font-playfair text-sm font-semibold">{brand.name}</span>
             </div>
             <p className="text-[11px] uppercase tracking-[0.25em] text-[#e9c176]/70">
               {dict.common.poweredBy}

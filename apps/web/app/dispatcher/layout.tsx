@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { requireRole } from '@/lib/auth/session'
 import { logoutAction } from '@/app/actions/auth'
+import { brandLegal } from '@/lib/brand'
 
 export default async function DispatcherLayout({
   children,
@@ -53,7 +54,7 @@ export default async function DispatcherLayout({
       <main className="flex-1 overflow-auto">{children}</main>
       <footer className="px-6 py-2 border-t border-sl-outline-variant text-center shrink-0">
         <p className="text-[9px] uppercase tracking-[0.25em] text-sl-on-surface-muted/60">
-          LuxeRide — Powered by JPRS Digital Connect
+          {brandLegal}
         </p>
       </footer>
     </div>

@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { BookingStatusBadge } from '@/components/bookings/booking-status-badge'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
-export const metadata: Metadata = { title: 'Dashboard Corporativo | LuxeRide' }
+export const metadata: Metadata = { title: 'Dashboard Corporativo' }
 
 export default async function CorporateDashboardPage() {
   const user = await requireRole('corporate_manager', 'corporate_user')

@@ -5,6 +5,7 @@ import { useFormState } from 'react-dom'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { loginAction } from '@/app/actions/auth'
+import { brand } from '@/lib/brand'
 
 function BlockedBanner() {
   const params = useSearchParams()
@@ -29,7 +30,7 @@ export default function LoginPage() {
           Welcome back
         </h1>
         <p className="text-sl-on-surface-muted text-sm">
-          Sign in to your LuxeRide dashboard
+          Sign in to your {brand.name} dashboard
         </p>
       </div>
 

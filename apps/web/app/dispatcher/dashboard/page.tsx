@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { refreshFlightsForBookings } from '@/lib/flights/refresh'
 import { DispatchBoard } from '@/components/dispatcher/dispatch-board'
 
-export const metadata: Metadata = { title: 'Dispatch | LuxeRide' }
+export const metadata: Metadata = { title: 'Dispatch' }
 export const dynamic = 'force-dynamic'
 
 export default async function DispatcherDashboardPage() {

@@ -12,7 +12,7 @@ import {
 import { BookingStatusBadge } from '@/components/bookings/booking-status-badge'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
-export const metadata: Metadata = { title: 'Cuenta Corporativa | LuxeRide' }
+export const metadata: Metadata = { title: 'Cuenta Corporativa' }
 
 const inputCls =
   'w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 ' +

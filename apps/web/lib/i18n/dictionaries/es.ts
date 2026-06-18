@@ -1,10 +1,11 @@
 // ── Español ────────────────────────────────────────────────────────────────────
 
 import type { Dictionary } from './en'
+import { brandLegal } from '@/lib/brand'
 
 export const es: Dictionary = {
   common: {
-    poweredBy: 'LuxeRide — Powered by JPRS Digital Connect',
+    poweredBy: brandLegal,
     signIn: 'Iniciar sesión',
     signUp: 'Crear cuenta',
     signOut: 'Cerrar sesión',
@@ -18,7 +19,7 @@ export const es: Dictionary = {
       title: 'La experiencia de lujo que tus clientes esperan,',
       titleAccent: 'con tu operación en piloto automático.',
       subtitle:
-        'LuxeRide es la plataforma todo-en-uno para empresas de limusinas, traslados de aeropuerto y chóferes ejecutivos: reservaciones online, dispatch en vivo, pagos con tarjeta y cuentas corporativas — bajo tu propia marca.',
+        '{brand} es la plataforma todo-en-uno para empresas de limusinas, traslados de aeropuerto y chóferes ejecutivos: reservaciones online, dispatch en vivo, pagos con tarjeta y cuentas corporativas — bajo tu propia marca.',
       ctaPrimary: 'Empieza gratis →',
       ctaSecondary: 'Ver cómo funciona',
       note: 'Sin costos de instalación · Sin contratos · En producción en días, no semanas',
@@ -204,16 +205,16 @@ export const es: Dictionary = {
       },
       {
         q: '¿Funciona en mi idioma?',
-        a: 'LuxeRide habla inglés, español y portugués — tus clientes reservan en el suyo.',
+        a: '{brand} habla inglés, español y portugués — tus clientes reservan en el suyo.',
       },
       {
         q: '¿Tengo que instalar algo?',
-        a: 'No. LuxeRide corre en el navegador en cualquier dispositivo. Los conductores usan su teléfono — sin descargas de app store.',
+        a: 'No. {brand} corre en el navegador en cualquier dispositivo. Los conductores usan su teléfono — sin descargas de app store.',
       },
     ],
     directoryTitle: '¿Vas a viajar? Reserva tu próximo traslado',
     directorySubtitle:
-      'Estas empresas operan con LuxeRide. Reserva online con precios al instante y confirmación inmediata.',
+      'Estas empresas operan con {brand}. Reserva online con precios al instante y confirmación inmediata.',
     directoryEmpty: 'Pronto habrá empresas disponibles para reservar online.',
     directoryBook: 'Reservar online →',
     ctaTitle: 'Eleva tu operación',

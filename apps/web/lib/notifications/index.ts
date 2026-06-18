@@ -7,6 +7,7 @@
 
 import { waitUntil } from '@vercel/functions'
 import { createAdminClient } from '@/lib/supabase/server'
+import { brand } from '@/lib/brand'
 import type { NotificationChannel } from '@/lib/supabase/database.types'
 
 // ─── Configuración de proveedores ─────────────────────────────────────────────
@@ -48,7 +49,7 @@ async function sendEmail(
     const from = process.env.RESEND_FROM_EMAIL ?? 'notifications@luxeride.app'
 
     const { data, error } = await resend.emails.send({
-      from: `${companyName ?? 'LuxeRide'} <${from}>`,
+      from: `${companyName ?? brand.name} <${from}>`,
       to,
       subject,
       text: body, // fallback para clientes sin HTML
@@ -155,7 +156,7 @@ export async function notify(params: NotifyParams): Promise<{ sent: boolean }> {
     // Enviar
     let result: { ok: boolean; providerId?: string; error?: string }
     if (params.channel === 'email') {
-      result = await sendEmail(params.recipient, subject ?? 'LuxeRide', body, company?.name, {
+      result = await sendEmail(params.recipient, subject ?? brand.name, body, company?.name, {
         logoUrl: (company as { logo_url?: string | null })?.logo_url ?? null,
         brandColor: (company as { primary_color?: string | null })?.primary_color ?? null,
       })

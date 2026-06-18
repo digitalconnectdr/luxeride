@@ -3,7 +3,7 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { NewBookingForm } from './new-booking-form'
 
-export const metadata: Metadata = { title: 'Nueva Reservación | LuxeRide' }
+export const metadata: Metadata = { title: 'Nueva Reservación' }
 
 export default async function NewBookingPage() {
   const user = await requireRole('company_owner', 'company_admin', 'dispatcher')

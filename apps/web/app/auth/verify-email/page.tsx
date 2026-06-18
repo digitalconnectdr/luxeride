@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { brand } from '@/lib/brand'
 
 export default function VerifyEmailPage() {
   return (
@@ -14,7 +15,7 @@ export default function VerifyEmailPage() {
           Verify your email
         </h1>
         <p className="text-sl-on-surface-muted text-sm max-w-xs mx-auto">
-          We&apos;ve sent a confirmation link to your email address. Click it to activate your LuxeRide account.
+          We&apos;ve sent a confirmation link to your email address. Click it to activate your {brand.name} account.
         </p>
       </div>
 

@@ -1,10 +1,11 @@
 // ── Português ──────────────────────────────────────────────────────────────────
 
 import type { Dictionary } from './en'
+import { brandLegal } from '@/lib/brand'
 
 export const pt: Dictionary = {
   common: {
-    poweredBy: 'LuxeRide — Powered by JPRS Digital Connect',
+    poweredBy: brandLegal,
     signIn: 'Entrar',
     signUp: 'Criar conta',
     signOut: 'Sair',
@@ -18,7 +19,7 @@ export const pt: Dictionary = {
       title: 'A experiência de luxo que seus clientes esperam,',
       titleAccent: 'com sua operação no piloto automático.',
       subtitle:
-        'LuxeRide é a plataforma tudo-em-um para empresas de limusines, transfers de aeroporto e motoristas executivos: reservas online, dispatch ao vivo, pagamentos com cartão e contas corporativas — com a sua marca.',
+        '{brand} é a plataforma tudo-em-um para empresas de limusines, transfers de aeroporto e motoristas executivos: reservas online, dispatch ao vivo, pagamentos com cartão e contas corporativas — com a sua marca.',
       ctaPrimary: 'Comece grátis →',
       ctaSecondary: 'Veja como funciona',
       note: 'Sem taxas de instalação · Sem contratos · No ar em dias, não semanas',
@@ -204,16 +205,16 @@ export const pt: Dictionary = {
       },
       {
         q: 'Funciona no meu idioma?',
-        a: 'LuxeRide fala inglês, espanhol e português — seus clientes reservam no deles.',
+        a: '{brand} fala inglês, espanhol e português — seus clientes reservam no deles.',
       },
       {
         q: 'Preciso instalar algo?',
-        a: 'Não. LuxeRide roda no navegador em qualquer dispositivo. Os motoristas usam o celular — sem downloads de app store.',
+        a: 'Não. {brand} roda no navegador em qualquer dispositivo. Os motoristas usam o celular — sem downloads de app store.',
       },
     ],
     directoryTitle: 'Vai viajar? Reserve seu próximo transfer',
     directorySubtitle:
-      'Estas empresas operam com LuxeRide. Reserve online com preços instantâneos e confirmação imediata.',
+      'Estas empresas operam com {brand}. Reserve online com preços instantâneos e confirmação imediata.',
     directoryEmpty: 'Em breve haverá empresas disponíveis para reserva online.',
     directoryBook: 'Reservar online →',
     ctaTitle: 'Eleve sua operação',

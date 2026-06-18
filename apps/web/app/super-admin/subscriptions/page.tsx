@@ -9,7 +9,7 @@ import {
 } from '@/components/super-admin/subscription-controls'
 import type { CompanyPlan, CompanyStatus } from '@/lib/supabase/database.types'
 
-export const metadata: Metadata = { title: 'Suscripciones | LuxeRide' }
+export const metadata: Metadata = { title: 'Suscripciones' }
 export const dynamic = 'force-dynamic'
 
 const STATUS_BADGE: Record<CompanyStatus, string> = {

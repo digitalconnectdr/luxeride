@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .select('name, city, logo_url, tagline')
     .eq('slug', params.slug)
     .single()
-  if (!company) return { title: 'Reservación | LuxeRide' }
+  if (!company) return { title: { absolute: 'Reservación' } }
 
   const cityPart = company.city ? ` · ${company.city}` : ''
   const inCity = company.city ? ` en ${company.city}` : ''
@@ -41,7 +41,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = `Reserva en línea con ${company.name}: traslados al aeropuerto, chofer ejecutivo y transporte premium${inCity}. Cotización al instante, pago seguro y seguimiento en vivo.`
   const url = `${getAppUrl()}/${params.slug}`
   return {
-    title,
+    // White-label: la pestaña muestra SOLO la marca del operador, nunca "| LuxeRide"
+    title: { absolute: title },
     description,
     alternates: { canonical: url },
     robots: { index: true, follow: true },

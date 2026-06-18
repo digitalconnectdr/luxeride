@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 
-export const metadata: Metadata = { title: 'Reservar | LuxeRide' }
+export const metadata: Metadata = { title: 'Reservar' }
 
 // Redirige al booking flow público de la empresa del usuario corporativo.
 // Las reservaciones corporativas con cargo a cuenta se gestionan vía dispatcher;

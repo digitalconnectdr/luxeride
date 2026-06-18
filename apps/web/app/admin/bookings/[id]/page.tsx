@@ -9,7 +9,7 @@ import { BookingPayments } from '@/components/admin/booking-payments'
 import { isStripeConfigured } from '@/lib/stripe/server'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
-export const metadata: Metadata = { title: 'Reservación | LuxeRide' }
+export const metadata: Metadata = { title: 'Reservación' }
 
 interface LocationJson {
   address?: string

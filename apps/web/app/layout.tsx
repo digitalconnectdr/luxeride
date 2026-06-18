@@ -5,6 +5,7 @@ import '@/styles/globals.css'
 import { Toaster } from 'sonner'
 import { Providers } from './providers'
 import { getAppUrl } from '@/lib/app-url'
+import { brand } from '@/lib/brand'
 
 // Google Analytics 4 — solo se inyecta si hay measurement ID configurado
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
@@ -32,8 +33,8 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(getAppUrl()),
   title: {
-    default: 'LuxeRide — Premium Transportation Platform',
-    template: '%s | LuxeRide',
+    default: `${brand.name} — Premium Transportation Platform`,
+    template: `%s | ${brand.name}`,
   },
   description:
     'The professional platform for luxury ground transportation companies. Manage bookings, fleet, drivers, and corporate accounts in one place.',
@@ -53,7 +54,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    siteName: 'LuxeRide',
+    siteName: brand.name,
   },
   twitter: {
     card: 'summary_large_image',

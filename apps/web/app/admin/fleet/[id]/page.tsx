@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { VehicleStatusSelect, DriverAssignSelect } from '@/components/admin/fleet-controls'
 import type { VehicleStatus } from '@/lib/supabase/database.types'
 
-export const metadata: Metadata = { title: 'Vehículo | LuxeRide' }
+export const metadata: Metadata = { title: 'Vehículo' }
 
 const STATUS_BADGE: Record<VehicleStatus, { label: string; cls: string }> = {
   available:   { label: 'Disponible',    cls: 'bg-green-500/10 text-green-400 border-green-500/20' },

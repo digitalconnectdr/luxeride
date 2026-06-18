@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/server'
 import type { CompanyStatus } from '@/lib/supabase/database.types'
 
-export const metadata: Metadata = { title: 'Dashboard — Super Admin | LuxeRide' }
+export const metadata: Metadata = { title: 'Dashboard — Super Admin' }
 
 const STATUS_BADGE: Record<CompanyStatus, string> = {
   active:    'bg-green-500/10 text-green-400 border-green-500/20',

@@ -4,7 +4,7 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { CreateCorporateAccountForm } from '@/components/admin/corporate-controls'
 
-export const metadata: Metadata = { title: 'Cuentas Corporativas | LuxeRide' }
+export const metadata: Metadata = { title: 'Cuentas Corporativas' }
 
 export default async function CorporateAccountsPage() {
   const user = await requireRole('company_owner', 'company_admin', 'accounting')

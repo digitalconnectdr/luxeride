@@ -6,7 +6,7 @@ import { logoutAction } from '@/app/actions/auth'
 import { BookingStatusBadge } from '@/components/bookings/booking-status-badge'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
-export const metadata: Metadata = { title: 'Mis Reservaciones | LuxeRide' }
+export const metadata: Metadata = { title: 'Mis Reservaciones' }
 export const dynamic = 'force-dynamic'
 
 export default async function AccountBookingsPage() {

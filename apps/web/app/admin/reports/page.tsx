@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 
-export const metadata: Metadata = { title: 'Reportes | LuxeRide' }
+export const metadata: Metadata = { title: 'Reportes' }
 export const dynamic = 'force-dynamic'
 
 function parseDate(s: string | undefined, fallback: Date): Date {

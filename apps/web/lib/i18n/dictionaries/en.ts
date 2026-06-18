@@ -1,8 +1,10 @@
 // ── English (master) — define la forma del Dictionary ─────────────────────────
 
+import { brandLegal } from '@/lib/brand'
+
 export const en = {
   common: {
-    poweredBy: 'LuxeRide — Powered by JPRS Digital Connect',
+    poweredBy: brandLegal,
     signIn: 'Sign in',
     signUp: 'Create account',
     signOut: 'Sign out',
@@ -16,7 +18,7 @@ export const en = {
       title: 'The luxury experience your clients expect,',
       titleAccent: 'with your operation on autopilot.',
       subtitle:
-        'LuxeRide is the all-in-one platform for limousine, airport transfer and executive chauffeur companies: online reservations, live dispatch, card payments and corporate accounts — under your own brand.',
+        '{brand} is the all-in-one platform for limousine, airport transfer and executive chauffeur companies: online reservations, live dispatch, card payments and corporate accounts — under your own brand.',
       ctaPrimary: 'Start free →',
       ctaSecondary: 'Watch how it works',
       note: 'No setup fees · No contracts · Live in days, not weeks',
@@ -202,16 +204,16 @@ export const en = {
       },
       {
         q: 'Does it work in my language?',
-        a: 'LuxeRide speaks English, Spanish and Portuguese — your clients book in theirs.',
+        a: '{brand} speaks English, Spanish and Portuguese — your clients book in theirs.',
       },
       {
         q: 'Do I need to install anything?',
-        a: 'No. LuxeRide runs in the browser on any device. Chauffeurs use their phones — no app store downloads required.',
+        a: 'No. {brand} runs in the browser on any device. Chauffeurs use their phones — no app store downloads required.',
       },
     ],
     directoryTitle: 'Traveling? Book your next ride',
     directorySubtitle:
-      'These companies run on LuxeRide. Book online with instant pricing and immediate confirmation.',
+      'These companies run on {brand}. Book online with instant pricing and immediate confirmation.',
     directoryEmpty: 'Companies available for online booking are coming soon.',
     directoryBook: 'Book online →',
     ctaTitle: 'Elevate your operation',

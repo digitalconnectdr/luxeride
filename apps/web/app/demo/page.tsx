@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
+import { brand } from '@/lib/brand'
 
 export const metadata: Metadata = {
-  title: 'Demo microsite — LuxeRide',
+  title: `Demo microsite — ${brand.name}`,
   robots: { index: false, follow: false },
 }
 
@@ -182,8 +183,8 @@ export default function MicrositeDemo() {
       <section id="reservar" className="py-24 bg-[#0e0e10] border-t border-white/5">
         <div className="max-w-2xl mx-auto px-6 text-center">
           <h2 className="font-playfair text-4xl font-semibold italic mb-4">Reserva tu viaje</h2>
-          <p className="text-white/50 mb-8">Aquí va embebido el formulario de reservación de LuxeRide (cotización al instante).</p>
-          <div className="rounded-2xl border border-dashed border-white/20 bg-white/[0.02] py-16 text-white/30 text-sm">[ Formulario de reservación LuxeRide ]</div>
+          <p className="text-white/50 mb-8">Aquí va embebido el formulario de reservación de {brand.name} (cotización al instante).</p>
+          <div className="rounded-2xl border border-dashed border-white/20 bg-white/[0.02] py-16 text-white/30 text-sm">[ Formulario de reservación {brand.name} ]</div>
         </div>
       </section>
 
@@ -194,7 +195,7 @@ export default function MicrositeDemo() {
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/30 font-playfair" style={{ color: BRAND }}>N</span>
             <span className="font-playfair tracking-[0.2em] font-semibold">NOIR CHAUFFEURS</span>
           </div>
-          <p className="text-[10px] uppercase tracking-[0.25em] text-white/30">Powered by LuxeRide</p>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-white/30">Powered by {brand.name}</p>
         </div>
       </footer>
     </div>

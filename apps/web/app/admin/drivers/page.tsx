@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { DriverAvailabilityToggle } from '@/components/admin/fleet-controls'
 import { getDict } from '@/lib/i18n/server'
 
-export const metadata: Metadata = { title: 'Conductores | LuxeRide' }
+export const metadata: Metadata = { title: 'Conductores' }
 
 export default async function DriversPage() {
   const user = await requireRole('company_owner', 'company_admin', 'dispatcher', 'accounting')

@@ -1,6 +1,7 @@
 import { requireRole } from '@/lib/auth/session'
 import { logoutAction } from '@/app/actions/auth'
 import { NavLink } from '@/components/super-admin/nav-link'
+import { brand } from '@/lib/brand'
 
 export default async function SuperAdminLayout({
   children,
@@ -17,10 +18,10 @@ export default async function SuperAdminLayout({
         <div className="px-5 py-5 border-b border-sl-outline-variant">
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-6 rounded-full bg-gold flex items-center justify-center shrink-0">
-              <span className="text-gray-900 font-bold text-[10px] leading-none">L</span>
+              <span className="text-gray-900 font-bold text-[10px] leading-none">{brand.name.charAt(0)}</span>
             </div>
             <span className="font-playfair text-sm font-semibold text-sl-on-surface">
-              LuxeRide
+              {brand.name}
             </span>
             <span className="ml-auto text-[9px] font-bold tracking-wider text-bronze border border-bronze/40 rounded px-1.5 py-0.5">
               SA

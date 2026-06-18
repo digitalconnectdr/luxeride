@@ -8,7 +8,7 @@ import { AddVehicleTypeForm } from '@/components/admin/add-vehicle-type-form'
 import { getDict } from '@/lib/i18n/server'
 import type { VehicleStatus } from '@/lib/supabase/database.types'
 
-export const metadata: Metadata = { title: 'Fleet | LuxeRide' }
+export const metadata: Metadata = { title: 'Fleet' }
 
 const STATUS_BADGE: Record<VehicleStatus, string> = {
   available:   'bg-green-500/10 text-green-400 border-green-500/20',

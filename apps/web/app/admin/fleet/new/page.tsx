@@ -4,7 +4,7 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { NewVehicleForm } from '@/components/admin/new-vehicle-form'
 
-export const metadata: Metadata = { title: 'Nuevo Vehículo | LuxeRide' }
+export const metadata: Metadata = { title: 'Nuevo Vehículo' }
 
 export default async function NewVehiclePage() {
   const user = await requireRole('company_owner', 'company_admin')

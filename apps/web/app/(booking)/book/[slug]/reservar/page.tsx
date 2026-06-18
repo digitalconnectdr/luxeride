@@ -8,7 +8,7 @@ import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { BookingWizard } from '../booking-wizard'
 
 export const metadata: Metadata = {
-  title: 'Reserva | LuxeRide',
+  title: { absolute: 'Reserva' }, // white-label: sin sufijo "| LuxeRide"
   robots: { index: false, follow: true }, // canónico es el micrositio /<slug>
 }
 

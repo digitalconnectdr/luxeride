@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { BookingStatusBadge } from '@/components/bookings/booking-status-badge'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
-export const metadata: Metadata = { title: 'Reservaciones | LuxeRide' }
+export const metadata: Metadata = { title: 'Reservaciones' }
 
 const ALL_STATUSES: BookingStatus[] = [
   'pending', 'assigned', 'en_route', 'arrived', 'in_progress',

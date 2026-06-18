@@ -2,11 +2,12 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
+import { brand, brandLegal } from '@/lib/brand'
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | LuxeRide',
-    default: 'Sign In | LuxeRide',
+    template: `%s | ${brand.name}`,
+    default: `Sign In | ${brand.name}`,
   },
 }
 
@@ -20,10 +21,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <header className="flex items-center justify-between px-8 py-6">
         <Link href="/" className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-gold flex items-center justify-center">
-            <span className="text-gray-900 font-bold text-sm">L</span>
+            <span className="text-gray-900 font-bold text-sm">{brand.name.charAt(0)}</span>
           </div>
           <span className="font-playfair text-xl font-semibold text-sl-on-surface tracking-wide">
-            LuxeRide
+            {brand.name}
           </span>
         </Link>
         <div className="flex items-center gap-4">
@@ -42,10 +43,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* Footer */}
       <footer className="px-8 py-6 text-center text-xs text-sl-on-surface-muted border-t border-sl-outline-variant space-y-1.5">
         <p className="text-[10px] uppercase tracking-[0.25em] text-bronze/80">
-          LuxeRide — Powered by JPRS Digital Connect
+          {brandLegal}
         </p>
         <p>
-          © {new Date().getFullYear()} LuxeRide. All rights reserved. &nbsp;·&nbsp;
+          © {new Date().getFullYear()} {brand.name}. All rights reserved. &nbsp;·&nbsp;
           <Link href="/privacy" className="hover:text-bronze transition-colors">
             Privacy
           </Link>
