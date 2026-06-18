@@ -279,6 +279,21 @@ Sobre las observaciones del usuario para el link de seguimiento:
   (Sección A), foto + ⭐rating + idiomas del chofer (rating = B.1; foto/idiomas =
   campos nuevos de perfil), acuses de lectura del chat ("visto/respondió").
 
+### B-sexies. Vista del conductor premium + ajustes tracking (2026-06-17)
+- ✅ **Portal del conductor rediseñado** (/driver/trips) al mismo universo premium
+  oscuro del pasajero: header de marca (logo en caja + nombre + "Portal del
+  conductor" + "{driver} · En servicio" + cerrar sesión), y por viaje un layout
+  2 columnas (desktop): IZQ = estado actual + progreso del servicio (5 pasos) +
+  acción principal; DER = ruta (Waze/Google Maps/Copiar + agregar parada) +
+  pasajero (Llamar/WhatsApp/Mensaje) + chat (respuestas rápidas) + soporte
+  (contactar dispatch). DriverTripActions/DriverAddStop pasados a tema oscuro.
+- ✅ **Tracking**: "Agregar parada" ahora va DENTRO de la tarjeta de ruta.
+  Título de pestaña localizado (generateMetadata). Confirmado: no hay textos
+  hardcodeados; todo cambia con el selector de idioma (lo que se veía en inglés
+  era la página en locale EN, comportamiento correcto).
+- ⬜ FASE 2 conductor: foto/idiomas del pasajero, reporte de incidencias del
+  conductor (acción nueva), historial de eventos del viaje.
+
 ### F. Pago al momento de la reserva (2026-06-16)
 ✅ El wizard ahora ofrece "Confirmar y pagar ahora" (Stripe Checkout) además de
 "Reservar y pagar después", SOLO cuando el operador tiene Stripe Connect

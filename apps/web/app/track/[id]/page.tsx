@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
+import { brand } from '@/lib/brand'
 import { AutoRefresh } from './auto-refresh'
 import { TrackActions } from '@/components/trip/track-actions'
 import { TripChat } from '@/components/trip/trip-chat'
@@ -10,7 +11,10 @@ import { StaticMap } from '@/components/trip/static-map'
 import { ShareButton } from '@/components/trip/share-button'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 
-export const metadata: Metadata = { title: 'Trip Tracking | LuxeRide' }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = getDict(getLocale()).tracking
+  return { title: `${t.title} · ${brand.name}` }
+}
 export const dynamic = 'force-dynamic'
 
 // Página pública de tracking — el UUID del booking actúa como capability URL
@@ -347,20 +351,21 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
                   .replace('{min}', String(booking.duration_minutes))}
               </p>
             )}
+            {/* Agregar parada — DENTRO de la tarjeta de ruta (modifica esta ruta) */}
+            {canAddStop && (
+              <div className="pt-3 border-t border-white/[0.06]">
+                <TrackActions
+                  bookingId={booking.id}
+                  brandColor={brandColor}
+                  canCancel={false}
+                  canReport={false}
+                  canAddStop={true}
+                  labels={{ cancel: t.cancel, report: t.report, addStop: t.addStop }}
+                />
+              </div>
+            )}
           </div>
         </section>
-
-        {/* Agregar parada — contextual, justo debajo de la ruta */}
-        {canAddStop && (
-          <TrackActions
-            bookingId={booking.id}
-            brandColor={brandColor}
-            canCancel={false}
-            canReport={false}
-            canAddStop={true}
-            labels={{ cancel: t.cancel, report: t.report, addStop: t.addStop }}
-          />
-        )}
 
         {/* ── 5. Conductor + vehículo ── */}
         {driver && !isTerminal && (

@@ -44,7 +44,7 @@ export function DriverAddStop({ bookingId }: { bookingId: string }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="text-xs font-medium text-gold hover:opacity-80 transition-opacity pt-1"
+        className="text-xs font-medium text-[var(--brand)] hover:opacity-80 transition-opacity pt-1"
       >
         ➕ Agregar parada
       </button>
