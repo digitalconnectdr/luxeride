@@ -294,6 +294,14 @@ Sobre las observaciones del usuario para el link de seguimiento:
 - ⬜ FASE 2 conductor: foto/idiomas del pasajero, reporte de incidencias del
   conductor (acción nueva), historial de eventos del viaje.
 
+### B-septies. Ajustes finos tracking/conductor (2026-06-17/18)
+- ✅ Pasajero: módulos dentro de un contenedor exterior (como el conductor);
+  tamaños de header (logo 44px + título semibold) igualados en ambas vistas.
+- ✅ Conductor: tema claro Ivory; **selector de idioma EN/ES/PT** con i18n COMPLETO
+  (nueva sección dict.driver; DriverTripActions/DriverAddStop reciben labels).
+- ✅ Conductor: **mapa estático** (pickup A → destino B) igual que el pasajero,
+  con variante clara (StaticMap light). Requiere "Maps Static API" habilitada.
+
 ### F. Pago al momento de la reserva (2026-06-16)
 ✅ El wizard ahora ofrece "Confirmar y pagar ahora" (Stripe Checkout) además de
 "Reservar y pagar después", SOLO cuando el operador tiene Stripe Connect

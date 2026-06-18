@@ -9,7 +9,20 @@ import { quoteTripStopAction, driverAddTripStopAction, type StopQuote } from '@/
 
 interface StopPlace { address: string; lat?: number; lng?: number }
 
-export function DriverAddStop({ bookingId }: { bookingId: string }) {
+export interface AddStopLabels {
+  trigger: string
+  title: string
+  placeholder: string
+  confirm: string
+  cancel: string
+  done: string
+  saving: string
+  costUnknown: string
+  costFree: string
+  costExtra: string
+}
+
+export function DriverAddStop({ bookingId, labels }: { bookingId: string; labels: AddStopLabels }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [place, setPlace] = useState<StopPlace | null>(null)
@@ -38,7 +51,7 @@ export function DriverAddStop({ bookingId }: { bookingId: string }) {
     })
   }
 
-  if (done) return <p className="text-xs text-[#8a6520] pt-2">✓ Parada agregada al viaje.</p>
+  if (done) return <p className="text-xs text-[#8a6520] pt-2">{labels.done}</p>
 
   if (!open) {
     return (
@@ -46,24 +59,24 @@ export function DriverAddStop({ bookingId }: { bookingId: string }) {
         onClick={() => setOpen(true)}
         className="text-xs font-medium text-[#8a6520] hover:opacity-80 transition-opacity pt-1"
       >
-        ➕ Agregar parada
+        {labels.trigger}
       </button>
     )
   }
 
   const costLine = (() => {
     if (!quote) return null
-    if (quote.extraAmount == null) return { text: 'El operador confirmará si tiene costo.', cls: 'text-[#75716a]' }
-    if (quote.extraAmount <= 0) return { text: '✓ Sin costo adicional.', cls: 'text-green-600' }
-    return { text: `Costo adicional: ${quote.extraAmount.toFixed(2)} ${quote.currency}`, cls: 'text-[#8a6520]' }
+    if (quote.extraAmount == null) return { text: labels.costUnknown, cls: 'text-[#75716a]' }
+    if (quote.extraAmount <= 0) return { text: labels.costFree, cls: 'text-green-600' }
+    return { text: labels.costExtra.replace('{amount}', `${quote.extraAmount.toFixed(2)} ${quote.currency}`), cls: 'text-[#8a6520]' }
   })()
 
   return (
     <div className="pt-2 space-y-2">
-      <p className="text-xs font-semibold text-[#1d1b18]">Agregar una parada</p>
+      <p className="text-xs font-semibold text-[#1d1b18]">{labels.title}</p>
       <MapsProvider>
         <AddressInput
-          placeholder="Dirección de la parada…"
+          placeholder={labels.placeholder}
           onPlaceSelect={(p) => onSelect({ address: p.address, lat: p.lat, lng: p.lng })}
           onChange={(v) => { setPlace({ address: v }); setQuote(null) }}
           className="w-full rounded-lg border border-[#e5e1d8] bg-white px-3 py-2 text-sm text-[#1d1b18] placeholder:text-[#a8a39a] focus:outline-none focus:border-[#8a6520]"
@@ -77,14 +90,14 @@ export function DriverAddStop({ bookingId }: { bookingId: string }) {
           disabled={isPending}
           className="flex-1 py-2 text-xs font-medium border border-[#e5e1d8] rounded-lg text-[#75716a] hover:text-[#1d1b18] transition-colors"
         >
-          Cancelar
+          {labels.cancel}
         </button>
         <button
           onClick={confirm}
           disabled={isPending || !place?.address}
           className="flex-1 py-2 text-xs font-semibold bg-gold text-gray-900 rounded-lg hover:bg-gold/90 disabled:opacity-50 transition-colors"
         >
-          {isPending ? 'Guardando…' : 'Confirmar parada'}
+          {isPending ? labels.saving : labels.confirm}
         </button>
       </div>
     </div>

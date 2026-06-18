@@ -10,11 +10,13 @@ export function StaticMap({
   href,
   alt,
   openLabel,
+  light = false,
 }: {
   src: string
   href: string
   alt: string
   openLabel: string
+  light?: boolean
 }) {
   const [failed, setFailed] = useState(false)
   if (failed) return null
@@ -24,7 +26,7 @@ export function StaticMap({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="block relative rounded-2xl overflow-hidden border border-white/[0.08] group"
+      className={`block relative rounded-2xl overflow-hidden border group ${light ? 'border-[#e5e1d8]' : 'border-white/[0.08]'}`}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img

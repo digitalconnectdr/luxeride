@@ -168,17 +168,17 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
           <div className="flex items-center gap-3 min-w-0">
             {logoUrl ? (
               // Caja premium: tamaño fijo, fondo claro, redondeada → ningún logo rompe el diseño
-              <div className="h-12 w-12 rounded-xl bg-white p-1.5 shadow-sm shadow-black/30 flex items-center justify-center shrink-0">
+              <div className="h-11 w-11 rounded-xl bg-white p-1.5 shadow-sm shadow-black/30 flex items-center justify-center shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={logoUrl} alt={companyName} className="max-h-full max-w-full object-contain" />
               </div>
             ) : (
-              <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-black/30" style={{ backgroundColor: brandColor }}>
-                <span className="text-[#08080a] font-bold text-lg leading-none">{initial}</span>
+              <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-black/30" style={{ backgroundColor: brandColor }}>
+                <span className="text-[#08080a] font-bold text-base leading-none">{initial}</span>
               </div>
             )}
             <div className="min-w-0 border-l border-white/10 pl-3">
-              <h1 className="font-playfair text-lg sm:text-xl font-medium tracking-[0.02em] truncate">{companyName}</h1>
+              <h1 className="font-playfair text-lg sm:text-xl font-semibold tracking-[0.01em] truncate">{companyName}</h1>
               <p className="text-[10px] uppercase tracking-[0.22em] text-white/40 mt-0.5">{t.title}</p>
             </div>
           </div>
@@ -192,7 +192,8 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
           </div>
         </header>
 
-        {/* Control center: 1 columna en móvil, 2 en desktop */}
+        {/* Control center dentro de un contenedor: 1 columna en móvil, 2 en desktop */}
+        <div className="rounded-3xl border border-white/[0.08] bg-white/[0.015] p-4 sm:p-6">
         <div className="grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-6 items-start">
 
         {/* ── Columna izquierda: estado + progreso (fija en desktop) ── */}
@@ -425,6 +426,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
 
         </div>{/* fin columna derecha */}
         </div>{/* fin grid control center */}
+        </div>{/* fin contenedor */}
 
         {/* ── 7. Acciones secundarias (reportar / cancelar) ── */}
         {!isTerminal && (canReport || canCancel) && (
