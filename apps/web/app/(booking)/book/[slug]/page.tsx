@@ -198,7 +198,8 @@ export default async function OperatorMicrosite({ params }: Props) {
         <div className="absolute inset-0 -z-10" style={{ background: 'linear-gradient(90deg, rgba(10,10,13,0.7) 0%, rgba(10,10,13,0.9) 45%, rgba(10,10,13,0.98) 100%)' }} />
         <div className="max-w-[1300px] mx-auto px-6 lg:px-10 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <Reveal className="relative h-80 lg:h-[26rem] rounded-[1.25rem] overflow-hidden ring-1 ring-white/10">
-            <Image src={fleet[0]?.base_image_url || DEFAULT_CARS[0]} alt="" fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover" />
+            {/* Imagen ESTÁTICA de "La diferencia" — NO se liga a la flota (no cambia al subir vehículos) */}
+            <Image src={DEFAULT_CARS[0]} alt="" fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
           </Reveal>
           <Reveal>
