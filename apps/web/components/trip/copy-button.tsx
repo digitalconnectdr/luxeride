@@ -7,10 +7,12 @@ export function CopyButton({
   text,
   label,
   copiedLabel,
+  light = false,
 }: {
   text: string
   label: string
   copiedLabel: string
+  light?: boolean
 }) {
   const [copied, setCopied] = useState(false)
 
@@ -25,7 +27,9 @@ export function CopyButton({
     <button
       type="button"
       onClick={copy}
-      className="text-[11px] font-medium text-white/50 hover:text-white/80 transition-colors"
+      className={`text-[11px] font-medium transition-colors ${
+        light ? 'text-[#75716a] hover:text-[#1d1b18]' : 'text-white/50 hover:text-white/80'
+      }`}
     >
       {copied ? copiedLabel : label}
     </button>

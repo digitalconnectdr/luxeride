@@ -49,7 +49,7 @@ export function DriverTripActions({
       <button
         onClick={handleAdvance}
         disabled={isPending}
-        className="w-full py-3.5 text-sm font-semibold bg-gold text-gray-900 rounded-xl hover:bg-gold/90 disabled:opacity-50 transition-colors shadow-lg shadow-black/30"
+        className="w-full py-3.5 text-sm font-semibold bg-gold text-gray-900 rounded-xl hover:bg-gold/90 disabled:opacity-50 transition-colors shadow-sm"
       >
         {isPending ? 'Guardando…' : label}
       </button>
@@ -57,15 +57,15 @@ export function DriverTripActions({
       {/* No-show: solo cuando el conductor ya llegó al punto */}
       {status === 'arrived' && (
         confirmNoShow ? (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 space-y-2">
-            <p className="text-xs text-red-300">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 space-y-2">
+            <p className="text-xs text-red-700">
               ¿Marcar que el pasajero <strong>no se presentó</strong>? Esto cancela el viaje.
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setConfirmNoShow(false)}
                 disabled={isPending}
-                className="flex-1 py-2 text-xs font-medium border border-white/15 rounded-lg text-white/80 hover:bg-white/5 transition-colors"
+                className="flex-1 py-2 text-xs font-medium border border-[#e5e1d8] rounded-lg text-[#75716a] hover:bg-white transition-colors"
               >
                 Volver
               </button>
@@ -82,7 +82,7 @@ export function DriverTripActions({
           <button
             onClick={() => setConfirmNoShow(true)}
             disabled={isPending}
-            className="w-full py-2.5 text-xs font-medium text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500/10 disabled:opacity-50 transition-colors"
+            className="w-full py-2.5 text-xs font-medium text-red-600 border border-red-200 rounded-xl hover:bg-red-50 disabled:opacity-50 transition-colors"
           >
             ⚠️ El pasajero no se presentó (no-show)
           </button>
@@ -90,7 +90,7 @@ export function DriverTripActions({
       )}
 
       {error && (
-        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
           {error}
         </p>
       )}

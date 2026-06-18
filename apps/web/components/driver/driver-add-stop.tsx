@@ -38,13 +38,13 @@ export function DriverAddStop({ bookingId }: { bookingId: string }) {
     })
   }
 
-  if (done) return <p className="text-xs text-gold pt-2">✓ Parada agregada al viaje.</p>
+  if (done) return <p className="text-xs text-[#8a6520] pt-2">✓ Parada agregada al viaje.</p>
 
   if (!open) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="text-xs font-medium text-[var(--brand)] hover:opacity-80 transition-opacity pt-1"
+        className="text-xs font-medium text-[#8a6520] hover:opacity-80 transition-opacity pt-1"
       >
         ➕ Agregar parada
       </button>
@@ -53,29 +53,29 @@ export function DriverAddStop({ bookingId }: { bookingId: string }) {
 
   const costLine = (() => {
     if (!quote) return null
-    if (quote.extraAmount == null) return { text: 'El operador confirmará si tiene costo.', cls: 'text-sl-on-surface-muted' }
-    if (quote.extraAmount <= 0) return { text: '✓ Sin costo adicional.', cls: 'text-green-400' }
-    return { text: `Costo adicional: ${quote.extraAmount.toFixed(2)} ${quote.currency}`, cls: 'text-gold' }
+    if (quote.extraAmount == null) return { text: 'El operador confirmará si tiene costo.', cls: 'text-[#75716a]' }
+    if (quote.extraAmount <= 0) return { text: '✓ Sin costo adicional.', cls: 'text-green-600' }
+    return { text: `Costo adicional: ${quote.extraAmount.toFixed(2)} ${quote.currency}`, cls: 'text-[#8a6520]' }
   })()
 
   return (
     <div className="pt-2 space-y-2">
-      <p className="text-xs font-semibold text-sl-on-surface">Agregar una parada</p>
+      <p className="text-xs font-semibold text-[#1d1b18]">Agregar una parada</p>
       <MapsProvider>
         <AddressInput
           placeholder="Dirección de la parada…"
           onPlaceSelect={(p) => onSelect({ address: p.address, lat: p.lat, lng: p.lng })}
           onChange={(v) => { setPlace({ address: v }); setQuote(null) }}
-          className="w-full rounded-lg border border-sl-outline-variant bg-sl-surface px-3 py-2 text-sm text-sl-on-surface placeholder:text-sl-on-surface-muted focus:outline-none focus:border-gold"
+          className="w-full rounded-lg border border-[#e5e1d8] bg-white px-3 py-2 text-sm text-[#1d1b18] placeholder:text-[#a8a39a] focus:outline-none focus:border-[#8a6520]"
         />
       </MapsProvider>
       {costLine && <p className={`text-xs ${costLine.cls}`}>{costLine.text}</p>}
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-2">
         <button
           onClick={() => { setOpen(false); setPlace(null); setQuote(null); setError('') }}
           disabled={isPending}
-          className="flex-1 py-2 text-xs font-medium border border-sl-outline-variant rounded-lg text-sl-on-surface-muted hover:text-sl-on-surface transition-colors"
+          className="flex-1 py-2 text-xs font-medium border border-[#e5e1d8] rounded-lg text-[#75716a] hover:text-[#1d1b18] transition-colors"
         >
           Cancelar
         </button>
