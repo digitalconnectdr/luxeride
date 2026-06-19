@@ -198,10 +198,12 @@ export default async function OperatorMicrosite({ params }: Props) {
         {/* Degradado casi opaco del lado del texto para garantizar legibilidad */}
         <div className="absolute inset-0 -z-10" style={{ background: 'linear-gradient(90deg, rgba(10,10,13,0.7) 0%, rgba(10,10,13,0.9) 45%, rgba(10,10,13,0.98) 100%)' }} />
         <div className="max-w-[1300px] mx-auto px-6 lg:px-10 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          <Reveal className="relative h-80 lg:h-[26rem] rounded-[1.25rem] overflow-hidden ring-1 ring-white/10 bg-gradient-to-br from-white to-[#eceae3] flex items-center justify-center p-8 lg:p-12">
-            {/* Imagen ESTÁTICA y DISTINTA de "La diferencia" — lineup de flota premium (cutout sobre claro).
+          <Reveal className="relative h-80 lg:h-[26rem] rounded-[1.25rem] overflow-hidden ring-1 ring-white/10 bg-gradient-to-br from-[#d9d6cd] via-[#c4c0b6] to-[#a6a299] flex items-center justify-center p-4 lg:p-6">
+            {/* Imagen ESTÁTICA y DISTINTA de "La diferencia" — lineup de flota premium (cutout PNG transparente).
                 No se liga a la flota subida ni repite la de "Nuestros servicios". */}
-            <Image src="/microsite/fleet-lineup.png" alt="Flota premium" width={760} height={300} sizes="(max-width:1024px) 100vw, 50vw" className="w-full h-auto object-contain drop-shadow-2xl" />
+            {/* Glow de estudio: aclara el centro para que los autos negros resalten sobre el grafito. */}
+            <span aria-hidden className="absolute inset-0" style={{ background: 'radial-gradient(62% 58% at 50% 38%, rgba(255,255,255,0.55), transparent 72%)' }} />
+            <Image src="/microsite/fleet-lineup.png" alt="Flota premium" width={760} height={300} sizes="(max-width:1024px) 100vw, 50vw" className="relative z-10 w-full h-auto object-contain drop-shadow-2xl" />
           </Reveal>
           <Reveal>
             <span className="block h-px w-12 mb-6" style={{ background: `linear-gradient(90deg, ${brandColor}, transparent)` }} />
