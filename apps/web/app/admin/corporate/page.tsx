@@ -3,13 +3,17 @@ import Link from 'next/link'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { CreateCorporateAccountForm } from '@/components/admin/corporate-controls'
+import { getDict } from '@/lib/i18n/server'
 
-export const metadata: Metadata = { title: 'Cuentas Corporativas' }
+export function generateMetadata(): Metadata {
+  return { title: getDict().admin.corporateList.title }
+}
 
 export default async function CorporateAccountsPage() {
   const user = await requireRole('company_owner', 'company_admin', 'accounting')
+  const t = getDict().admin.corporateList
   if (!user.company_id) {
-    return <p className="p-8 text-sl-on-surface-muted">Sin empresa asignada.</p>
+    return <p className="p-8 text-sl-on-surface-muted">{t.noCompany}</p>
   }
 
   const admin = createAdminClient()
@@ -26,10 +30,10 @@ export default async function CorporateAccountsPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">
-            Cuentas Corporativas
+            {t.title}
           </h1>
           <p className="text-sm text-sl-on-surface-muted mt-1">
-            Empresas cliente con facturación a crédito y usuarios autorizados.
+            {t.subtitle}
           </p>
         </div>
       </div>
@@ -39,7 +43,7 @@ export default async function CorporateAccountsPage() {
       {!accounts?.length ? (
         <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-10 text-center">
           <p className="text-sm text-sl-on-surface-muted">
-            No hay cuentas corporativas todavía.
+            {t.empty}
           </p>
         </div>
       ) : (
@@ -58,18 +62,18 @@ export default async function CorporateAccountsPage() {
                       acc.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                     }`}
                   >
-                    {acc.is_active ? 'Activa' : 'Inactiva'}
+                    {acc.is_active ? t.active : t.inactive}
                   </span>
                   {acc.require_approval && (
                     <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-blue-100 text-[#0071e3]">
-                      Requiere aprobación
+                      {t.requiresApproval}
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-sl-on-surface-muted mt-1">
                   {acc.contact_name ?? '—'}
                   {acc.contact_email && ` · ${acc.contact_email}`}
-                  {` · Net ${acc.payment_terms ?? 30} días`}
+                  {` · ${t.netDays.replace('{days}', String(acc.payment_terms ?? 30))}`}
                 </p>
               </div>
               <div className="text-right">
@@ -80,7 +84,7 @@ export default async function CorporateAccountsPage() {
                   </span>
                 </p>
                 <p className="text-[10px] text-sl-on-surface-muted uppercase tracking-wider mt-0.5">
-                  Balance / Límite
+                  {t.balanceLimit}
                 </p>
               </div>
             </Link>

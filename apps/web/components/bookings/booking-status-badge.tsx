@@ -25,10 +25,13 @@ const STATUS_CONFIG: Record<BookingStatus, Config> = {
 interface Props {
   status: BookingStatus
   size?: 'sm' | 'md'
+  /** Etiquetas traducidas por estado (admin.bookingStatuses). Si se omite, usa el español por defecto. */
+  labels?: Partial<Record<BookingStatus, string>>
 }
 
-export function BookingStatusBadge({ status, size = 'sm' }: Props) {
-  const cfg = STATUS_CONFIG[status] ?? { label: status, cls: 'bg-gray-100 text-gray-600' }
+export function BookingStatusBadge({ status, size = 'sm', labels }: Props) {
+  const base0 = STATUS_CONFIG[status] ?? { label: status, cls: 'bg-gray-100 text-gray-600' }
+  const cfg = { ...base0, label: labels?.[status] ?? base0.label }
   const base = size === 'md'
     ? 'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold'
     : 'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold'

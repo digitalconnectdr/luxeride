@@ -4,19 +4,18 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { BookingStatusBadge } from '@/components/bookings/booking-status-badge'
 import type { BookingStatus } from '@/lib/supabase/database.types'
+import { getDict, getLocale } from '@/lib/i18n/server'
 
-export const metadata: Metadata = { title: 'Reservaciones' }
+const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
+
+export function generateMetadata(): Metadata {
+  return { title: getDict().admin.bookingsList.title }
+}
 
 const ALL_STATUSES: BookingStatus[] = [
   'pending', 'assigned', 'en_route', 'arrived', 'in_progress',
   'completed', 'cancelled', 'no_show',
 ]
-
-const STATUS_LABELS: Record<BookingStatus, string> = {
-  quote: 'Cotización', pending: 'Pendiente', assigned: 'Asignado',
-  en_route: 'En ruta', arrived: 'Llegó', in_progress: 'En viaje',
-  completed: 'Completado', cancelled: 'Cancelado', no_show: 'No apareció', failed: 'Fallido',
-}
 
 interface LocationJson {
   address?: string
@@ -32,8 +31,8 @@ function shortAddress(loc: unknown): string {
   return l.address.split(',')[0] ?? l.address
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString('es-DO', {
+function formatDate(iso: string, tag: string): string {
+  return new Date(iso).toLocaleString(tag, {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   })
 }
@@ -47,10 +46,14 @@ export default async function AdminBookingsPage({
     'super_admin', 'company_owner', 'company_admin', 'dispatcher', 'accounting',
   )
 
+  const t = getDict().admin.bookingsList
+  const statusLabels = getDict().admin.bookingStatuses
+  const localeTag = LOCALE_TAGS[getLocale()] ?? 'en-US'
+
   if (!user.company_id) {
     return (
       <div className="p-8">
-        <p className="text-sm text-sl-on-surface-muted">Sin empresa asignada.</p>
+        <p className="text-sm text-sl-on-surface-muted">{t.noCompany}</p>
       </div>
     )
   }
@@ -93,16 +96,16 @@ export default async function AdminBookingsPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">Reservaciones</h1>
+          <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.title}</h1>
           <p className="text-sm text-sl-on-surface-muted mt-1">
-            {allBookings?.length ?? 0} total · {totalActive} activas
+            {t.summary.replace('{total}', String(allBookings?.length ?? 0)).replace('{active}', String(totalActive))}
           </p>
         </div>
         <Link
           href="/admin/bookings/new"
           className="px-4 py-2 bg-[#0071e3] text-white text-sm font-medium rounded-xl hover:bg-[#0077ed] transition-colors"
         >
-          + Nueva reservación
+          {t.newBooking}
         </Link>
       </div>
 
@@ -116,7 +119,7 @@ export default async function AdminBookingsPage({
               : 'bg-sl-surface-high border border-sl-outline-variant text-sl-on-surface-muted hover:border-[#0071e3]'
           }`}
         >
-          Todos ({allBookings?.length ?? 0})
+          {t.all} ({allBookings?.length ?? 0})
         </Link>
         {ALL_STATUSES.map((s) => (
           counts[s] ? (
@@ -129,7 +132,7 @@ export default async function AdminBookingsPage({
                   : 'bg-sl-surface-high border border-sl-outline-variant text-sl-on-surface-muted hover:border-[#0071e3]'
               }`}
             >
-              {STATUS_LABELS[s]} ({counts[s]})
+              {statusLabels[s]} ({counts[s]})
             </Link>
           ) : null
         ))}
@@ -139,13 +142,13 @@ export default async function AdminBookingsPage({
       {!bookings?.length ? (
         <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-12 text-center">
           <p className="text-sm text-sl-on-surface-muted">
-            {filterStatus ? `No hay reservaciones con estado "${STATUS_LABELS[filterStatus]}"` : 'No hay reservaciones aún.'}
+            {filterStatus ? t.emptyFiltered.replace('{status}', statusLabels[filterStatus]) : t.empty}
           </p>
           <Link
             href="/admin/bookings/new"
             className="mt-4 inline-block text-sm text-[#0071e3] hover:underline"
           >
-            Crear primera reservación →
+            {t.createFirst}
           </Link>
         </div>
       ) : (
@@ -153,13 +156,13 @@ export default async function AdminBookingsPage({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-sl-outline-variant">
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">Nº</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">Pasajero</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">Estado</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">Fecha / Hora</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">Pickup</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">Dropoff</th>
-                <th className="text-right px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">Total</th>
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colNumber}</th>
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPassenger}</th>
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colStatus}</th>
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDateTime}</th>
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPickup}</th>
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDropoff}</th>
+                <th className="text-right px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colTotal}</th>
               </tr>
             </thead>
             <tbody>
@@ -180,10 +183,10 @@ export default async function AdminBookingsPage({
                     )}
                   </td>
                   <td className="px-5 py-3">
-                    <BookingStatusBadge status={b.status as BookingStatus} />
+                    <BookingStatusBadge status={b.status as BookingStatus} labels={statusLabels} />
                   </td>
                   <td className="px-5 py-3 text-sl-on-surface-muted">
-                    {formatDate(b.scheduled_at)}
+                    {formatDate(b.scheduled_at, localeTag)}
                   </td>
                   <td className="px-5 py-3 text-sl-on-surface max-w-[180px] truncate">
                     {shortAddress(b.pickup_location)}
