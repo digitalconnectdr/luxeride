@@ -198,11 +198,13 @@ export default async function OperatorMicrosite({ params }: Props) {
         {/* Degradado casi opaco del lado del texto para garantizar legibilidad */}
         <div className="absolute inset-0 -z-10" style={{ background: 'linear-gradient(90deg, rgba(10,10,13,0.7) 0%, rgba(10,10,13,0.9) 45%, rgba(10,10,13,0.98) 100%)' }} />
         <div className="max-w-[1300px] mx-auto px-6 lg:px-10 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          <Reveal className="relative h-80 lg:h-[26rem] rounded-[1.25rem] overflow-hidden ring-1 ring-white/10 bg-gradient-to-br from-[#d9d6cd] via-[#c4c0b6] to-[#a6a299] flex items-center justify-center p-4 lg:p-6">
+          <Reveal className="relative h-80 lg:h-[26rem] rounded-[1.25rem] overflow-hidden ring-1 ring-white/10 bg-gradient-to-br from-[#e6e2d9] via-[#8c887e] to-[#2f2e33] flex items-center justify-center p-4 lg:p-6">
             {/* Imagen ESTÁTICA y DISTINTA de "La diferencia" — lineup de flota premium (cutout PNG transparente).
                 No se liga a la flota subida ni repite la de "Nuestros servicios". */}
-            {/* Glow de estudio: aclara el centro para que los autos negros resalten sobre el grafito. */}
-            <span aria-hidden className="absolute inset-0" style={{ background: 'radial-gradient(62% 58% at 50% 38%, rgba(255,255,255,0.55), transparent 72%)' }} />
+            {/* Backdrop de estudio con presencia: spotlight central que ilumina los autos
+                + viñeta inferior que los asienta sobre el "piso" y da profundidad. */}
+            <span aria-hidden className="absolute inset-0" style={{ background: 'radial-gradient(56% 54% at 50% 34%, rgba(255,255,255,0.6), transparent 68%)' }} />
+            <span aria-hidden className="absolute inset-x-0 bottom-0 h-1/2" style={{ background: 'linear-gradient(to top, rgba(18,18,20,0.5), transparent)' }} />
             <Image src="/microsite/fleet-lineup.png" alt="Flota premium" width={760} height={300} sizes="(max-width:1024px) 100vw, 50vw" className="relative z-10 w-full h-auto object-contain drop-shadow-2xl" />
           </Reveal>
           <Reveal>
