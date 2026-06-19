@@ -8,6 +8,9 @@ import { useRouter } from 'next/navigation'
 import { AddressInput } from '@/components/maps/address-input'
 import { calculateQuoteAction, createBookingAction } from '@/app/actions/bookings'
 import type { QuoteResult } from '@/app/actions/bookings'
+import type { Dictionary } from '@/lib/i18n/server'
+
+type Labels = Dictionary['admin']['bookingNew']
 
 interface VehicleType {
   id: string
@@ -31,17 +34,12 @@ interface Props {
   vehicleTypes: VehicleType[]
   drivers: Driver[]
   corporateAccounts?: CorporateAccount[]
+  labels: Labels
 }
 
-const BOOKING_TYPE_LABELS = [
-  { value: 'one_way',         label: 'Solo ida' },
-  { value: 'airport_pickup',  label: 'Pickup aeropuerto' },
-  { value: 'airport_dropoff', label: 'Dropoff aeropuerto' },
-  { value: 'round_trip',      label: 'Ida y vuelta' },
-  { value: 'hourly',          label: 'Por hora' },
-]
+const BOOKING_TYPE_VALUES = ['one_way', 'airport_pickup', 'airport_dropoff', 'round_trip', 'hourly'] as const
 
-export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }: Props) {
+export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], labels: t }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [phase, setPhase] = useState<'route' | 'passenger'>('route')
@@ -64,7 +62,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
     startTransition(async () => {
       const result = await calculateQuoteAction(fd)
       if (!result.success || !result.data) {
-        setError(result.error ?? 'Error al calcular precio')
+        setError(result.error ?? t.errCalc)
         return
       }
       setQuote(result.data)
@@ -89,10 +87,10 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
     startTransition(async () => {
       const result = await createBookingAction(combined)
       if (!result.success || !result.data) {
-        setError(result.error ?? 'Error al crear reservación')
+        setError(result.error ?? t.errCreate)
         return
       }
-      setSuccess(`Reservación ${result.data.bookingNumber} creada con éxito`)
+      setSuccess(t.successCreated.replace('{number}', result.data.bookingNumber))
       setTimeout(() => router.push(`/admin/bookings/${result.data!.bookingId}`), 1500)
     })
   }
@@ -101,7 +99,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
     return (
       <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
         <p className="text-green-700 font-semibold text-lg">{success}</p>
-        <p className="text-sm text-green-600 mt-1">Redirigiendo al detalle...</p>
+        <p className="text-sm text-green-600 mt-1">{t.redirecting}</p>
       </div>
     )
   }
@@ -117,15 +115,15 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
         {/* Tipo de reservación */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            Tipo de servicio
+            {t.serviceType}
           </label>
           <select
             name="booking_type"
             defaultValue="one_way"
             className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
           >
-            {BOOKING_TYPE_LABELS.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
+            {BOOKING_TYPE_VALUES.map((v) => (
+              <option key={v} value={v}>{t.types[v]}</option>
             ))}
           </select>
         </div>
@@ -134,16 +132,16 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
         {vehicleTypes.length > 0 && (
           <div>
             <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-              Tipo de vehículo
+              {t.vehicleType}
             </label>
             <select
               name="vehicle_type_id"
               className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
             >
-              <option value="">— Cualquier tipo —</option>
+              <option value="">{t.anyType}</option>
               {vehicleTypes.map((vt) => (
                 <option key={vt.id} value={vt.id}>
-                  {vt.name} ({vt.class}, {vt.capacity} pax)
+                  {vt.name} ({vt.class}, {vt.capacity} {t.pax})
                 </option>
               ))}
             </select>
@@ -153,7 +151,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
         {/* Fecha y hora */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            Fecha y hora del servicio
+            {t.dateTime}
           </label>
           <input
             type="datetime-local"
@@ -167,15 +165,15 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
         {/* Pickup */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            Pickup — Dirección de recogida
+            {t.pickupLabel}
           </label>
           <AddressInput
             name="pickup"
-            placeholder="Ingresa la dirección de pickup..."
+            placeholder={t.pickupPlaceholder}
             required
           />
           <p className="mt-1 text-[11px] text-sl-on-surface-muted">
-            Selecciona una sugerencia del dropdown para guardar las coordenadas
+            {t.pickupHint}
           </p>
         </div>
 
@@ -184,7 +182,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
           <div key={i}>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-                Parada {i + 1}
+                {t.stop.replace('{n}', String(i + 1))}
               </label>
               {i === stopCount - 1 && (
                 <button
@@ -192,13 +190,13 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
                   onClick={() => setStopCount((c) => c - 1)}
                   className="text-xs text-red-500 hover:underline"
                 >
-                  ✕ Quitar
+                  {t.remove}
                 </button>
               )}
             </div>
             <AddressInput
               name={`stop_${i}`}
-              placeholder="Dirección de la parada..."
+              placeholder={t.stopPlaceholder}
             />
           </div>
         ))}
@@ -209,18 +207,18 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
             onClick={() => setStopCount((c) => c + 1)}
             className="text-sm font-medium text-[#0071e3] hover:underline"
           >
-            + Agregar parada
+            {t.addStop}
           </button>
         )}
 
         {/* Dropoff */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            Dropoff — Dirección de destino
+            {t.dropoffLabel}
           </label>
           <AddressInput
             name="dropoff"
-            placeholder="Ingresa la dirección de destino..."
+            placeholder={t.dropoffPlaceholder}
             required
           />
         </div>
@@ -228,7 +226,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
         {/* Número de vuelo (solo para airport) */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            Número de vuelo <span className="font-normal normal-case">(opcional)</span>
+            {t.flightNumber} <span className="font-normal normal-case">{t.optional}</span>
           </label>
           <input
             type="text"
@@ -249,7 +247,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
           disabled={isPending}
           className="w-full py-3 bg-[#0071e3] text-white font-semibold rounded-xl hover:bg-[#0077ed] disabled:opacity-50 transition-colors"
         >
-          {isPending ? 'Calculando precio...' : 'Calcular precio →'}
+          {isPending ? t.calcLoading : t.calcCta}
         </button>
       </form>
     )
@@ -266,33 +264,33 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
       {quote && (
         <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-3">
-            Resumen del precio
+            {t.priceSummary}
           </p>
           <div className="space-y-1.5 text-sm">
             {quote.distanceMiles != null && (
               <div className="flex justify-between">
-                <span className="text-sl-on-surface-muted">Distancia</span>
+                <span className="text-sl-on-surface-muted">{t.distance}</span>
                 <span className="text-sl-on-surface">{quote.distanceMiles.toFixed(1)} mi</span>
               </div>
             )}
             {quote.durationMinutes != null && (
               <div className="flex justify-between">
-                <span className="text-sl-on-surface-muted">Duración est.</span>
+                <span className="text-sl-on-surface-muted">{t.durationEst}</span>
                 <span className="text-sl-on-surface">{quote.durationMinutes} min</span>
               </div>
             )}
             <div className="flex justify-between">
-              <span className="text-sl-on-surface-muted">Tarifa base</span>
+              <span className="text-sl-on-surface-muted">{t.baseFare}</span>
               <span className="text-sl-on-surface">${quote.baseAmount.toFixed(2)}</span>
             </div>
             {quote.surchargeAmount > 0 && (
               <div className="flex justify-between">
-                <span className="text-sl-on-surface-muted">Recargo</span>
+                <span className="text-sl-on-surface-muted">{t.surcharge}</span>
                 <span className="text-sl-on-surface">+${quote.surchargeAmount.toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between border-t border-sl-outline-variant pt-2 mt-2">
-              <span className="font-semibold text-sl-on-surface">Total</span>
+              <span className="font-semibold text-sl-on-surface">{t.total}</span>
               <span className="font-bold text-xl text-sl-on-surface">
                 ${quote.totalAmount.toFixed(2)} {quote.currency}
               </span>
@@ -306,13 +304,13 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
         {/* Nombre */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            Nombre del pasajero <span className="text-red-500">*</span>
+            {t.passengerName} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             name="passenger_name"
             required
-            placeholder="Juan Pérez"
+            placeholder={t.namePlaceholder}
             className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
           />
         </div>
@@ -320,7 +318,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
         {/* Teléfono */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            Teléfono
+            {t.phone}
           </label>
           <input
             type="tel"
@@ -333,7 +331,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
         {/* Email */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            Email <span className="font-normal normal-case">(opcional)</span>
+            {t.email} <span className="font-normal normal-case">{t.optional}</span>
           </label>
           <input
             type="email"
@@ -346,7 +344,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
         {/* Pasajeros */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            Número de pasajeros
+            {t.passengerCount}
           </label>
           <input
             type="number"
@@ -362,14 +360,14 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
         {corporateAccounts.length > 0 && (
           <div>
             <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-              Cuenta corporativa <span className="font-normal normal-case">(opcional — factura a crédito)</span>
+              {t.corporateAccount} <span className="font-normal normal-case">{t.corporateHint}</span>
             </label>
             <select
               name="corporate_account_id"
               defaultValue=""
               className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
             >
-              <option value="">— Cliente particular —</option>
+              <option value="">{t.individualClient}</option>
               {corporateAccounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>{acc.name}</option>
               ))}
@@ -380,12 +378,12 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
         {/* Instrucciones especiales */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            Instrucciones especiales <span className="font-normal normal-case">(opcional)</span>
+            {t.specialInstructions} <span className="font-normal normal-case">{t.optional}</span>
           </label>
           <textarea
             name="special_instructions"
             rows={2}
-            placeholder="Silla de bebé, equipaje extra..."
+            placeholder={t.specialPlaceholder}
             className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 resize-none"
           />
         </div>
@@ -393,12 +391,12 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
         {/* Notas internas */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            Notas internas <span className="font-normal normal-case">(solo staff)</span>
+            {t.internalNotes} <span className="font-normal normal-case">{t.staffOnly}</span>
           </label>
           <textarea
             name="internal_notes"
             rows={2}
-            placeholder="Notas para el conductor o dispatcher..."
+            placeholder={t.internalPlaceholder}
             className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 resize-none"
           />
         </div>
@@ -415,14 +413,14 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [] }
             onClick={() => { setPhase('route'); setError('') }}
             className="px-5 py-3 border border-sl-outline-variant text-sm font-medium rounded-xl hover:border-[#0071e3] transition-colors text-sl-on-surface"
           >
-            ← Volver
+            {t.back}
           </button>
           <button
             type="submit"
             disabled={isPending}
             className="flex-1 py-3 bg-[#0071e3] text-white font-semibold rounded-xl hover:bg-[#0077ed] disabled:opacity-50 transition-colors"
           >
-            {isPending ? 'Creando reservación...' : 'Confirmar reservación'}
+            {isPending ? t.createLoading : t.createCta}
           </button>
         </div>
       </form>

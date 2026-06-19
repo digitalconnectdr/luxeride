@@ -2,16 +2,20 @@ import type { Metadata } from 'next'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { NewBookingForm } from './new-booking-form'
+import { getDict } from '@/lib/i18n/server'
 
-export const metadata: Metadata = { title: 'Nueva Reservación' }
+export function generateMetadata(): Metadata {
+  return { title: getDict().admin.bookingNew.title }
+}
 
 export default async function NewBookingPage() {
   const user = await requireRole('company_owner', 'company_admin', 'dispatcher')
+  const t = getDict().admin.bookingNew
 
   if (!user.company_id) {
     return (
       <div className="p-8">
-        <p className="text-sm text-sl-on-surface-muted">Sin empresa asignada.</p>
+        <p className="text-sm text-sl-on-surface-muted">{getDict().admin.bookingsList.noCompany}</p>
       </div>
     )
   }
@@ -43,15 +47,16 @@ export default async function NewBookingPage() {
   return (
     <div className="p-8 max-w-3xl mx-auto">
       <div className="mb-6">
-        <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">Nueva Reservación</h1>
+        <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.title}</h1>
         <p className="text-sm text-sl-on-surface-muted mt-1">
-          Crea una reservación manual (tomada por teléfono, WhatsApp, etc.)
+          {t.subtitle}
         </p>
       </div>
       <NewBookingForm
         vehicleTypes={vehicleTypes ?? []}
         drivers={drivers ?? []}
         corporateAccounts={corporateAccounts ?? []}
+        labels={t}
       />
     </div>
   )
