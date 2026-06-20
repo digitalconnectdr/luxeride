@@ -1075,6 +1075,22 @@ export const en = {
       notes: 'Notes',
       registeredOn: 'Registered on {date}',
     },
+    audit: {
+      title: 'Audit Log',
+      subtitle: 'Immutable record of critical operations — {total} total.',
+      backToReports: '← Reports',
+      all: 'All',
+      empty: 'No audit records.',
+      colDate: 'Date',
+      colUser: 'User',
+      colAction: 'Action',
+      colTable: 'Table',
+      colRecord: 'Record',
+      system: 'System',
+      pagination: '{from}–{to} of {total}',
+      prev: '← Previous',
+      next: 'Next →',
+    },
   },
 }
 
