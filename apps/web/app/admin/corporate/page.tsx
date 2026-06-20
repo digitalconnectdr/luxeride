@@ -38,7 +38,7 @@ export default async function CorporateAccountsPage() {
         </div>
       </div>
 
-      {canManage && <CreateCorporateAccountForm />}
+      {canManage && <CreateCorporateAccountForm labels={getDict().admin.corporateForm} />}
 
       {!accounts?.length ? (
         <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-10 text-center">

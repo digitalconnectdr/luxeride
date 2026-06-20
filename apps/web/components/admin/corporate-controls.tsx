@@ -9,6 +9,11 @@ import {
   addCorporateMemberAction,
   removeCorporateMemberAction,
 } from '@/app/actions/corporate'
+import type { Dictionary } from '@/lib/i18n/server'
+
+type FormLabels = Dictionary['admin']['corporateForm']
+type MemberLabels = Dictionary['admin']['corporateMember']
+type ToggleLabels = { active: string; inactive: string }
 
 const inputCls =
   'w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 ' +
@@ -19,7 +24,7 @@ const labelCls = 'block text-xs text-sl-on-surface-muted mb-1'
 
 // ─── Crear cuenta corporativa ─────────────────────────────────────────────────
 
-export function CreateCorporateAccountForm() {
+export function CreateCorporateAccountForm({ labels: t }: { labels: FormLabels }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
@@ -32,7 +37,7 @@ export function CreateCorporateAccountForm() {
     startTransition(async () => {
       const result = await createCorporateAccountAction(fd)
       if (!result.success) {
-        setError(result.error ?? 'Error al crear la cuenta')
+        setError(result.error ?? t.errCreate)
         return
       }
       setOpen(false)
@@ -46,7 +51,7 @@ export function CreateCorporateAccountForm() {
         onClick={() => setOpen(true)}
         className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors"
       >
-        + Nueva cuenta corporativa
+        {t.newAccountBtn}
       </button>
     )
   }
@@ -57,58 +62,58 @@ export function CreateCorporateAccountForm() {
       className="bg-sl-surface border border-sl-outline-variant rounded-xl p-5 space-y-4 w-full"
     >
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-sl-on-surface">Nueva cuenta corporativa</h3>
+        <h3 className="text-sm font-semibold text-sl-on-surface">{t.newAccountTitle}</h3>
         <button type="button" onClick={() => setOpen(false)} className="text-xs text-sl-on-surface-muted hover:text-red-500">
-          ✕ Cancelar
+          {t.cancel}
         </button>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
-          <label className={labelCls}>Nombre de la empresa cliente *</label>
+          <label className={labelCls}>{t.clientCompanyName} *</label>
           <input name="name" required placeholder="Acme Corp" className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Contacto</label>
+          <label className={labelCls}>{t.contact}</label>
           <input name="contact_name" placeholder="María García" className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Email de contacto</label>
+          <label className={labelCls}>{t.contactEmail}</label>
           <input name="contact_email" type="email" className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Email de facturación</label>
+          <label className={labelCls}>{t.billingEmail}</label>
           <input name="billing_email" type="email" className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Teléfono</label>
+          <label className={labelCls}>{t.phone}</label>
           <input name="phone" type="tel" className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>RNC / Tax ID</label>
+          <label className={labelCls}>{t.taxId}</label>
           <input name="tax_id" className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Límite de crédito (USD)</label>
+          <label className={labelCls}>{t.creditLimitUsd}</label>
           <input name="credit_limit" type="number" min="0" step="100" defaultValue={0} className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Términos de pago (días)</label>
+          <label className={labelCls}>{t.paymentTermsDays}</label>
           <input name="payment_terms" type="number" min="0" defaultValue={30} className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Ciclo de facturación</label>
+          <label className={labelCls}>{t.billingCycle}</label>
           <select name="billing_cycle" defaultValue="monthly" className={inputCls}>
-            <option value="weekly">Semanal</option>
-            <option value="bi_weekly">Quincenal</option>
-            <option value="monthly">Mensual</option>
+            <option value="weekly">{t.weekly}</option>
+            <option value="bi_weekly">{t.biweekly}</option>
+            <option value="monthly">{t.monthly}</option>
           </select>
         </div>
       </div>
 
       <label className="flex items-center gap-3 cursor-pointer">
         <input name="require_approval" type="checkbox" value="true" className="w-4 h-4 rounded accent-bronze" />
-        <span className="text-sm text-sl-on-surface">Los viajes requieren aprobación del manager</span>
+        <span className="text-sm text-sl-on-surface">{t.requireApproval}</span>
       </label>
 
       {error && (
@@ -121,7 +126,7 @@ export function CreateCorporateAccountForm() {
           disabled={isPending}
           className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 disabled:opacity-50 transition-colors"
         >
-          {isPending ? 'Creando…' : 'Crear cuenta'}
+          {isPending ? t.creating : t.createAccount}
         </button>
       </div>
     </form>
@@ -133,9 +138,11 @@ export function CreateCorporateAccountForm() {
 export function CorporateAccountToggle({
   accountId,
   isActive,
+  labels,
 }: {
   accountId: string
   isActive: boolean
+  labels: ToggleLabels
 }) {
   const [isPending, startTransition] = useTransition()
 
@@ -155,14 +162,14 @@ export function CorporateAccountToggle({
           : 'text-gray-500 border-gray-300 bg-gray-50 hover:bg-green-50 hover:text-green-700 hover:border-green-300',
       ].join(' ')}
     >
-      {isPending ? '…' : isActive ? 'Activa' : 'Inactiva'}
+      {isPending ? '…' : isActive ? labels.active : labels.inactive}
     </button>
   )
 }
 
 // ─── Agregar miembro ──────────────────────────────────────────────────────────
 
-export function AddCorporateMemberForm({ accountId }: { accountId: string }) {
+export function AddCorporateMemberForm({ accountId, labels: t }: { accountId: string; labels: MemberLabels }) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -177,7 +184,7 @@ export function AddCorporateMemberForm({ accountId }: { accountId: string }) {
     startTransition(async () => {
       const result = await addCorporateMemberAction(fd)
       if (!result.success) {
-        setError(result.error ?? 'Error al agregar miembro')
+        setError(result.error ?? t.errAdd)
         return
       }
       setSuccess(true)
@@ -189,26 +196,26 @@ export function AddCorporateMemberForm({ accountId }: { accountId: string }) {
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
-          <label className={labelCls}>Email del usuario (debe estar registrado)</label>
-          <input name="email" type="email" required placeholder="usuario@empresa.com" className={inputCls} />
+          <label className={labelCls}>{t.emailLabel}</label>
+          <input name="email" type="email" required placeholder={t.emailPlaceholder} className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Rol</label>
+          <label className={labelCls}>{t.role}</label>
           <select name="role" defaultValue="user" className={inputCls}>
-            <option value="user">Usuario</option>
-            <option value="manager">Manager</option>
+            <option value="user">{t.roleUser}</option>
+            <option value="manager">{t.roleManager}</option>
           </select>
         </div>
         <div>
-          <label className={labelCls}>Centro de costo</label>
-          <input name="cost_center" placeholder="Ventas" className={inputCls} />
+          <label className={labelCls}>{t.costCenter}</label>
+          <input name="cost_center" placeholder={t.costCenterPlaceholder} className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Límite por viaje (USD)</label>
+          <label className={labelCls}>{t.perTripLimitUsd}</label>
           <input name="spending_limit" type="number" min="0" step="10" className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Límite mensual (USD)</label>
+          <label className={labelCls}>{t.monthlyLimitUsd}</label>
           <input name="monthly_limit" type="number" min="0" step="100" className={inputCls} />
         </div>
       </div>
@@ -218,7 +225,7 @@ export function AddCorporateMemberForm({ accountId }: { accountId: string }) {
       )}
       {success && (
         <p className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
-          ✓ Miembro agregado
+          {t.memberAdded}
         </p>
       )}
 
@@ -228,7 +235,7 @@ export function AddCorporateMemberForm({ accountId }: { accountId: string }) {
           disabled={isPending}
           className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 disabled:opacity-50 transition-colors"
         >
-          {isPending ? 'Agregando…' : '+ Agregar miembro'}
+          {isPending ? t.adding : t.addMemberBtn}
         </button>
       </div>
     </form>
@@ -237,21 +244,21 @@ export function AddCorporateMemberForm({ accountId }: { accountId: string }) {
 
 // ─── Quitar miembro ───────────────────────────────────────────────────────────
 
-export function RemoveMemberButton({ memberId }: { memberId: string }) {
+export function RemoveMemberButton({ memberId, labels: t }: { memberId: string; labels: Pick<MemberLabels, 'removeConfirm' | 'remove'> }) {
   const [isPending, startTransition] = useTransition()
 
   return (
     <button
       disabled={isPending}
       onClick={() => {
-        if (!window.confirm('¿Quitar este miembro de la cuenta corporativa?')) return
+        if (!window.confirm(t.removeConfirm)) return
         startTransition(async () => {
           await removeCorporateMemberAction(memberId)
         })
       }}
       className="text-xs text-red-500 hover:text-red-600 hover:underline disabled:opacity-50"
     >
-      {isPending ? '…' : 'Quitar'}
+      {isPending ? '…' : t.remove}
     </button>
   )
 }
