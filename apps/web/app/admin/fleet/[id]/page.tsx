@@ -5,15 +5,20 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { VehicleStatusSelect, DriverAssignSelect } from '@/components/admin/fleet-controls'
 import type { VehicleStatus } from '@/lib/supabase/database.types'
+import { getDict, getLocale } from '@/lib/i18n/server'
 
-export const metadata: Metadata = { title: 'Vehículo' }
+const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-MX', pt: 'pt-BR' }
 
-const STATUS_BADGE: Record<VehicleStatus, { label: string; cls: string }> = {
-  available:   { label: 'Disponible',    cls: 'bg-green-500/10 text-green-400 border-green-500/20' },
-  on_trip:     { label: 'En servicio',   cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-  maintenance: { label: 'Mantenimiento', cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-  offline:     { label: 'Fuera de línea',cls: 'bg-sl-outline-variant/20 text-sl-on-surface-muted border-sl-outline-variant/40' },
-  retired:     { label: 'Retirado',      cls: 'bg-sl-outline-variant/10 text-sl-on-surface-muted border-sl-outline-variant/20' },
+export function generateMetadata(): Metadata {
+  return { title: getDict().admin.vehicleDetail.title }
+}
+
+const STATUS_CLS: Record<VehicleStatus, string> = {
+  available:   'bg-green-500/10 text-green-400 border-green-500/20',
+  on_trip:     'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  maintenance: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  offline:     'bg-sl-outline-variant/20 text-sl-on-surface-muted border-sl-outline-variant/40',
+  retired:     'bg-sl-outline-variant/10 text-sl-on-surface-muted border-sl-outline-variant/20',
 }
 
 interface PageProps {
@@ -39,6 +44,10 @@ export default async function VehicleDetailPage({ params }: PageProps) {
 
   if (!vehicle) notFound()
 
+  const t = getDict().admin.vehicleDetail
+  const fleetDict = getDict().admin.fleet
+  const localeTag = LOCALE_TAGS[getLocale()] ?? 'en-US'
+
   const [{ data: vehicleType }, { data: drivers }] = await Promise.all([
     vehicle.vehicle_type_id
       ? admin.from('vehicle_types').select('id, name, class, capacity').eq('id', vehicle.vehicle_type_id).single()
@@ -50,12 +59,13 @@ export default async function VehicleDetailPage({ params }: PageProps) {
       .eq('role', 'driver'),
   ])
 
-  const badge = STATUS_BADGE[vehicle.status]
+  const badgeCls = STATUS_CLS[vehicle.status]
+  const badgeLabel = fleetDict.statuses[vehicle.status]
   const isAccounting = user.role === 'accounting'
 
   function formatDate(iso: string | null) {
     if (!iso) return '—'
-    return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+    return new Date(iso).toLocaleDateString(localeTag, { day: '2-digit', month: 'short', year: 'numeric' })
   }
 
   return (
@@ -63,7 +73,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
       {/* Breadcrumb + Header */}
       <div>
         <nav className="text-xs text-sl-on-surface-muted mb-2">
-          <Link href="/admin/fleet" className="hover:text-sl-on-surface transition-colors">Fleet</Link>
+          <Link href="/admin/fleet" className="hover:text-sl-on-surface transition-colors">{fleetDict.title}</Link>
           <span className="mx-1.5">›</span>
           <span className="text-sl-on-surface">{vehicle.year} {vehicle.make} {vehicle.model}</span>
         </nav>
@@ -71,8 +81,8 @@ export default async function VehicleDetailPage({ params }: PageProps) {
           <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">
             {vehicle.year} {vehicle.make} {vehicle.model}
           </h1>
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${badge.cls}`}>
-            {badge.label}
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${badgeCls}`}>
+            {badgeLabel}
           </span>
         </div>
         <p className="text-sm text-sl-on-surface-muted mt-1">
@@ -88,26 +98,27 @@ export default async function VehicleDetailPage({ params }: PageProps) {
 
             {/* Status */}
             <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">Estado</p>
-              <VehicleStatusSelect vehicleId={vehicle.id} current={vehicle.status} />
+              <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.statusLabel}</p>
+              <VehicleStatusSelect vehicleId={vehicle.id} current={vehicle.status} statuses={fleetDict.statuses} saving={fleetDict.saving} />
             </div>
 
             {/* Driver assignment */}
             <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-                Conductor Asignado
+                {t.assignedDriver}
               </p>
               <DriverAssignSelect
                 vehicleId={vehicle.id}
                 currentDriverId={vehicle.current_driver_id}
                 drivers={drivers ?? []}
+                unassigned={fleetDict.unassigned}
               />
               {vehicle.current_driver_id && (
                 <Link
                   href={`/admin/drivers/${vehicle.current_driver_id}`}
                   className="text-xs text-bronze hover:text-bronze/80 transition-colors"
                 >
-                  Ver perfil del conductor →
+                  {t.viewDriverProfile}
                 </Link>
               )}
             </div>
@@ -118,15 +129,15 @@ export default async function VehicleDetailPage({ params }: PageProps) {
         <div className={isAccounting ? 'lg:col-span-3' : ''}>
           <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3 h-full">
             <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-              Información del Vehículo
+              {t.vehicleInfo}
             </p>
             <dl className="space-y-2.5">
               {[
-                { label: 'Tipo',      value: vehicleType?.name ?? '—' },
-                { label: 'Clase',     value: vehicleType?.class ? vehicleType.class.charAt(0).toUpperCase() + vehicleType.class.slice(1) : '—' },
-                { label: 'Capacidad', value: vehicleType?.capacity ? `${vehicleType.capacity} pasajeros` : '—' },
-                { label: 'VIN',       value: vehicle.vin ?? '—' },
-                { label: 'Kilometraje', value: vehicle.mileage ? `${vehicle.mileage.toLocaleString('es-MX')} km` : '—' },
+                { label: t.type,         value: vehicleType?.name ?? '—' },
+                { label: t.vehicleClass, value: vehicleType?.class ? vehicleType.class.charAt(0).toUpperCase() + vehicleType.class.slice(1) : '—' },
+                { label: t.capacity,     value: vehicleType?.capacity ? `${vehicleType.capacity} ${t.passengers}` : '—' },
+                { label: t.vin,          value: vehicle.vin ?? '—' },
+                { label: t.mileage,      value: vehicle.mileage ? `${vehicle.mileage.toLocaleString(localeTag)} km` : '—' },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between items-baseline gap-4">
                   <dt className="text-xs text-sl-on-surface-muted shrink-0">{label}</dt>
@@ -142,20 +153,20 @@ export default async function VehicleDetailPage({ params }: PageProps) {
       {/* ── Maintenance & Insurance ── */}
       <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
         <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-4">
-          Mantenimiento y Seguro
+          {t.maintenanceInsurance}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: 'Último mantenimiento', value: formatDate(vehicle.last_maintenance_at) },
-            { label: 'Próximo mantenimiento', value: formatDate(vehicle.next_maintenance_at),
+            { label: t.lastMaintenance, value: formatDate(vehicle.last_maintenance_at), warn: false },
+            { label: t.nextMaintenance, value: formatDate(vehicle.next_maintenance_at),
               warn: vehicle.next_maintenance_at ? new Date(vehicle.next_maintenance_at) < new Date() : false },
-            { label: 'Seguro vence', value: formatDate(vehicle.insurance_expires_at),
+            { label: t.insuranceExpires, value: formatDate(vehicle.insurance_expires_at),
               warn: vehicle.insurance_expires_at ? new Date(vehicle.insurance_expires_at) < new Date() : false },
           ].map(({ label, value, warn }) => (
             <div key={label} className="space-y-1">
               <p className="text-xs text-sl-on-surface-muted">{label}</p>
               <p className={`text-sm font-medium ${warn ? 'text-red-400' : 'text-sl-on-surface'}`}>{value}</p>
-              {warn && <p className="text-[10px] text-red-400">⚠ Vencido</p>}
+              {warn && <p className="text-[10px] text-red-400">{t.expired}</p>}
             </div>
           ))}
         </div>
@@ -164,14 +175,14 @@ export default async function VehicleDetailPage({ params }: PageProps) {
       {/* ── Notes ── */}
       {vehicle.notes && (
         <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">Notas</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">{t.notes}</p>
           <p className="text-sm text-sl-on-surface whitespace-pre-line">{vehicle.notes}</p>
         </div>
       )}
 
       {/* ── Footer meta ── */}
       <p className="text-xs text-sl-on-surface-muted">
-        Registrado el {formatDate(vehicle.created_at)}
+        {t.registeredOn.replace('{date}', formatDate(vehicle.created_at))}
       </p>
     </div>
   )

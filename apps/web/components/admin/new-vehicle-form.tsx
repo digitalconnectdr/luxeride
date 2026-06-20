@@ -4,6 +4,9 @@ import { useFormState } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { createVehicleAction } from '@/app/actions/fleet'
+import type { Dictionary } from '@/lib/i18n/server'
+
+type Labels = Dictionary['admin']['vehicleNew']
 
 const inputCls =
   'w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-xl px-4 py-2.5 text-sl-on-surface ' +
@@ -11,9 +14,10 @@ const inputCls =
 
 interface Props {
   types: Array<{ id: string; name: string }>
+  labels: Labels
 }
 
-export function NewVehicleForm({ types }: Props) {
+export function NewVehicleForm({ types, labels: t }: Props) {
   const [state, action, isPending] = useFormState(createVehicleAction, null)
   const router = useRouter()
 
@@ -35,31 +39,31 @@ export function NewVehicleForm({ types }: Props) {
       {/* Identification */}
       <section className="space-y-4">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-          Identificación
+          {t.identification}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs text-sl-on-surface-muted">Marca *</label>
+            <label className="text-xs text-sl-on-surface-muted">{t.make} *</label>
             <input name="make" type="text" required placeholder="Mercedes-Benz" className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-sl-on-surface-muted">Modelo *</label>
+            <label className="text-xs text-sl-on-surface-muted">{t.model} *</label>
             <input name="model" type="text" required placeholder="S-Class" className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-sl-on-surface-muted">Año *</label>
+            <label className="text-xs text-sl-on-surface-muted">{t.year} *</label>
             <input name="year" type="number" required min="1990" max="2030" placeholder="2024" className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-sl-on-surface-muted">Color</label>
+            <label className="text-xs text-sl-on-surface-muted">{t.color}</label>
             <input name="color" type="text" placeholder="Negro Obsidiana" className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-sl-on-surface-muted">Placa *</label>
+            <label className="text-xs text-sl-on-surface-muted">{t.plate} *</label>
             <input name="plate_number" type="text" required placeholder="ABC-1234" className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-sl-on-surface-muted">VIN</label>
+            <label className="text-xs text-sl-on-surface-muted">{t.vin}</label>
             <input name="vin" type="text" placeholder="1HGBH41JXMN109186" className={inputCls} />
           </div>
         </div>
@@ -70,13 +74,13 @@ export function NewVehicleForm({ types }: Props) {
       {/* Classification */}
       <section className="space-y-4">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-          Clasificación
+          {t.classification}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs text-sl-on-surface-muted">Tipo de vehículo</label>
+            <label className="text-xs text-sl-on-surface-muted">{t.vehicleType}</label>
             <select name="vehicle_type_id" className={inputCls}>
-              <option value="">Sin tipo asignado</option>
+              <option value="">{t.noType}</option>
               {types.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
@@ -90,19 +94,19 @@ export function NewVehicleForm({ types }: Props) {
       {/* Maintenance & Insurance */}
       <section className="space-y-4">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-          Mantenimiento y Seguro
+          {t.maintenanceInsurance}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs text-sl-on-surface-muted">Kilometraje</label>
+            <label className="text-xs text-sl-on-surface-muted">{t.mileage}</label>
             <input name="mileage" type="number" min="0" placeholder="0" className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-sl-on-surface-muted">Próximo mantenimiento</label>
+            <label className="text-xs text-sl-on-surface-muted">{t.nextMaintenance}</label>
             <input name="next_maintenance_at" type="date" className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-sl-on-surface-muted">Seguro vence</label>
+            <label className="text-xs text-sl-on-surface-muted">{t.insuranceExpires}</label>
             <input name="insurance_expires_at" type="date" className={inputCls} />
           </div>
         </div>
@@ -112,11 +116,11 @@ export function NewVehicleForm({ types }: Props) {
 
       {/* Notes */}
       <section className="space-y-1.5">
-        <label className="text-xs text-sl-on-surface-muted">Notas internas</label>
+        <label className="text-xs text-sl-on-surface-muted">{t.internalNotes}</label>
         <textarea
           name="notes"
           rows={3}
-          placeholder="Notas opcionales sobre este vehículo…"
+          placeholder={t.notesPlaceholder}
           className={inputCls + ' resize-none'}
         />
       </section>
@@ -127,14 +131,14 @@ export function NewVehicleForm({ types }: Props) {
           href="/admin/fleet"
           className="px-4 py-2 text-sm text-sl-on-surface-muted hover:text-sl-on-surface transition-colors"
         >
-          Cancelar
+          {t.cancel}
         </a>
         <button
           type="submit"
           disabled={isPending}
           className="px-5 py-2 text-sm font-semibold bg-gold text-gray-900 rounded-xl hover:bg-gold/90 disabled:opacity-60 transition-all"
         >
-          {isPending ? 'Guardando…' : 'Guardar Vehículo'}
+          {isPending ? t.saving : t.save}
         </button>
       </div>
     </form>

@@ -3,12 +3,17 @@ import Link from 'next/link'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { NewVehicleForm } from '@/components/admin/new-vehicle-form'
+import { getDict } from '@/lib/i18n/server'
 
-export const metadata: Metadata = { title: 'Nuevo Vehículo' }
+export function generateMetadata(): Metadata {
+  return { title: getDict().admin.vehicleNew.title }
+}
 
 export default async function NewVehiclePage() {
   const user = await requireRole('company_owner', 'company_admin')
   const companyId = user.company_id!
+  const t = getDict().admin.vehicleNew
+  const fleetLabel = getDict().admin.fleet.title
 
   const admin = createAdminClient()
   const { data: types } = await admin
@@ -24,15 +29,15 @@ export default async function NewVehiclePage() {
       <div>
         <nav className="text-xs text-sl-on-surface-muted mb-1">
           <Link href="/admin/fleet" className="hover:text-sl-on-surface transition-colors">
-            Fleet
+            {fleetLabel}
           </Link>
           <span className="mx-1.5">›</span>
-          <span className="text-sl-on-surface">Nuevo Vehículo</span>
+          <span className="text-sl-on-surface">{t.title}</span>
         </nav>
-        <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">Agregar Vehículo</h1>
+        <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.heading}</h1>
       </div>
 
-      <NewVehicleForm types={types ?? []} />
+      <NewVehicleForm types={types ?? []} labels={t} />
     </div>
   )
 }
