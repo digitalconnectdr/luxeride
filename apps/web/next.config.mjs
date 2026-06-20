@@ -32,32 +32,53 @@ const nextConfig = {
 
   // Security headers
   async headers() {
+    // Directivas CSP comunes a todas las rutas. La única diferencia para /embed
+    // es frame-ancestors (allow framing) y la ausencia de X-Frame-Options.
+    const baseCsp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com https://maps.googleapis.com https://www.googletagmanager.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: blob: https://*.supabase.co https://maps.googleapis.com https://maps.gstatic.com https://images.unsplash.com",
+      "frame-src https://js.stripe.com https://hooks.stripe.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://maps.googleapis.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
+    ]
+
+    const commonHeaders = [
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      {
+        key: 'Strict-Transport-Security',
+        value: 'max-age=63072000; includeSubDomains; preload',
+      },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      {
+        key: 'Permissions-Policy',
+        value: 'camera=(), microphone=(), geolocation=(self)',
+      },
+    ]
+
     return [
       {
-        source: '/(.*)',
+        // Todas las rutas EXCEPTO /embed/* — bloquea el framing por completo.
+        source: '/((?!embed).*)',
         headers: [
           { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload',
-          },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(self)',
-          },
+          ...commonHeaders,
           {
             key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com https://maps.googleapis.com https://www.googletagmanager.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https://*.supabase.co https://maps.googleapis.com https://maps.gstatic.com https://images.unsplash.com",
-              "frame-src https://js.stripe.com https://hooks.stripe.com",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://maps.googleapis.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
-            ].join('; '),
+            value: [...baseCsp, "frame-ancestors 'none'"].join('; '),
+          },
+        ],
+      },
+      {
+        // Widget embebible: permite que cualquier sitio del operador lo incruste.
+        // Sin X-Frame-Options (incompatible con allow-list); el control es frame-ancestors.
+        source: '/embed/:path*',
+        headers: [
+          ...commonHeaders,
+          {
+            key: 'Content-Security-Policy',
+            value: [...baseCsp, 'frame-ancestors *'].join('; '),
           },
         ],
       },

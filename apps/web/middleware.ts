@@ -25,7 +25,7 @@ type CookieItem = {
 // Si se agrega una página top-level nueva (ej. /terms), añadirla aquí.
 const RESERVED_SEGMENTS = new Set([
   'admin', 'dispatcher', 'driver', 'corporate', 'account', 'super-admin',
-  'auth', 'api', 'track', 'payment', 'book',
+  'auth', 'api', 'track', 'payment', 'book', 'embed',
   'manifest', 'icon', 'favicon', 'opengraph-image', 'demo',
 ])
 

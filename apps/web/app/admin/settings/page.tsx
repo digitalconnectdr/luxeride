@@ -14,6 +14,7 @@ import {
 import { isStripeConfigured } from '@/lib/stripe/server'
 import { BrandingForm } from '@/components/admin/branding-form'
 import { BookingLinkCard } from '@/components/admin/booking-link-card'
+import { BookingWidgetCard } from '@/components/admin/booking-widget-card'
 import { CoverForm } from '@/components/admin/cover-form'
 import { ServicesManager, type Service } from '@/components/admin/services-manager'
 import { getDict } from '@/lib/i18n/server'
@@ -121,6 +122,11 @@ export default async function SettingsPage({
       {/* ── Link de reservas del operador ── */}
       {company.slug && (
         <BookingLinkCard t={t} url={`${getAppUrl()}/${company.slug}`} />
+      )}
+
+      {/* ── Widget embebible para el sitio del operador ── */}
+      {company.slug && (
+        <BookingWidgetCard t={t} embedUrl={`${getAppUrl()}/embed/${company.slug}`} />
       )}
 
       {/* ── Company Information ── */}
