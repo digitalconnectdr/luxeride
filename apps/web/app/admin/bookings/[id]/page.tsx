@@ -8,8 +8,13 @@ import { BookingActions } from './booking-actions'
 import { BookingPayments } from '@/components/admin/booking-payments'
 import { isStripeConfigured } from '@/lib/stripe/server'
 import type { BookingStatus } from '@/lib/supabase/database.types'
+import { getDict, getLocale } from '@/lib/i18n/server'
 
-export const metadata: Metadata = { title: 'Reservación' }
+const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
+
+export function generateMetadata(): Metadata {
+  return { title: getDict().admin.bookingDetail.title }
+}
 
 interface LocationJson {
   address?: string
@@ -23,18 +28,12 @@ function parseLocation(raw: unknown): LocationJson {
   return raw as LocationJson
 }
 
-function fmt(iso: string | null): string {
+function fmt(iso: string | null, tag: string): string {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('es-DO', {
+  return new Date(iso).toLocaleString(tag, {
     year: 'numeric', month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
-}
-
-const TYPE_LABELS: Record<string, string> = {
-  one_way: 'Solo ida', round_trip: 'Ida y vuelta', hourly: 'Por hora',
-  airport_pickup: 'Pickup aeropuerto', airport_dropoff: 'Dropoff aeropuerto',
-  point_to_point: 'Punto a punto',
 }
 
 export default async function BookingDetailPage({
@@ -45,6 +44,10 @@ export default async function BookingDetailPage({
   const user = await requireRole(
     'super_admin', 'company_owner', 'company_admin', 'dispatcher', 'accounting',
   )
+
+  const t = getDict().admin.bookingDetail
+  const statusLabels = getDict().admin.bookingStatuses
+  const localeTag = LOCALE_TAGS[getLocale()] ?? 'en-US'
 
   if (!user.company_id) return notFound()
 
@@ -111,16 +114,16 @@ export default async function BookingDetailPage({
         <div>
           <div className="flex items-center gap-3">
             <Link href="/admin/bookings" className="text-sm text-sl-on-surface-muted hover:text-[#0071e3]">
-              ← Reservaciones
+              {t.backToList}
             </Link>
           </div>
           <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface mt-2">
             {booking.booking_number}
           </h1>
           <div className="flex items-center gap-3 mt-2">
-            <BookingStatusBadge status={booking.status as BookingStatus} size="md" />
+            <BookingStatusBadge status={booking.status as BookingStatus} size="md" labels={statusLabels} />
             <span className="text-sm text-sl-on-surface-muted">
-              {TYPE_LABELS[booking.type] ?? booking.type}
+              {(t.types as Record<string, string>)[booking.type] ?? booking.type}
             </span>
           </div>
         </div>
@@ -141,22 +144,23 @@ export default async function BookingDetailPage({
           currentStatus={booking.status as BookingStatus}
           driverId={booking.driver_id ?? null}
           drivers={drivers ?? []}
+          labels={getDict().admin.bookingActions}
         />
       )}
 
       {/* Detalles de la ruta */}
       <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-4">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-          Ruta
+          {t.routeTitle}
         </p>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-xs text-sl-on-surface-muted mb-1">Pickup</p>
+            <p className="text-xs text-sl-on-surface-muted mb-1">{t.pickup}</p>
             <p className="text-sm font-medium text-sl-on-surface">{pickup.address ?? '—'}</p>
             {pickup.notes && <p className="text-xs text-sl-on-surface-muted mt-0.5">{pickup.notes}</p>}
           </div>
           <div>
-            <p className="text-xs text-sl-on-surface-muted mb-1">Dropoff</p>
+            <p className="text-xs text-sl-on-surface-muted mb-1">{t.dropoff}</p>
             <p className="text-sm font-medium text-sl-on-surface">{dropoff.address ?? '—'}</p>
             {dropoff.notes && <p className="text-xs text-sl-on-surface-muted mt-0.5">{dropoff.notes}</p>}
           </div>
@@ -164,7 +168,7 @@ export default async function BookingDetailPage({
         {Array.isArray(booking.waypoints) && booking.waypoints.length > 0 && (
           <div className="pt-2 border-t border-sl-outline-variant">
             <p className="text-xs text-sl-on-surface-muted mb-1">
-              Paradas intermedias ({booking.waypoints.length})
+              {t.waypoints.replace('{n}', String(booking.waypoints.length))}
             </p>
             {booking.waypoints.map((w, i) => {
               const stop = parseLocation(w)
@@ -178,17 +182,17 @@ export default async function BookingDetailPage({
         )}
         <div className="grid grid-cols-3 gap-4 pt-2 border-t border-sl-outline-variant">
           <div>
-            <p className="text-xs text-sl-on-surface-muted">Fecha / Hora</p>
-            <p className="text-sm text-sl-on-surface mt-0.5">{fmt(booking.scheduled_at)}</p>
+            <p className="text-xs text-sl-on-surface-muted">{t.dateTime}</p>
+            <p className="text-sm text-sl-on-surface mt-0.5">{fmt(booking.scheduled_at, localeTag)}</p>
           </div>
           <div>
-            <p className="text-xs text-sl-on-surface-muted">Distancia</p>
+            <p className="text-xs text-sl-on-surface-muted">{t.distance}</p>
             <p className="text-sm text-sl-on-surface mt-0.5">
               {booking.distance_miles != null ? `${Number(booking.distance_miles).toFixed(1)} mi` : '—'}
             </p>
           </div>
           <div>
-            <p className="text-xs text-sl-on-surface-muted">Duración est.</p>
+            <p className="text-xs text-sl-on-surface-muted">{t.durationEst}</p>
             <p className="text-sm text-sl-on-surface mt-0.5">
               {booking.duration_minutes != null ? `${booking.duration_minutes} min` : '—'}
             </p>
@@ -196,27 +200,27 @@ export default async function BookingDetailPage({
         </div>
         {booking.flight_number && (
           <div className="pt-2 border-t border-sl-outline-variant">
-            <p className="text-xs text-sl-on-surface-muted">Vuelo</p>
+            <p className="text-xs text-sl-on-surface-muted">{t.flight}</p>
             <p className="text-sm font-mono text-sl-on-surface mt-0.5">
               ✈ {booking.flight_number}
               {booking.flight_status === 'cancelled' && (
-                <span className="ml-2 font-sans font-semibold text-red-500">CANCELADO</span>
+                <span className="ml-2 font-sans font-semibold text-red-500">{t.flightCancelled}</span>
               )}
               {booking.flight_status !== 'cancelled' && (booking.flight_delay_minutes ?? 0) >= 15 && (
                 <span className="ml-2 font-sans font-semibold text-orange-500">
-                  +{booking.flight_delay_minutes} min de retraso
+                  {t.flightDelay.replace('{min}', String(booking.flight_delay_minutes))}
                 </span>
               )}
               {booking.flight_status === 'arrived' && (
-                <span className="ml-2 font-sans text-green-600">aterrizó</span>
+                <span className="ml-2 font-sans text-green-600">{t.flightArrived}</span>
               )}
               {booking.flight_status === 'enroute' && (
-                <span className="ml-2 font-sans text-sl-on-surface-muted">en vuelo</span>
+                <span className="ml-2 font-sans text-sl-on-surface-muted">{t.flightEnroute}</span>
               )}
             </p>
             {booking.flight_arrival_at && (
               <p className="text-xs text-sl-on-surface-muted mt-1">
-                Llegada estimada: {fmt(booking.flight_arrival_at)}
+                {t.flightEta}: {fmt(booking.flight_arrival_at, localeTag)}
               </p>
             )}
           </div>
@@ -226,33 +230,33 @@ export default async function BookingDetailPage({
       {/* Pasajero */}
       <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-          Pasajero
+          {t.passengerTitle}
         </p>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-xs text-sl-on-surface-muted">Nombre</p>
+            <p className="text-xs text-sl-on-surface-muted">{t.name}</p>
             <p className="text-sm font-medium text-sl-on-surface mt-0.5">{booking.passenger_name ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-sl-on-surface-muted">Pasajeros</p>
+            <p className="text-xs text-sl-on-surface-muted">{t.passengers}</p>
             <p className="text-sm text-sl-on-surface mt-0.5">{booking.passenger_count}</p>
           </div>
           {booking.passenger_phone && (
             <div>
-              <p className="text-xs text-sl-on-surface-muted">Teléfono</p>
+              <p className="text-xs text-sl-on-surface-muted">{t.phone}</p>
               <p className="text-sm text-sl-on-surface mt-0.5">{booking.passenger_phone}</p>
             </div>
           )}
           {booking.passenger_email && (
             <div>
-              <p className="text-xs text-sl-on-surface-muted">Email</p>
+              <p className="text-xs text-sl-on-surface-muted">{t.email}</p>
               <p className="text-sm text-sl-on-surface mt-0.5">{booking.passenger_email}</p>
             </div>
           )}
         </div>
         {booking.special_instructions && (
           <div className="pt-3 border-t border-sl-outline-variant">
-            <p className="text-xs text-sl-on-surface-muted mb-1">Instrucciones especiales</p>
+            <p className="text-xs text-sl-on-surface-muted mb-1">{t.specialInstructions}</p>
             <p className="text-sm text-sl-on-surface">{booking.special_instructions}</p>
           </div>
         )}
@@ -261,17 +265,17 @@ export default async function BookingDetailPage({
       {/* Vehículo + conductor */}
       <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-          Vehículo y conductor
+          {t.vehicleDriverTitle}
         </p>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-xs text-sl-on-surface-muted">Tipo de vehículo</p>
+            <p className="text-xs text-sl-on-surface-muted">{t.vehicleType}</p>
             <p className="text-sm text-sl-on-surface mt-0.5">
-              {vehicleType ? `${vehicleType.name} (${vehicleType.capacity} pax)` : '—'}
+              {vehicleType ? `${vehicleType.name} (${vehicleType.capacity} ${t.pax})` : '—'}
             </p>
           </div>
           <div>
-            <p className="text-xs text-sl-on-surface-muted">Conductor</p>
+            <p className="text-xs text-sl-on-surface-muted">{t.driver}</p>
             <p className="text-sm text-sl-on-surface mt-0.5">{driverName}</p>
           </div>
         </div>
@@ -281,7 +285,7 @@ export default async function BookingDetailPage({
       {fees && fees.length > 0 && (
         <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-3">
-            Desglose de cargos
+            {t.feesTitle}
           </p>
           <div className="space-y-2">
             {fees.map((fee) => (
@@ -295,7 +299,7 @@ export default async function BookingDetailPage({
               </div>
             ))}
             <div className="flex justify-between text-sm font-semibold border-t border-sl-outline-variant pt-2 mt-2">
-              <span className="text-sl-on-surface">Total</span>
+              <span className="text-sl-on-surface">{t.total}</span>
               <span className="text-sl-on-surface">
                 ${Number(booking.total_amount ?? 0).toFixed(2)}
               </span>
@@ -316,22 +320,22 @@ export default async function BookingDetailPage({
       {/* Timestamps */}
       <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-3">
-          Historial de tiempos
+          {t.timelineTitle}
         </p>
         <div className="grid grid-cols-2 gap-3 text-sm">
           {[
-            { label: 'Creada',     value: booking.created_at },
-            { label: 'Asignada',   value: booking.dispatched_at },
-            { label: 'En ruta',    value: booking.en_route_at },
-            { label: 'Llegó',      value: booking.arrived_at },
-            { label: 'Iniciada',   value: booking.started_at },
-            { label: 'Completada', value: booking.completed_at },
-            { label: 'Cancelada',  value: booking.cancelled_at },
-            { label: 'No show',    value: booking.no_show_at },
-          ].filter((t) => t.value).map((t) => (
-            <div key={t.label}>
-              <p className="text-xs text-sl-on-surface-muted">{t.label}</p>
-              <p className="text-sl-on-surface">{fmt(t.value ?? null)}</p>
+            { label: t.ts.created,    value: booking.created_at },
+            { label: t.ts.assigned,   value: booking.dispatched_at },
+            { label: t.ts.en_route,   value: booking.en_route_at },
+            { label: t.ts.arrived,    value: booking.arrived_at },
+            { label: t.ts.started,    value: booking.started_at },
+            { label: t.ts.completed,  value: booking.completed_at },
+            { label: t.ts.cancelled,  value: booking.cancelled_at },
+            { label: t.ts.no_show,    value: booking.no_show_at },
+          ].filter((row) => row.value).map((row) => (
+            <div key={row.label}>
+              <p className="text-xs text-sl-on-surface-muted">{row.label}</p>
+              <p className="text-sl-on-surface">{fmt(row.value ?? null, localeTag)}</p>
             </div>
           ))}
         </div>
@@ -347,7 +351,7 @@ export default async function BookingDetailPage({
       {booking.internal_notes && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-yellow-700 mb-2">
-            Notas internas (solo staff)
+            {t.internalNotesTitle}
           </p>
           <p className="text-sm text-yellow-800">{booking.internal_notes}</p>
         </div>
