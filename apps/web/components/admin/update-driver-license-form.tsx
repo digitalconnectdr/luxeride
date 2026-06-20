@@ -2,6 +2,12 @@
 
 import { useFormState } from 'react-dom'
 import { updateDriverLicense } from '@/app/actions/fleet'
+import type { Dictionary } from '@/lib/i18n/server'
+
+type Labels = Pick<
+  Dictionary['admin']['driverDetail'],
+  'licenseFormTitle' | 'licenseUpdated' | 'licenseNumber' | 'licenseStateIssuer' | 'licenseExpiryDate' | 'update'
+>
 
 const inputCls =
   'w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-xl px-4 py-2.5 text-sl-on-surface ' +
@@ -14,9 +20,10 @@ interface Props {
     license_expiry: string   // ISO date string or ''
     license_state:  string
   }
+  labels: Labels
 }
 
-export function UpdateDriverLicenseForm({ driverId, current }: Props) {
+export function UpdateDriverLicenseForm({ driverId, current, labels: t }: Props) {
   // useFormState retorna [state, formAction] en React 18 (2 valores, no 3)
   const [state, formAction] = useFormState(
     updateDriverLicense.bind(null, driverId),
@@ -26,7 +33,7 @@ export function UpdateDriverLicenseForm({ driverId, current }: Props) {
   return (
     <div className="border-t border-sl-outline-variant pt-4">
       <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-3">
-        Actualizar Licencia
+        {t.licenseFormTitle}
       </p>
 
       {state && !state.success && (
@@ -36,13 +43,13 @@ export function UpdateDriverLicenseForm({ driverId, current }: Props) {
       )}
       {state?.success && (
         <div className="mb-3 rounded-lg bg-green-500/10 border border-green-500/20 px-4 py-2.5">
-          <p className="text-xs text-green-400">Licencia actualizada.</p>
+          <p className="text-xs text-green-400">{t.licenseUpdated}</p>
         </div>
       )}
 
       <form action={formAction} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="space-y-1">
-          <label className="text-xs text-sl-on-surface-muted">No. Licencia</label>
+          <label className="text-xs text-sl-on-surface-muted">{t.licenseNumber}</label>
           <input
             name="license_number"
             type="text"
@@ -52,7 +59,7 @@ export function UpdateDriverLicenseForm({ driverId, current }: Props) {
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs text-sl-on-surface-muted">Estado emisor</label>
+          <label className="text-xs text-sl-on-surface-muted">{t.licenseStateIssuer}</label>
           <input
             name="license_state"
             type="text"
@@ -62,7 +69,7 @@ export function UpdateDriverLicenseForm({ driverId, current }: Props) {
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs text-sl-on-surface-muted">Fecha vencimiento</label>
+          <label className="text-xs text-sl-on-surface-muted">{t.licenseExpiryDate}</label>
           <input
             name="license_expiry"
             type="date"
@@ -76,7 +83,7 @@ export function UpdateDriverLicenseForm({ driverId, current }: Props) {
             type="submit"
             className="px-4 py-2 text-xs font-semibold bg-gold text-gray-900 rounded-xl hover:bg-gold/90 disabled:opacity-60 transition-all"
           >
-            Actualizar
+            {t.update}
           </button>
         </div>
       </form>

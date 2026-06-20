@@ -5,8 +5,13 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { DriverAvailabilityToggle } from '@/components/admin/fleet-controls'
 import { UpdateDriverLicenseForm } from '@/components/admin/update-driver-license-form'
+import { getDict, getLocale } from '@/lib/i18n/server'
 
-export const metadata: Metadata = { title: 'Conductor' }
+const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-MX', pt: 'pt-BR' }
+
+export function generateMetadata(): Metadata {
+  return { title: getDict().admin.driverDetail.title }
+}
 
 interface PageProps {
   params: { id: string }
@@ -16,6 +21,8 @@ export default async function DriverDetailPage({ params }: PageProps) {
   const user = await requireRole('company_owner', 'company_admin', 'dispatcher', 'accounting')
   const companyId = user.company_id!
   const admin = createAdminClient()
+  const t = getDict().admin.driverDetail
+  const localeTag = LOCALE_TAGS[getLocale()] ?? 'en-US'
 
   // ── Queries separadas con manejo individual de errores ─────────────────────
   const profileQuery = admin
@@ -88,7 +95,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
 
   function formatDate(iso: string | null | undefined) {
     if (!iso) return '—'
-    return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+    return new Date(iso).toLocaleDateString(localeTag, { day: '2-digit', month: 'short', year: 'numeric' })
   }
 
   const licenseExpiry  = dr?.license_expiry ? new Date(dr.license_expiry) : null
@@ -103,7 +110,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
       {/* Header */}
       <div>
         <nav className="text-xs text-sl-on-surface-muted mb-2">
-          <Link href="/admin/drivers" className="hover:text-sl-on-surface transition-colors">Conductores</Link>
+          <Link href="/admin/drivers" className="hover:text-sl-on-surface transition-colors">{t.breadcrumb}</Link>
           <span className="mx-1.5">›</span>
           <span className="text-sl-on-surface">{profile.first_name} {profile.last_name}</span>
         </nav>
@@ -126,7 +133,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
               ? 'bg-green-500/10 text-green-400 border-green-500/20'
               : 'bg-sl-outline-variant/20 text-sl-on-surface-muted border-sl-outline-variant/40'
           }`}>
-            {profile.is_active ? 'Activo' : 'Inactivo'}
+            {profile.is_active ? t.active : t.inactive}
           </span>
         </div>
       </div>
@@ -140,9 +147,9 @@ export default async function DriverDetailPage({ params }: PageProps) {
           {dr && !isAccounting && (
             <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-                Disponibilidad
+                {t.availability}
               </p>
-              <DriverAvailabilityToggle driverId={dr.id} isAvailable={dr.is_available} />
+              <DriverAvailabilityToggle driverId={dr.id} isAvailable={dr.is_available} labels={getDict().admin.fleet.availability} saving={getDict().admin.fleet.saving} />
             </div>
           )}
 
@@ -150,16 +157,16 @@ export default async function DriverDetailPage({ params }: PageProps) {
           {dr && (
             <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-                Estadísticas
+                {t.stats}
               </p>
               <dl className="space-y-2.5">
                 {[
-                  { label: 'Viajes totales', value: dr.total_trips?.toLocaleString('es-MX') ?? '0' },
-                  { label: 'Rating',
+                  { label: t.totalTrips, value: dr.total_trips?.toLocaleString(localeTag) ?? '0' },
+                  { label: t.rating,
                     value: dr.rating != null ? `★ ${Number(dr.rating).toFixed(2)}` : '—' },
-                  { label: 'Ganancias',
+                  { label: t.earnings,
                     value: dr.total_earnings != null
-                      ? `$${Number(dr.total_earnings).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                      ? `$${Number(dr.total_earnings).toLocaleString(localeTag, { minimumFractionDigits: 2 })}`
                       : '—' },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex justify-between items-baseline gap-2">
@@ -178,7 +185,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
           {/* Current Vehicle */}
           <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
             <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-              Vehículo Actual
+              {t.currentVehicle}
             </p>
             {currentVehicle ? (
               <div className="flex items-center justify-between">
@@ -192,11 +199,11 @@ export default async function DriverDetailPage({ params }: PageProps) {
                   href={`/admin/fleet/${currentVehicle.id}`}
                   className="text-xs text-bronze hover:text-bronze/80 transition-colors"
                 >
-                  Ver vehículo →
+                  {t.viewVehicle}
                 </Link>
               </div>
             ) : (
-              <p className="text-sm text-sl-on-surface-muted">Sin vehículo asignado.</p>
+              <p className="text-sm text-sl-on-surface-muted">{t.noVehicle}</p>
             )}
           </div>
 
@@ -204,7 +211,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
           <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-                Licencia de Conducir
+                {t.licenseTitle}
               </p>
               {(licenseExpired || licenseExpiring) && (
                 <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
@@ -212,7 +219,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
                     ? 'bg-red-500/10 text-red-400 border-red-500/20'
                     : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                 }`}>
-                  {licenseExpired ? '⚠ Vencida' : '⚠ Vence pronto'}
+                  {licenseExpired ? t.licenseExpired : t.licenseExpiring}
                 </span>
               )}
             </div>
@@ -220,20 +227,20 @@ export default async function DriverDetailPage({ params }: PageProps) {
             {dr ? (
               <dl className="grid grid-cols-2 gap-3 mb-4">
                 {[
-                  { label: 'No. Licencia', value: dr.license_number ?? '—' },
-                  { label: 'Estado',       value: dr.license_state ?? '—' },
-                  { label: 'Vence',        value: formatDate(dr.license_expiry) },
-                ].map(({ label, value }) => (
+                  { label: t.licenseNumber, value: dr.license_number ?? '—', expiry: false },
+                  { label: t.licenseState,  value: dr.license_state ?? '—',  expiry: false },
+                  { label: t.expires,       value: formatDate(dr.license_expiry), expiry: true },
+                ].map(({ label, value, expiry }) => (
                   <div key={label} className="space-y-0.5">
                     <dt className="text-[10px] text-sl-on-surface-muted uppercase tracking-wider">{label}</dt>
-                    <dd className={`text-sm ${label === 'Vence' && licenseExpired ? 'text-red-400 font-medium' : 'text-sl-on-surface'}`}>
+                    <dd className={`text-sm ${expiry && licenseExpired ? 'text-red-400 font-medium' : 'text-sl-on-surface'}`}>
                       {value}
                     </dd>
                   </div>
                 ))}
               </dl>
             ) : (
-              <p className="text-sm text-sl-on-surface-muted mb-4">No hay registro de licencia.</p>
+              <p className="text-sm text-sl-on-surface-muted mb-4">{t.noLicenseRecord}</p>
             )}
 
             {/* Edit form — shown to owner/admin only */}
@@ -245,6 +252,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
                   license_expiry: dr?.license_expiry ?? '',
                   license_state:  dr?.license_state ?? '',
                 }}
+                labels={t}
               />
             )}
           </div>
@@ -254,7 +262,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
 
       {/* Footer meta */}
       <p className="text-xs text-sl-on-surface-muted">
-        Registrado el {formatDate(profile.created_at)}
+        {t.registeredOn.replace('{date}', formatDate(profile.created_at))}
       </p>
     </div>
   )
