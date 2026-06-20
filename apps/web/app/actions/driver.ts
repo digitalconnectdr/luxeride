@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
 import { notifyBookingEventInBackground } from '@/lib/notifications'
+import { getAppUrl } from '@/lib/app-url'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
 // Transiciones permitidas al conductor (subset de la máquina de estados)
@@ -87,7 +88,7 @@ export async function driverAdvanceTripAction(
       dropoffAddress: dropoff,
       totalAmount: booking.total_amount,
       currency: booking.currency ?? 'USD',
-      extraVars: { eta_minutes: '15' },
+      extraVars: { eta_minutes: '15', rating_url: `${getAppUrl()}/review/${booking.id}` },
     })
   }
 

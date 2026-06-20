@@ -492,6 +492,7 @@ export async function updateBookingStatusAction(
     notifyBookingEventInBackground(notifyType, toNotifyData(booking, {
       cancellation_reason: opts?.reason ?? '',
       eta_minutes: '15',
+      rating_url: `${getAppUrl()}/review/${booking.id}`,
     }))
   }
 

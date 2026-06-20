@@ -347,6 +347,21 @@ export default async function BookingDetailPage({
         )}
       </div>
 
+      {/* Calificación del cliente (review post-viaje) */}
+      {booking.rating != null && (
+        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
+            {t.ratingTitle}
+          </p>
+          <p className="text-xl text-bronze tracking-[0.15em]">
+            {'★'.repeat(booking.rating)}<span className="text-sl-outline-variant">{'★'.repeat(5 - booking.rating)}</span>
+          </p>
+          {booking.rating_comment && (
+            <p className="text-sm text-sl-on-surface mt-2 whitespace-pre-line">{booking.rating_comment}</p>
+          )}
+        </div>
+      )}
+
       {/* Notas internas */}
       {booking.internal_notes && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5">

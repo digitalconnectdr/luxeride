@@ -993,6 +993,7 @@ export const en = {
       },
       cancellationReason: 'Cancellation reason',
       internalNotesTitle: 'Internal notes (staff only)',
+      ratingTitle: 'Customer rating',
     },
     bookingActions: {
       title: 'Actions',
@@ -1152,6 +1153,27 @@ export const en = {
       accountBookings: 'Bookings for this account',
       noBookings: 'No associated bookings.',
     },
+  },
+
+  review: {
+    title: 'Rate your trip',
+    subtitle: 'How was your experience with {company}?',
+    bookingLabel: 'Booking',
+    starsHint: 'Tap a star to rate',
+    commentLabel: 'Comments (optional)',
+    commentPlaceholder: 'Tell us about your trip…',
+    submit: 'Submit rating',
+    submitting: 'Submitting…',
+    thanksTitle: 'Thank you!',
+    thanksBody: 'Your feedback helps {company} keep improving.',
+    alreadyRatedTitle: 'Already rated',
+    alreadyRatedBody: 'You have already rated this trip. Thank you!',
+    notCompletedTitle: 'Trip not completed yet',
+    notCompletedBody: 'You can rate your trip once it is completed.',
+    notFoundTitle: 'Trip not found',
+    notFoundBody: 'We could not find this trip.',
+    errorRating: 'Please select a rating.',
+    errorGeneric: 'Could not save your rating. Please try again.',
   },
 }
 
