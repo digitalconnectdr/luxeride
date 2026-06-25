@@ -6,6 +6,8 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { BookingStatusBadge } from '@/components/bookings/booking-status-badge'
 import { BookingActions } from './booking-actions'
 import { BookingPayments } from '@/components/admin/booking-payments'
+import { CopyButton } from '@/components/trip/copy-button'
+import { getAppUrl } from '@/lib/app-url'
 import { isStripeConfigured } from '@/lib/stripe/server'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 import { getDict, getLocale } from '@/lib/i18n/server'
@@ -146,6 +148,20 @@ export default async function BookingDetailPage({
           drivers={drivers ?? []}
           labels={getDict().admin.bookingActions}
         />
+      )}
+
+      {/* Pipeline: link público de la cotización para enviar al cliente */}
+      {isStaff && booking.status === 'quote' && (
+        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.quoteLinkTitle}</p>
+          <p className="text-xs text-sl-on-surface-muted mt-1 mb-3">{t.quoteLinkHint}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <code className="flex-1 min-w-[220px] text-xs font-mono text-bronze bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 truncate">
+              {`${getAppUrl()}/quote/${booking.id}`.replace(/^https?:\/\//, '')}
+            </code>
+            <CopyButton text={`${getAppUrl()}/quote/${booking.id}`} label={t.copyLink} copiedLabel={t.copiedLink} light />
+          </div>
+        </div>
       )}
 
       {/* Detalles de la ruta */}
