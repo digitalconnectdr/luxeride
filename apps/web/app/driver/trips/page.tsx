@@ -9,6 +9,7 @@ import { AutoRefresh } from '@/app/track/[id]/auto-refresh'
 import { DriverTripActions } from '@/components/driver/trip-actions'
 import { DriverAddStop } from '@/components/driver/driver-add-stop'
 import { TripChat } from '@/components/trip/trip-chat'
+import { PassengerContact } from '@/components/driver/passenger-contact'
 import { CopyButton } from '@/components/trip/copy-button'
 import { StaticMap } from '@/components/trip/static-map'
 
@@ -133,7 +134,6 @@ export default async function DriverTripsPage() {
             const mp = buildStaticMap(brandColor, pLoc, dLoc, mapsKey)
             const currentIdx = STEP_KEYS.findIndex((k) => k === t.status)
             const name = t.passenger_name ?? dt.passenger
-            const waNumber = (t.passenger_phone ?? '').replace(/[^0-9]/g, '')
             const chatId = `chat-${t.id}`
             const stKey = t.status as 'assigned' | 'en_route' | 'arrived' | 'in_progress'
 
@@ -257,19 +257,16 @@ export default async function DriverTripsPage() {
                         </div>
                         <div className="min-w-0">
                           <p className="font-medium truncate text-[#1d1b18]">{t.passenger_name ?? dt.passenger}</p>
-                          {/* Privacidad: el conductor ve solo los últimos dígitos; contacta vía los botones. */}
-                          {t.passenger_phone && <p className="text-sm text-[#75716a]">{`•••• ${t.passenger_phone.replace(/\D/g, '').slice(-4)}`}</p>}
                         </div>
                       </div>
-                      {t.passenger_phone && (
-                        <div className="mt-4 grid grid-cols-3 gap-2">
-                          <a href={`tel:${t.passenger_phone}`} className="text-center text-xs font-medium rounded-lg border border-[#e5e1d8] py-2 hover:bg-[#faf8f3] transition-colors">📞 {dt.call}</a>
-                          {waNumber && (
-                            <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="text-center text-xs font-medium rounded-lg border border-[#e5e1d8] py-2 hover:bg-[#faf8f3] transition-colors text-green-600">WhatsApp</a>
-                          )}
-                          <a href={`#${chatId}`} className="text-center text-xs font-medium rounded-lg border border-[#e5e1d8] py-2 hover:bg-[#faf8f3] transition-colors">💬 {dt.message}</a>
-                        </div>
-                      )}
+                      {/* Chat principal + número bajo demanda (auditado) */}
+                      <PassengerContact
+                        bookingId={t.id}
+                        phone={t.passenger_phone ?? null}
+                        chatId={chatId}
+                        brandColor={brandColor}
+                        labels={{ call: dt.call, message: dt.message, showNumber: dt.showNumber }}
+                      />
                     </div>
 
                     {/* Mensajes */}

@@ -133,3 +133,46 @@ export async function driverNoShowAction(
   revalidatePath('/driver/trips')
   return { success: true }
 }
+
+// ─── Revelar número del pasajero (bajo demanda, con auditoría) ─────────────────
+// El número se oculta por defecto. Esta acción lo devuelve SOLO al conductor
+// asignado y registra la revelación en audit_logs (aparece en /admin/audit), para
+// que el operador detecte abuso y aplique sanciones.
+
+export async function revealPassengerPhoneAction(
+  bookingId: string,
+): Promise<{ success: boolean; phone?: string; error?: string }> {
+  const user = await requireRole('driver')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const admin = createAdminClient()
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('id, passenger_phone, passenger_name, booking_number')
+    .eq('id', bookingId)
+    .eq('company_id', user.company_id)
+    .eq('driver_id', user.id) // solo el conductor asignado
+    .single()
+
+  if (!booking) return { success: false, error: 'Viaje no encontrado o no asignado a ti' }
+  if (!booking.passenger_phone) return { success: false, error: 'Sin teléfono' }
+
+  // Auditar la revelación (no bloquea si falla el log).
+  try {
+    await admin.from('audit_logs').insert({
+      company_id: user.company_id,
+      user_id: user.id,
+      action: 'REVEAL_PHONE',
+      table_name: 'bookings',
+      record_id: bookingId,
+      metadata: {
+        booking_number: booking.booking_number,
+        passenger_name: booking.passenger_name,
+      },
+    })
+  } catch (err) {
+    console.error('[revealPassengerPhoneAction] audit', err)
+  }
+
+  return { success: true, phone: booking.passenger_phone }
+}

@@ -414,6 +414,7 @@ export const en = {
     passenger: 'Passenger',
     call: 'Call',
     message: 'Message',
+    showNumber: 'Show number',
     support: 'Support',
     contactDispatch: 'Contact dispatch',
     mobileSoon: 'The driver mobile app arrives in Phase 2.',

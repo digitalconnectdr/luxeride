@@ -415,6 +415,7 @@ export const es: Dictionary = {
     passenger: 'Pasajero',
     call: 'Llamar',
     message: 'Mensaje',
+    showNumber: 'Mostrar número',
     support: 'Soporte',
     contactDispatch: 'Contactar a dispatch',
     mobileSoon: 'La app móvil para conductores llega en la Fase 2.',
