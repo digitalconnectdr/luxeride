@@ -8,6 +8,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getAppUrl } from '@/lib/app-url'
 import { getDefaultRoute } from '@/lib/auth/permissions'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
+import { sendSuperAdminEmailInBackground } from '@/lib/notifications'
 import type { UserRole } from '@/lib/auth/permissions'
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -217,6 +218,22 @@ export async function signupAction(
     console.error('Profile creation error:', profileError)
     // Non-fatal — trigger may have already created it
   }
+
+  // 4b. Avisar al super-admin de la nueva solicitud (no bloquea el flujo).
+  const appUrl = getAppUrl()
+  sendSuperAdminEmailInBackground(
+    `Nueva solicitud: ${parsed.data.company_name}`,
+    [
+      'Una nueva empresa se registró desde el landing y está en prueba (trial).',
+      '',
+      `Empresa: ${parsed.data.company_name}`,
+      `Micrositio: ${appUrl}/${parsed.data.company_slug}`,
+      `Contacto: ${parsed.data.first_name} ${parsed.data.last_name} <${parsed.data.email}>`,
+      parsed.data.phone ? `Teléfono: ${parsed.data.phone}` : '',
+      '',
+      `Revísala y apruébala en: ${appUrl}/super-admin/subscriptions`,
+    ].filter(Boolean).join('\n'),
+  )
 
   // 5. Iniciar sesión directo (la cuenta ya quedó confirmada arriba)
   const supabase = await createClient()

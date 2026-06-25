@@ -284,3 +284,54 @@ export function notifyBookingEventInBackground(
   // y el promise flotante completa igual.
   waitUntil(job)
 }
+
+// ─── Notificaciones de plataforma (super-admin) ───────────────────────────────
+// A diferencia de notify() (por-empresa, con templates), estos avisos van al
+// dueño de la plataforma. Destinatarios: perfiles super_admin activos + la env
+// SUPER_ADMIN_EMAIL (lista separada por comas) si está definida.
+
+export async function getSuperAdminEmails(): Promise<string[]> {
+  const emails = new Set<string>()
+  const env = process.env.SUPER_ADMIN_EMAIL
+  if (env) env.split(',').forEach((e) => { const t = e.trim(); if (t) emails.add(t) })
+
+  try {
+    const admin = createAdminClient()
+    const { data: profiles } = await admin
+      .from('user_profiles')
+      .select('id')
+      .eq('role', 'super_admin')
+      .eq('is_active', true)
+    for (const p of profiles ?? []) {
+      try {
+        const { data } = await admin.auth.admin.getUserById(p.id)
+        if (data.user?.email) emails.add(data.user.email)
+      } catch { /* usuario sin email accesible — se ignora */ }
+    }
+  } catch (err) {
+    console.error('[getSuperAdminEmails]', err)
+  }
+  return [...emails]
+}
+
+/** Envía un email de plataforma a todos los super-admins. No lanza nunca. */
+export async function sendSuperAdminEmail(subject: string, body: string): Promise<{ sent: number }> {
+  const emails = await getSuperAdminEmails()
+  let sent = 0
+  for (const to of emails) {
+    try {
+      const r = await sendEmail(to, subject, body)
+      if (r.ok) sent += 1
+    } catch (err) {
+      console.error('[sendSuperAdminEmail]', err)
+    }
+  }
+  return { sent }
+}
+
+/** Versión no bloqueante (waitUntil) para usar en server actions con redirect. */
+export function sendSuperAdminEmailInBackground(subject: string, body: string): void {
+  waitUntil(sendSuperAdminEmail(subject, body).catch((err) => {
+    console.error('[sendSuperAdminEmailInBackground]', err)
+  }))
+}
