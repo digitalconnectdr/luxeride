@@ -1225,6 +1225,11 @@ export const en = {
     notFoundBody: 'We could not find this quote.',
     errorGeneric: 'Something went wrong. Please try again.',
   },
+
+  offline: {
+    title: 'You’re offline',
+    body: 'No internet connection. Check your network and try again.',
+  },
 }
 
 export type Dictionary = typeof en

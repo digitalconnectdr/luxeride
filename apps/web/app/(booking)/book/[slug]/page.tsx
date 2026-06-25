@@ -10,6 +10,7 @@ import { fetchGoogleReviews } from '@/lib/reviews/google'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { Reveal } from '@/components/landing/reveal'
+import { ServiceWorkerRegister } from '@/components/pwa/sw-register'
 import { BookingWizard } from './booking-wizard'
 
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
@@ -30,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('name, city, logo_url, tagline')
+    .select('name, city, logo_url, tagline, primary_color')
     .eq('slug', params.slug)
     .single()
   if (!company) return { title: { absolute: 'Reservación' } }
@@ -47,6 +48,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: { canonical: url },
     robots: { index: true, follow: true },
     openGraph: { title, description, url, type: 'website', siteName: company.name, images: company.logo_url ? [{ url: company.logo_url }] : undefined },
+    // PWA branded: manifest dinámico + ícono/título de la "app" del operador (iOS).
+    manifest: `/manifest/${params.slug}`,
+    appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: company.name },
+    ...(company.logo_url ? { icons: { apple: [{ url: company.logo_url }] } } : {}),
   }
 }
 
@@ -114,6 +119,7 @@ export default async function OperatorMicrosite({ params }: Props) {
   return (
     <div className="bg-[#08080a] text-white antialiased selection:bg-[var(--brand)]/30" style={{ ['--brand' as string]: brandColor }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <ServiceWorkerRegister />
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-[#08080a]/85 backdrop-blur-md border-b border-white/[0.06]">

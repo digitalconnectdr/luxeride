@@ -26,7 +26,7 @@ type CookieItem = {
 const RESERVED_SEGMENTS = new Set([
   'admin', 'dispatcher', 'driver', 'corporate', 'account', 'super-admin',
   'auth', 'api', 'track', 'payment', 'book', 'embed', 'review', 'quote',
-  'manifest', 'icon', 'favicon', 'opengraph-image', 'demo',
+  'manifest', 'icon', 'favicon', 'opengraph-image', 'demo', 'offline', 'sw.js',
 ])
 
 export async function middleware(request: NextRequest) {

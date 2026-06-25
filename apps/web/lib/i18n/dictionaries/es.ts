@@ -1226,4 +1226,9 @@ export const es: Dictionary = {
     notFoundBody: 'No pudimos encontrar esta cotización.',
     errorGeneric: 'Algo salió mal. Intenta de nuevo.',
   },
+
+  offline: {
+    title: 'Estás sin conexión',
+    body: 'No hay conexión a internet. Revisa tu red e inténtalo de nuevo.',
+  },
 }

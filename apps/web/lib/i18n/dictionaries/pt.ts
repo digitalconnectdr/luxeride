@@ -1226,4 +1226,9 @@ export const pt: Dictionary = {
     notFoundBody: 'Não encontramos esta cotação.',
     errorGeneric: 'Algo deu errado. Tente novamente.',
   },
+
+  offline: {
+    title: 'Você está offline',
+    body: 'Sem conexão com a internet. Verifique sua rede e tente novamente.',
+  },
 }
