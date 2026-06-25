@@ -3,7 +3,7 @@
 // Fase 1: Ruta + vehículo + fecha → calcular precio
 // Fase 2: Info del pasajero → confirmar reservación
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { AddressInput } from '@/components/maps/address-input'
 import { calculateQuoteAction, createBookingAction } from '@/app/actions/bookings'
@@ -50,6 +50,8 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
 
   // Guardamos los valores del formulario de ruta para pasarlos al createBookingAction
   const [routeFormData, setRouteFormData] = useState<FormData | null>(null)
+  // Qué botón se pulsó: confirmar reserva o guardar como cotización.
+  const asQuoteRef = useRef(false)
 
   // ── Fase 1: Calcular precio ───────────────────────────────────────────────────
 
@@ -83,6 +85,8 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
     for (const [k, v] of routeFormData.entries()) combined.set(k, v)
     for (const [k, v] of passengerFd.entries()) combined.set(k, v)
     combined.set('quote_id', quote.quoteId)
+    const asQuote = asQuoteRef.current
+    if (asQuote) combined.set('as_quote', 'true')
 
     startTransition(async () => {
       const result = await createBookingAction(combined)
@@ -90,8 +94,9 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
         setError(result.error ?? t.errCreate)
         return
       }
-      setSuccess(t.successCreated.replace('{number}', result.data.bookingNumber))
-      setTimeout(() => router.push(`/admin/bookings/${result.data!.bookingId}`), 1500)
+      setSuccess((asQuote ? t.successQuote : t.successCreated).replace('{number}', result.data.bookingNumber))
+      const dest = asQuote ? '/admin/quotes' : `/admin/bookings/${result.data.bookingId}`
+      setTimeout(() => router.push(dest), 1500)
     })
   }
 
@@ -407,7 +412,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
           </p>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
             type="button"
             onClick={() => { setPhase('route'); setError('') }}
@@ -417,8 +422,17 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
           </button>
           <button
             type="submit"
+            onClick={() => { asQuoteRef.current = true }}
             disabled={isPending}
-            className="flex-1 py-3 bg-[#0071e3] text-white font-semibold rounded-xl hover:bg-[#0077ed] disabled:opacity-50 transition-colors"
+            className="px-5 py-3 border border-sl-outline-variant text-sm font-medium rounded-xl hover:border-[#0071e3] disabled:opacity-50 transition-colors text-sl-on-surface"
+          >
+            {t.saveQuote}
+          </button>
+          <button
+            type="submit"
+            onClick={() => { asQuoteRef.current = false }}
+            disabled={isPending}
+            className="flex-1 min-w-[140px] py-3 bg-[#0071e3] text-white font-semibold rounded-xl hover:bg-[#0077ed] disabled:opacity-50 transition-colors"
           >
             {isPending ? t.createLoading : t.createCta}
           </button>

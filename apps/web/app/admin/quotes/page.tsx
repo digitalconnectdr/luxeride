@@ -1,0 +1,100 @@
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { requireRole } from '@/lib/auth/session'
+import { createAdminClient } from '@/lib/supabase/server'
+import { getDict, getLocale } from '@/lib/i18n/server'
+
+const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
+
+export function generateMetadata(): Metadata {
+  return { title: getDict().admin.quotesList.title }
+}
+
+interface LocationJson { address?: string }
+
+function shortAddress(loc: unknown): string {
+  const a = (loc as LocationJson | null)?.address
+  return a ? (a.split(',')[0] ?? a) : '—'
+}
+
+export default async function AdminQuotesPage() {
+  const user = await requireRole('super_admin', 'company_owner', 'company_admin', 'dispatcher', 'accounting')
+  const t = getDict().admin.quotesList
+  const localeTag = LOCALE_TAGS[getLocale()] ?? 'en-US'
+
+  if (!user.company_id) {
+    return <div className="p-8"><p className="text-sm text-sl-on-surface-muted">{getDict().admin.bookingsList.noCompany}</p></div>
+  }
+
+  const admin = createAdminClient()
+  const { data: quotes } = await admin
+    .from('bookings')
+    .select('id, booking_number, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, total_amount, currency, created_at')
+    .eq('company_id', user.company_id)
+    .eq('status', 'quote')
+    .order('created_at', { ascending: false })
+    .limit(100)
+
+  const fmt = (iso: string) => new Date(iso).toLocaleString(localeTag, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  const ageLabel = (iso: string) => {
+    const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
+    return days <= 0 ? t.today : `${days}d`
+  }
+
+  return (
+    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.title}</h1>
+          <p className="text-sm text-sl-on-surface-muted mt-1">{t.subtitle.replace('{count}', String(quotes?.length ?? 0))}</p>
+          <p className="text-xs text-sl-on-surface-muted/80 mt-1 max-w-xl">{t.hint}</p>
+        </div>
+        <Link href="/admin/bookings/new" className="px-4 py-2 bg-[#0071e3] text-white text-sm font-medium rounded-xl hover:bg-[#0077ed] transition-colors whitespace-nowrap">
+          {t.newQuote}
+        </Link>
+      </div>
+
+      {!quotes?.length ? (
+        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-12 text-center">
+          <p className="text-sm text-sl-on-surface-muted">{t.empty}</p>
+        </div>
+      ) : (
+        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-sl-outline-variant">
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colNumber}</th>
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPassenger}</th>
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colScheduled}</th>
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colRoute}</th>
+                <th className="text-right px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colTotal}</th>
+                <th className="text-right px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colAge}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {quotes.map((q, idx) => (
+                <tr key={q.id} className={`border-b border-sl-outline-variant last:border-0 hover:bg-sl-bg/50 transition-colors ${idx % 2 === 0 ? '' : 'bg-sl-bg/20'}`}>
+                  <td className="px-5 py-3">
+                    <Link href={`/admin/bookings/${q.id}`} className="font-mono text-xs text-[#0071e3] hover:underline">{q.booking_number}</Link>
+                  </td>
+                  <td className="px-5 py-3">
+                    <p className="font-medium text-sl-on-surface">{q.passenger_name ?? '—'}</p>
+                    {q.passenger_phone && <p className="text-[11px] text-sl-on-surface-muted">{q.passenger_phone}</p>}
+                  </td>
+                  <td className="px-5 py-3 text-sl-on-surface-muted whitespace-nowrap">{fmt(q.scheduled_at)}</td>
+                  <td className="px-5 py-3 text-sl-on-surface max-w-[260px] truncate">
+                    {shortAddress(q.pickup_location)} → {shortAddress(q.dropoff_location)}
+                  </td>
+                  <td className="px-5 py-3 text-right font-semibold text-sl-on-surface">
+                    {q.total_amount != null ? `$${Number(q.total_amount).toFixed(2)}` : '—'}
+                  </td>
+                  <td className="px-5 py-3 text-right text-sl-on-surface-muted">{ageLabel(q.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}

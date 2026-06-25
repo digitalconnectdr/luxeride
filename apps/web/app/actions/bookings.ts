@@ -294,6 +294,8 @@ export async function createBookingAction(
   const internalNotes = (formData.get('internal_notes') as string)?.trim()
   const flightNumber  = (formData.get('flight_number') as string)?.trim()
   const corporateAccountId = (formData.get('corporate_account_id') as string)?.trim() || null
+  // Pipeline de cotizaciones: guardar como cotización (status 'quote') en vez de confirmar.
+  const asQuote = formData.get('as_quote') === 'true'
 
   if (!passengerName) return { success: false, error: 'Nombre del pasajero requerido' }
   if (!scheduledAt)   return { success: false, error: 'Fecha y hora requeridas' }
@@ -318,7 +320,7 @@ export async function createBookingAction(
     .from('bookings')
     .insert({
       company_id:       user.company_id,
-      status:           'pending',
+      status:           asQuote ? 'quote' : 'pending',
       type:             bookingType,
       vehicle_type_id:  quote.vehicle_type_id,
       corporate_account_id: corporateAccountId,
@@ -367,22 +369,26 @@ export async function createBookingAction(
     waitUntil(trackBookingFlight(booking.id, flightNumber))
   }
 
-  // F1.14 — confirmación al pasajero (email + SMS)
-  notifyBookingEventInBackground('booking_confirmation', toNotifyData({
-    id: booking.id,
-    company_id: user.company_id,
-    booking_number: booking.booking_number,
-    passenger_name: passengerName,
-    passenger_email: passengerEmail || null,
-    passenger_phone: passengerPhone || null,
-    scheduled_at: scheduledAt,
-    pickup_location: { address: pickupAddr },
-    dropoff_location: { address: dropoffAddr },
-    total_amount: quote.total_amount,
-    currency: quote.currency,
-  }))
+  // F1.14 — confirmación al pasajero (email + SMS). Si es cotización aún NO se
+  // confirma, así que no se envía la confirmación (se enviará al convertirla).
+  if (!asQuote) {
+    notifyBookingEventInBackground('booking_confirmation', toNotifyData({
+      id: booking.id,
+      company_id: user.company_id,
+      booking_number: booking.booking_number,
+      passenger_name: passengerName,
+      passenger_email: passengerEmail || null,
+      passenger_phone: passengerPhone || null,
+      scheduled_at: scheduledAt,
+      pickup_location: { address: pickupAddr },
+      dropoff_location: { address: dropoffAddr },
+      total_amount: quote.total_amount,
+      currency: quote.currency,
+    }))
+  }
 
   revalidatePath('/admin/bookings')
+  revalidatePath('/admin/quotes')
   revalidatePath('/admin/dashboard')
   return {
     success: true,
@@ -482,6 +488,7 @@ export async function updateBookingStatusAction(
 
   // F1.14 — notificar al pasajero según el nuevo estado
   const NOTIFY_BY_STATUS: Partial<Record<BookingStatus, string>> = {
+    pending:   'booking_confirmation', // al confirmar una cotización (quote → pending)
     en_route:  'driver_en_route',
     arrived:   'driver_arrived',
     completed: 'trip_completed',

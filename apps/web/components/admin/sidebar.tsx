@@ -15,6 +15,7 @@ import {
   Plane,
   Tags,
   CalendarDays,
+  FileText,
   BarChart3,
   ScrollText,
   Building2,
@@ -124,7 +125,10 @@ export function AdminSidebar({
     {
       header: nav.bookings,
       show: flags.isOwnerOrAdmin || flags.isDispatcher,
-      items: [{ href: '/admin/bookings', label: nav.reservations, icon: CalendarDays }],
+      items: [
+        { href: '/admin/bookings', label: nav.reservations, icon: CalendarDays },
+        { href: '/admin/quotes', label: nav.quotes, icon: FileText },
+      ],
     },
     {
       header: nav.finance,
