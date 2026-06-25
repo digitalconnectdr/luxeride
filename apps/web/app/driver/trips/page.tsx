@@ -257,7 +257,8 @@ export default async function DriverTripsPage() {
                         </div>
                         <div className="min-w-0">
                           <p className="font-medium truncate text-[#1d1b18]">{t.passenger_name ?? dt.passenger}</p>
-                          {t.passenger_phone && <p className="text-sm text-[#75716a]">{t.passenger_phone}</p>}
+                          {/* Privacidad: el conductor ve solo los últimos dígitos; contacta vía los botones. */}
+                          {t.passenger_phone && <p className="text-sm text-[#75716a]">{`•••• ${t.passenger_phone.replace(/\D/g, '').slice(-4)}`}</p>}
                         </div>
                       </div>
                       {t.passenger_phone && (

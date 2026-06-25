@@ -73,7 +73,11 @@ export function LanguageSwitcher({
         aria-expanded={open}
         className={`flex items-center gap-1.5 text-xs rounded-full border px-3 py-1.5 cursor-pointer transition-colors disabled:opacity-50 ${buttonCls}`}
       >
-        <span aria-hidden>{FLAGS[current]}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18" />
+          <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z" />
+        </svg>
         <span>{LOCALE_LABELS[current]}</span>
         <svg
           width="10" height="10" viewBox="0 0 10 10" aria-hidden
