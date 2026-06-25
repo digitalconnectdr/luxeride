@@ -40,31 +40,37 @@ export function ReviewForm({
   }
 
   const active = hover || rating
+  const activeLabel = active > 0 ? t.ratingLabels[active - 1] : ''
 
   return (
     <div className="space-y-6">
       {/* Estrellas */}
       <div>
-        <div className="flex items-center justify-center gap-2" role="radiogroup" aria-label={t.title}>
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2.5" role="radiogroup" aria-label={t.title}>
           {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
               type="button"
               role="radio"
               aria-checked={rating === n}
-              aria-label={`${n}`}
+              aria-label={t.ratingLabels[n - 1]}
               onMouseEnter={() => setHover(n)}
               onMouseLeave={() => setHover(0)}
-              onClick={() => setRating(n)}
+              onClick={() => { setRating(n); setError('') }}
               disabled={isPending}
-              className="text-4xl leading-none transition-transform hover:scale-110 focus:outline-none disabled:opacity-60"
-              style={{ color: n <= active ? brandColor : 'rgba(255,255,255,0.22)' }}
+              className="text-[2.75rem] sm:text-5xl leading-none transition-all hover:scale-110 focus:outline-none disabled:opacity-60"
+              style={{
+                color: n <= active ? brandColor : 'rgba(255,255,255,0.18)',
+                filter: n <= active ? `drop-shadow(0 2px 10px ${brandColor}55)` : 'none',
+              }}
             >
               ★
             </button>
           ))}
         </div>
-        <p className="mt-3 text-center text-xs text-white/40">{t.starsHint}</p>
+        <p className="mt-4 text-center text-sm font-medium h-5 transition-colors" style={{ color: activeLabel ? brandColor : 'rgba(255,255,255,0.4)' }}>
+          {activeLabel || t.starsHint}
+        </p>
       </div>
 
       {/* Comentario */}

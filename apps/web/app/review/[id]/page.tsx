@@ -41,12 +41,28 @@ export default async function ReviewPage({ params }: { params: { id: string } })
 
   const { data: company } = await admin
     .from('companies')
-    .select('name, primary_color')
+    .select('name, primary_color, logo_url')
     .eq('id', booking.company_id)
     .single()
 
   const companyName = company?.name ?? ''
   const brandColor = (company?.primary_color as string | null) || '#c9a24b'
+  const logoUrl = (company?.logo_url as string | null) ?? null
+
+  // Encabezado de marca (logo o inicial) reutilizado en form y agradecimiento.
+  const brandHeader = (
+    <div className="flex flex-col items-center gap-3 mb-6">
+      {logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={logoUrl} alt={companyName} className="h-11 max-w-[160px] object-contain" />
+      ) : (
+        <div className="h-11 w-11 rounded-xl flex items-center justify-center shadow-sm shadow-black/30" style={{ backgroundColor: brandColor }}>
+          <span className="text-white font-playfair text-lg">{companyName.trim().charAt(0).toUpperCase() || 'L'}</span>
+        </div>
+      )}
+      <p className="text-[10px] uppercase tracking-[0.28em] text-white/40">{companyName}</p>
+    </div>
+  )
 
   if (booking.status !== 'completed') return heading(t.notCompletedTitle, t.notCompletedBody)
 
@@ -54,6 +70,7 @@ export default async function ReviewPage({ params }: { params: { id: string } })
   if (booking.rated_at) {
     return wrap(
       <div className={`${card} text-center space-y-4`}>
+        {brandHeader}
         <h1 className="font-playfair text-2xl font-medium">{t.thanksTitle}</h1>
         {booking.rating != null && (
           <p className="text-3xl tracking-[0.15em]" style={{ color: brandColor }}>
@@ -71,6 +88,7 @@ export default async function ReviewPage({ params }: { params: { id: string } })
   return wrap(
     <div className={card}>
       <div className="text-center mb-7">
+        {brandHeader}
         <span className="block h-px w-12 mx-auto mb-5" style={{ background: `linear-gradient(90deg, transparent, ${brandColor}, transparent)` }} />
         <h1 className="font-playfair text-2xl sm:text-[1.7rem] font-medium">{t.title}</h1>
         <p className="mt-2 text-sm text-white/55">{t.subtitle.replace('{company}', companyName)}</p>

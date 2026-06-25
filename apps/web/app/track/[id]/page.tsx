@@ -41,7 +41,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const admin = createAdminClient()
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, booking_number, status, scheduled_at, pickup_location, dropoff_location, waypoints, driver_id, vehicle_id, company_id, passenger_name, distance_miles, duration_minutes, dispatched_at, en_route_at, arrived_at, started_at, completed_at')
+    .select('id, booking_number, status, scheduled_at, pickup_location, dropoff_location, waypoints, driver_id, vehicle_id, company_id, passenger_name, distance_miles, duration_minutes, dispatched_at, en_route_at, arrived_at, started_at, completed_at, rated_at')
     .eq('id', params.id)
     .single()
 
@@ -237,6 +237,15 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
             <p className="text-sm text-white/50 mt-3">
               {t.questions} <a href={`tel:${company.phone}`} className="lux-link" style={{ color: brandColor }}>{company.phone}</a>
             </p>
+          )}
+          {isCompleted && !booking.rated_at && (
+            <a
+              href={`/review/${booking.id}`}
+              className="mt-4 inline-block px-6 py-2.5 rounded-full text-[#08080a] text-sm font-semibold tracking-wide transition-transform hover:scale-[1.03]"
+              style={{ backgroundColor: brandColor }}
+            >
+              {getDict(locale).review.title} →
+            </a>
           )}
         </div>
 
