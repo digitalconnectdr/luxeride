@@ -35,11 +35,16 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
   const svg = type === 'image/svg+xml'
 
   const manifest = {
+    // id único por operador → cada empresa es una app distinta aunque compartan
+    // dominio (white-label multi-tenant). Sin esto el navegador las confunde.
+    id: `/${company.slug}`,
     name,
     short_name: name.slice(0, 12),
     description: (company.tagline as string | null) || `${name} — reservas online`,
     start_url: `/${company.slug}`,
-    scope: `/${company.slug}`,
+    // scope amplio: la reserva vive en /book/<slug>/… y el tracking en /track/…,
+    // así que el scope debe cubrir todo el origen para no salirse de la app.
+    scope: '/',
     display: 'standalone',
     orientation: 'portrait',
     background_color: '#08080a',

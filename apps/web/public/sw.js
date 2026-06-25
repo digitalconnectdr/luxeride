@@ -7,7 +7,9 @@ const OFFLINE_URL = '/offline'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.add(OFFLINE_URL)).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      .then((cache) => cache.add(OFFLINE_URL).catch(() => {})) // fallo transitorio no bloquea el SW
+      .then(() => self.skipWaiting())
   )
 })
 
