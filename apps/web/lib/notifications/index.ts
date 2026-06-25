@@ -335,3 +335,52 @@ export function sendSuperAdminEmailInBackground(subject: string, body: string): 
     console.error('[sendSuperAdminEmailInBackground]', err)
   }))
 }
+
+// ─── Follow-up de cotizaciones (sin template; con dedup vía notifications) ─────
+// Envía un email branded de seguimiento a una cotización abierta. Solo envía una
+// vez por booking (chequea la tabla notifications por type 'quote_followup').
+
+export async function sendQuoteFollowup(opts: {
+  companyId: string
+  bookingId: string
+  to: string
+  subject: string
+  body: string
+}): Promise<{ sent: boolean; skipped?: boolean }> {
+  const admin = createAdminClient()
+
+  // Dedup: ¿ya se envió un follow-up para esta cotización?
+  const { data: existing } = await admin
+    .from('notifications')
+    .select('id')
+    .eq('booking_id', opts.bookingId)
+    .eq('type', 'quote_followup')
+    .limit(1)
+  if (existing && existing.length) return { sent: false, skipped: true }
+
+  const { data: company } = await admin
+    .from('companies')
+    .select('name, logo_url, primary_color')
+    .eq('id', opts.companyId)
+    .single()
+
+  const r = await sendEmail(opts.to, opts.subject, opts.body, company?.name, {
+    logoUrl: (company as { logo_url?: string | null })?.logo_url ?? null,
+    brandColor: (company as { primary_color?: string | null })?.primary_color ?? null,
+  })
+
+  await admin.from('notifications').insert({
+    company_id: opts.companyId,
+    booking_id: opts.bookingId,
+    channel: 'email',
+    type: 'quote_followup',
+    recipient: opts.to,
+    subject: opts.subject,
+    body: opts.body,
+    status: r.ok ? 'sent' : isResendConfigured() ? 'failed' : 'pending',
+    sent_at: r.ok ? new Date().toISOString() : null,
+    error_message: r.ok ? null : r.error ?? null,
+  })
+
+  return { sent: r.ok }
+}
