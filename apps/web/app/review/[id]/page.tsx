@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { ReviewForm } from './review-form'
+import { AutoRedirect } from './auto-redirect'
 
 export const metadata: Metadata = {
   title: { absolute: 'Review' },
@@ -41,23 +42,27 @@ export default async function ReviewPage({ params }: { params: { id: string } })
 
   const { data: company } = await admin
     .from('companies')
-    .select('name, primary_color, logo_url')
+    .select('name, slug, primary_color, logo_url')
     .eq('id', booking.company_id)
     .single()
 
   const companyName = company?.name ?? ''
   const brandColor = (company?.primary_color as string | null) || '#c9a24b'
   const logoUrl = (company?.logo_url as string | null) ?? null
+  const micrositeUrl = company?.slug ? `/${company.slug}` : '/'
 
-  // Encabezado de marca (logo o inicial) reutilizado en form y agradecimiento.
+  // Encabezado de marca — MISMO formato que el header de tracking: logo en caja
+  // blanca redondeada de tamaño fijo (ningún logo rompe el diseño) o inicial.
   const brandHeader = (
     <div className="flex flex-col items-center gap-3 mb-6">
       {logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={logoUrl} alt={companyName} className="h-11 max-w-[160px] object-contain" />
+        <div className="h-12 w-12 rounded-xl bg-white p-1.5 shadow-sm shadow-black/30 flex items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logoUrl} alt={companyName} className="max-h-full max-w-full object-contain" />
+        </div>
       ) : (
-        <div className="h-11 w-11 rounded-xl flex items-center justify-center shadow-sm shadow-black/30" style={{ backgroundColor: brandColor }}>
-          <span className="text-white font-playfair text-lg">{companyName.trim().charAt(0).toUpperCase() || 'L'}</span>
+        <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-sm shadow-black/30" style={{ backgroundColor: brandColor }}>
+          <span className="text-[#08080a] font-bold text-lg leading-none">{companyName.trim().charAt(0).toUpperCase() || 'L'}</span>
         </div>
       )}
       <p className="text-[10px] uppercase tracking-[0.28em] text-white/40">{companyName}</p>
@@ -78,8 +83,10 @@ export default async function ReviewPage({ params }: { params: { id: string } })
           </p>
         )}
         <p className="text-sm text-white/55 leading-relaxed">
-          {t.thanksBody.replace('{company}', companyName)}
+          {t.thanksBody}
         </p>
+        <p className="text-[11px] text-white/30 pt-1">{t.returningSoon}</p>
+        <AutoRedirect url={micrositeUrl} seconds={30} />
       </div>,
       brandColor,
     )
