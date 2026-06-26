@@ -26,6 +26,11 @@ function SaveButton({ label }: { label: string }) {
   )
 }
 
+const TEMPLATES = [
+  { id: 'noir', swatch: 'linear-gradient(135deg,#08080a,#1c1c20)', line: '#c9a24b' },
+  { id: 'ivory', swatch: 'linear-gradient(135deg,#f5f1e9,#e4ddcf)', line: '#1d1b18' },
+] as const
+
 export function CoverForm({
   t,
   tagline,
@@ -33,6 +38,7 @@ export function CoverForm({
   heroImage,
   whatsapp,
   placeId,
+  template,
 }: {
   t: SettingsDict
   tagline: string | null
@@ -40,10 +46,12 @@ export function CoverForm({
   heroImage: string | null
   whatsapp: string | null
   placeId: string | null
+  template: string
 }) {
   const [state, formAction] = useFormState(updateSiteAction, null)
   const [preview, setPreview] = useState<string | null>(null)
   const [removing, setRemoving] = useState(false)
+  const [tpl, setTpl] = useState(template === 'ivory' ? 'ivory' : 'noir')
 
   const shownHero = preview ?? (removing ? null : heroImage)
 
@@ -65,6 +73,29 @@ export function CoverForm({
 
       <form action={formAction} className="space-y-5">
         <input type="hidden" name="remove_hero" value={removing ? 'true' : 'false'} />
+
+        {/* Selector de plantilla del micrositio */}
+        <div>
+          <label className="block text-xs text-sl-on-surface-muted mb-2">{t.templateLabel}</label>
+          <div className="grid grid-cols-2 gap-3">
+            {TEMPLATES.map((opt) => {
+              const active = tpl === opt.id
+              const label = opt.id === 'noir' ? t.templateNoir : t.templateIvory
+              const desc = opt.id === 'noir' ? t.templateNoirDesc : t.templateIvoryDesc
+              return (
+                <label key={opt.id} className={`cursor-pointer rounded-xl border-2 p-3 transition-colors ${active ? 'border-bronze' : 'border-sl-outline-variant hover:border-bronze/50'}`}>
+                  <input type="radio" name="template" value={opt.id} checked={active} onChange={() => setTpl(opt.id)} className="sr-only" />
+                  <div className="relative h-16 rounded-lg mb-2 overflow-hidden ring-1 ring-black/5" style={{ background: opt.swatch }}>
+                    <span className="absolute left-2 top-2 h-px w-7" style={{ background: opt.line }} />
+                    <span className="absolute left-2 bottom-2 h-1.5 w-10 rounded-full opacity-70" style={{ background: opt.line }} />
+                  </div>
+                  <p className="text-xs font-medium text-sl-on-surface">{label}</p>
+                  <p className="text-[11px] text-sl-on-surface-muted leading-snug mt-0.5">{desc}</p>
+                </label>
+              )
+            })}
+          </div>
+        </div>
 
         <div>
           <label className="block text-xs text-sl-on-surface-muted mb-1">{t.taglineLabel}</label>

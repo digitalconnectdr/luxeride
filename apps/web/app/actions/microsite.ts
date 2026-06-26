@@ -28,6 +28,9 @@ export async function updateSiteAction(
   const about = ((formData.get('about') as string) ?? '').trim().slice(0, 2000) || null
   const whatsapp = ((formData.get('whatsapp') as string) ?? '').trim().slice(0, 30) || null
   const googlePlaceId = ((formData.get('google_place_id') as string) ?? '').trim().slice(0, 120) || null
+  // Plantilla del micrositio (white-label: cada empresa elige su diseño).
+  const templateRaw = (formData.get('template') as string) ?? 'noir'
+  const template = ['noir', 'ivory'].includes(templateRaw) ? templateRaw : 'noir'
   const hero = formData.get('hero_image') as File | null
   const removeHero = formData.get('remove_hero') === 'true'
 
@@ -37,7 +40,7 @@ export async function updateSiteAction(
   const { data: current } = await admin.from('companies').select('settings').eq('id', user.company_id).single()
   const settings = (current?.settings as Record<string, unknown>) ?? {}
   const site = (settings.site as Record<string, unknown>) ?? {}
-  const mergedSettings = { ...settings, site: { ...site, whatsapp, googlePlaceId } }
+  const mergedSettings = { ...settings, site: { ...site, whatsapp, googlePlaceId, template } }
 
   const updates: { tagline: string | null; about: string | null; hero_image_url?: string | null; settings: Json } = {
     tagline,

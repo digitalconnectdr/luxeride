@@ -11,6 +11,7 @@ import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { Reveal } from '@/components/landing/reveal'
 import { ServiceWorkerRegister } from '@/components/pwa/sw-register'
+import { MicrositeIvory } from '@/components/booking/microsite-ivory'
 import { BookingWizard } from './booking-wizard'
 
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
@@ -34,6 +35,7 @@ const CLASS_ICON: Record<string, string> = {
 
 interface Props {
   params: { slug: string }
+  searchParams?: { preview?: string }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -73,7 +75,7 @@ interface CompanyService {
   image_url: string | null
 }
 
-export default async function OperatorMicrosite({ params }: Props) {
+export default async function OperatorMicrosite({ params, searchParams }: Props) {
   const locale = getLocale()
   const dict = getDict(locale)
   const t = dict.microsite
@@ -100,9 +102,15 @@ export default async function OperatorMicrosite({ params }: Props) {
   const tagline = (company as { tagline?: string | null }).tagline ?? null
   const about = (company as { about?: string | null }).about ?? null
   const logoUrl = (company as { logo_url?: string | null }).logo_url ?? null
-  const site = ((company.settings as { site?: { whatsapp?: string; googlePlaceId?: string } } | null)?.site) ?? {}
+  const site = ((company.settings as { site?: { whatsapp?: string; googlePlaceId?: string; template?: string } } | null)?.site) ?? {}
   const waNumber = (site.whatsapp ?? '').replace(/[^0-9]/g, '')
   const reservarUrl = `/book/${company.slug}/reservar`
+  // Plantilla guardada por el operador; `?preview=ivory|noir` la sobreescribe SOLO
+  // para previsualizar (no cambia el ajuste), útil antes de aplicar el diseño.
+  const previewTpl = searchParams?.preview
+  const template = (previewTpl === 'ivory' || previewTpl === 'noir')
+    ? previewTpl
+    : (site.template === 'ivory' ? 'ivory' : 'noir')
 
   const shortUrl = `${getAppUrl()}/${company.slug}`
   const qrDataUrl = await QRCode.toDataURL(shortUrl, { width: 220, margin: 1, color: { dark: '#0a0a0c', light: '#ffffff' } })
@@ -125,6 +133,33 @@ export default async function OperatorMicrosite({ params }: Props) {
       <h2 className="mt-6 font-playfair text-[2rem] sm:text-4xl lg:text-[2.75rem] font-medium tracking-[-0.01em] text-balance">{title}</h2>
     </Reveal>
   )
+
+  // ── Selector de plantilla ──────────────────────────────────────────────────
+  // El operador elige el diseño en Ajustes → Portada. Mismo DATA, distinto layout.
+  if (template === 'ivory') {
+    return (
+      <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <ServiceWorkerRegister />
+        <MicrositeIvory
+          company={{ name: company.name, slug: company.slug, city: company.city, phone: company.phone, email: company.email }}
+          logoUrl={logoUrl}
+          tagline={tagline}
+          about={about}
+          heroImg={heroImg}
+          brandColor={brandColor}
+          services={services}
+          fleet={fleet}
+          t={t}
+          locale={locale}
+          reservarUrl={reservarUrl}
+          waNumber={waNumber}
+          qrDataUrl={qrDataUrl}
+          reviews={googleReviews}
+        />
+      </>
+    )
+  }
 
   return (
     <div className="bg-[#08080a] text-white antialiased selection:bg-[var(--brand)]/30" style={{ ['--brand' as string]: brandColor }}>
