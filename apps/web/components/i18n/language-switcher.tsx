@@ -78,7 +78,7 @@ export function LanguageSwitcher({
           <path d="M3 12h18" />
           <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z" />
         </svg>
-        <span>{LOCALE_LABELS[current]}</span>
+        <span className="font-medium tracking-wide">{current.toUpperCase()}</span>
         <svg
           width="10" height="10" viewBox="0 0 10 10" aria-hidden
           className={`transition-transform ${open ? 'rotate-180' : ''}`}

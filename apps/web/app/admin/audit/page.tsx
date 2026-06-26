@@ -39,7 +39,7 @@ export default async function AuditLogPage({
 
   let query = admin
     .from('audit_logs')
-    .select('id, user_id, action, table_name, record_id, created_at', { count: 'exact' })
+    .select('id, user_id, action, table_name, record_id, created_at, metadata', { count: 'exact' })
     .eq('company_id', user.company_id)
     .order('created_at', { ascending: false })
     .range(fromRow, toRow)
@@ -146,7 +146,8 @@ export default async function AuditLogPage({
                   </td>
                   <td className="px-5 py-3 text-xs font-mono text-sl-on-surface">{log.table_name ?? '—'}</td>
                   <td className="px-5 py-3 text-xs font-mono text-sl-on-surface-muted">
-                    {log.record_id ? `${log.record_id.slice(0, 8)}…` : '—'}
+                    {(log.metadata as { booking_number?: string } | null)?.booking_number
+                      ?? (log.record_id ? `${log.record_id.slice(0, 8)}…` : '—')}
                   </td>
                 </tr>
               ))}
