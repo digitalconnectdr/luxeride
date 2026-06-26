@@ -139,6 +139,55 @@ describe('calculateFare — fees y surge', () => {
   })
 })
 
+describe('calculateFare — auditoría: modelos restantes y bordes', () => {
+  it('zone_based / desconocido cae a base_price', () => {
+    expect(calculateFare(rule({ model: 'zone_based', base_price: 90 }), 50, 60, WEEKDAY_AFTERNOON, 'one_way', TZ_SD).totalAmount).toBe(90)
+    expect(calculateFare(rule({ model: 'cualquier_cosa', base_price: 42 }), 50, 60, WEEKDAY_AFTERNOON, 'one_way', TZ_SD).totalAmount).toBe(42)
+  })
+
+  it('per_mile con tarifa por milla nula = solo base', () => {
+    expect(calculateFare(rule({ per_mile_rate: null, base_price: 12 }), 30, 40, WEEKDAY_AFTERNOON, 'one_way', TZ_SD).baseAmount).toBe(12)
+  })
+
+  it('hourly con 0 min y mínimo aplica el piso', () => {
+    expect(calculateFare(rule({ model: 'hourly', hourly_rate: 100, minimum_fare: 80 }), 0, 0, WEEKDAY_AFTERNOON, 'one_way', TZ_SD).baseAmount).toBe(80)
+  })
+
+  it('recargo se calcula SOBRE el mínimo cuando este sube la base', () => {
+    // base real = 16 (2mi), mínimo 50 → base=50; noche 20% → 10 (no 3.2)
+    const fare = calculateFare(rule({ minimum_fare: 50, night_surcharge_pct: 20 }), 2, 10, new Date('2026-06-17T03:00:00Z'), 'one_way', TZ_SD)
+    expect(fare.baseAmount).toBe(50)
+    expect(fare.surchargeAmount).toBe(10)
+    expect(fare.totalAmount).toBe(60)
+  })
+
+  it('recargos se APILAN correctamente (noche + finde + aeropuerto + surge)', () => {
+    // Sábado 2026-06-20 23:00 SD = 2026-06-21T03:00Z → noche Y finde local
+    const satNight = new Date('2026-06-21T03:00:00Z')
+    const fare = calculateFare(
+      rule({ night_surcharge_pct: 20, weekend_surcharge_pct: 15, airport_pickup_fee: 15, surge_enabled: true, surge_multiplier: 1.5 }),
+      10, 20, satNight, 'airport_pickup', TZ_SD,
+    )
+    expect(fare.baseAmount).toBe(40)               // 10 + 3*10
+    expect(fare.surchargeAmount).toBe(49)          // 8 + 6 + 15 + 20
+    expect(fare.totalAmount).toBe(89)
+  })
+
+  it('límites del horario nocturno (22:00 sí, 06:00 no, 05:00 sí)', () => {
+    const r = rule({ night_surcharge_pct: 10 })
+    const at = (z: string) => calculateFare(r, 10, 20, new Date(z), 'one_way', TZ_SD).surchargeAmount
+    expect(at('2026-06-18T02:00:00Z')).toBe(4)     // 22:00 SD → noche (10% de 40)
+    expect(at('2026-06-17T09:00:00Z')).toBe(4)     // 05:00 SD → noche
+    expect(at('2026-06-17T10:00:00Z')).toBe(0)     // 06:00 SD → NO noche
+    expect(at('2026-06-17T01:00:00Z')).toBe(0)     // 21:00 SD → NO noche
+  })
+
+  it('surge habilitado con multiplicador <= 1 no agrega nada', () => {
+    expect(calculateFare(rule({ surge_enabled: true, surge_multiplier: 1 }), 10, 20, WEEKDAY_AFTERNOON, 'one_way', TZ_SD).surchargeAmount).toBe(0)
+    expect(calculateFare(rule({ surge_enabled: true, surge_multiplier: null }), 10, 20, WEEKDAY_AFTERNOON, 'one_way', TZ_SD).surchargeAmount).toBe(0)
+  })
+})
+
 describe('bestRule', () => {
   it('prefiere la regla específica del tipo de vehículo', () => {
     const general = rule({ id: 'general', vehicle_type_id: null })
