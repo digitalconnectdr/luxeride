@@ -36,10 +36,22 @@ export default async function AdminQuotesPage() {
     .limit(100)
 
   const fmt = (iso: string) => new Date(iso).toLocaleString(localeTag, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  const ageDays = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
   const ageLabel = (iso: string) => {
-    const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
+    const days = ageDays(iso)
     return days <= 0 ? t.today : `${days}d`
   }
+
+  // Métricas del pipeline (sobre las cotizaciones abiertas cargadas)
+  const list = quotes ?? []
+  const potentialValue = list.reduce((sum, q) => sum + Number(q.total_amount ?? 0), 0)
+  const staleCount = list.filter((q) => ageDays(q.created_at) > 3).length
+  const metric = (label: string, value: string, warn = false) => (
+    <div className="rounded-2xl bg-sl-surface-high border border-sl-outline-variant p-5">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{label}</p>
+      <p className={`text-2xl font-playfair font-semibold mt-1 ${warn && staleCount > 0 ? 'text-amber-500' : 'text-sl-on-surface'}`}>{value}</p>
+    </div>
+  )
 
   return (
     <div className="p-8 max-w-[1400px] mx-auto space-y-6">
@@ -53,6 +65,15 @@ export default async function AdminQuotesPage() {
           {t.newQuote}
         </Link>
       </div>
+
+      {/* Métricas del pipeline */}
+      {list.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {metric(t.metricOpen, String(list.length))}
+          {metric(t.metricValue, `$${potentialValue.toLocaleString(localeTag, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)}
+          {metric(t.metricStale, String(staleCount), true)}
+        </div>
+      )}
 
       {!quotes?.length ? (
         <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-12 text-center">

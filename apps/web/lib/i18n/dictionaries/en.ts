@@ -973,6 +973,9 @@ export const en = {
       colTotal: 'Total',
       colAge: 'Age',
       today: 'today',
+      metricOpen: 'Open quotes',
+      metricValue: 'Potential value',
+      metricStale: 'Aging (>3 days)',
     },
     bookingDetail: {
       title: 'Reservation',

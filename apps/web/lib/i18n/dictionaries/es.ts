@@ -974,6 +974,9 @@ export const es: Dictionary = {
       colTotal: 'Total',
       colAge: 'Antigüedad',
       today: 'hoy',
+      metricOpen: 'Cotizaciones abiertas',
+      metricValue: 'Valor potencial',
+      metricStale: 'Antiguas (>3 días)',
     },
     bookingDetail: {
       title: 'Reservación',
