@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
-import { requireRole } from '@/lib/auth/session'
+import { requireRole, getCurrentUser } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
+import { ServiceWorkerRegister } from '@/components/pwa/sw-register'
 import { logoutAction } from '@/app/actions/auth'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { brand } from '@/lib/brand'
@@ -13,8 +14,25 @@ import { PassengerContact } from '@/components/driver/passenger-contact'
 import { CopyButton } from '@/components/trip/copy-button'
 import { StaticMap } from '@/components/trip/static-map'
 
-export const metadata: Metadata = { title: 'Portal del conductor' }
 export const dynamic = 'force-dynamic'
+
+// PWA del conductor: manifest branded por empresa (arranca en /driver/trips).
+export async function generateMetadata(): Promise<Metadata> {
+  const meta: Metadata = { title: 'Portal del conductor' }
+  try {
+    const u = await getCurrentUser()
+    if (u?.company_id) {
+      const admin = createAdminClient()
+      const { data: c } = await admin.from('companies').select('slug, logo_url').eq('id', u.company_id).single()
+      if (c?.slug) {
+        meta.manifest = `/manifest/driver/${c.slug}`
+        meta.appleWebApp = { capable: true, statusBarStyle: 'default', title: 'Conductor' }
+        if (c.logo_url) meta.icons = { icon: [{ url: c.logo_url }], apple: [{ url: c.logo_url }] }
+      }
+    }
+  } catch { /* sin sesión → manifest genérico */ }
+  return meta
+}
 
 const STEP_KEYS = ['assigned', 'en_route', 'arrived', 'in_progress', 'completed'] as const
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
@@ -84,6 +102,7 @@ export default async function DriverTripsPage() {
 
   return (
     <div className="min-h-screen bg-[#f6f4ef] text-[#1d1b18] antialiased">
+      <ServiceWorkerRegister />
       {/* Auto-refresh mientras hay viajes activos (capta cambios del dispatcher) */}
       {!!trips?.length && <AutoRefresh seconds={15} />}
       <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent, ${brandColor}, transparent)` }} />
