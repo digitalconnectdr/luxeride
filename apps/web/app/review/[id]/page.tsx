@@ -49,7 +49,7 @@ export default async function ReviewPage({ params }: { params: { id: string } })
   const companyName = company?.name ?? ''
   const brandColor = (company?.primary_color as string | null) || '#c9a24b'
   const logoUrl = (company?.logo_url as string | null) ?? null
-  const micrositeUrl = company?.slug ? `/${company.slug}` : '/'
+  const micrositeUrl = company?.slug ? `/book/${company.slug}` : '/'
 
   // Encabezado de marca — MISMO formato que el header de tracking: logo en caja
   // blanca redondeada de tamaño fijo (ningún logo rompe el diseño) o inicial.

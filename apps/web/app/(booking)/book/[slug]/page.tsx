@@ -27,11 +27,6 @@ function WhatsAppIcon({ size = 16, className }: { size?: number; className?: str
     </svg>
   )
 }
-// Ícono por clase para el placeholder cuando el operador aún no subió foto del
-// vehículo (evita mostrar una foto que NO corresponde al nombre).
-const CLASS_ICON: Record<string, string> = {
-  sedan: '🚗', suv: '🚙', van: '🚐', limousine: '🚘', sprinter: '🚐', bus: '🚌', exotic: '🏎️',
-}
 
 interface Props {
   params: { slug: string }
@@ -51,7 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const inCity = company.city ? ` en ${company.city}` : ''
   const title = `${company.name} — ${(company as { tagline?: string | null }).tagline || `Reserva tu traslado de lujo${cityPart}`}`
   const description = `Reserva en línea con ${company.name}: traslados al aeropuerto, chofer ejecutivo y transporte premium${inCity}. Cotización al instante, pago seguro y seguimiento en vivo.`
-  const url = `${getAppUrl()}/${params.slug}`
+  const url = `${getAppUrl()}/book/${params.slug}`
   return {
     // White-label: la pestaña muestra SOLO la marca del operador, nunca "| LuxeRide"
     title: { absolute: title },
@@ -112,7 +107,7 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
     ? previewTpl
     : (site.template === 'ivory' ? 'ivory' : 'noir')
 
-  const shortUrl = `${getAppUrl()}/${company.slug}`
+  const shortUrl = `${getAppUrl()}/book/${company.slug}`
   const qrDataUrl = await QRCode.toDataURL(shortUrl, { width: 220, margin: 1, color: { dark: '#0a0a0c', light: '#ffffff' } })
 
   const jsonLd: Record<string, unknown> = {
@@ -292,9 +287,10 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
                           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                         </>
                       ) : (
-                        // Placeholder elegante: sin foto real → no mostramos un auto que no corresponde
+                        // Placeholder elegante: sin foto real → no mostramos un auto que no corresponde,
+                        // solo la inicial de la marca en serif (mismo tratamiento que la plantilla Ivory).
                         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/[0.07] via-transparent to-transparent">
-                          <span className="text-6xl opacity-30 transition-transform duration-700 group-hover:scale-110">{CLASS_ICON[v.class] ?? '🚗'}</span>
+                          <span className="font-playfair text-5xl transition-transform duration-700 group-hover:scale-110" style={{ color: `${brandColor}55` }}>{company.name.charAt(0)}</span>
                         </div>
                       )}
                     </div>

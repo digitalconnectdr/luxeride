@@ -341,3 +341,17 @@
 @media (prefers-reduced-motion: reduce) {
   .lux-scroll-cue { animation: none; }
 }
+
+/* Iconos de categoría del micrositio — respiración lenta y desfasada (via
+   animation-delay inline por índice) para que la fila no se vea estática
+   incluso en reposo, independiente de la animación de entrada al hacer scroll. */
+@keyframes lux-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.07); }
+}
+.lux-breathe {
+  animation: lux-breathe 4.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lux-breathe { animation: none; }
+}

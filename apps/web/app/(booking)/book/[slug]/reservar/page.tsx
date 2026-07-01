@@ -53,7 +53,7 @@ export default async function ReservarPage({ params }: { params: { slug: string 
       {/* Header slim */}
       <header className="sticky top-0 z-40 bg-[#08080a]/85 backdrop-blur-md border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href={`/${company.slug}`} className="lux-link text-sm text-white/70 hover:text-white transition-colors">← {company.name}</a>
+          <a href={`/book/${company.slug}`} className="lux-link text-sm text-white/70 hover:text-white transition-colors">← {company.name}</a>
           <LanguageSwitcher current={locale} variant="dark" />
         </div>
       </header>

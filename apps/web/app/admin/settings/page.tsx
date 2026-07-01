@@ -121,7 +121,7 @@ export default async function SettingsPage({
 
       {/* ── Link de reservas del operador ── */}
       {company.slug && (
-        <BookingLinkCard t={t} url={`${getAppUrl()}/${company.slug}`} />
+        <BookingLinkCard t={t} url={`${getAppUrl()}/book/${company.slug}`} />
       )}
 
       {/* ── Widget embebible para el sitio del operador ── */}

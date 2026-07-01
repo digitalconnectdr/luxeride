@@ -1,15 +1,15 @@
 // ── Plantilla de micrositio: "Ivory" (claro / editorial — crema + dorado) ─────
 // Mismo DATA que la Noir, distinto diseño. Estructura inspirada en landings
-// premium del rubro: hero con buscador → explora por categoría → flota destacada
-// → barra de stats → servicios → pasos → testimonios → CTA membresía → footer.
-// Server component (sin hooks); usa clientes (LanguageSwitcher/Reveal/Reviews/
-// IvoryBookingBar) sin problema.
+// premium del rubro: hero a pantalla completa (texto sobrepuesto, mismo
+// tratamiento que Noir) → explora por categoría → flota destacada → barra de
+// stats → servicios → pasos → testimonios → CTA membresía → footer.
+// Server component (sin hooks); usa clientes (LanguageSwitcher/Reveal/Reviews)
+// sin problema.
 
 import Image from 'next/image'
-import { Reveal } from '@/components/landing/reveal'
+import { Reveal, RevealStagger, RevealItem } from '@/components/landing/reveal'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
-import { IvoryBookingBar } from '@/components/booking/ivory-booking-bar'
 import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
@@ -108,33 +108,40 @@ export function MicrositeIvory(props: {
         </div>
       </header>
 
-      {/* HERO con buscador */}
-      <section className="relative overflow-hidden">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-10 pt-12 lg:pt-16 pb-16 lg:pb-20 grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-14 items-center">
-          <Reveal>
-            <p className="flex items-center gap-3 text-[12px] uppercase tracking-[0.34em] text-[#8a8478] mb-6">
+      {/* HERO — imagen a sección completa con el texto sobrepuesto (mismo
+          tratamiento premium que la plantilla Noir: Ken Burns lento + grano +
+          degradado, para que el estilo sea consistente entre ambos diseños). */}
+      <section className="lux-grain relative isolate min-h-[92vh] flex items-center overflow-hidden">
+        <Image src={heroImg} alt="" fill priority sizes="100vw" className="object-cover -z-10 animate-kenburns" />
+        <div className="absolute inset-0 -z-10" style={{ background: 'linear-gradient(100deg, rgba(23,20,15,0.92) 0%, rgba(23,20,15,0.66) 46%, rgba(23,20,15,0.22) 100%)' }} />
+        <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-white to-transparent" />
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-10 w-full">
+          <Reveal className="max-w-2xl">
+            <p className="flex items-center gap-3 text-[12px] uppercase tracking-[0.34em] text-white/75 mb-7">
               <span className="h-px w-8" style={{ backgroundColor: brandColor }} />
               {company.city || 'Premium chauffeur service'}
             </p>
-            <h1 className="font-playfair text-[2.7rem] sm:text-6xl lg:text-[4.1rem] font-medium leading-[1.04] tracking-[-0.02em] text-balance">
+            <h1 className="font-playfair text-[2.7rem] sm:text-6xl lg:text-[4.1rem] font-medium leading-[1.04] tracking-[-0.02em] text-balance text-white">
               {tagline || company.name}
             </h1>
-            {about && <p className="mt-6 text-lg text-[#5b554b] leading-relaxed max-w-lg line-clamp-3">{about}</p>}
-            <IvoryBookingBar reservarUrl={reservarUrl} brandColor={brandColor} labels={{ from: t.searchFrom, when: t.searchWhen, cta: t.searchCta }} />
-            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm">
-              {fleet.length > 0 && <a href="#flota" className="font-medium text-[#1d1b18] hover:opacity-70 transition-opacity inline-flex items-center gap-1.5">{t.viewFleet} →</a>}
+            {about && <p className="mt-6 text-lg text-white/75 leading-relaxed max-w-xl line-clamp-3">{about}</p>}
+            <div className="mt-9 flex flex-wrap items-center gap-x-4 gap-y-3">
+              <a href={reservarUrl} className="px-8 py-4 rounded-full text-[#17140f] text-sm font-semibold tracking-wide transition-transform hover:scale-[1.03]" style={{ backgroundColor: brandColor }}>{t.bookNow} →</a>
+              {fleet.length > 0 && (
+                <a href="#flota" className="px-7 py-4 rounded-full text-sm font-medium border border-white/30 text-white hover:border-white/55 hover:bg-white/10 transition-colors">{t.viewFleet}</a>
+              )}
               {waNumber && (
-                <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 font-medium text-[#5b554b] hover:text-[#1d1b18] transition-colors">
+                <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-white/85 hover:text-white transition-colors ml-1">
                   <span className="text-[#25D366]">{WA}</span> WhatsApp
                 </a>
               )}
-              {company.phone && <a href={`tel:${company.phone}`} className="font-medium text-[#5b554b] hover:text-[#1d1b18] transition-colors">{t.call}</a>}
+              {company.phone && <a href={`tel:${company.phone}`} className="lux-link text-sm font-medium text-white/85 hover:text-white transition-colors">{t.call}</a>}
             </div>
           </Reveal>
-          <Reveal className="relative h-[20rem] sm:h-[26rem] lg:h-[32rem] rounded-[1.5rem] overflow-hidden ring-1 ring-black/10 shadow-2xl shadow-black/10">
-            <Image src={heroImg} alt="" fill priority sizes="(max-width:1024px) 100vw, 48vw" className="object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-          </Reveal>
+        </div>
+        {/* Indicador de scroll */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden sm:flex flex-col items-center gap-2 text-white/40">
+          <span className="lux-scroll-cue h-9 w-px" style={{ background: `linear-gradient(${brandColor}, transparent)` }} />
         </div>
       </section>
 
@@ -145,12 +152,12 @@ export function MicrositeIvory(props: {
         <section id="categorias" className="py-20 lg:py-24 bg-white border-y border-black/[0.05]">
           <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
             {heading(t.browseCategory, t.categoryTitle)}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-12">
+            <RevealStagger className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-12">
               {t.categories.map((c, i) => (
-                <Reveal key={c.label} className="flex flex-col items-center text-center gap-4">
+                <RevealItem key={c.label} className="flex flex-col items-center text-center gap-4">
                   <span
-                    className="relative h-20 w-20 rounded-full flex items-center justify-center transition-transform duration-500 hover:scale-105"
-                    style={{ backgroundColor: `${brandColor}17` }}
+                    className="lux-breathe relative h-20 w-20 rounded-full flex items-center justify-center transition-transform duration-500 hover:scale-110"
+                    style={{ backgroundColor: `${brandColor}17`, animationDelay: `${i * 0.35}s` }}
                   >
                     <span className="h-9 w-14 flex items-center justify-center" style={{ color: brandColor }}>
                       <CategoryIcon index={i} />
@@ -160,9 +167,9 @@ export function MicrositeIvory(props: {
                     <p className="text-sm font-semibold text-[#1d1b18] tracking-wide">{c.label}</p>
                     <p className="text-xs text-[#9a948a] mt-1">{c.sub}</p>
                   </div>
-                </Reveal>
+                </RevealItem>
               ))}
-            </div>
+            </RevealStagger>
           </div>
         </section>
       )}
