@@ -283,7 +283,7 @@ export function MicrositeIvory(props: {
 
       {/* TESTIMONIOS */}
       {reviews.reviews.length > 0 && (
-        <ReviewsCarousel reviews={reviews.reviews} rating={reviews.rating} total={reviews.total} title={t.reviewsTitle} reviewsLabel={t.reviewsOnGoogle} brandColor={brandColor} light />
+        <ReviewsCarousel reviews={reviews.reviews} rating={reviews.rating} total={reviews.total} title={t.reviewsTitle} reviewsLabel={t.reviewsOnGoogle} brandColor={brandColor} variant="ivory" />
       )}
 
       {/* CTA MEMBRESÍA / "¿Listo para elevar tu viaje?" (oscuro) */}

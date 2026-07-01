@@ -12,6 +12,8 @@ import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { Reveal } from '@/components/landing/reveal'
 import { ServiceWorkerRegister } from '@/components/pwa/sw-register'
 import { MicrositeIvory } from '@/components/booking/microsite-ivory'
+import { MicrositeBold } from '@/components/booking/microsite-bold'
+import { MicrositeCorporate } from '@/components/booking/microsite-corporate'
 import { BookingWizard } from './booking-wizard'
 
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
@@ -100,12 +102,16 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
   const site = ((company.settings as { site?: { whatsapp?: string; googlePlaceId?: string; template?: string } } | null)?.site) ?? {}
   const waNumber = (site.whatsapp ?? '').replace(/[^0-9]/g, '')
   const reservarUrl = `/book/${company.slug}/reservar`
-  // Plantilla guardada por el operador; `?preview=ivory|noir` la sobreescribe SOLO
-  // para previsualizar (no cambia el ajuste), útil antes de aplicar el diseño.
+  // Plantilla guardada por el operador; `?preview=ivory|noir|bold|corporate` la
+  // sobreescribe SOLO para previsualizar (no cambia el ajuste), útil antes de
+  // aplicar el diseño.
+  const TEMPLATE_IDS = ['noir', 'ivory', 'bold', 'corporate'] as const
   const previewTpl = searchParams?.preview
-  const template = (previewTpl === 'ivory' || previewTpl === 'noir')
-    ? previewTpl
-    : (site.template === 'ivory' ? 'ivory' : 'noir')
+  const template = (TEMPLATE_IDS as readonly string[]).includes(previewTpl ?? '')
+    ? (previewTpl as (typeof TEMPLATE_IDS)[number])
+    : (TEMPLATE_IDS as readonly string[]).includes(site.template ?? '')
+      ? (site.template as (typeof TEMPLATE_IDS)[number])
+      : 'noir'
 
   const shortUrl = `${getAppUrl()}/book/${company.slug}`
   const qrDataUrl = await QRCode.toDataURL(shortUrl, { width: 220, margin: 1, color: { dark: '#0a0a0c', light: '#ffffff' } })
@@ -131,27 +137,18 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
 
   // ── Selector de plantilla ──────────────────────────────────────────────────
   // El operador elige el diseño en Ajustes → Portada. Mismo DATA, distinto layout.
-  if (template === 'ivory') {
+  if (template !== 'noir') {
+    const sharedProps = {
+      company: { name: company.name, slug: company.slug, city: company.city, phone: company.phone, email: company.email },
+      logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale,
+      reservarUrl, waNumber, qrDataUrl, reviews: googleReviews,
+    }
+    const Template = template === 'ivory' ? MicrositeIvory : template === 'bold' ? MicrositeBold : MicrositeCorporate
     return (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <ServiceWorkerRegister />
-        <MicrositeIvory
-          company={{ name: company.name, slug: company.slug, city: company.city, phone: company.phone, email: company.email }}
-          logoUrl={logoUrl}
-          tagline={tagline}
-          about={about}
-          heroImg={heroImg}
-          brandColor={brandColor}
-          services={services}
-          fleet={fleet}
-          t={t}
-          locale={locale}
-          reservarUrl={reservarUrl}
-          waNumber={waNumber}
-          qrDataUrl={qrDataUrl}
-          reviews={googleReviews}
-        />
+        <Template {...sharedProps} />
       </>
     )
   }

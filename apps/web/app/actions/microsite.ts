@@ -30,7 +30,7 @@ export async function updateSiteAction(
   const googlePlaceId = ((formData.get('google_place_id') as string) ?? '').trim().slice(0, 120) || null
   // Plantilla del micrositio (white-label: cada empresa elige su diseño).
   const templateRaw = (formData.get('template') as string) ?? 'noir'
-  const template = ['noir', 'ivory'].includes(templateRaw) ? templateRaw : 'noir'
+  const template = ['noir', 'ivory', 'bold', 'corporate'].includes(templateRaw) ? templateRaw : 'noir'
   const hero = formData.get('hero_image') as File | null
   const removeHero = formData.get('remove_hero') === 'true'
 
