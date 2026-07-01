@@ -10,6 +10,7 @@ import { Reveal } from '@/components/landing/reveal'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { IvoryBookingBar } from '@/components/booking/ivory-booking-bar'
+import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 import type { GoogleReview } from '@/lib/reviews/google'
@@ -27,6 +28,11 @@ const CLASS_LABEL: Record<string, string> = {
   exotic: 'Exotic', luxury: 'Luxury', vip: 'VIP',
 }
 const classLabel = (c: string) => CLASS_LABEL[c] ?? (c.charAt(0).toUpperCase() + c.slice(1))
+
+// Respaldo para SERVICIOS sin foto (no son unidades reales → foto genérica de lujo
+// es aceptable). Mismo endpoint Unsplash que la plantilla Noir.
+const U = (slug: string) => `https://unsplash.com/photos/${slug}/download?force=true&w=1600`
+const SERVICE_DEFAULTS = [U('NjQmytqwDGs'), U('7I8qdKTHDp4'), U('4Dofvf-eUMs'), U('FZ5MkHkeyKM')]
 
 const WA = (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" /></svg>
@@ -61,14 +67,6 @@ export function MicrositeIvory(props: {
 }) {
   const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews } = props
 
-  // Categorías: una por clase (preferimos la que tenga foto) para "Explora por categoría".
-  const byClass = new Map<string, Vehicle>()
-  for (const v of fleet) {
-    const ex = byClass.get(v.class)
-    if (!ex || (!ex.base_image_url && v.base_image_url)) byClass.set(v.class, v)
-  }
-  const categories = Array.from(byClass.values())
-
   const heading = (eyebrow: string, title: string, sub?: string) => (
     <Reveal className="mb-12 lg:mb-14 max-w-2xl">
       <p className="flex items-center gap-3 text-[11px] uppercase tracking-[0.3em] text-[#9a948a] mb-4">
@@ -101,7 +99,7 @@ export function MicrositeIvory(props: {
             <span className="font-playfair text-xl sm:text-[1.5rem] font-medium tracking-[0.02em] truncate">{company.name}</span>
           </a>
           <nav className="flex items-center gap-6 sm:gap-8 text-[13px] text-[#5b554b]">
-            {categories.length > 0 && <a href="#categorias" className="hidden md:inline-block hover:text-[#1d1b18] transition-colors">{t.browseCategory}</a>}
+            {fleet.length > 0 && <a href="#categorias" className="hidden md:inline-block hover:text-[#1d1b18] transition-colors">{t.browseCategory}</a>}
             {fleet.length > 0 && <a href="#flota" className="hidden md:inline-block hover:text-[#1d1b18] transition-colors">{t.ourFleet}</a>}
             {services.length > 0 && <a href="#servicios" className="hidden lg:inline-block hover:text-[#1d1b18] transition-colors">{t.ourServices}</a>}
             <LanguageSwitcher current={locale} variant="light" />
@@ -140,21 +138,29 @@ export function MicrositeIvory(props: {
         </div>
       </section>
 
-      {/* EXPLORA POR CATEGORÍA */}
-      {categories.length >= 2 && (
+      {/* EXPLORA POR CATEGORÍA — categorías FIJAS de servicio (marketing, no la
+          flota real del operador). Las fotos reales de vehículos van más abajo,
+          en "Vehículos más solicitados". */}
+      {fleet.length > 0 && (
         <section id="categorias" className="py-20 lg:py-24 bg-white border-y border-black/[0.05]">
           <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
-            {heading(t.ourFleet, t.browseCategory)}
-            <div className="flex flex-wrap justify-center sm:justify-start gap-x-8 sm:gap-x-12 gap-y-10">
-              {categories.map((v) => (
-                <a key={v.class} href="#flota" className="group flex flex-col items-center gap-4 w-28">
-                  <span className="relative h-24 w-24 rounded-full overflow-hidden ring-1 ring-black/10 transition-all duration-500 group-hover:scale-105 group-hover:ring-2 group-hover:ring-black/20">
-                    {v.base_image_url
-                      ? <Image src={v.base_image_url} alt={classLabel(v.class)} fill sizes="96px" className="object-cover" />
-                      : <span className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#efeae0] to-[#ddd4c4] font-playfair text-xl text-[#bcae93]">{classLabel(v.class).charAt(0)}</span>}
+            {heading(t.browseCategory, t.categoryTitle)}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-12">
+              {t.categories.map((c, i) => (
+                <Reveal key={c.label} className="flex flex-col items-center text-center gap-4">
+                  <span
+                    className="relative h-20 w-20 rounded-full flex items-center justify-center transition-transform duration-500 hover:scale-105"
+                    style={{ backgroundColor: `${brandColor}17` }}
+                  >
+                    <span className="h-9 w-14 flex items-center justify-center" style={{ color: brandColor }}>
+                      <CategoryIcon index={i} />
+                    </span>
                   </span>
-                  <span className="text-sm font-medium text-[#3a352d] text-center">{classLabel(v.class)}</span>
-                </a>
+                  <div>
+                    <p className="text-sm font-semibold text-[#1d1b18] tracking-wide">{c.label}</p>
+                    <p className="text-xs text-[#9a948a] mt-1">{c.sub}</p>
+                  </div>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -233,7 +239,7 @@ export function MicrositeIvory(props: {
                 <Reveal key={s.id}>
                   <div className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
                     <div className={`relative h-64 lg:h-[22rem] rounded-[1.4rem] overflow-hidden ring-1 ring-black/10 ${i % 2 === 1 ? 'lg:order-2' : ''}`}>
-                      {s.image_url ? <Image src={s.image_url} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover" /> : vehiclePlaceholder}
+                      <Image src={s.image_url || SERVICE_DEFAULTS[i % SERVICE_DEFAULTS.length]} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover" />
                     </div>
                     <div className={i % 2 === 1 ? 'lg:order-1' : ''}>
                       {s.icon && <span className="text-3xl block mb-4">{s.icon}</span>}

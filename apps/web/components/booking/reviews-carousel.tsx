@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import type { GoogleReview } from '@/lib/reviews/google'
 
 function Stars({ rating, color, inactive }: { rating: number; color: string; inactive: string }) {
@@ -33,6 +33,30 @@ export function ReviewsCarousel({
   const ref = useRef<HTMLDivElement>(null)
   const scroll = (dir: number) => ref.current?.scrollBy({ left: dir * 360, behavior: 'smooth' })
 
+  // Auto-desplazamiento continuo (marquee elegante). Loop sin saltos duplicando
+  // las reseñas: al pasar la mitad del track restamos la mitad → empalme invisible.
+  // Pausa al pasar el cursor/tocar y respeta prefers-reduced-motion.
+  const pausedRef = useRef(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+
+    let raf = 0
+    const speed = 0.45 // px por frame (~27px/s)
+    const tick = () => {
+      const half = el.scrollWidth / 2
+      // Solo si el contenido realmente desborda
+      if (!pausedRef.current && half > el.clientWidth + 8) {
+        el.scrollLeft += speed
+        if (el.scrollLeft >= half) el.scrollLeft -= half
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
   // Tokens por tema (Noir oscuro / Ivory claro)
   const sectionCls = light ? 'bg-[#f6f3ec] text-[#1d1b18]' : 'bg-[#0b0b0c] text-white'
   const muted = light ? 'text-[#75716a]' : 'text-white/50'
@@ -41,6 +65,9 @@ export function ReviewsCarousel({
   const navBtn = light ? 'border-black/15 hover:bg-black/5' : 'border-white/20 hover:bg-white/10'
   const cardCls = light ? 'border-black/10 bg-white' : 'border-white/10 bg-white/[0.03]'
   const starInactive = light ? 'rgba(29,27,24,0.15)' : 'rgba(255,255,255,0.2)'
+
+  // Duplicamos para el loop continuo (el auto-scroll necesita el track al doble).
+  const track = [...reviews, ...reviews]
 
   return (
     <section className={`py-24 ${sectionCls}`}>
@@ -62,9 +89,17 @@ export function ReviewsCarousel({
           </div>
         </div>
 
-        <div ref={ref} className="flex gap-5 overflow-x-auto pb-3 snap-x" style={{ scrollbarWidth: 'none' }}>
-          {reviews.map((r, i) => (
-            <div key={i} className={`snap-start shrink-0 w-[340px] rounded-2xl border p-6 ${cardCls}`}>
+        <div
+          ref={ref}
+          className="flex gap-5 overflow-x-auto pb-3"
+          style={{ scrollbarWidth: 'none' }}
+          onPointerEnter={() => { pausedRef.current = true }}
+          onPointerLeave={() => { pausedRef.current = false }}
+          onTouchStart={() => { pausedRef.current = true }}
+          onTouchEnd={() => { pausedRef.current = false }}
+        >
+          {track.map((r, i) => (
+            <div key={i} aria-hidden={i >= reviews.length} className={`shrink-0 w-[340px] rounded-2xl border p-6 ${cardCls}`}>
               <div className="flex items-center gap-3 mb-3">
                 <span className="h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0" style={{ backgroundColor: `${brandColor}26`, color: brandColor }}>
                   {r.author.trim().charAt(0).toUpperCase()}

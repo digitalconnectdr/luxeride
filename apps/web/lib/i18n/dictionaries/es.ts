@@ -494,6 +494,15 @@ export const es: Dictionary = {
     quoteOnRequest: 'Cotización al instante',
     membershipTitle: '¿Listo para elevar tu viaje?',
     membershipText: 'Reserva en minutos y viaja con la confianza de un servicio premium.',
+    categoryTitle: 'Encuentra el vehículo ideal para cada ocasión',
+    categories: [
+      { label: 'Sedanes', sub: 'Confort sofisticado' },
+      { label: 'SUVs', sub: 'Potencia con prestigio' },
+      { label: 'Coupés', sub: 'Rendimiento, redefinido' },
+      { label: 'Vans', sub: 'Espacio para todo plan' },
+      { label: 'Limusinas', sub: 'Llega con gran estilo' },
+      { label: 'Servicio con chofer', sub: 'Conducido por profesionales' },
+    ],
     features: [
       { title: 'Flota premium', desc: 'Vehículos de alta gama, impecables y mantenidos al detalle.' },
       { title: 'Choferes profesionales', desc: 'Discretos, multilingües y dedicados a tu comodidad y seguridad.' },

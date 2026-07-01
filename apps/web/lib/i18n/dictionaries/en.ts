@@ -493,6 +493,15 @@ export const en = {
     quoteOnRequest: 'Instant quote',
     membershipTitle: 'Ready to elevate your journey?',
     membershipText: 'Reserve in minutes and travel with the confidence of a premium service.',
+    categoryTitle: 'Find the perfect drive for every occasion',
+    categories: [
+      { label: 'Sedans', sub: 'Sophisticated comfort' },
+      { label: 'SUVs', sub: 'Power meets prestige' },
+      { label: 'Coupes', sub: 'Performance, redefined' },
+      { label: 'Vans', sub: 'Space for every plan' },
+      { label: 'Limousines', sub: 'Arrive in grand style' },
+      { label: 'Chauffeur service', sub: 'Driven by professionals' },
+    ],
     features: [
       { title: 'Premium fleet', desc: 'High-end vehicles, impeccable and maintained to the detail.' },
       { title: 'Professional chauffeurs', desc: 'Discreet, multilingual and dedicated to your comfort and safety.' },
