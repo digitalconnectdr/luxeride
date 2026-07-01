@@ -37,7 +37,12 @@ export function RevealStagger({
     <motion.div
       initial="hidden"
       whileInView="show"
-      viewport={{ once: true, margin: '-60px' }}
+      // once: false — cuando la lista se re-crea con claves nuevas (p.ej. texto
+      // traducido al cambiar idioma vía router.refresh, sin recarga completa),
+      // los hijos nuevos necesitan que el contenedor vuelva a evaluar si está en
+      // viewport. Con once:true el trigger ya "gastado" no se reactivaba y solo
+      // los ítems que cruzaban el observer en ese instante quedaban visibles.
+      viewport={{ once: false, margin: '-60px' }}
       variants={{
         hidden: {},
         show: { transition: { staggerChildren: 0.09 } },
