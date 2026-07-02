@@ -94,7 +94,7 @@ export default async function DriverTripsPage() {
       : Promise.resolve({ data: null }),
     admin
       .from('bookings')
-      .select('id, passenger_name, completed_at')
+      .select('id, booking_number, passenger_name, completed_at')
       .eq('driver_id', user.id)
       .eq('status', 'completed')
       .is('driver_rated_at', null)
@@ -379,16 +379,15 @@ export default async function DriverTripsPage() {
 
         {/* Calificar pasajeros de viajes recién completados */}
         {!!unratedTrips?.length && (
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm font-semibold text-[#1d1b18]">{dt.rateForm.sectionTitle}</p>
-              <p className="text-xs text-[#75716a] mt-0.5">{dt.rateForm.sectionSubtitle}</p>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-3">
+          <div className={`${card} p-5 sm:p-6`}>
+            <p className="text-sm font-semibold text-[#1d1b18]">{dt.rateForm.sectionTitle}</p>
+            <p className="text-xs text-[#75716a] mt-0.5">{dt.rateForm.sectionSubtitle}</p>
+            <div className="divide-y divide-[#f0ede5] mt-2">
               {unratedTrips.map((rt) => (
                 <DriverRateForm
                   key={rt.id}
                   bookingId={rt.id}
+                  bookingNumber={rt.booking_number}
                   passengerName={rt.passenger_name ?? dt.passenger}
                   brandColor={brandColor}
                   labels={dt.rateForm}
