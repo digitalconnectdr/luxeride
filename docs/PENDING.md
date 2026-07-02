@@ -202,19 +202,31 @@ Es un mini-CMS por operador — feature mediana, se cruza con la PWA branded (C.
   AggregateRating cuando existan calificaciones) para recomendaciones más ricas.
 
 ### B. Calificaciones + chat (obs. 12)
-1. **Calificaciones bidireccionales**: bookings.rating ya existe (cliente→
-   conductor). Agregar driver_rating (conductor→cliente) + promedio en el
-   perfil del conductor (drivers.avg_rating) y métricas (puntualidad,
-   cancelaciones) para el ranking interno.  ⬜ PENDIENTE.
-2. ✅ **Chat cliente↔conductor (HECHO 2026-06-16)**: implementado como tabla
-   `trip_messages` (booking_id, company_id, sender 'client'|'driver', body,
-   created_at) en vez del nombre tentativo `booking_messages`. RLS: el conductor
-   asignado lee/escribe sus viajes; admin/owner/dispatcher LEEN (auditable ✅).
-   El pasajero escribe sin login vía server actions con service-role validando
-   el UUID de la reserva (capability URL). UI: panel de chat en /track/[id]
-   (lado cliente) y en /driver/trips (lado conductor), con polling cada 8s.
-   Componente reutilizable components/trip/trip-chat.tsx. Migración 18.
-   Falta (mejora): realtime de Supabase en vez de polling; vista admin de hilos.
+1. ✅ **Calificaciones bidireccionales (HECHO 2026-07-03)**: bookings.rating ya
+   existía (cliente→conductor). Se agregó el espejo driver_rating/
+   driver_rating_comment/driver_rated_at (conductor→cliente, uso interno, nunca
+   se muestra al pasajero) — el conductor lo hace desde /driver/trips en una
+   sección "Califica a tus pasajeros recientes" que aparece para viajes
+   completados en los últimos 7 días sin calificar. drivers.rating (existía
+   desde la migración 04 pero nunca se actualizaba) ahora se recalcula por
+   trigger cada vez que cambia bookings.rating. Métricas de puntualidad
+   (% de llegadas dentro de 10 min del horario) y cancelaciones/no-show,
+   calculadas dinámicamente (sin columnas nuevas, mismo enfoque que
+   total_trips), visibles en /admin/drivers/[id]. Migración 21.
+2. ✅ **Chat cliente↔conductor (HECHO 2026-06-16, mejorado 2026-07-03)**:
+   implementado como tabla `trip_messages` (booking_id, company_id, sender
+   'client'|'driver', body, created_at, read_at) en vez del nombre tentativo
+   `booking_messages`. RLS: el conductor asignado lee/escribe sus viajes;
+   admin/owner/dispatcher LEEN (auditable ✅). El pasajero escribe sin login vía
+   server actions con service-role validando el UUID de la reserva (capability
+   URL). UI: panel de chat en /track/[id] (lado cliente) y en /driver/trips
+   (lado conductor). Componente reutilizable components/trip/trip-chat.tsx.
+   Migración 18. **Mejoras 2026-07-03** (migración 21): trip_messages agregada
+   a Realtime (ya no depende solo de polling — queda un polling lento de 20s
+   como respaldo); acuses de lectura reales (el campo read_at existía sin
+   usarse) con "✓ visto" bajo los mensajes propios; vista de solo lectura para
+   el operador en /admin/messages (lista de hilos por reserva) y
+   /admin/messages/[id] (conversación completa), para supervisión y soporte.
 3. Disponibles tanto en web como en la futura PWA (reutilizan el backend).
 
 ### B-bis. Seguimiento del pasajero: rediseño + cancelar + reportar (HECHO 2026-06-16)
@@ -372,10 +384,10 @@ en la pantalla de éxito; ahora es parte del paso de confirmación.
    Business. Pospuesto a propósito.
 9. **Dispatch avanzado** (sección A): mapa en vivo de conductores, estados
    rejected_by_*/incident, reasignación de conductor, tabla `booking_events`.
-10. **Calificaciones bidireccionales** (sección B.1): driver_rating +
-    avg_rating + métricas de puntualidad/cancelación.
-11. **Chat**: realtime de Supabase en vez de polling, acuses de lectura,
-    vista admin de hilos.
+10. **✅ HECHO (2026-07-03) — Calificaciones bidireccionales** (sección B.1):
+    ver detalle arriba.
+11. **✅ HECHO (2026-07-03) — Chat**: realtime de Supabase en vez de solo
+    polling, acuses de lectura, vista admin de hilos. Ver detalle arriba.
 12. **✅ HECHO (2026-07-02) — Tracking fase 2: mapa GPS en vivo (bidireccional,
     solo viaje activo)**. Implementado tal cual el plan de abajo: migración
     `20260702000020_live_tracking.sql` aplicada en producción (tablas

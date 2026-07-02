@@ -1,16 +1,23 @@
 'use client'
 // ── Chat ligero cliente ↔ conductor ───────────────────────────────────────────
 // Mismo componente para ambos lados; `side` define a qué server actions llama y
-// cómo se etiquetan los mensajes. Hace polling cada 8s mientras está montado.
+// cómo se etiquetan los mensajes. Se actualiza por Supabase Realtime (INSERT +
+// UPDATE de trip_messages, esto último para ver los acuses de lectura del otro
+// lado en vivo); un polling lento (20s) queda como respaldo si Realtime falla.
 
 import { useState, useEffect, useRef, useCallback, useTransition } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import {
   getTripMessagesAction,
   sendClientMessageAction,
   getDriverTripMessagesAction,
   sendDriverMessageAction,
+  markClientMessagesReadAction,
+  markDriverMessagesReadAction,
   type TripMessage,
 } from '@/app/actions/trip'
+
+const POLL_FALLBACK_MS = 20_000
 
 interface ChatLabels {
   title: string
@@ -20,6 +27,7 @@ interface ChatLabels {
   empty: string
   you: string
   them: string
+  seen?: string
 }
 
 export function TripChat({
@@ -75,18 +83,35 @@ export function TripChat({
         ? await getDriverTripMessagesAction(bookingId)
         : await getTripMessagesAction(bookingId)
     if (res.success && res.messages) {
-      setMessages((prev) =>
-        prev.length !== res.messages!.length ? res.messages! : prev,
-      )
+      setMessages(res.messages)
+      // Si llegaron mensajes del otro lado sin leer, márcalos leídos: el chat
+      // está abierto en pantalla, así que "recibido" = "visto" aquí.
+      const hasUnread = res.messages.some((m) => m.sender !== side && !m.readAt)
+      if (hasUnread) {
+        if (side === 'driver') markDriverMessagesReadAction(bookingId)
+        else markClientMessagesReadAction(bookingId)
+      }
     }
   }, [bookingId, side])
 
-  // Carga inicial + polling
+  // Carga inicial + Realtime (con polling lento de respaldo)
   useEffect(() => {
     load()
-    const id = setInterval(load, 8000)
-    return () => clearInterval(id)
-  }, [load])
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`trip-messages-${bookingId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'trip_messages', filter: `booking_id=eq.${bookingId}` },
+        () => load(),
+      )
+      .subscribe()
+    const id = setInterval(load, POLL_FALLBACK_MS)
+    return () => {
+      clearInterval(id)
+      supabase.removeChannel(channel)
+    }
+  }, [load, bookingId])
 
   // Auto-scroll al final cuando llegan mensajes
   useEffect(() => {
@@ -145,6 +170,7 @@ export function TripChat({
                 </div>
                 <span className={`text-[9px] mt-1 px-1 ${s.time}`}>
                   {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {mine && m.readAt && labels.seen ? ` · ✓ ${labels.seen}` : ''}
                 </span>
               </div>
             )

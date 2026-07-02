@@ -18,6 +18,7 @@ import {
   FileText,
   BarChart3,
   ScrollText,
+  MessageSquare,
   Building2,
   UserCog,
   Settings,
@@ -128,6 +129,7 @@ export function AdminSidebar({
       items: [
         { href: '/admin/bookings', label: nav.reservations, icon: CalendarDays },
         { href: '/admin/quotes', label: nav.quotes, icon: FileText },
+        { href: '/admin/messages', label: nav.messages, icon: MessageSquare },
       ],
     },
     {

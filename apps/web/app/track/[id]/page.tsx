@@ -441,6 +441,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
                 empty: t.chat.empty,
                 you: t.chat.you,
                 them: t.chat.driver,
+                seen: t.chat.seen,
               }}
             />
           </div>

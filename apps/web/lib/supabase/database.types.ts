@@ -959,6 +959,9 @@ export type Database = {
           rating: number | null
           rating_comment: string | null
           rated_at: string | null
+          driver_rating: number | null
+          driver_rating_comment: string | null
+          driver_rated_at: string | null
           created_at: string
           updated_at: string
         }
@@ -1012,6 +1015,9 @@ export type Database = {
           rating?: number | null | undefined
           rating_comment?: string | null | undefined
           rated_at?: string | null | undefined
+          driver_rating?: number | null | undefined
+          driver_rating_comment?: string | null | undefined
+          driver_rated_at?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -1065,6 +1071,9 @@ export type Database = {
           rating?: number | null | undefined
           rating_comment?: string | null | undefined
           rated_at?: string | null | undefined
+          driver_rating?: number | null | undefined
+          driver_rating_comment?: string | null | undefined
+          driver_rated_at?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }

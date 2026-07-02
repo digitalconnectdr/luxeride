@@ -28,6 +28,7 @@ export interface TripMessage {
   sender: 'client' | 'driver'
   body: string
   createdAt: string
+  readAt: string | null
 }
 
 // ─── Cancelación por el cliente ───────────────────────────────────────────────
@@ -503,7 +504,7 @@ export async function getTripMessagesAction(
 
   const { data } = await admin
     .from('trip_messages')
-    .select('id, sender, body, created_at')
+    .select('id, sender, body, created_at, read_at')
     .eq('booking_id', bookingId)
     .order('created_at', { ascending: true })
     .limit(200)
@@ -513,6 +514,7 @@ export async function getTripMessagesAction(
     sender: m.sender,
     body: m.body,
     createdAt: m.created_at,
+    readAt: m.read_at,
   }))
   return { success: true, messages }
 }
@@ -604,7 +606,7 @@ export async function getDriverTripMessagesAction(
 
   const { data } = await admin
     .from('trip_messages')
-    .select('id, sender, body, created_at')
+    .select('id, sender, body, created_at, read_at')
     .eq('booking_id', bookingId)
     .order('created_at', { ascending: true })
     .limit(200)
@@ -614,6 +616,43 @@ export async function getDriverTripMessagesAction(
     sender: m.sender,
     body: m.body,
     createdAt: m.created_at,
+    readAt: m.read_at,
   }))
   return { success: true, messages }
+}
+
+// ─── Chat: acuses de lectura ───────────────────────────────────────────────────
+// Marca como leídos los mensajes del OTRO lado (nunca los propios). El cliente
+// lo hace por capability URL (sin login); el conductor autenticado.
+
+export async function markClientMessagesReadAction(bookingId: string): Promise<{ success: boolean }> {
+  if (!UUID_RE.test(bookingId)) return { success: false }
+  const admin = createAdminClient()
+  await admin
+    .from('trip_messages')
+    .update({ read_at: new Date().toISOString() })
+    .eq('booking_id', bookingId)
+    .eq('sender', 'driver')
+    .is('read_at', null)
+  return { success: true }
+}
+
+export async function markDriverMessagesReadAction(bookingId: string): Promise<{ success: boolean }> {
+  const user = await requireRole('driver')
+  const admin = createAdminClient()
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('id')
+    .eq('id', bookingId)
+    .eq('driver_id', user.id)
+    .single()
+  if (!booking) return { success: false }
+
+  await admin
+    .from('trip_messages')
+    .update({ read_at: new Date().toISOString() })
+    .eq('booking_id', bookingId)
+    .eq('sender', 'client')
+    .is('read_at', null)
+  return { success: true }
 }

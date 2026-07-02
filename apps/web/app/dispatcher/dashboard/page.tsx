@@ -24,8 +24,15 @@ export default async function DispatcherDashboardPage() {
       .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, total_amount, currency, driver_id, vehicle_type_id, flight_number, flight_status, flight_delay_minutes, flight_checked_at')
       .eq('company_id', user.company_id)
       .or(
-        // Activos (cualquier fecha) + finalizados de hoy
-        `status.in.(pending,assigned,en_route,arrived,in_progress),and(status.in.(completed,cancelled,no_show),updated_at.gte.${todayStart.toISOString()})`,
+        // Activos (cualquier fecha) + finalizados de hoy. Se usa el timestamp
+        // terminal real de cada estado (completed_at/cancelled_at/no_show_at),
+        // NUNCA updated_at: cualquier edición posterior (p.ej. el cliente
+        // califica un viaje completado hace semanas) también actualiza
+        // updated_at, y eso hacía "reaparecer" viajes viejos en el board de hoy.
+        `status.in.(pending,assigned,en_route,arrived,in_progress),` +
+          `and(status.eq.completed,completed_at.gte.${todayStart.toISOString()}),` +
+          `and(status.eq.cancelled,cancelled_at.gte.${todayStart.toISOString()}),` +
+          `and(status.eq.no_show,no_show_at.gte.${todayStart.toISOString()})`,
       )
       .order('scheduled_at')
       .limit(100),

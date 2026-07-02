@@ -71,6 +71,36 @@ export default async function DriverDetailPage({ params }: PageProps) {
 
   if (!profile) notFound()
 
+  // Métricas de puntualidad/cancelación — calculadas dinámicamente desde
+  // bookings (mismo enfoque que total_trips en la lista: siempre correcto,
+  // sin depender de contadores que haya que mantener sincronizados).
+  let punctualityPct: number | null = null
+  let cancellationPct: number | null = null
+  try {
+    const { data: driverBookings, error } = await admin
+      .from('bookings')
+      .select('status, scheduled_at, arrived_at')
+      .eq('company_id', companyId)
+      .eq('driver_id', params.id)
+      .in('status', ['completed', 'cancelled', 'no_show'])
+    if (error) {
+      console.error('[drivers/[id]/page] metrics query error:', JSON.stringify(error))
+    } else if (driverBookings?.length) {
+      const completed = driverBookings.filter((b) => b.status === 'completed' && b.arrived_at)
+      if (completed.length) {
+        const onTime = completed.filter((b) => {
+          const grace = new Date(b.scheduled_at).getTime() + 10 * 60_000
+          return new Date(b.arrived_at as string).getTime() <= grace
+        })
+        punctualityPct = Math.round((onTime.length / completed.length) * 100)
+      }
+      const problems = driverBookings.filter((b) => b.status === 'cancelled' || b.status === 'no_show')
+      cancellationPct = Math.round((problems.length / driverBookings.length) * 100)
+    }
+  } catch (err) {
+    console.error('[drivers/[id]/page] metrics query THREW:', err)
+  }
+
   // Current vehicle (if any)
   let currentVehicle: { id: string; make: string; model: string; year: number; plate_number: string } | null = null
   if (dr?.current_vehicle_id) {
@@ -168,6 +198,8 @@ export default async function DriverDetailPage({ params }: PageProps) {
                     value: dr.total_earnings != null
                       ? `$${Number(dr.total_earnings).toLocaleString(localeTag, { minimumFractionDigits: 2 })}`
                       : '—' },
+                  { label: t.punctuality, value: punctualityPct != null ? `${punctualityPct}%` : '—' },
+                  { label: t.cancellationRate, value: cancellationPct != null ? `${cancellationPct}%` : '—' },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex justify-between items-baseline gap-2">
                     <dt className="text-xs text-sl-on-surface-muted">{label}</dt>

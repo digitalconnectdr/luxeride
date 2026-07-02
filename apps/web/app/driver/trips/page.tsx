@@ -15,6 +15,7 @@ import { CopyButton } from '@/components/trip/copy-button'
 import { StaticMap } from '@/components/trip/static-map'
 import { LiveTrackingMap } from '@/components/trip/live-tracking-map'
 import { LiveLocationReporter } from '@/components/driver/live-location-reporter'
+import { DriverRateForm } from '@/components/driver/driver-rate-form'
 
 export const dynamic = 'force-dynamic'
 
@@ -79,7 +80,9 @@ export default async function DriverTripsPage() {
   const dt = getDict(locale).driver
   const localeTag = LOCALE_TAGS[locale] ?? 'es-DO'
 
-  const [{ data: trips }, { data: company }] = await Promise.all([
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString()
+
+  const [{ data: trips }, { data: company }, { data: unratedTrips }] = await Promise.all([
     admin
       .from('bookings')
       .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id')
@@ -89,6 +92,15 @@ export default async function DriverTripsPage() {
     user.company_id
       ? admin.from('companies').select('name, logo_url, primary_color, phone').eq('id', user.company_id).single()
       : Promise.resolve({ data: null }),
+    admin
+      .from('bookings')
+      .select('id, passenger_name, completed_at')
+      .eq('driver_id', user.id)
+      .eq('status', 'completed')
+      .is('driver_rated_at', null)
+      .gte('completed_at', sevenDaysAgo)
+      .order('completed_at', { ascending: false })
+      .limit(10),
   ])
 
   const co = company as { name: string; logo_url: string | null; primary_color: string | null; phone: string | null } | null
@@ -344,6 +356,7 @@ export default async function DriverTripsPage() {
                           empty: dt.chat.empty,
                           you: dt.chat.you,
                           them: t.passenger_name ?? dt.passenger,
+                          seen: dt.chat.seen,
                         }}
                       />
                     </div>
@@ -362,6 +375,27 @@ export default async function DriverTripsPage() {
               </article>
             )
           })
+        )}
+
+        {/* Calificar pasajeros de viajes recién completados */}
+        {!!unratedTrips?.length && (
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-[#1d1b18]">{dt.rateForm.sectionTitle}</p>
+              <p className="text-xs text-[#75716a] mt-0.5">{dt.rateForm.sectionSubtitle}</p>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {unratedTrips.map((rt) => (
+                <DriverRateForm
+                  key={rt.id}
+                  bookingId={rt.id}
+                  passengerName={rt.passenger_name ?? dt.passenger}
+                  brandColor={brandColor}
+                  labels={dt.rateForm}
+                />
+              ))}
+            </div>
+          </div>
         )}
 
         <p className="text-xs text-center text-[#a8a39a] pt-4">{dt.mobileSoon}</p>

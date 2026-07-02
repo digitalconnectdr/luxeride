@@ -134,6 +134,55 @@ export async function driverNoShowAction(
   return { success: true }
 }
 
+// ─── Calificación del pasajero (conductor→pasajero, uso interno) ───────────────
+// Espejo de submitReviewAction (pasajero→conductor). Solo el conductor asignado,
+// solo viajes completados, solo una vez. Nunca se muestra al pasajero.
+
+export async function submitDriverRatingAction(
+  bookingId: string,
+  rating: number,
+  comment: string,
+): Promise<{ success: boolean; error?: string }> {
+  const stars = Math.round(Number(rating))
+  if (!Number.isFinite(stars) || stars < 1 || stars > 5) {
+    return { success: false, error: 'Calificación inválida' }
+  }
+
+  const user = await requireRole('driver')
+  const admin = createAdminClient()
+
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('id, status, driver_rated_at')
+    .eq('id', bookingId)
+    .eq('driver_id', user.id)
+    .single()
+
+  if (!booking) return { success: false, error: 'Viaje no encontrado o no asignado a ti' }
+  if (booking.status !== 'completed') return { success: false, error: 'El viaje aún no ha finalizado' }
+  if (booking.driver_rated_at) return { success: false, error: 'Ya calificaste este viaje' }
+
+  const trimmed = comment.trim().slice(0, 1000)
+  const { error } = await admin
+    .from('bookings')
+    .update({
+      driver_rating: stars,
+      driver_rating_comment: trimmed || null,
+      driver_rated_at: new Date().toISOString(),
+    })
+    .eq('id', bookingId)
+    .eq('driver_id', user.id)
+    .is('driver_rated_at', null) // guard de carrera
+
+  if (error) {
+    console.error('[submitDriverRatingAction]', error)
+    return { success: false, error: 'Error al guardar la calificación' }
+  }
+
+  revalidatePath('/driver/trips')
+  return { success: true }
+}
+
 // ─── Revelar número del pasajero (bajo demanda, con auditoría) ─────────────────
 // El número se oculta por defecto. Esta acción lo devuelve SOLO al conductor
 // asignado y registra la revelación en audit_logs (aparece en /admin/audit), para
