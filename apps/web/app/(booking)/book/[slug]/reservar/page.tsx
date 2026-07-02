@@ -4,7 +4,9 @@ import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import { isStripeConfigured } from '@/lib/stripe/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
+import { resolveLocalizedField, type SiteI18n } from '@/lib/i18n/site-content'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
+import { MicrositePending } from '@/components/booking/microsite-pending'
 import { BookingWizard } from '../booking-wizard'
 
 export const metadata: Metadata = {
@@ -26,7 +28,19 @@ export default async function ReservarPage({ params }: { params: { slug: string 
     .select('id, name, slug, status, currency, primary_color, phone, email, logo_url, tagline, hero_image_url, stripe_connect_onboarded, settings')
     .eq('slug', params.slug)
     .single()
-  if (!company || company.status !== 'active') return notFound()
+  if (!company) return notFound()
+  if (company.status !== 'active') {
+    return (
+      <MicrositePending
+        companyName={company.name}
+        logoUrl={company.logo_url}
+        brandColor={company.primary_color}
+        phone={company.phone}
+        email={company.email}
+        t={t}
+      />
+    )
+  }
 
   const { data: vehicleTypes } = await admin
     .from('vehicle_types')
@@ -38,7 +52,8 @@ export default async function ReservarPage({ params }: { params: { slug: string 
   const fleet = vehicleTypes ?? []
   const brandColor = (company.primary_color as string | null) || '#c9a24b'
   const heroImg = (company as { hero_image_url?: string | null }).hero_image_url || DEFAULT_HERO
-  const tagline = (company as { tagline?: string | null }).tagline ?? null
+  const site = ((company.settings as { site?: { i18n?: SiteI18n } } | null)?.site) ?? {}
+  const tagline = resolveLocalizedField(site.i18n, locale, 'tagline', (company as { tagline?: string | null }).tagline ?? null)
 
   const gratuity = (() => {
     const g = (company.settings as { gratuity?: { enabled?: boolean; options?: number[]; default_percentage?: number }; booking?: { require_deposit?: boolean } } | null)?.gratuity

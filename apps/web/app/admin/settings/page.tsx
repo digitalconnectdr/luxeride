@@ -199,6 +199,7 @@ export default async function SettingsPage({
         t={t}
         tagline={company.tagline ?? null}
         about={company.about ?? null}
+        i18nContent={((company.settings as { site?: { i18n?: Record<string, { tagline?: string | null; about?: string | null }> } } | null)?.site)?.i18n ?? null}
         heroImage={company.hero_image_url ?? null}
         whatsapp={((company.settings as { site?: { whatsapp?: string } } | null)?.site)?.whatsapp ?? null}
         placeId={((company.settings as { site?: { googlePlaceId?: string } } | null)?.site)?.googlePlaceId ?? null}

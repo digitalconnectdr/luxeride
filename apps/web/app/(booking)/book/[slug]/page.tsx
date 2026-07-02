@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import QRCode from 'qrcode'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
+import { resolveLocalizedField, type SiteI18n } from '@/lib/i18n/site-content'
 import { getAppUrl } from '@/lib/app-url'
 import { brand } from '@/lib/brand'
 import { fetchGoogleReviews } from '@/lib/reviews/google'
@@ -14,6 +15,7 @@ import { ServiceWorkerRegister } from '@/components/pwa/sw-register'
 import { MicrositeIvory } from '@/components/booking/microsite-ivory'
 import { MicrositeBold } from '@/components/booking/microsite-bold'
 import { MicrositeCorporate } from '@/components/booking/microsite-corporate'
+import { MicrositePending } from '@/components/booking/microsite-pending'
 import { BookingWizard } from './booking-wizard'
 
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
@@ -36,17 +38,20 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const locale = getLocale()
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('name, city, logo_url, tagline, primary_color')
+    .select('name, city, logo_url, tagline, primary_color, settings')
     .eq('slug', params.slug)
     .single()
   if (!company) return { title: { absolute: 'Reservación' } }
 
+  const site = ((company.settings as { site?: { i18n?: SiteI18n } } | null)?.site) ?? {}
+  const tagline = resolveLocalizedField(site.i18n, locale, 'tagline', (company as { tagline?: string | null }).tagline ?? null)
   const cityPart = company.city ? ` · ${company.city}` : ''
   const inCity = company.city ? ` en ${company.city}` : ''
-  const title = `${company.name} — ${(company as { tagline?: string | null }).tagline || `Reserva tu traslado de lujo${cityPart}`}`
+  const title = `${company.name} — ${tagline || `Reserva tu traslado de lujo${cityPart}`}`
   const description = `Reserva en línea con ${company.name}: traslados al aeropuerto, chofer ejecutivo y transporte premium${inCity}. Cotización al instante, pago seguro y seguimiento en vivo.`
   const url = `${getAppUrl()}/book/${params.slug}`
   return {
@@ -83,7 +88,19 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
     .select('id, name, slug, status, currency, primary_color, phone, email, city, logo_url, tagline, hero_image_url, about, stripe_connect_onboarded, settings')
     .eq('slug', params.slug)
     .single()
-  if (!company || company.status !== 'active') return notFound()
+  if (!company) return notFound()
+  if (company.status !== 'active') {
+    return (
+      <MicrositePending
+        companyName={company.name}
+        logoUrl={company.logo_url}
+        brandColor={company.primary_color}
+        phone={company.phone}
+        email={company.email}
+        t={t}
+      />
+    )
+  }
 
   const placeId = ((company.settings as { site?: { googlePlaceId?: string } } | null)?.site)?.googlePlaceId
   const [{ data: vehicleTypes }, { data: servicesRaw }, googleReviews] = await Promise.all([
@@ -96,10 +113,10 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
   const fleet = vehicleTypes ?? []
   const brandColor = (company.primary_color as string | null) || '#c9a24b'
   const heroImg = (company as { hero_image_url?: string | null }).hero_image_url || DEFAULT_HERO
-  const tagline = (company as { tagline?: string | null }).tagline ?? null
-  const about = (company as { about?: string | null }).about ?? null
   const logoUrl = (company as { logo_url?: string | null }).logo_url ?? null
-  const site = ((company.settings as { site?: { whatsapp?: string; googlePlaceId?: string; template?: string } } | null)?.site) ?? {}
+  const site = ((company.settings as { site?: { whatsapp?: string; googlePlaceId?: string; template?: string; i18n?: SiteI18n } } | null)?.site) ?? {}
+  const tagline = resolveLocalizedField(site.i18n, locale, 'tagline', (company as { tagline?: string | null }).tagline ?? null)
+  const about = resolveLocalizedField(site.i18n, locale, 'about', (company as { about?: string | null }).about ?? null)
   const waNumber = (site.whatsapp ?? '').replace(/[^0-9]/g, '')
   const reservarUrl = `/book/${company.slug}/reservar`
   // Plantilla guardada por el operador; `?preview=ivory|noir|bold|corporate` la

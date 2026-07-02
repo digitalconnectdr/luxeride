@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { updateSiteAction } from '@/app/actions/microsite'
 import { InfoTip } from '@/components/ui/info-tip'
+import { LOCALES, LOCALE_LABELS, type Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 
 type SettingsDict = Dictionary['admin']['settings']
@@ -37,6 +38,7 @@ export function CoverForm({
   t,
   tagline,
   about,
+  i18nContent,
   heroImage,
   whatsapp,
   placeId,
@@ -45,6 +47,7 @@ export function CoverForm({
   t: SettingsDict
   tagline: string | null
   about: string | null
+  i18nContent: Partial<Record<Locale, { tagline?: string | null; about?: string | null }>> | null
   heroImage: string | null
   whatsapp: string | null
   placeId: string | null
@@ -54,6 +57,11 @@ export function CoverForm({
   const [preview, setPreview] = useState<string | null>(null)
   const [removing, setRemoving] = useState(false)
   const [tpl, setTpl] = useState(TEMPLATES.some((t) => t.id === template) ? template : 'noir')
+  const [activeLocale, setActiveLocale] = useState<Locale>('es')
+  // ES vive históricamente en las columnas tagline/about (no en settings.site.i18n)
+  // para no perder lo ya guardado; EN/PT son overrides opcionales nuevos.
+  const initialText = (loc: Locale, field: 'tagline' | 'about') =>
+    loc === 'es' ? ((field === 'tagline' ? tagline : about) ?? '') : (i18nContent?.[loc]?.[field] ?? '')
 
   const shownHero = preview ?? (removing ? null : heroImage)
 
@@ -101,9 +109,43 @@ export function CoverForm({
           </div>
         </div>
 
+        {/* Slogan + about, por idioma */}
         <div>
-          <label className="block text-xs text-sl-on-surface-muted mb-1">{t.taglineLabel}</label>
-          <input name="tagline" defaultValue={tagline ?? ''} placeholder={t.taglinePlaceholder} maxLength={140} className={inputCls} />
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-xs text-sl-on-surface-muted">{t.taglineLabel} / {t.aboutLabel}</label>
+            <div className="flex gap-1 rounded-lg bg-sl-bg p-0.5">
+              {LOCALES.map((loc) => (
+                <button
+                  key={loc}
+                  type="button"
+                  onClick={() => setActiveLocale(loc)}
+                  className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${activeLocale === loc ? 'bg-bronze text-white' : 'text-sl-on-surface-muted hover:text-sl-on-surface'}`}
+                >
+                  {loc.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="text-[11px] text-sl-on-surface-muted mb-2">{t.translationsHint}</p>
+          {LOCALES.map((loc) => (
+            <div key={loc} className={activeLocale === loc ? 'space-y-2' : 'hidden'}>
+              <input
+                name={`tagline_${loc}`}
+                defaultValue={initialText(loc, 'tagline')}
+                placeholder={`${t.taglinePlaceholder} (${LOCALE_LABELS[loc]})`}
+                maxLength={140}
+                className={inputCls}
+              />
+              <textarea
+                name={`about_${loc}`}
+                defaultValue={initialText(loc, 'about')}
+                placeholder={t.aboutPlaceholder}
+                rows={4}
+                maxLength={2000}
+                className={`${inputCls} resize-y`}
+              />
+            </div>
+          ))}
         </div>
 
         <div>
@@ -133,11 +175,6 @@ export function CoverForm({
               {t.removeHero}
             </button>
           )}
-        </div>
-
-        <div>
-          <label className="block text-xs text-sl-on-surface-muted mb-1">{t.aboutLabel}</label>
-          <textarea name="about" defaultValue={about ?? ''} placeholder={t.aboutPlaceholder} rows={4} maxLength={2000} className={`${inputCls} resize-y`} />
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4 pt-2 border-t border-sl-outline-variant/50">

@@ -24,8 +24,14 @@ export async function updateSiteAction(
   const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
-  const tagline = ((formData.get('tagline') as string) ?? '').trim().slice(0, 140) || null
-  const about = ((formData.get('about') as string) ?? '').trim().slice(0, 2000) || null
+  const tagline = ((formData.get('tagline_es') as string) ?? '').trim().slice(0, 140) || null
+  const about = ((formData.get('about_es') as string) ?? '').trim().slice(0, 2000) || null
+  // Traducciones opcionales EN/PT (ES vive en las columnas tagline/about de
+  // siempre, para no romper compatibilidad con lo ya guardado).
+  const taglineEn = ((formData.get('tagline_en') as string) ?? '').trim().slice(0, 140) || null
+  const aboutEn = ((formData.get('about_en') as string) ?? '').trim().slice(0, 2000) || null
+  const taglinePt = ((formData.get('tagline_pt') as string) ?? '').trim().slice(0, 140) || null
+  const aboutPt = ((formData.get('about_pt') as string) ?? '').trim().slice(0, 2000) || null
   const whatsapp = ((formData.get('whatsapp') as string) ?? '').trim().slice(0, 30) || null
   const googlePlaceId = ((formData.get('google_place_id') as string) ?? '').trim().slice(0, 120) || null
   // Plantilla del micrositio (white-label: cada empresa elige su diseño).
@@ -40,7 +46,12 @@ export async function updateSiteAction(
   const { data: current } = await admin.from('companies').select('settings').eq('id', user.company_id).single()
   const settings = (current?.settings as Record<string, unknown>) ?? {}
   const site = (settings.site as Record<string, unknown>) ?? {}
-  const mergedSettings = { ...settings, site: { ...site, whatsapp, googlePlaceId, template } }
+  const i18n = {
+    es: { tagline, about },
+    en: { tagline: taglineEn, about: aboutEn },
+    pt: { tagline: taglinePt, about: aboutPt },
+  }
+  const mergedSettings = { ...settings, site: { ...site, whatsapp, googlePlaceId, template, i18n } }
 
   const updates: { tagline: string | null; about: string | null; hero_image_url?: string | null; settings: Json } = {
     tagline,

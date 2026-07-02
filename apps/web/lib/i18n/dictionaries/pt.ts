@@ -466,6 +466,9 @@ export const pt: Dictionary = {
   },
 
   microsite: {
+    pendingTitle: 'Estamos nos preparando',
+    pendingBody: '{company} está dando os últimos retoques na sua página de reservas. Volte em breve.',
+    pendingContact: 'Enquanto isso, você pode entrar em contato diretamente:',
     bookNow: 'Reservar agora',
     ourFleet: 'Nossa frota',
     pax: 'passageiros',
@@ -822,6 +825,7 @@ export const pt: Dictionary = {
       templateCorporateDesc: 'Limpo, minimalista, profissional',
       coverDesc: 'É a página principal que seus clientes veem no seu link de reservas.',
       taglineLabel: 'Slogan',
+      translationsHint: 'O microsite mostra o texto do idioma que o visitante escolher. Se deixar um idioma vazio, será usado outro que você preencheu.',
       taglinePlaceholder: 'Transporte de luxo, pontual, sempre.',
       heroImageLabel: 'Imagem de capa',
       heroImageHint: 'Imagem larga para o cabeçalho · PNG, JPG ou WebP · máx 5 MB',

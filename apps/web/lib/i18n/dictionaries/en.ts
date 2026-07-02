@@ -465,6 +465,9 @@ export const en = {
   },
 
   microsite: {
+    pendingTitle: "We're getting ready",
+    pendingBody: '{company} is putting the finishing touches on their booking page. Please check back soon.',
+    pendingContact: 'In the meantime, you can reach them directly:',
     bookNow: 'Book now',
     ourFleet: 'Our fleet',
     pax: 'passengers',
@@ -822,6 +825,7 @@ export const en = {
       coverDesc: 'This is the landing page clients see at your booking link.',
       taglineLabel: 'Slogan',
       taglinePlaceholder: 'Luxury transportation, on time, every time.',
+      translationsHint: 'The microsite shows the text for the language your visitor selected. Leave a language empty to fall back to another one you did fill in.',
       heroImageLabel: 'Cover image',
       heroImageHint: 'Wide image for the header · PNG, JPG or WebP · max 5 MB',
       removeHero: 'Remove image',

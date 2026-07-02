@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { isStripeConfigured } from '@/lib/stripe/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
+import { MicrositePending } from '@/components/booking/microsite-pending'
 import { BookingWizard } from '../../book/[slug]/booking-wizard'
 
 // Widget embebible: el operador incrusta este route en su propio sitio vía <iframe>.
@@ -24,10 +25,22 @@ export default async function EmbedBookingPage({ params }: { params: { slug: str
 
   const { data: company } = await admin
     .from('companies')
-    .select('id, name, slug, status, currency, primary_color, phone, email, stripe_connect_onboarded, settings')
+    .select('id, name, slug, status, currency, primary_color, phone, email, logo_url, stripe_connect_onboarded, settings')
     .eq('slug', params.slug)
     .single()
-  if (!company || company.status !== 'active') return notFound()
+  if (!company) return notFound()
+  if (company.status !== 'active') {
+    return (
+      <MicrositePending
+        companyName={company.name}
+        logoUrl={company.logo_url}
+        brandColor={company.primary_color}
+        phone={company.phone}
+        email={company.email}
+        t={dict.microsite}
+      />
+    )
+  }
 
   const { data: vehicleTypes } = await admin
     .from('vehicle_types')
