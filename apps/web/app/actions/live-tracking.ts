@@ -92,6 +92,12 @@ export interface LiveMapRefresh {
   driverPos: LatLng | null
   passengerPos: LatLng | null
   quotaExceeded: boolean
+  // Hora del último ping de GPS del conductor — el cliente la usa para decidir
+  // si mostrar el aviso de "vista en pausa" (independiente de si Realtime
+  // entregó o no el evento: el pasajero navega sin sesión y las políticas de
+  // seguridad no le dan acceso a los eventos de Realtime de trip_locations,
+  // así que la señal de "¿sigue llegando GPS?" tiene que venir de aquí).
+  driverRecordedAt: string | null
 }
 
 export async function refreshLiveMapAction(bookingId: string): Promise<LiveMapRefresh | null> {
@@ -113,7 +119,7 @@ export async function refreshLiveMapAction(bookingId: string): Promise<LiveMapRe
 
   const [{ data: company }, { data: latestDriver }, { data: latestPassenger }] = await Promise.all([
     admin.from('companies').select('primary_color').eq('id', booking.company_id).single(),
-    admin.from('trip_locations').select('latitude, longitude').eq('booking_id', bookingId).eq('reporter', 'driver').order('recorded_at', { ascending: false }).limit(1).maybeSingle(),
+    admin.from('trip_locations').select('latitude, longitude, recorded_at').eq('booking_id', bookingId).eq('reporter', 'driver').order('recorded_at', { ascending: false }).limit(1).maybeSingle(),
     admin.from('trip_locations').select('latitude, longitude').eq('booking_id', bookingId).eq('reporter', 'passenger').order('recorded_at', { ascending: false }).limit(1).maybeSingle(),
   ])
 
@@ -136,5 +142,5 @@ export async function refreshLiveMapAction(bookingId: string): Promise<LiveMapRe
     passengerPos: allowed ? passengerPos : null,
   })
 
-  return { url, driverPos, passengerPos, quotaExceeded: !allowed }
+  return { url, driverPos, passengerPos, quotaExceeded: !allowed, driverRecordedAt: latestDriver?.recorded_at ?? null }
 }

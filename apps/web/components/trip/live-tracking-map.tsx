@@ -1,20 +1,22 @@
 'use client'
 // ── Mapa en vivo (conductor↔pasajero, solo mientras el viaje está activo) ─────
-// Envuelve <StaticMap> y lo mantiene actualizado: se suscribe por Supabase
-// Realtime a la posición reportada (ver actions/live-tracking.ts) y, cada
-// ~15s, pide una imagen nueva (server action, que también hace cumplir la
-// cuota mensual del plan — ver lib/tracking/live-tracking-quota.ts). Si no
-// llega ninguna actualización en ~50s con el viaje aún activo, muestra un
-// aviso de "vista en pausa" en vez de dejar un mapa congelado sin explicación.
+// Se refresca por un intervalo corto (server action, que también hace cumplir
+// la cuota mensual del plan — ver lib/tracking/live-tracking-quota.ts) cada
+// ~15s. NO se puede depender solo de Supabase Realtime aquí: el pasajero
+// navega sin sesión (link público) y las políticas de seguridad de
+// trip_locations no le dan acceso de lectura directo, así que Realtime nunca
+// le entrega esos eventos — el polling es el mecanismo principal, Realtime
+// solo acelera el refresco cuando SÍ hay una sesión con acceso (conductor).
+// Si el conductor deja de reportar posición por más de ~50s con el viaje aún
+// activo, se muestra un aviso de "vista en pausa" en vez de un mapa congelado.
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { refreshLiveMapAction, reportPassengerLocationAction } from '@/app/actions/live-tracking'
 import { StaticMap } from '@/components/trip/static-map'
 
-const REFRESH_THROTTLE_MS = 15_000
+const REFRESH_INTERVAL_MS = 15_000
 const STALE_AFTER_MS = 50_000
-const STALE_CHECK_MS = 10_000
 
 export function LiveTrackingMap({
   bookingId,
@@ -45,11 +47,26 @@ export function LiveTrackingMap({
   const [mapSrc, setMapSrc] = useState(initialSrc)
   const [paused, setPaused] = useState(false)
   const [sharing, setSharing] = useState(false)
-  const lastEventAtRef = useRef<number | null>(null)
-  const lastRefreshAtRef = useRef(0)
   const watchIdRef = useRef<number | null>(null)
 
-  // Suscripción Realtime a la posición en vivo de este viaje.
+  const refresh = useCallback(async () => {
+    const res = await refreshLiveMapAction(bookingId)
+    if (!res) return
+    setMapSrc(res.url)
+    const recordedAt = res.driverRecordedAt ? new Date(res.driverRecordedAt).getTime() : null
+    setPaused(recordedAt === null || Date.now() - recordedAt > STALE_AFTER_MS)
+  }, [bookingId])
+
+  // Refresco periódico (mecanismo principal — funciona sin sesión).
+  useEffect(() => {
+    refresh()
+    const id = setInterval(refresh, REFRESH_INTERVAL_MS)
+    return () => clearInterval(id)
+  }, [refresh])
+
+  // Realtime: acelera el refresco cuando la sesión SÍ tiene acceso de lectura
+  // (p.ej. el conductor). Para el pasajero (sin sesión) simplemente no llega
+  // ningún evento y el polling de arriba sigue funcionando igual.
   useEffect(() => {
     const supabase = createClient()
     const channel = supabase
@@ -57,30 +74,12 @@ export function LiveTrackingMap({
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'trip_locations', filter: `booking_id=eq.${bookingId}` },
-        () => {
-          lastEventAtRef.current = Date.now()
-          setPaused(false)
-          const now = Date.now()
-          if (now - lastRefreshAtRef.current < REFRESH_THROTTLE_MS) return
-          lastRefreshAtRef.current = now
-          refreshLiveMapAction(bookingId).then((res) => {
-            if (res?.url) setMapSrc(res.url)
-          })
-        },
+        () => refresh(),
       )
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [bookingId])
-
-  // Detecta silencio prolongado (conductor salió de la app / perdió señal).
-  useEffect(() => {
-    const id = setInterval(() => {
-      const last = lastEventAtRef.current
-      if (last !== null && Date.now() - last > STALE_AFTER_MS) setPaused(true)
-    }, STALE_CHECK_MS)
-    return () => clearInterval(id)
-  }, [])
+  }, [bookingId, refresh])
 
   // Compartir la ubicación del pasajero (opt-in explícito, nunca automático).
   useEffect(() => {
