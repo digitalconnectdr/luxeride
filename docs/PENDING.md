@@ -473,6 +473,18 @@ en la pantalla de éxito; ahora es parte del paso de confirmación.
       solo comercio de productos digitales de precio fijo. Antes de construir
       el wizard completo: probar en sandbox de Whop el onboarding real de
       una sub-cuenta y confirmar tarifas exactas de este modo "plataforma".
+    - **⚠️ Aclaración importante (2026-07-02)**: el botón "Conectar con
+      Stripe" para que un OPERADOR conecte su propia cuenta **ya está
+      construido** en `/admin/settings` (`isStripeConfigured()` en
+      `lib/stripe/server.ts` + flujo de Connect completo), pero queda oculto
+      para TODOS los operadores porque la variable de entorno
+      `STRIPE_SECRET_KEY` de la PLATAFORMA (en Vercel) nunca se configuró con
+      una key real — sin eso, la página solo muestra el aviso "Pagos con
+      tarjeta aún no habilitados". No es un bug del operador ni falta
+      código: es el interruptor de plataforma pendiente (ya listado arriba en
+      "Pendientes del USUARIO", ítem 4). Importante para el wizard B: el
+      mismo interruptor (o su equivalente de Whop) tiene que estar activo
+      antes de que cualquier operador pueda usarlo.
 15. Íconos isométricos de vehículos — PARADO, requiere billing de Gemini
     habilitado por el usuario.
 

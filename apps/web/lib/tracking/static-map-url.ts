@@ -22,9 +22,13 @@ export function buildTripStaticMapUrl(opts: {
   mapsKey: string
   driverPos?: LatLng | null
   passengerPos?: LatLng | null
+  /** Trazado real de la ruta (encoded polyline de Google Routes API). Si no
+   *  se provee (reservas viejas, o falló el cálculo), cae a una línea recta
+   *  entre pickup y dropoff — nunca se rompe el mapa por falta de esto. */
+  routePolyline?: string | null
   size?: string
 }): string {
-  const { pickup, dropoff, brandColor, mapsKey, driverPos, passengerPos, size = '600x280' } = opts
+  const { pickup, dropoff, brandColor, mapsKey, driverPos, passengerPos, routePolyline, size = '600x280' } = opts
   const bc = brandColor.replace('#', '0x')
   const p = `${pickup.lat},${pickup.lng}`
   const d = `${dropoff.lat},${dropoff.lng}`
@@ -44,10 +48,15 @@ export function buildTripStaticMapUrl(opts: {
     markers += `&markers=${encodeURIComponent(`size:mid|color:0x3b82f6|label:P|${passengerPos.lat},${passengerPos.lng}`)}`
   }
 
+  // Ruta real por calles cuando la tenemos; línea recta como respaldo.
+  const pathValue = routePolyline
+    ? `color:${bc}cc|weight:4|enc:${routePolyline}`
+    : `color:${bc}cc|weight:3|${p}|${d}`
+
   return (
     `https://maps.googleapis.com/maps/api/staticmap?size=${size}&scale=2&maptype=roadmap` +
     markers +
-    `&path=${encodeURIComponent(`color:${bc}cc|weight:3|${p}|${d}`)}` +
+    `&path=${encodeURIComponent(pathValue)}` +
     DARK_STYLE +
     `&key=${mapsKey}`
   )

@@ -16,6 +16,7 @@ import { StaticMap } from '@/components/trip/static-map'
 import { LiveTrackingMap } from '@/components/trip/live-tracking-map'
 import { LiveLocationReporter } from '@/components/driver/live-location-reporter'
 import { DriverRateForm } from '@/components/driver/driver-rate-form'
+import { buildTripStaticMapUrl, tripDirectionsHref } from '@/lib/tracking/static-map-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,30 +42,22 @@ const STEP_KEYS = ['assigned', 'en_route', 'arrived', 'in_progress', 'completed'
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
 const ACTIVE_STATUSES = new Set(['assigned', 'en_route', 'arrived', 'in_progress'])
 
-// Construye el mapa estático (pickup A + destino B + ruta) para un viaje.
+// Construye el mapa estático (pickup A + destino B + ruta real) para un viaje.
 // Devuelve null si faltan coords o la key (StaticMap se oculta solo si falla).
-function buildStaticMap(brand: string, p: { lat?: number; lng?: number } | null, d: { lat?: number; lng?: number } | null, key?: string): { src: string; href: string } | null {
+function buildStaticMap(
+  brand: string,
+  p: { lat?: number; lng?: number } | null,
+  d: { lat?: number; lng?: number } | null,
+  key?: string,
+  routePolyline?: string | null,
+): { src: string; href: string } | null {
   if (!key || typeof p?.lat !== 'number' || typeof p?.lng !== 'number' || typeof d?.lat !== 'number' || typeof d?.lng !== 'number') return null
-  const bc = brand.replace('#', '0x')
-  const a = `${p.lat},${p.lng}`
-  const b = `${d.lat},${d.lng}`
-  const style = [
-    'feature:all|element:geometry|color:0x1a1a1d',
-    'feature:all|element:labels.text.fill|color:0x9a9a9a',
-    'feature:all|element:labels.text.stroke|color:0x131316',
-    'feature:road|element:geometry|color:0x2c2c31',
-    'feature:water|element:geometry|color:0x0e0e12',
-    'feature:poi|visibility:off',
-    'feature:transit|visibility:off',
-  ].map((s) => `&style=${encodeURIComponent(s)}`).join('')
-  const src =
-    'https://maps.googleapis.com/maps/api/staticmap?size=600x260&scale=2&maptype=roadmap' +
-    `&markers=${encodeURIComponent(`size:mid|color:${bc}|label:A|${a}`)}` +
-    `&markers=${encodeURIComponent(`size:mid|color:0xffffff|label:B|${b}`)}` +
-    `&path=${encodeURIComponent(`color:${bc}cc|weight:3|${a}|${b}`)}` +
-    style +
-    `&key=${key}`
-  return { src, href: `https://www.google.com/maps/dir/?api=1&origin=${a}&destination=${b}` }
+  const pickup = { lat: p.lat, lng: p.lng }
+  const dropoff = { lat: d.lat, lng: d.lng }
+  return {
+    src: buildTripStaticMapUrl({ pickup, dropoff, brandColor: brand, mapsKey: key, routePolyline, size: '600x260' }),
+    href: tripDirectionsHref(pickup, dropoff),
+  }
 }
 
 // Tema claro "Ivory" (igual que el panel admin) — diferencia la vista del
@@ -85,7 +78,7 @@ export default async function DriverTripsPage() {
   const [{ data: trips }, { data: company }, { data: unratedTrips }] = await Promise.all([
     admin
       .from('bookings')
-      .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id')
+      .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id, route_polyline')
       .eq('driver_id', user.id)
       .in('status', ['assigned', 'en_route', 'arrived', 'in_progress'])
       .order('scheduled_at'),
@@ -171,7 +164,7 @@ export default async function DriverTripsPage() {
             const dLoc = t.dropoff_location as { address?: string; lat?: number; lng?: number } | null
             const pickup = pLoc?.address ?? '—'
             const dropoff = dLoc?.address ?? '—'
-            const mp = buildStaticMap(brandColor, pLoc, dLoc, mapsKey)
+            const mp = buildStaticMap(brandColor, pLoc, dLoc, mapsKey, t.route_polyline)
             const currentIdx = STEP_KEYS.findIndex((k) => k === t.status)
             const name = t.passenger_name ?? dt.passenger
             const chatId = `chat-${t.id}`

@@ -168,6 +168,7 @@ async function recomputeWithStop(
     return {
       booking: null, extra: null as number | null, newTotal: null as number | null,
       distanceMi: null as number | null, durationMin: null as number | null,
+      routePolyline: null as string | null,
     }
   }
 
@@ -184,6 +185,7 @@ async function recomputeWithStop(
   let newTotal: number | null = null
   let distanceMi: number | null = null
   let durationMin: number | null = null
+  let routePolyline: string | null = null
 
   if (haveCoords) {
     const stops = [
@@ -196,6 +198,7 @@ async function recomputeWithStop(
     if (route) {
       distanceMi = route.distanceMi
       durationMin = route.durationMinutes
+      routePolyline = route.polyline
       const { data: company } = await admin
         .from('companies')
         .select('timezone')
@@ -219,7 +222,7 @@ async function recomputeWithStop(
     }
   }
 
-  return { booking, extra, newTotal, distanceMi, durationMin }
+  return { booking, extra, newTotal, distanceMi, durationMin, routePolyline }
 }
 
 export interface StopQuote {
@@ -276,7 +279,12 @@ async function applyStopToBooking(
     total_amount?: number
     distance_miles?: number
     duration_minutes?: number
+    route_polyline?: string | null
   } = { waypoints: [...existing, newStop] as Json[] }
+  // El trazado del mapa se actualiza siempre que se recalculó ruta (aunque la
+  // parada resulte gratis) — el mapa debe reflejar la ruta real, no solo el
+  // precio.
+  if (res.routePolyline !== undefined) updates.route_polyline = res.routePolyline
   const extra = res.extra
   if (extra != null && extra > 0 && res.newTotal != null) {
     updates.total_amount = res.newTotal

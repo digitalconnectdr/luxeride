@@ -224,6 +224,7 @@ export async function calculateQuoteAction(
       dropoff_address: dropoffAddr,
       distance_miles:  distanceMiles || null,
       duration_minutes: durationMinutes || null,
+      route_polyline:  route?.polyline ?? null,
       base_amount:     fare.baseAmount,
       surcharge_amount: fare.surchargeAmount,
       total_amount:    fare.totalAmount,
@@ -342,6 +343,7 @@ export async function createBookingAction(
       currency:         quote.currency ?? 'USD',
       distance_miles:   quote.distance_miles,
       duration_minutes: quote.duration_minutes,
+      route_polyline:   quote.route_polyline,
     })
     .select('id, booking_number')
     .single()
@@ -685,6 +687,7 @@ export async function getPublicVehicleQuotesAction(
         dropoff_address: data.dropoffAddress,
         distance_miles:  distanceMiles || null,
         duration_minutes: durationMinutes || null,
+        route_polyline:  route?.polyline ?? null,
         base_amount:     fare.baseAmount,
         surcharge_amount: fare.surchargeAmount,
         total_amount:    fare.totalAmount,
@@ -807,6 +810,7 @@ export async function createPublicBookingAction(data: {
       currency:         quote.currency ?? 'USD',
       distance_miles:   quote.distance_miles,
       duration_minutes: quote.duration_minutes,
+      route_polyline:   quote.route_polyline,
     })
     .select('id, booking_number')
     .single()

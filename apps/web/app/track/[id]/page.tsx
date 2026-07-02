@@ -9,6 +9,7 @@ import { TripChat } from '@/components/trip/trip-chat'
 import { CopyButton } from '@/components/trip/copy-button'
 import { StaticMap } from '@/components/trip/static-map'
 import { LiveTrackingMap } from '@/components/trip/live-tracking-map'
+import { buildTripStaticMapUrl, tripDirectionsHref } from '@/lib/tracking/static-map-url'
 import { ShareButton } from '@/components/trip/share-button'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 
@@ -42,7 +43,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const admin = createAdminClient()
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, booking_number, status, scheduled_at, pickup_location, dropoff_location, waypoints, driver_id, vehicle_id, company_id, passenger_name, distance_miles, duration_minutes, dispatched_at, en_route_at, arrived_at, started_at, completed_at, rated_at')
+    .select('id, booking_number, status, scheduled_at, pickup_location, dropoff_location, waypoints, driver_id, vehicle_id, company_id, passenger_name, distance_miles, duration_minutes, route_polyline, dispatched_at, en_route_at, arrived_at, started_at, completed_at, rated_at')
     .eq('id', params.id)
     .single()
 
@@ -80,26 +81,14 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   let mapSrc: string | null = null
   let dirHref = ''
   if (haveCoords && mapsKey) {
-    const bc = (company?.primary_color ?? '#c9a24b').replace('#', '0x')
-    const p = `${pLoc!.lat},${pLoc!.lng}`
-    const d = `${dLoc!.lat},${dLoc!.lng}`
-    const style = [
-      'feature:all|element:geometry|color:0x1a1a1d',
-      'feature:all|element:labels.text.fill|color:0x9a9a9a',
-      'feature:all|element:labels.text.stroke|color:0x131316',
-      'feature:road|element:geometry|color:0x2c2c31',
-      'feature:water|element:geometry|color:0x0e0e12',
-      'feature:poi|visibility:off',
-      'feature:transit|visibility:off',
-    ].map((s) => `&style=${encodeURIComponent(s)}`).join('')
-    mapSrc =
-      'https://maps.googleapis.com/maps/api/staticmap?size=600x280&scale=2&maptype=roadmap' +
-      `&markers=${encodeURIComponent(`size:mid|color:${bc}|label:A|${p}`)}` +
-      `&markers=${encodeURIComponent(`size:mid|color:0xffffff|label:B|${d}`)}` +
-      `&path=${encodeURIComponent(`color:${bc}cc|weight:3|${p}|${d}`)}` +
-      style +
-      `&key=${mapsKey}`
-    dirHref = `https://www.google.com/maps/dir/?api=1&origin=${p}&destination=${d}`
+    mapSrc = buildTripStaticMapUrl({
+      pickup: { lat: pLoc!.lat!, lng: pLoc!.lng! },
+      dropoff: { lat: dLoc!.lat!, lng: dLoc!.lng! },
+      brandColor: company?.primary_color ?? '#c9a24b',
+      mapsKey,
+      routePolyline: booking.route_polyline,
+    })
+    dirHref = tripDirectionsHref({ lat: pLoc!.lat!, lng: pLoc!.lng! }, { lat: dLoc!.lat!, lng: dLoc!.lng! })
   }
 
   const isTerminal = booking.status in t.terminal

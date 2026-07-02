@@ -851,6 +851,7 @@ export type Database = {
           dropoff_address: string | null
           distance_miles: number | null
           duration_minutes: number | null
+          route_polyline: string | null
           base_amount: number
           surcharge_amount: number | null
           tax_amount: number | null
@@ -873,6 +874,7 @@ export type Database = {
           dropoff_address?: string | null | undefined
           distance_miles?: number | null | undefined
           duration_minutes?: number | null | undefined
+          route_polyline?: string | null | undefined
           base_amount: number
           surcharge_amount?: number | null | undefined
           tax_amount?: number | null | undefined
@@ -895,6 +897,7 @@ export type Database = {
           dropoff_address?: string | null | undefined
           distance_miles?: number | null | undefined
           duration_minutes?: number | null | undefined
+          route_polyline?: string | null | undefined
           base_amount?: number | undefined
           surcharge_amount?: number | null | undefined
           tax_amount?: number | null | undefined
@@ -946,6 +949,7 @@ export type Database = {
           duration_minutes: number | null
           actual_distance_miles: number | null
           actual_duration_minutes: number | null
+          route_polyline: string | null
           price_quote_id: string | null
           base_amount: number | null
           total_amount: number | null
@@ -1002,6 +1006,7 @@ export type Database = {
           duration_minutes?: number | null | undefined
           actual_distance_miles?: number | null | undefined
           actual_duration_minutes?: number | null | undefined
+          route_polyline?: string | null | undefined
           price_quote_id?: string | null | undefined
           base_amount?: number | null | undefined
           total_amount?: number | null | undefined
@@ -1058,6 +1063,7 @@ export type Database = {
           duration_minutes?: number | null | undefined
           actual_distance_miles?: number | null | undefined
           actual_duration_minutes?: number | null | undefined
+          route_polyline?: string | null | undefined
           price_quote_id?: string | null | undefined
           base_amount?: number | null | undefined
           total_amount?: number | null | undefined

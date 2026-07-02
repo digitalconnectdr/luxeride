@@ -11,6 +11,9 @@ export interface RouteCalculation {
   durationSeconds: number
   /** Duración en minutos (redondeado) */
   durationMinutes: number
+  /** Trazado real de la ruta (encoded polyline) — para dibujar el mapa
+   *  siguiendo las calles en vez de una línea recta entre origen y destino. */
+  polyline: string | null
 }
 
 /**
@@ -40,7 +43,7 @@ export async function calculateRoute(
       headers: {
         'Content-Type':    'application/json',
         'X-Goog-Api-Key':  apiKey,
-        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters',
+        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline',
       },
       body: JSON.stringify({
         origin:      { location: { latLng: { latitude: originLat, longitude: originLng } } },
@@ -81,6 +84,7 @@ export async function calculateRoute(
       distanceMi:      Math.round((distanceMeters / 1609.34) * 10) / 10,
       durationSeconds,
       durationMinutes: Math.round(durationSeconds / 60),
+      polyline:        route.polyline?.encodedPolyline ?? null,
     }
   } catch (err) {
     console.error('[Maps] calculateRoute error:', err)

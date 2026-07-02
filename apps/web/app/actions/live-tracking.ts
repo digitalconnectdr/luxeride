@@ -106,7 +106,7 @@ export async function refreshLiveMapAction(bookingId: string): Promise<LiveMapRe
   const admin = createAdminClient()
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, status, company_id, pickup_location, dropoff_location')
+    .select('id, status, company_id, pickup_location, dropoff_location, route_polyline')
     .eq('id', bookingId)
     .single()
   if (!booking || !ACTIVE_TRIP_STATUSES.has(booking.status)) return null
@@ -136,6 +136,7 @@ export async function refreshLiveMapAction(bookingId: string): Promise<LiveMapRe
     dropoff: { lat: dLoc.lat, lng: dLoc.lng },
     brandColor,
     mapsKey,
+    routePolyline: booking.route_polyline,
     // Sin cuota disponible: se sigue mostrando el mapa (ruta A→B), pero sin
     // los marcadores en vivo — degradación amable, nunca se bloquea la página.
     driverPos: allowed ? driverPos : null,
