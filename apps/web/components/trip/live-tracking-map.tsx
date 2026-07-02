@@ -81,9 +81,16 @@ export function LiveTrackingMap({
     return () => { supabase.removeChannel(channel) }
   }, [bookingId, refresh])
 
+  // Si la fase del viaje deja de permitir compartir (p.ej. pasó a "en curso" —
+  // conductor y pasajero ya están juntos, no tiene sentido seguir), se apaga
+  // solo aunque el pasajero lo hubiera activado antes.
+  useEffect(() => {
+    if (!allowPassengerShare) setSharing(false)
+  }, [allowPassengerShare])
+
   // Compartir la ubicación del pasajero (opt-in explícito, nunca automático).
   useEffect(() => {
-    if (!sharing || typeof navigator === 'undefined' || !navigator.geolocation) return
+    if (!sharing || !allowPassengerShare || typeof navigator === 'undefined' || !navigator.geolocation) return
     let lastSentAt = 0
     const id = navigator.geolocation.watchPosition(
       (pos) => {
@@ -97,7 +104,7 @@ export function LiveTrackingMap({
     )
     watchIdRef.current = id
     return () => { navigator.geolocation.clearWatch(id) }
-  }, [sharing, bookingId])
+  }, [sharing, allowPassengerShare, bookingId])
 
   return (
     <div className="space-y-2">

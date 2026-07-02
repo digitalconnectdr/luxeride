@@ -308,7 +308,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
               alt={t.mapAlt}
               openLabel={t.openInMaps}
               brandColor={brandColor}
-              allowPassengerShare
+              allowPassengerShare={booking.status !== 'in_progress'}
               labels={t.liveMap}
             />
           )}
