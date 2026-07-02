@@ -27,6 +27,12 @@ export function LiveTrackingMap({
   light = false,
   brandColor,
   allowPassengerShare = false,
+  // El aviso de "pausa" está pensado para el PASAJERO (explica por qué el
+  // conductor dejó de moverse en su mapa). En la vista del conductor esa
+  // misma señal no tiene sentido mostrada con ese texto — el conductor ya
+  // recibe su propio aviso, correctamente redactado, vía LiveLocationReporter
+  // (toast al volver a la pestaña). Por eso el conductor pasa showPausedBanner={false}.
+  showPausedBanner = true,
   labels,
 }: {
   bookingId: string
@@ -37,6 +43,7 @@ export function LiveTrackingMap({
   light?: boolean
   brandColor: string
   allowPassengerShare?: boolean
+  showPausedBanner?: boolean
   labels: {
     paused: string
     pausedDesc: string
@@ -109,7 +116,7 @@ export function LiveTrackingMap({
   return (
     <div className="space-y-2">
       <StaticMap src={mapSrc} href={href} alt={alt} openLabel={openLabel} light={light} />
-      {paused && (
+      {showPausedBanner && paused && (
         <div className={`rounded-xl border px-3.5 py-2.5 text-xs leading-relaxed ${light ? 'border-[#e5d9b8] bg-[#fdf8ec] text-[#7a5f1a]' : 'border-amber-500/25 bg-amber-500/[0.07] text-amber-300/90'}`}>
           <span className="font-medium">{labels.paused}</span> — {labels.pausedDesc}
         </div>

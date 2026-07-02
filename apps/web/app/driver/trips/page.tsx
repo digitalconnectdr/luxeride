@@ -240,6 +240,7 @@ export default async function DriverTripsPage() {
                         openLabel={dt.openInMaps}
                         brandColor={brandColor}
                         light
+                        showPausedBanner={false}
                         labels={dt.liveMap}
                       />
                     )}
