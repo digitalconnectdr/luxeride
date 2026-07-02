@@ -72,7 +72,7 @@ export default async function SettingsPage({
 
   const { data: servicesRaw } = await admin
     .from('company_services')
-    .select('id, title, description, icon, is_active')
+    .select('id, title, description, icon, is_active, i18n')
     .eq('company_id', user.company_id)
     .order('sort_order')
   const services = (servicesRaw ?? []) as Service[]

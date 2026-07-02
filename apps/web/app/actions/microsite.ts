@@ -91,24 +91,44 @@ export async function updateSiteAction(
 
 // ─── Servicios del operador (company_services) ────────────────────────────────
 
+// Lee title/description por idioma del formulario (mismo patrón que tagline/
+// about de la portada): ES vive en las columnas legadas title/description,
+// EN/PT son overrides opcionales guardados en la columna i18n (JSONB).
+function readServiceI18n(formData: FormData) {
+  const titleEs = ((formData.get('title_es') as string) ?? '').trim().slice(0, 80)
+  const descriptionEs = ((formData.get('description_es') as string) ?? '').trim().slice(0, 280) || null
+  const titleEn = ((formData.get('title_en') as string) ?? '').trim().slice(0, 80) || null
+  const descriptionEn = ((formData.get('description_en') as string) ?? '').trim().slice(0, 280) || null
+  const titlePt = ((formData.get('title_pt') as string) ?? '').trim().slice(0, 80) || null
+  const descriptionPt = ((formData.get('description_pt') as string) ?? '').trim().slice(0, 280) || null
+  return {
+    titleEs, descriptionEs,
+    i18n: {
+      es: { title: titleEs, description: descriptionEs },
+      en: { title: titleEn, description: descriptionEn },
+      pt: { title: titlePt, description: descriptionPt },
+    },
+  }
+}
+
 export async function createServiceAction(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
   const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
-  const title = ((formData.get('title') as string) ?? '').trim().slice(0, 80)
-  const description = ((formData.get('description') as string) ?? '').trim().slice(0, 280) || null
+  const { titleEs, descriptionEs, i18n } = readServiceI18n(formData)
   const icon = ((formData.get('icon') as string) ?? '').trim().slice(0, 8) || null
 
-  if (!title) return { success: false, error: 'Título requerido' }
+  if (!titleEs) return { success: false, error: 'Título requerido' }
 
   const admin = createAdminClient()
   const { error } = await admin.from('company_services').insert({
     company_id: user.company_id,
-    title,
-    description,
+    title: titleEs,
+    description: descriptionEs,
     icon,
+    i18n: i18n as Json,
   })
   if (error) {
     console.error('[createServiceAction]', error)
@@ -127,16 +147,15 @@ export async function updateServiceAction(
   const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
-  const title = ((formData.get('title') as string) ?? '').trim().slice(0, 80)
-  const description = ((formData.get('description') as string) ?? '').trim().slice(0, 280) || null
+  const { titleEs, descriptionEs, i18n } = readServiceI18n(formData)
   const icon = ((formData.get('icon') as string) ?? '').trim().slice(0, 8) || null
 
-  if (!title) return { success: false, error: 'Título requerido' }
+  if (!titleEs) return { success: false, error: 'Título requerido' }
 
   const admin = createAdminClient()
   const { error } = await admin
     .from('company_services')
-    .update({ title, description, icon })
+    .update({ title: titleEs, description: descriptionEs, icon, i18n: i18n as Json })
     .eq('id', serviceId)
     .eq('company_id', user.company_id)
   if (error) {

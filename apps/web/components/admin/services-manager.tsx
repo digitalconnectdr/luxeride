@@ -7,6 +7,7 @@ import {
   toggleServiceActiveAction,
   deleteServiceAction,
 } from '@/app/actions/microsite'
+import { LOCALES, LOCALE_LABELS, type Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 
 type SettingsDict = Dictionary['admin']['settings']
@@ -18,6 +19,7 @@ export interface Service {
   description: string | null
   icon: string | null
   is_active: boolean
+  i18n?: Partial<Record<Locale, { title?: string | null; description?: string | null }>> | null
 }
 
 // Íconos seleccionables (transporte premium) — evita que la empresa escriba emojis
@@ -57,6 +59,57 @@ function IconPicker({ name, defaultValue }: { name: string; defaultValue?: strin
   )
 }
 
+// Título + descripción por idioma (mismo patrón de pestañas que la portada:
+// ES es el campo legado/obligatorio, EN/PT son traducciones opcionales).
+function LangFields({
+  t,
+  initial,
+}: {
+  t: SettingsDict
+  initial?: (loc: Locale) => { title: string; description: string }
+}) {
+  const [active, setActive] = useState<Locale>('es')
+  return (
+    <div className="flex-1 min-w-[260px]">
+      <div className="flex items-center justify-between mb-1.5">
+        <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{t.serviceTitleLabel}</label>
+        <div className="flex gap-1 rounded-lg bg-sl-bg p-0.5">
+          {LOCALES.map((loc) => (
+            <button
+              key={loc}
+              type="button"
+              onClick={() => setActive(loc)}
+              className={`px-2 py-0.5 text-[10px] font-medium rounded-md transition-colors ${active === loc ? 'bg-bronze text-white' : 'text-sl-on-surface-muted hover:text-sl-on-surface'}`}
+            >
+              {loc.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+      {LOCALES.map((loc) => {
+        const val = initial?.(loc) ?? { title: '', description: '' }
+        return (
+          <div key={loc} className={active === loc ? 'flex flex-wrap gap-2' : 'hidden'}>
+            <input
+              name={`title_${loc}`}
+              defaultValue={val.title}
+              required={loc === 'es'}
+              placeholder={`${t.serviceTitlePlaceholder} (${LOCALE_LABELS[loc]})`}
+              className={`${inputCls} flex-1 min-w-[160px]`}
+            />
+            <input
+              name={`description_${loc}`}
+              defaultValue={val.description}
+              placeholder={t.serviceDescLabel}
+              className={`${inputCls} flex-1 min-w-[200px]`}
+            />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function ServiceRow({ service, t, actions }: { service: Service; t: SettingsDict; actions: ActionsDict }) {
   const [editing, setEditing] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -82,15 +135,15 @@ function ServiceRow({ service, t, actions }: { service: Service; t: SettingsDict
             <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1.5">{t.serviceIconLabel}</label>
             <IconPicker name="icon" defaultValue={service.icon} />
           </div>
-          <div className="flex flex-wrap gap-2 items-end">
-            <div className="flex-1 min-w-[160px]">
-              <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.serviceTitleLabel}</label>
-              <input name="title" defaultValue={service.title} required className={`${inputCls} w-full`} />
-            </div>
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.serviceDescLabel}</label>
-              <input name="description" defaultValue={service.description ?? ''} className={`${inputCls} w-full`} />
-            </div>
+          <div className="flex flex-wrap gap-2 items-start">
+            <LangFields
+              t={t}
+              initial={(loc) =>
+                loc === 'es'
+                  ? { title: service.title, description: service.description ?? '' }
+                  : { title: service.i18n?.[loc]?.title ?? '', description: service.i18n?.[loc]?.description ?? '' }
+              }
+            />
             <div className="flex items-center gap-3 pb-1">
               <button type="submit" disabled={isPending} className="px-3 py-2 text-sm font-semibold bg-gold text-gray-900 rounded-lg hover:bg-gold/90 disabled:opacity-60">
                 {isPending ? actions.saving : actions.save}
@@ -158,16 +211,9 @@ export function ServicesManager({ t, actions, services }: { t: SettingsDict; act
           <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1.5">{t.serviceIconLabel}</label>
           <IconPicker name="icon" />
         </div>
-        <div className="flex flex-wrap gap-2 items-end">
-          <div className="flex-1 min-w-[160px]">
-            <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.serviceTitleLabel}</label>
-            <input name="title" required placeholder={t.serviceTitlePlaceholder} className={`${inputCls} w-full`} />
-          </div>
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.serviceDescLabel}</label>
-            <input name="description" className={`${inputCls} w-full`} />
-          </div>
-          <button type="submit" disabled={isPending} className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 disabled:opacity-60">
+        <div className="flex flex-wrap gap-2 items-start">
+          <LangFields t={t} />
+          <button type="submit" disabled={isPending} className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 disabled:opacity-60 shrink-0">
             {isPending ? actions.saving : t.addService}
           </button>
         </div>

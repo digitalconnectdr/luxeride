@@ -1,6 +1,8 @@
 # supabase/config.toml
 # Local development configuration for Supabase CLI
 
+project_id = "iwjtjwryhtpzuvwmlpjk"
+
 [api]
 enabled = true
 port = 54321

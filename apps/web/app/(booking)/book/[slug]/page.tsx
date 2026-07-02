@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import QRCode from 'qrcode'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
-import { resolveLocalizedField, type SiteI18n } from '@/lib/i18n/site-content'
+import { resolveLocalizedField, type SiteI18n, type ServiceI18n } from '@/lib/i18n/site-content'
 import { getAppUrl } from '@/lib/app-url'
 import { brand } from '@/lib/brand'
 import { fetchGoogleReviews } from '@/lib/reviews/google'
@@ -75,6 +75,7 @@ interface CompanyService {
   description: string | null
   icon: string | null
   image_url: string | null
+  i18n?: ServiceI18n | null
 }
 
 export default async function OperatorMicrosite({ params, searchParams }: Props) {
@@ -105,11 +106,17 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
   const placeId = ((company.settings as { site?: { googlePlaceId?: string } } | null)?.site)?.googlePlaceId
   const [{ data: vehicleTypes }, { data: servicesRaw }, googleReviews] = await Promise.all([
     admin.from('vehicle_types').select('id, name, class, capacity, amenities, base_image_url').eq('company_id', company.id).eq('is_active', true).order('sort_order'),
-    admin.from('company_services').select('id, title, description, icon, image_url').eq('company_id', company.id).eq('is_active', true).order('sort_order'),
+    admin.from('company_services').select('id, title, description, icon, image_url, i18n').eq('company_id', company.id).eq('is_active', true).order('sort_order'),
     fetchGoogleReviews(placeId, locale),
   ])
 
-  const services = (servicesRaw ?? []) as CompanyService[]
+  // Título/descripción por idioma (Ajustes → Servicios → pestañas EN/ES/PT),
+  // con el mismo fallback que tagline/about: idioma actual → ES → columna legada.
+  const services = ((servicesRaw ?? []) as CompanyService[]).map((s) => ({
+    ...s,
+    title: resolveLocalizedField(s.i18n, locale, 'title', s.title) ?? s.title,
+    description: resolveLocalizedField(s.i18n, locale, 'description', s.description),
+  }))
   const fleet = vehicleTypes ?? []
   const brandColor = (company.primary_color as string | null) || '#c9a24b'
   const heroImg = (company as { hero_image_url?: string | null }).hero_image_url || DEFAULT_HERO

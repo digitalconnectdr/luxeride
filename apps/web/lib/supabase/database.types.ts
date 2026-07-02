@@ -438,6 +438,7 @@ export type Database = {
           description: string | null
           icon: string | null
           image_url: string | null
+          i18n: Json | null
           sort_order: number
           is_active: boolean
           created_at: string
@@ -450,6 +451,7 @@ export type Database = {
           description?: string | null | undefined
           icon?: string | null | undefined
           image_url?: string | null | undefined
+          i18n?: Json | null | undefined
           sort_order?: number | undefined
           is_active?: boolean | undefined
           created_at?: string | undefined
@@ -462,6 +464,7 @@ export type Database = {
           description?: string | null | undefined
           icon?: string | null | undefined
           image_url?: string | null | undefined
+          i18n?: Json | null | undefined
           sort_order?: number | undefined
           is_active?: boolean | undefined
           created_at?: string | undefined
