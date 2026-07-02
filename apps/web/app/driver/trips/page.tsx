@@ -13,6 +13,8 @@ import { TripChat } from '@/components/trip/trip-chat'
 import { PassengerContact } from '@/components/driver/passenger-contact'
 import { CopyButton } from '@/components/trip/copy-button'
 import { StaticMap } from '@/components/trip/static-map'
+import { LiveTrackingMap } from '@/components/trip/live-tracking-map'
+import { LiveLocationReporter } from '@/components/driver/live-location-reporter'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,6 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const STEP_KEYS = ['assigned', 'en_route', 'arrived', 'in_progress', 'completed'] as const
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
+const ACTIVE_STATUSES = new Set(['assigned', 'en_route', 'arrived', 'in_progress'])
 
 // Construye el mapa estático (pickup A + destino B + ruta) para un viaje.
 // Devuelve null si faltan coords o la key (StaticMap se oculta solo si falla).
@@ -79,7 +82,7 @@ export default async function DriverTripsPage() {
   const [{ data: trips }, { data: company }] = await Promise.all([
     admin
       .from('bookings')
-      .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes')
+      .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id')
       .eq('driver_id', user.id)
       .in('status', ['assigned', 'en_route', 'arrived', 'in_progress'])
       .order('scheduled_at'),
@@ -94,6 +97,12 @@ export default async function DriverTripsPage() {
   const logoUrl = co?.logo_url ?? null
   const dispatchPhone = co?.phone ?? null
   const driverName = user.profile.first_name
+
+  const vehicleIds = Array.from(new Set((trips ?? []).map((t) => t.vehicle_id).filter((id): id is string => !!id)))
+  const { data: vehiclesData } = vehicleIds.length
+    ? await admin.from('vehicles').select('id, color, plate_number').in('id', vehicleIds)
+    : { data: [] as { id: string; color: string | null; plate_number: string | null }[] }
+  const vehiclesById = new Map((vehiclesData ?? []).map((v) => [v.id, v]))
 
   const addStopLabels = { ...dt.addStop, saving: dt.actions.saving }
   const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
@@ -155,9 +164,12 @@ export default async function DriverTripsPage() {
             const name = t.passenger_name ?? dt.passenger
             const chatId = `chat-${t.id}`
             const stKey = t.status as 'assigned' | 'en_route' | 'arrived' | 'in_progress'
+            const vehicle = t.vehicle_id ? vehiclesById.get(t.vehicle_id) : null
+            const isActive = ACTIVE_STATUSES.has(t.status)
 
             return (
               <article key={t.id} className={`${card} p-5 sm:p-6`} style={{ ['--brand' as string]: brandColor }}>
+                {isActive && <LiveLocationReporter bookingId={t.id} status={t.status} pauseNotice={dt.locationPauseNotice} />}
                 <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
 
                   {/* ── IZQUIERDA: estado + progreso + acción ── */}
@@ -214,7 +226,19 @@ export default async function DriverTripsPage() {
                   {/* ── DERECHA: mapa + ruta + pasajero + chat + soporte ── */}
                   <div className="space-y-5">
                     {/* Mapa del viaje (pickup A → destino B) */}
-                    {mp && (
+                    {mp && isActive && (
+                      <LiveTrackingMap
+                        bookingId={t.id}
+                        initialSrc={mp.src}
+                        href={mp.href}
+                        alt={dt.route}
+                        openLabel={dt.openInMaps}
+                        brandColor={brandColor}
+                        light
+                        labels={dt.liveMap}
+                      />
+                    )}
+                    {mp && !isActive && (
                       <StaticMap src={mp.src} href={mp.href} alt={dt.route} openLabel={dt.openInMaps} light />
                     )}
                     {/* Ruta del viaje */}
@@ -266,6 +290,22 @@ export default async function DriverTripsPage() {
                         <DriverAddStop bookingId={t.id} labels={addStopLabels} />
                       </div>
                     </div>
+
+                    {/* Vehículo asignado (color/placa — visible también al pasajero en tracking) */}
+                    {vehicle && (vehicle.color || vehicle.plate_number) && (
+                      <div className="rounded-2xl border border-[#e5e1d8] bg-white p-5 flex items-center justify-between gap-4">
+                        <div>
+                          <p className={sectionLabel}>{dt.vehicle}</p>
+                          {vehicle.color && <p className="text-sm text-[#1d1b18] mt-1">{vehicle.color}</p>}
+                        </div>
+                        {vehicle.plate_number && (
+                          <div className="text-right">
+                            <p className={sectionLabel}>{dt.plate}</p>
+                            <p className="font-mono text-sm mt-1" style={{ color: brandColor }}>{vehicle.plate_number}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Pasajero */}
                     <div className="rounded-2xl border border-[#e5e1d8] bg-white p-5">

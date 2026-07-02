@@ -343,6 +343,12 @@ export const es: Dictionary = {
     shareTrip: 'Compartir viaje',
     shareCopied: '✓ Enlace copiado',
     mapAlt: 'Mapa de la ruta',
+    liveMap: {
+      paused: 'Ubicación en vivo pausada',
+      pausedDesc: 'Tu conductor puede estar usando otra app de navegación. El resto de tu información de viaje sigue actualizada.',
+      shareOff: 'Compartir mi ubicación con el conductor',
+      sharing: 'Compartiendo mi ubicación',
+    },
     lastUpdate: 'Última actualización',
     scheduledLabel: 'Programado',
     message: 'Mensaje',
@@ -419,6 +425,13 @@ export const es: Dictionary = {
     support: 'Soporte',
     contactDispatch: 'Contactar a dispatch',
     mobileSoon: 'La app móvil para conductores llega en la Fase 2.',
+    vehicle: 'Vehículo',
+    plate: 'Placa',
+    locationPauseNotice: 'Tu ubicación dejó de compartirse mientras estuviste fuera de la app. Mantén esta pestaña abierta durante el viaje para que el pasajero te vea en tiempo real.',
+    liveMap: {
+      paused: 'Ubicación en vivo pausada',
+      pausedDesc: 'El pasajero puede estar fuera de rango. El resto de la información del viaje sigue actualizada.',
+    },
     statusTitle: {
       assigned: 'Viaje asignado',
       en_route: 'En ruta al pickup',

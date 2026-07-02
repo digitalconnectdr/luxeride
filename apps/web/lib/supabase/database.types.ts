@@ -543,6 +543,81 @@ export type Database = {
         Relationships: []
       }
 
+      // ── trip_locations (tracking en vivo) ─────────────────────────────────────
+      trip_locations: {
+        Row: {
+          id: string
+          booking_id: string
+          company_id: string
+          reporter: 'driver' | 'passenger'
+          latitude: number
+          longitude: number
+          recorded_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          booking_id: string
+          company_id: string
+          reporter: 'driver' | 'passenger'
+          latitude: number
+          longitude: number
+          recorded_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          booking_id?: string | undefined
+          company_id?: string | undefined
+          reporter?: 'driver' | 'passenger' | undefined
+          latitude?: number | undefined
+          longitude?: number | undefined
+          recorded_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── plan_quotas (cuota de tracking en vivo por plan) ──────────────────────
+      plan_quotas: {
+        Row: {
+          plan: 'free' | 'starter' | 'professional' | 'enterprise'
+          live_tracking_monthly_quota: number | null
+          updated_at: string
+        }
+        Insert: {
+          plan: 'free' | 'starter' | 'professional' | 'enterprise'
+          live_tracking_monthly_quota?: number | null | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          plan?: 'free' | 'starter' | 'professional' | 'enterprise' | undefined
+          live_tracking_monthly_quota?: number | null | undefined
+          updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── live_tracking_usage (consumo mensual por empresa) ─────────────────────
+      live_tracking_usage: {
+        Row: {
+          company_id: string
+          year_month: string
+          refresh_count: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          year_month: string
+          refresh_count?: number | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          company_id?: string | undefined
+          year_month?: string | undefined
+          refresh_count?: number | undefined
+          updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── service_zones ───────────────────────────────────────────────────────
       service_zones: {
         Row: {

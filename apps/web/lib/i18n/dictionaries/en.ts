@@ -342,6 +342,12 @@ export const en = {
     shareTrip: 'Share trip',
     shareCopied: '✓ Link copied',
     mapAlt: 'Route map',
+    liveMap: {
+      paused: 'Live location paused',
+      pausedDesc: 'Your chauffeur may be using another navigation app. The rest of your trip info stays up to date.',
+      shareOff: 'Share my location with the chauffeur',
+      sharing: 'Sharing my location',
+    },
     lastUpdate: 'Last update',
     scheduledLabel: 'Scheduled',
     message: 'Message',
@@ -418,6 +424,13 @@ export const en = {
     support: 'Support',
     contactDispatch: 'Contact dispatch',
     mobileSoon: 'The driver mobile app arrives in Phase 2.',
+    vehicle: 'Vehicle',
+    plate: 'Plate',
+    locationPauseNotice: 'Your location stopped sharing while you were out of the app. Keep this tab open during the trip so the passenger can see you live.',
+    liveMap: {
+      paused: 'Live location paused',
+      pausedDesc: 'The passenger may be out of range. The rest of the trip info stays up to date.',
+    },
     statusTitle: {
       assigned: 'Trip assigned',
       en_route: 'En route to pickup',

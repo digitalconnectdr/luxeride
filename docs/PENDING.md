@@ -1,7 +1,45 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-06-14. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-07-02. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## ✅ Backlog de desarrollo original — COMPLETO (0–6)
+Los 7 ítems que estaban en "Backlog de DESARROLLO" (más abajo) ya están hechos:
+limpieza de marca (lib/brand.ts en todo lo nuevo), 2ª pasada i18n del admin,
+widget embebible (/embed/[slug]), reviews post-viaje (email + página pública
+de calificación), pipeline de cotizaciones (quotes list + /quote/[id] +
+follow-up cron), notificaciones a super-admin (nueva solicitud + vencimientos),
+PWA branded por empresa (manifest dinámico + service worker). Quedan pendientes
+SOLO el #7 (app nativa) y #8 (gaps mayores), ver sección Fase 2 más abajo.
+
+## ✅ Micrositio: sistema de 4 plantillas + contenido multi-idioma (2026-06-26/07-02)
+Cada operador elige el diseño de su micrositio en Ajustes → Portada:
+- **Noir** (oscuro cinematográfico), **Ivory** (claro editorial, crema+dorado),
+  **Bold** (oscuro cálido con acento de marca, inspirado en landings de alquiler
+  de autos de lujo — rediseñado tras feedback, la v1 con tipografía sans-black
+  y ticker fue rechazada por "poco elegante"), **Corporate** (blanco/grafito,
+  minimalista, pensado para cuentas B2B).
+- Mismo modelo de datos para las 4 (servicios, flota, reseñas) — solo cambia
+  el layout. Selector con preview vía `?preview=<id>` sin guardar el cambio.
+- **Contenido real multi-idioma**: slogan, "sobre nosotros" y título/descripción
+  de cada servicio ahora tienen pestañas EN/ES/PT en el admin (Ajustes → Portada
+  y Ajustes → Servicios). Español vive en las columnas legadas (compatibilidad
+  total, cero regresión); inglés/portugués son overrides opcionales guardados
+  en columnas/settings JSONB (`i18n`). Fallback: idioma actual → ES → legado.
+  Migración 19 (`company_services.i18n`) aplicada en producción 2026-07-02.
+- Bugs corregidos en el camino: enlace público roto en 6 lugares (QR del
+  micrositio, `start_url` del manifest PWA, canonical/OG, botón volver, link
+  compartido en Ajustes, página de reseñas) — todos apuntaban a `/<slug>` en
+  vez de `/book/<slug>`; se agregó además una redirección `/[slug]` →
+  `/book/[slug]` como red de seguridad para enlaces ya compartidos. Animación
+  de entrada (`RevealStagger`) que dejaba tarjetas invisibles tras cambiar de
+  idioma sin recargar (`viewport once:true` no se re-disparaba con hijos
+  re-keyeados) — cambiado a `once:false`. Página informativa de marca en vez
+  de 404 genérico para empresas en trial/suspendidas/canceladas
+  (`MicrositePending`), en `/book/[slug]`, `/reservar` y `/embed/[slug]`.
+- Pendiente (mejora futura, sin pedir aún): extender el mismo patrón i18n a
+  nombres/amenities de vehículos si se pide; aplicar traducciones EN/PT reales
+  a los servicios de las empresas demo (hoy caen al fallback ES).
 
 ## ✅ Completado (Phase 1 + mejoras)
 
@@ -309,37 +347,122 @@ onboarded (onlinePaymentsEnabled). No se piden datos de tarjeta en el formulario
 (va por la página segura de Stripe, por PCI). Antes el pago online solo aparecía
 en la pantalla de éxito; ahora es parte del paso de confirmación.
 
-## ⬜ Backlog de DESARROLLO (próximas sesiones, en orden sugerido)
+## Backlog de DESARROLLO (0–6 ✅ COMPLETO, ver resumen arriba — detalle histórico abajo)
 
-0. **Limpieza de marca**: migrar los ~40 literales "LuxeRide" / "JPRS Digital
-   Connect" que quedan hardcodeados (titles de metadata, páginas auth /
-   super-admin / booking / payment / track) a `lib/brand.ts` (`brand.name`,
-   `brand.poweredBy`). Objetivo: renombrar el sistema cambiando un solo lugar.
-   Regla vigente: todo lo NUEVO ya debe usar brand.* (no hardcodear).
+0. ✅ **Limpieza de marca**: literales "LuxeRide" hardcodeados migrados a
+   `lib/brand.ts`. Regla vigente: todo lo NUEVO ya debe usar brand.* (no
+   hardcodear).
+1. ✅ **2ª pasada i18n**: páginas nativas del admin conectadas al diccionario
+   EN/PT.
+2. ✅ **Widget de reservas embebible**: `/embed/[slug]` + tarjeta en Ajustes.
+3. ✅ **Reviews post-viaje**: email al completar con link de calificación
+   pública.
+4. ✅ **Pipeline de cotizaciones**: `/admin/quotes` + `/quote/[id]` + cron de
+   follow-up.
+5. ✅ **Notificar al super admin**: email por solicitud nueva + cron de
+   vencimientos.
+6. ✅ **PWA del sistema**: manifest dinámico por empresa + service worker.
 
-1. **2ª pasada i18n** (~1 sesión): conectar al diccionario las páginas
-   nativas en español para EN/PT — bookings lista/detalle/nueva, dispatch
-   board (columnas/acciones), reports, audit, corporate, driver/account,
-   login/signup completos, secciones policy/payments de Settings,
-   formulario nuevo vehículo, detalles de conductor/vehículo.
-2. **Widget de reservas embebible** (~1 sesión): iframe/script del wizard
-   para incrustar en el sitio web de cada operador.
-3. **Reviews post-viaje**: email al completar con link de calificación
-   (bookings.rating ya existe) — cierra gap competitivo.
-4. **Pipeline de cotizaciones**: UI de quotes + follow-up automático de
-   cotizaciones abandonadas (Moovs-style).
-5. **Notificar al super admin** (email) cuando entra una solicitud nueva
-   desde el landing + cron aviso de suscripciones por vencer.
-6. **PWA del sistema** (DECIDIDO 2026-06-11: va ANTES que las apps nativas;
-   si funciona bien, recién entonces se hace la versión nativa) —
-   manifest.json + service worker + installable en iOS/Android, push web,
-   offline básico para el driver. Detalle en docs/PHASE-2-MOBILE.md (Fase 2A).
-   AJUSTE 2026-06-14: por white-label puro, el manifest debe ser DINÁMICO por
-   empresa (nombre/iconos/theme_color del cliente), no genérico — ver sección C.4.
+## ⬜ Pendiente — Fase 2 (sin fecha, requiere validación o infra nueva)
+
 7. **Fase 2B móvil nativo** (driver app primero, SOLO si la PWA valida bien)
-   — plan en docs/PHASE-2-MOBILE.md.
-8. Gaps mayores: QuickBooks, e-signatures, farm-in/farm-out, promo codes,
-   detección de conflictos de vehículo, nómina de conductores, WhatsApp.
+   — plan en docs/PHASE-2-MOBILE.md. Pospuesto a propósito.
+8. **Gaps mayores**: QuickBooks, e-signatures, farm-in/farm-out, promo codes,
+   detección de conflictos de vehículo, nómina de conductores, WhatsApp
+   Business. Pospuesto a propósito.
+9. **Dispatch avanzado** (sección A): mapa en vivo de conductores, estados
+   rejected_by_*/incident, reasignación de conductor, tabla `booking_events`.
+10. **Calificaciones bidireccionales** (sección B.1): driver_rating +
+    avg_rating + métricas de puntualidad/cancelación.
+11. **Chat**: realtime de Supabase en vez de polling, acuses de lectura,
+    vista admin de hilos.
+12. **✅ HECHO (2026-07-02) — Tracking fase 2: mapa GPS en vivo (bidireccional,
+    solo viaje activo)**. Implementado tal cual el plan de abajo: migración
+    `20260702000020_live_tracking.sql` aplicada en producción (tablas
+    `trip_locations`, `plan_quotas` seedeada 2,500/8,500/sin-límite,
+    `live_tracking_usage`); `LiveTrackingMap` (pasajero, con banner de
+    "vista en pausa" y opt-in de compartir ubicación) y `LiveLocationReporter`
+    (conductor, con aviso al volver a la pestaña) conectados en
+    `/track/[id]` y `/driver/trips`; cuota consumida en cada refresco vía
+    `refreshLiveMapAction` con degradación amable al mapa estático simple;
+    panel `/super-admin/tracking` para editar la cuota por plan y ver consumo
+    real por empresa este mes; color/placa del vehículo ahora visible también
+    en `/driver/trips`. Build, typecheck y tests verificados; verificación
+    interactiva completa (GPS moviéndose en un viaje real) pendiente de la
+    primera reserva activa en producción — el diseño abajo queda como
+    referencia histórica del plan original:
+    - Conductor reporta posición cada 8-10s (Geolocation API) → tabla
+      `trip_locations`; pasajero se suscribe por Supabase Realtime al
+      `booking_id`. Solo mientras el viaje está `en_route`/`arrived`/en curso.
+      Bidireccional (pasajero visible al conductor) = **opt-in explícito**
+      del pasajero, nunca automático.
+    - **Costo/estrategia de margen**: usar **Static Maps refrescado** (marcador
+      recalculado cada 10-20s sobre una imagen estática, $2/1,000 cargas)
+      en vez de un mapa Dynamic/JS interactivo completo ($7/1,000) — mismo
+      efecto visual para este caso de uso, mismo SKU que ya usan hoy para la
+      ruta del tracking, 3.5x más barato. El pool gratis de 10,000/mes de
+      Google es POR CUENTA (compartido entre todos los operadores, no por
+      empresa) — por eso la protección real no es "empresa grande = riesgo"
+      (para eso ya existe el plan Enterprise con "Custom platform fee
+      structure"), sino la suma de muchos operadores Starter/Professional.
+    - **Medición de consumo por empresa** (AUTORIZADO): contador de uso
+      ligado a `company_id`, incrementado en cada refresco de posición.
+      Sirve doble: (a) hace cumplir la cuota por plan, (b) le da al dueño de
+      la plataforma visibilidad del consumo total de LuxeRide a nivel
+      general (no existe hoy). Requiere: tabla de contador mensual +
+      vista/reporte agregada en super-admin.
+    - **Cuota por plan, configurable desde super-admin** (AUTORIZADO):
+      Starter 2,500 refrescos/mes, Professional 8,500/mes, Enterprise sin
+      límite fijo (negociado). Al superar la cuota, esa empresa vuelve
+      automáticamente al mapa estático simple que ya existe hoy (SIN vista en
+      vivo) por el resto del mes — degradación amable, nunca bloqueo duro.
+      Como `plan` hoy es solo un enum sin tabla de límites asociada, esto
+      requiere una tabla nueva (`plan_quotas` o similar, seedeada con los
+      valores de arriba) + una pantalla simple en /super-admin para editarla
+      sin necesidad de un deploy.
+    - **Aviso de "vista en pausa"** (AUTORIZADO) — expectativa honesta sobre
+      la limitación de rastreo en segundo plano en PWA (especialmente iOS
+      Safari: si el conductor sale de la pestaña —p.ej. abre Waze— la
+      posición deja de actualizarse):
+      - Conductor: al volver a la pestaña tras haber salido, aviso:
+        "Tu ubicación dejó de compartirse mientras estuviste fuera de la
+        app. Mantén esta pestaña abierta durante el viaje." (Page
+        Visibility API, sin backend nuevo.)
+      - Pasajero: si no llega actualización de posición en 45-60s con el
+        viaje aún activo, banner sobre el mapa: "Ubicación en pausa — el
+        conductor puede estar usando otra app de navegación. El resto de tu
+        información de viaje sigue actualizada."
+      - Se mantiene en PWA por ahora; apps nativas (ítem 7) solo se evalúan
+        después de validar bien la PWA — decisión ya tomada, no se repite el
+        análisis.
+    - Incluye también el quick-win ya identificado: color/placa del
+      vehículo YA se muestra al pasajero en /track/[id] (columnas `vehicles.
+      color`/`plate_number` ya existen) pero FALTA en la vista del conductor
+      (/driver/trips) — cerrar ese hueco es trivial (el dato ya existe).
+    - Acción del usuario (fuera de este repo, cuando se implemente): activar
+      alerta de presupuesto en Google Cloud Console → Billing → Budgets &
+      Alerts, sobre el mismo proyecto donde vive la API key de Maps.
+
+14. **Facturación vía Whop.com** (analizado 2026-07-02, dos partes
+    independientes):
+    - **A. Whop para cobrar el acceso a LuxeRide** (viable, confirmado —
+      merchant of record, sin LLC propia necesaria, mismo patrón que
+      CredyTek): reemplaza la aprobación manual actual en
+      /super-admin/subscriptions por activación automática vía webhook de
+      Whop cuando el operador paga. Alcance acotado (checkout + webhook), no
+      toca el sistema de pagos operador↔pasajero.
+    - **B. Wizard de cobro Stripe/Whop para que los OPERADORES cobren a sus
+      pasajeros** (probablemente viable, requiere spike de validación antes
+      de comprometer desarrollo completo): Whop sí tiene arquitectura tipo
+      "connected accounts" (`companies.create()` con `parent_company_id`,
+      `account_links.create()` para onboarding/KYC por sub-cuenta,
+      `transfers.create()` para enrutar fondos, precio dinámico por
+      transacción vía `initial_price`) — comparable a Stripe Connect, no
+      solo comercio de productos digitales de precio fijo. Antes de construir
+      el wizard completo: probar en sandbox de Whop el onboarding real de
+      una sub-cuenta y confirmar tarifas exactas de este modo "plataforma".
+15. Íconos isométricos de vehículos — PARADO, requiere billing de Gemini
+    habilitado por el usuario.
 
 ## Datos operativos
 

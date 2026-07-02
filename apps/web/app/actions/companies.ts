@@ -49,6 +49,27 @@ export async function updateCompanyPlan(
   return { success: true }
 }
 
+// ─── Cuota de tracking en vivo por plan (protege el costo de Google Maps) ─────
+
+export async function updatePlanQuotaAction(
+  plan: CompanyPlan,
+  quota: number | null,
+): Promise<CompanyActionResult> {
+  await requireRole('super_admin')
+
+  const safeQuota = quota === null ? null : Math.max(0, Math.floor(quota))
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('plan_quotas')
+    .update({ live_tracking_monthly_quota: safeQuota })
+    .eq('plan', plan)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/super-admin/tracking')
+  return { success: true }
+}
+
 // ─── Suscripciones (panel del owner de la plataforma) ─────────────────────────
 
 /**

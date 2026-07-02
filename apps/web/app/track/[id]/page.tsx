@@ -8,6 +8,7 @@ import { TrackActions } from '@/components/trip/track-actions'
 import { TripChat } from '@/components/trip/trip-chat'
 import { CopyButton } from '@/components/trip/copy-button'
 import { StaticMap } from '@/components/trip/static-map'
+import { LiveTrackingMap } from '@/components/trip/live-tracking-map'
 import { ShareButton } from '@/components/trip/share-button'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 
@@ -299,7 +300,19 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
 
         {/* ── 4. Ruta + mapa ── */}
         <section className="space-y-4">
-          {mapSrc && !isTerminal && (
+          {mapSrc && !isTerminal && isActive && (
+            <LiveTrackingMap
+              bookingId={booking.id}
+              initialSrc={mapSrc}
+              href={dirHref}
+              alt={t.mapAlt}
+              openLabel={t.openInMaps}
+              brandColor={brandColor}
+              allowPassengerShare
+              labels={t.liveMap}
+            />
+          )}
+          {mapSrc && !isTerminal && !isActive && (
             <StaticMap src={mapSrc} href={dirHref} alt={t.mapAlt} openLabel={t.openInMaps} />
           )}
           <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-3 text-sm">

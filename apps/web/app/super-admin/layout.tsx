@@ -41,6 +41,7 @@ export default async function SuperAdminLayout({
           </p>
           <NavLink href="/super-admin/companies" label="Companies" />
           <NavLink href="/super-admin/subscriptions" label="Suscripciones" />
+          <NavLink href="/super-admin/tracking" label="Tracking en vivo" />
         </nav>
 
         {/* User */}
