@@ -36,11 +36,11 @@ const TOKENS: Record<ReviewsVariant, {
     starInactive: 'rgba(29,27,24,0.15)',
   },
   bold: {
-    section: 'bg-[#0a0a0a] text-white',
-    title: 'font-sans font-black uppercase tracking-tight',
-    muted: 'text-white/50', subtle: 'text-white/40', body: 'text-white/70',
-    navBtn: 'border-white/25 hover:bg-white/10', card: 'rounded-none border-white/15 bg-white/[0.04]',
-    starInactive: 'rgba(255,255,255,0.2)',
+    section: 'bg-[#f7f4ee] text-[#171512]',
+    title: 'font-playfair italic font-medium',
+    muted: 'text-[#7a7367]', subtle: 'text-[#9c9587]', body: 'text-[#48443c]',
+    navBtn: 'border-black/15 hover:bg-black/5', card: 'rounded-2xl border-black/[0.06] bg-white shadow-sm shadow-black/[0.05]',
+    starInactive: 'rgba(23,21,18,0.15)',
   },
   corporate: {
     section: 'bg-white text-[#161a1f]',

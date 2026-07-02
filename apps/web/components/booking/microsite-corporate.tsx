@@ -129,7 +129,7 @@ export function MicrositeCorporate(props: {
           </div>
         </Reveal>
         <Reveal className="relative h-[18rem] sm:h-[24rem] lg:h-[28rem] rounded-2xl overflow-hidden ring-1 ring-black/[0.07] shadow-lg shadow-black/[0.06]">
-          <Image src={heroImg} alt="" fill priority sizes="(max-width:1024px) 100vw, 46vw" className="object-cover" />
+          <Image src={heroImg} alt="" fill priority sizes="(max-width:1024px) 100vw, 46vw" className="object-cover animate-kenburns" />
         </Reveal>
       </section>
 
@@ -162,7 +162,10 @@ export function MicrositeCorporate(props: {
               {t.categories.map((c, i) => (
                 <RevealItem key={c.label}>
                   <div className="flex flex-col items-start gap-3 rounded-xl border border-black/[0.08] p-4 h-full hover:border-black/20 hover:shadow-sm transition-all">
-                    <span className="h-9 w-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${brandColor}14` }}>
+                    <span
+                      className="lux-breathe-soft h-9 w-9 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: `${brandColor}14`, animationDelay: `${i * 0.3}s` }}
+                    >
                       <span className="h-5 w-7 flex items-center justify-center" style={{ color: brandColor }}>
                         <CategoryIcon index={i} />
                       </span>
@@ -187,9 +190,9 @@ export function MicrositeCorporate(props: {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {fleet.map((v) => (
                 <Reveal key={v.id}>
-                  <article className="rounded-xl overflow-hidden bg-white border border-black/[0.08] hover:shadow-md hover:shadow-black/[0.05] transition-shadow h-full flex flex-col">
+                  <article className="group rounded-xl overflow-hidden bg-white border border-black/[0.08] hover:shadow-md hover:shadow-black/[0.05] transition-shadow h-full flex flex-col">
                     <div className="relative h-44 overflow-hidden">
-                      {v.base_image_url ? <Image src={v.base_image_url} alt={v.name} fill sizes="(max-width:1024px) 50vw, 33vw" className="object-cover" /> : placeholder}
+                      {v.base_image_url ? <Image src={v.base_image_url} alt={v.name} fill sizes="(max-width:1024px) 50vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" /> : placeholder}
                     </div>
                     <div className="p-5 flex flex-col flex-1">
                       <div className="flex items-center justify-between gap-2">
@@ -221,9 +224,9 @@ export function MicrositeCorporate(props: {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {services.map((s, i) => (
                 <Reveal key={s.id}>
-                  <article className="rounded-xl overflow-hidden bg-white border border-black/[0.08] hover:shadow-md hover:shadow-black/[0.05] transition-shadow h-full flex flex-col">
+                  <article className="group rounded-xl overflow-hidden bg-white border border-black/[0.08] hover:shadow-md hover:shadow-black/[0.05] transition-shadow h-full flex flex-col">
                     <div className="relative h-36 overflow-hidden">
-                      <Image src={s.image_url || SERVICE_DEFAULTS[i % SERVICE_DEFAULTS.length]} alt={s.title} fill sizes="(max-width:1024px) 100vw, 33vw" className="object-cover" />
+                      <Image src={s.image_url || SERVICE_DEFAULTS[i % SERVICE_DEFAULTS.length]} alt={s.title} fill sizes="(max-width:1024px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
                     </div>
                     <div className="p-5 flex flex-col flex-1">
                       <h3 className="text-[15px] font-semibold text-[#161a1f]">{s.title}</h3>

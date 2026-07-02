@@ -356,16 +356,16 @@
   .lux-breathe { animation: none; }
 }
 
-/* Ticker/marquee de la plantilla "Bold" — franja de texto en desplazamiento
-   continuo. El contenido se duplica en el JSX y el loop resta el 50% del
-   ancho (mismo truco de empalme invisible que el auto-scroll de reseñas). */
-@keyframes lux-marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+/* Variante contenida para la plantilla Corporate: mismo principio (que la
+   fila de categorías no se vea estática en reposo) pero con una amplitud
+   mucho más discreta, acorde a su identidad restringida/profesional. */
+@keyframes lux-breathe-soft {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.035); }
 }
-.lux-marquee {
-  animation: lux-marquee 26s linear infinite;
+.lux-breathe-soft {
+  animation: lux-breathe-soft 5s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .lux-marquee { animation: none; }
+  .lux-breathe-soft { animation: none; }
 }
