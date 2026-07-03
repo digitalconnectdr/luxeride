@@ -92,6 +92,27 @@ export async function sendDispatchMessageAction(
   return { success: true }
 }
 
+/** Vacía el hilo completo con un conductor — evita que se acumule sin
+ *  control; cualquiera de los dos lados puede iniciarlo (ver acción gemela
+ *  clearDriverChannelMessagesAction para el lado conductor). */
+export async function clearDriverMessagesAction(driverId: string): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('company_owner', 'company_admin', 'dispatcher', 'super_admin')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+  const admin = createAdminClient()
+
+  const { error } = await admin
+    .from('driver_messages')
+    .delete()
+    .eq('driver_id', driverId)
+    .eq('company_id', user.company_id)
+
+  if (error) {
+    console.error('[clearDriverMessagesAction]', error)
+    return { success: false, error: 'No se pudo vaciar el chat' }
+  }
+  return { success: true }
+}
+
 export async function markDispatchMessagesReadAction(driverId: string): Promise<{ success: boolean }> {
   const user = await requireRole('company_owner', 'company_admin', 'dispatcher', 'super_admin')
   if (!user.company_id) return { success: false }
@@ -168,6 +189,18 @@ export async function sendDriverChannelMessageAction(body: string): Promise<{ su
     return { success: false, error: 'No se pudo enviar el mensaje.' }
   }
   revalidatePath('/driver/trips')
+  return { success: true }
+}
+
+export async function clearDriverChannelMessagesAction(): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('driver')
+  const admin = createAdminClient()
+
+  const { error } = await admin.from('driver_messages').delete().eq('driver_id', user.id)
+  if (error) {
+    console.error('[clearDriverChannelMessagesAction]', error)
+    return { success: false, error: 'No se pudo vaciar el chat' }
+  }
   return { success: true }
 }
 

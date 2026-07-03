@@ -464,6 +464,8 @@ export const es: Dictionary = {
       empty: 'Sin mensajes de dispatch todavía.',
       you: 'Tú',
       them: 'Dispatch',
+      clear: 'Vaciar conversación',
+      clearConfirm: '¿Borrar todos los mensajes con Dispatch? No se puede deshacer.',
     },
     actions: {
       assigned: '🚗 Iniciar ruta al pickup',
@@ -734,6 +736,7 @@ export const es: Dictionary = {
       mapHint: 'Toca el mapa para fijar el centro del círculo. Los pines se agregan solos según los códigos postales de arriba.',
       clearCenter: 'Borrar centro',
       addButton: 'Agregar zona',
+      addButtonSaving: 'Guardando…',
       empty: 'Aún no hay zonas de servicio.',
       emptyHint: 'Agrega tu primera zona arriba para definir áreas de precios.',
       thZone: 'Zona',

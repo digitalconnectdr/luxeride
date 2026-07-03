@@ -9,13 +9,18 @@ import {
   getDispatchDriverMessagesAction,
   sendDispatchMessageAction,
   markDispatchMessagesReadAction,
+  clearDriverMessagesAction,
   getDriverChannelMessagesAction,
   sendDriverChannelMessageAction,
   markDriverChannelMessagesReadAction,
+  clearDriverChannelMessagesAction,
   type DriverChannelMessage,
 } from '@/app/actions/driver-messages'
 
 const POLL_FALLBACK_MS = 20_000
+// Tope duro de mensajes visibles — evita que el panel crezca sin control
+// aunque el usuario nunca vacíe la conversación (se muestran los más recientes).
+const MAX_VISIBLE_MESSAGES = 100
 
 interface Labels {
   title: string
@@ -24,6 +29,8 @@ interface Labels {
   empty: string
   you: string
   them: string
+  clear?: string
+  clearConfirm?: string
 }
 
 export function DriverChannelChat({
@@ -100,6 +107,18 @@ export function DriverChannelChat({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages.length])
 
+  function clearChat() {
+    if (labels.clearConfirm && !window.confirm(labels.clearConfirm)) return
+    startTransition(async () => {
+      const res =
+        variant === 'dispatch' && driverId
+          ? await clearDriverMessagesAction(driverId)
+          : await clearDriverChannelMessagesAction()
+      if (res.success) setMessages([])
+      else setError(res.error ?? 'Error')
+    })
+  }
+
   function send(raw: string) {
     const body = raw.trim()
     if (!body) return
@@ -147,22 +166,34 @@ export function DriverChannelChat({
     <div className="border rounded-2xl overflow-hidden bg-white border-[#e5e1d8]">
       <div className="px-4 py-2.5 border-b border-[#f0ede5] flex items-center justify-between gap-2">
         <p className="text-sm font-semibold text-[#1d1b18]">{labels.title}</p>
-        {collapsible && (
-          <button
-            type="button"
-            onClick={() => setExpanded(false)}
-            className="text-sm text-[#a8a39a] hover:text-[#1d1b18] transition-colors"
-            aria-label="Ocultar"
-          >
-            💬
-          </button>
-        )}
+        <div className="flex items-center gap-3 shrink-0">
+          {messages.length > 0 && labels.clear && (
+            <button
+              type="button"
+              onClick={clearChat}
+              className="text-[11px] text-[#a8a39a] hover:text-red-500 transition-colors"
+              title={labels.clear}
+            >
+              🗑
+            </button>
+          )}
+          {collapsible && (
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              className="text-sm text-[#a8a39a] hover:text-[#1d1b18] transition-colors"
+              aria-label="Ocultar"
+            >
+              💬
+            </button>
+          )}
+        </div>
       </div>
-      <div ref={scrollRef} className="max-h-60 overflow-y-auto px-3 py-3 space-y-2.5">
+      <div ref={scrollRef} className="overflow-y-auto px-3 py-3 space-y-2.5" style={{ maxHeight: '15rem' }}>
         {messages.length === 0 ? (
           <p className="text-center text-xs py-6 text-[#75716a]">{labels.empty}</p>
         ) : (
-          messages.map((m) => {
+          messages.slice(-MAX_VISIBLE_MESSAGES).map((m) => {
             const mine = m.sender === mySender
             return (
               <div key={m.id} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>

@@ -1,13 +1,9 @@
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
-import { createZoneAction } from '@/app/actions/services'
 import { ZoneRow } from '@/components/admin/zone-row'
-import { ZoneGeoFields } from '@/components/admin/zone-geo-fields'
+import { AddZoneForm } from '@/components/admin/add-zone-form'
 import { ZonesOverviewMap } from '@/components/admin/zones-overview-map'
-import { InfoTip } from '@/components/ui/info-tip'
 import { getDict } from '@/lib/i18n/server'
-
-const ZONE_TYPES = ['standard', 'airport', 'premium', 'restricted'] as const
 
 export default async function ZonesPage() {
   const user = await requireRole('company_owner', 'company_admin', 'dispatcher')
@@ -21,8 +17,6 @@ export default async function ZonesPage() {
     .order('sort_order', { ascending: true })
     .order('name', { ascending: true })
 
-  // void cast — TypeScript void-callback rule: (fd) => void accepts any return type
-  const zoneAction: (fd: FormData) => void = createZoneAction
   const dict = getDict().admin
   const t = dict.zones
   const actions = dict.actions
@@ -49,62 +43,7 @@ export default async function ZonesPage() {
       {isAdmin && (
         <div className="bg-sl-surface border border-sl-outline-variant rounded-xl p-5 mb-6">
           <h2 className="text-sm font-semibold text-sl-on-surface mb-4">{t.addTitle}</h2>
-          <form action={zoneAction} className="flex flex-wrap gap-3 items-end">
-            <div className="flex-1 min-w-[180px]">
-              <label className="block text-xs text-sl-on-surface-muted mb-1">
-                {t.nameLabel}
-                <InfoTip text={t.help.name} />
-              </label>
-              <input
-                name="name"
-                required
-                placeholder={t.namePlaceholder}
-                className="w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface placeholder:text-sl-on-surface-muted/50 focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-sl-on-surface-muted mb-1">
-                {t.typeLabel}
-                <InfoTip text={t.help.type} />
-              </label>
-              <select
-                name="type"
-                defaultValue="standard"
-                className="text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
-              >
-                {ZONE_TYPES.map((zt) => (
-                  <option key={zt} value={zt}>{t.types[zt]}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.colorLabel}</label>
-              <input
-                name="color"
-                type="color"
-                defaultValue="#e9c176"
-                className="h-9 w-14 rounded-lg border border-sl-outline-variant bg-sl-bg cursor-pointer"
-              />
-            </div>
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors"
-            >
-              {t.addButton}
-            </button>
-            <ZoneGeoFields
-              labels={{
-                radiusLabel: t.radiusLabel,
-                radiusPlaceholder: t.radiusPlaceholder,
-                radiusHelp: t.help.radius,
-                postalCodesLabel: t.postalCodesLabel,
-                postalCodesPlaceholder: t.postalCodesPlaceholder,
-                postalCodesHelp: t.help.postalCodes,
-                mapHint: t.mapHint,
-                clearCenter: t.clearCenter,
-              }}
-            />
-          </form>
+          <AddZoneForm t={t} />
         </div>
       )}
 

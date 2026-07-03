@@ -463,6 +463,8 @@ export const en = {
       empty: 'No messages from dispatch yet.',
       you: 'You',
       them: 'Dispatch',
+      clear: 'Clear conversation',
+      clearConfirm: 'Delete all messages with Dispatch? This can\'t be undone.',
     },
     actions: {
       assigned: '🚗 Start route to pickup',
@@ -733,6 +735,7 @@ export const en = {
       mapHint: 'Tap the map to set the circle\'s center. Pins appear automatically for the postal codes above.',
       clearCenter: 'Clear center',
       addButton: 'Add Zone',
+      addButtonSaving: 'Saving…',
       empty: 'No service zones yet.',
       emptyHint: 'Add your first zone above to start defining pricing areas.',
       thZone: 'Zone',

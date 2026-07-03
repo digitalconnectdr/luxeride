@@ -173,6 +173,8 @@ export default async function DriverTripsPage() {
             empty: dt.dispatchChat.empty,
             you: dt.dispatchChat.you,
             them: dt.dispatchChat.them,
+            clear: dt.dispatchChat.clear,
+            clearConfirm: dt.dispatchChat.clearConfirm,
           }}
         />
 

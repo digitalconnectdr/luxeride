@@ -83,6 +83,8 @@ export function ActiveDriversPanel({ drivers }: { drivers: DriverStatusRow[] }) 
                     empty: 'Sin mensajes todavía.',
                     you: 'Tú',
                     them: d.name,
+                    clear: 'Vaciar conversación',
+                    clearConfirm: `¿Borrar todos los mensajes con ${d.name}? No se puede deshacer.`,
                   }}
                 />
               </div>
