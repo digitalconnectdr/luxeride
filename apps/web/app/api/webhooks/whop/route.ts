@@ -1,10 +1,14 @@
 // ── Webhook de Whop — activación/suspensión automática de la suscripción ───────
 // Reemplaza (complementa) la aprobación manual en /super-admin/subscriptions:
 // cuando un operador paga vía Whop (membership_activated), este endpoint
-// activa su empresa; cuando deja de pagar/cancela (membership_deactivated),
-// la suspende. Correlación por EMAIL en la activación (companies.email);
-// en la desactivación se prioriza whop_membership_id (guardado al activar)
-// con email como respaldo. Ver nota de diseño en lib/billing/whop.ts.
+// activa su empresa (y actualiza el plan si cambió — soporta upgrade/
+// downgrade Starter↔Professional↔Enterprise sobre la misma membresía);
+// cuando deja de pagar/cancela (membership_deactivated), la suspende.
+// Correlación por EMAIL en la activación (companies.email); en la
+// desactivación SOLO por whop_membership_id EXACTO (sin fallback por email)
+// — así un evento de desactivación de una membresía ya reemplazada (por un
+// upgrade/downgrade que creó una membresía nueva) no suspende por error una
+// cuenta que ya está al día. Ver nota de diseño en lib/billing/whop.ts.
 
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
@@ -46,38 +50,34 @@ export async function POST(request: Request) {
 
   try {
     // ── Desactivación: el operador dejó de pagar o canceló ──────────────────
+    // Solo actúa si la membresía desactivada es la QUE TENEMOS REGISTRADA
+    // ahora mismo — sin esto, un evento de desactivación de una membresía
+    // vieja (reemplazada por un upgrade/downgrade) podría suspender una
+    // cuenta que ya está al día en su membresía nueva.
     if (isWhopDeactivationEvent(event.type)) {
-      let companyId: string | null = null
-
-      if (event.membershipId) {
-        const { data } = await admin
-          .from('companies')
-          .select('id')
-          .eq('whop_membership_id', event.membershipId)
-          .maybeSingle()
-        companyId = data?.id ?? null
-      }
-      if (!companyId && event.email) {
-        const { data } = await admin
-          .from('companies')
-          .select('id')
-          .ilike('email', event.email)
-          .maybeSingle()
-        companyId = data?.id ?? null
+      if (!event.membershipId) {
+        console.error('[whop/webhook] deactivation without membership id', JSON.stringify(body))
+        return NextResponse.json({ received: true, warning: 'no membership id in payload' })
       }
 
-      if (!companyId) {
-        console.error('[whop/webhook] deactivation: no matching company', JSON.stringify(body))
-        return NextResponse.json({ received: true, warning: 'no matching company for deactivation' })
+      const { data: company } = await admin
+        .from('companies')
+        .select('id')
+        .eq('whop_membership_id', event.membershipId)
+        .maybeSingle()
+
+      if (!company) {
+        // Puede ser una membresía vieja ya reemplazada — no es un error, se ignora a propósito.
+        return NextResponse.json({ received: true, skipped: 'membership not current for any company' })
       }
 
-      const { error } = await admin.from('companies').update({ status: 'suspended' }).eq('id', companyId)
+      const { error } = await admin.from('companies').update({ status: 'suspended' }).eq('id', company.id)
       if (error) {
         console.error('[whop/webhook] suspension failed', error)
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      return NextResponse.json({ received: true, suspended: companyId })
+      return NextResponse.json({ received: true, suspended: company.id })
     }
 
     // ── Cualquier otro evento no manejado ────────────────────────────────────
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true, ignored: event.type })
     }
 
-    // ── Activación ───────────────────────────────────────────────────────────
+    // ── Activación (incluye upgrade/downgrade de plan) ──────────────────────
     if (!event.email) {
       console.error('[whop/webhook] no email found in payload', JSON.stringify(body))
       return NextResponse.json({ received: true, warning: 'no email in payload' })
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
 
     const { data: company } = await admin
       .from('companies')
-      .select('id, whop_membership_id')
+      .select('id, whop_membership_id, whop_plan_id, whop_last_event_id')
       .ilike('email', event.email)
       .maybeSingle()
 
@@ -102,8 +102,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true, warning: 'no matching company' })
     }
 
-    // Idempotencia: Whop puede reintentar el mismo evento.
-    if (event.membershipId && company.whop_membership_id === event.membershipId) {
+    // Idempotencia: solo se ignora si es la MISMA entrega del webhook
+    // reintentada (eventId), nunca por coincidir el membership_id — un
+    // upgrade/downgrade dispara un evento nuevo sobre la misma membresía y
+    // SÍ debe procesarse (actualiza el plan).
+    if (event.eventId && company.whop_last_event_id === event.eventId) {
       return NextResponse.json({ received: true, skipped: 'already processed' })
     }
 
@@ -118,11 +121,12 @@ export async function POST(request: Request) {
       .from('companies')
       .update({
         whop_membership_id: event.membershipId ?? company.whop_membership_id,
-        whop_plan_id: event.planId ?? undefined,
+        whop_plan_id: event.planId ?? company.whop_plan_id,
+        whop_last_event_id: event.eventId ?? company.whop_last_event_id,
       })
       .eq('id', company.id)
 
-    return NextResponse.json({ received: true, activated: company.id })
+    return NextResponse.json({ received: true, activated: company.id, plan: plan ?? null })
   } catch (err) {
     console.error('[whop/webhook] handler error', err)
     return NextResponse.json({ error: 'Handler error' }, { status: 500 })

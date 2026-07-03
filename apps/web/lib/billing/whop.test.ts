@@ -58,13 +58,15 @@ describe('mapWhopPlanId', () => {
 })
 
 describe('parseWhopEvent', () => {
-  it('extrae type/email/planId/membershipId de la forma más común (data.*)', () => {
+  it('extrae type/eventId/email/planId/membershipId de la forma más común (data.*)', () => {
     const body = {
+      id: 'evt_999',
       type: 'membership_activated',
       data: { id: 'mem_123', email: 'owner@empresa.com', plan_id: 'plan_starter' },
     }
     expect(parseWhopEvent(body)).toEqual({
       type: 'membership_activated',
+      eventId: 'evt_999',
       email: 'owner@empresa.com',
       planId: 'plan_starter',
       membershipId: 'mem_123',
@@ -76,8 +78,18 @@ describe('parseWhopEvent', () => {
     expect(parseWhopEvent(body).email).toBe('a@b.com')
   })
 
+  it('un upgrade/downgrade conserva el mismo membershipId pero es un eventId distinto', () => {
+    const original = { id: 'evt_1', type: 'membership_activated', data: { id: 'mem_123', email: 'a@b.com', plan_id: 'plan_starter' } }
+    const upgrade = { id: 'evt_2', type: 'membership_activated', data: { id: 'mem_123', email: 'a@b.com', plan_id: 'plan_pro' } }
+    const parsedOriginal = parseWhopEvent(original)
+    const parsedUpgrade = parseWhopEvent(upgrade)
+    expect(parsedUpgrade.membershipId).toBe(parsedOriginal.membershipId)
+    expect(parsedUpgrade.eventId).not.toBe(parsedOriginal.eventId)
+    expect(parsedUpgrade.planId).not.toBe(parsedOriginal.planId)
+  })
+
   it('devuelve null en los campos ausentes en vez de lanzar', () => {
-    expect(parseWhopEvent({})).toEqual({ type: 'unknown', email: null, planId: null, membershipId: null })
+    expect(parseWhopEvent({})).toEqual({ type: 'unknown', eventId: null, email: null, planId: null, membershipId: null })
   })
 })
 

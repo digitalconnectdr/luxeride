@@ -41,8 +41,13 @@ export function mapWhopPlanId(whopPlanId: string | null): CompanyPlan | undefine
 
 export interface WhopParsedEvent {
   type: string
+  /** ID de esta ENTREGA del webhook — para idempotencia de reintentos. */
+  eventId: string | null
   email: string | null
   planId: string | null
+  /** ID del RECURSO (la membresía) — puede repetirse en eventos legítimos
+   *  distintos (ej. upgrade/downgrade de plan sobre la misma membresía), así
+   *  que NUNCA debe usarse para decidir si un evento ya se procesó. */
   membershipId: string | null
 }
 
@@ -66,6 +71,10 @@ function firstString(obj: unknown, paths: string[][]): string | null {
 /** Extrae de forma defensiva email/plan/membership del payload de un evento de Whop. */
 export function parseWhopEvent(body: unknown): WhopParsedEvent {
   const type = firstString(body, [['type'], ['event'], ['action']]) ?? 'unknown'
+  // El ID de la entrega suele venir a nivel raíz (distinto del ID del recurso
+  // anidado en `data`) — si Whop no lo manda así, cae a null (sin idempotencia
+  // de reintento exacto, pero nunca se confunde con el ID de la membresía).
+  const eventId = firstString(body, [['id'], ['event_id'], ['webhook_id']])
   const email = firstString(body, [
     ['data', 'user', 'email'],
     ['data', 'email'],
@@ -81,9 +90,8 @@ export function parseWhopEvent(body: unknown): WhopParsedEvent {
   const membershipId = firstString(body, [
     ['data', 'id'],
     ['data', 'membership_id'],
-    ['id'],
   ])
-  return { type, email, planId, membershipId }
+  return { type, eventId, email, planId, membershipId }
 }
 
 /** Confirmados en el selector real de eventos del dashboard de Whop. */
