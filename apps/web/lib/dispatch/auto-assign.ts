@@ -128,10 +128,19 @@ export async function tryAutoAssignDriver(
   candidates.sort((a, b) => (todayCount.get(a) ?? 0) - (todayCount.get(b) ?? 0))
   const driverId = candidates[0]
 
+  // Vehículo con el que el conductor está trabajando ahora mismo — así el
+  // pasajero ve marca/placa en /track aunque la asignación haya sido automática.
+  const { data: driverRow } = await admin
+    .from('drivers')
+    .select('current_vehicle_id')
+    .eq('id', driverId)
+    .single()
+  const vehicleId = driverRow?.current_vehicle_id ?? null
+
   const now = new Date().toISOString()
   const { error } = await admin
     .from('bookings')
-    .update({ driver_id: driverId, status: 'assigned', dispatched_at: now })
+    .update({ driver_id: driverId, status: 'assigned', dispatched_at: now, ...(vehicleId ? { vehicle_id: vehicleId } : {}) })
     .eq('id', booking.id)
     .eq('status', 'pending') // guard de carrera: no pisar una asignación manual que llegó primero
 

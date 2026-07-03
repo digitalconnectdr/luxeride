@@ -31,6 +31,16 @@ export default async function DriversPage() {
     .select('id, license_number, license_expiry, license_state, current_vehicle_id, is_available, rating, total_trips')
     .eq('company_id', companyId)
 
+  const vehiclesQuery = admin
+    .from('vehicles')
+    .select('id, plate_number, vehicle_type_id')
+    .eq('company_id', companyId)
+
+  const vehicleTypesQuery = admin
+    .from('vehicle_types')
+    .select('id, name')
+    .eq('company_id', companyId)
+
   type ProfileData = Awaited<typeof profilesQuery>['data']
   type DriverData  = Awaited<typeof driversQuery>['data']
 
@@ -56,6 +66,27 @@ export default async function DriversPage() {
   } catch (err) {
     console.error('[drivers/page] drivers query THREW:', err)
   }
+
+  // Vehículo con el que cada conductor está trabajando HOY (drivers.current_vehicle_id) —
+  // un conductor puede tener varios vehículos disponibles pero solo uno asignado a la vez.
+  let vehiclesData: { id: string; plate_number: string; vehicle_type_id: string | null }[] = []
+  let vehicleTypesData: { id: string; name: string }[] = []
+  try {
+    const { data, error } = await vehiclesQuery
+    if (error) console.error('[drivers/page] vehicles query error:', JSON.stringify(error))
+    vehiclesData = data ?? []
+  } catch (err) {
+    console.error('[drivers/page] vehicles query THREW:', err)
+  }
+  try {
+    const { data, error } = await vehicleTypesQuery
+    if (error) console.error('[drivers/page] vehicle_types query error:', JSON.stringify(error))
+    vehicleTypesData = data ?? []
+  } catch (err) {
+    console.error('[drivers/page] vehicle_types query THREW:', err)
+  }
+  const vehicleTypeNameById = Object.fromEntries(vehicleTypesData.map((vt) => [vt.id, vt.name]))
+  const vehicleById = Object.fromEntries(vehiclesData.map((v) => [v.id, v]))
 
   // Conteo de viajes COMPLETADOS por conductor (dinámico = siempre correcto,
   // no depende de incrementar drivers.total_trips al completar).
@@ -106,7 +137,7 @@ export default async function DriversPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-sl-outline-variant">
-                {['Conductor', 'Licencia', 'Viajes', 'Rating', 'Disponibilidad', ''].map((h) => (
+                {['Conductor', 'Licencia', 'Vehículo asignado', 'Viajes', 'Rating', 'Disponibilidad', ''].map((h) => (
                   <th key={h} className="text-left px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
                     {h}
                   </th>
@@ -161,6 +192,21 @@ export default async function DriversPage() {
                       ) : (
                         <span className="text-xs text-sl-on-surface-muted">Sin registro</span>
                       )}
+                    </td>
+
+                    {/* Vehículo asignado hoy — un conductor puede tener varios vehículos
+                        disponibles pero solo uno current_vehicle_id a la vez. */}
+                    <td className="px-5 py-4">
+                      {(() => {
+                        const v = dr?.current_vehicle_id ? vehicleById[dr.current_vehicle_id] : null
+                        if (!v) return <span className="text-xs text-sl-on-surface-muted">Sin asignar</span>
+                        return (
+                          <div>
+                            <p className="text-xs text-sl-on-surface">{(v.vehicle_type_id && vehicleTypeNameById[v.vehicle_type_id]) ?? '—'}</p>
+                            <p className="text-[10px] text-sl-on-surface-muted mt-0.5">{v.plate_number}</p>
+                          </div>
+                        )
+                      })()}
                     </td>
 
                     {/* Trips — conteo dinámico de viajes completados */}

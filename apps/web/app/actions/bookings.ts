@@ -584,6 +584,20 @@ export async function assignDriverAction(
   const previousDriverId = booking.driver_id
   const isReassignment = !!previousDriverId && previousDriverId !== driverId
 
+  // Si no se especifica un vehículo a mano, se usa el que el conductor tiene
+  // asignado ahora mismo (drivers.current_vehicle_id) — así la marca/placa
+  // que ve el pasajero en /track siempre refleja con qué vehículo se hizo
+  // el viaje, sin obligar al dispatcher a elegirlo cada vez.
+  let effectiveVehicleId = vehicleId
+  if (!effectiveVehicleId) {
+    const { data: driverRow } = await admin
+      .from('drivers')
+      .select('current_vehicle_id')
+      .eq('id', driverId)
+      .single()
+    effectiveVehicleId = driverRow?.current_vehicle_id ?? undefined
+  }
+
   const updates: {
     driver_id: string
     status: BookingStatus
@@ -594,7 +608,7 @@ export async function assignDriverAction(
     status:        'assigned',
     dispatched_at: new Date().toISOString(),
   }
-  if (vehicleId) updates.vehicle_id = vehicleId
+  if (effectiveVehicleId) updates.vehicle_id = effectiveVehicleId
 
   const { error } = await admin.from('bookings').update(updates).eq('id', bookingId)
   if (error) {
@@ -605,8 +619,8 @@ export async function assignDriverAction(
   // F1.14 — notificar asignación de conductor al pasajero
   const [{ data: driverProfile }, vehicleRes] = await Promise.all([
     admin.from('user_profiles').select('first_name, last_name').eq('id', driverId).single(),
-    vehicleId
-      ? admin.from('vehicles').select('make, model, plate_number').eq('id', vehicleId).single()
+    effectiveVehicleId
+      ? admin.from('vehicles').select('make, model, plate_number').eq('id', effectiveVehicleId).single()
       : Promise.resolve({ data: null }),
   ])
   const vehicle = vehicleRes.data as { make?: string; model?: string; plate_number?: string } | null
