@@ -407,6 +407,8 @@ export const es: Dictionary = {
     portal: 'Portal del conductor',
     onDuty: 'En servicio',
     offDuty: 'Fuera de servicio',
+    assignedVehicle: 'Tu vehículo',
+    noVehicleAssigned: 'Sin vehículo asignado',
     signOut: 'Cerrar sesión',
     noTrips: 'No tienes viajes asignados ahora.',
     currentStatus: 'Estado actual',

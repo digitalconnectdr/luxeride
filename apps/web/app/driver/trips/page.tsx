@@ -96,9 +96,29 @@ export default async function DriverTripsPage() {
       .gte('completed_at', sevenDaysAgo)
       .order('completed_at', { ascending: false })
       .limit(10),
-    admin.from('drivers').select('is_available').eq('id', user.id).maybeSingle(),
+    admin.from('drivers').select('is_available, current_vehicle_id').eq('id', user.id).maybeSingle(),
   ])
   const isAvailable = driverRow?.is_available ?? false
+
+  // Vehículo con el que dispatch tiene registrado al conductor AHORA MISMO
+  // (drivers.current_vehicle_id) — se muestra siempre en el header, no solo
+  // dentro de un viaje activo, para que sepa con qué carro lo ve dispatch.
+  let assignedVehicle: { plate_number: string | null; typeName: string | null } | null = null
+  if (driverRow?.current_vehicle_id) {
+    const { data: v } = await admin
+      .from('vehicles')
+      .select('plate_number, vehicle_type_id')
+      .eq('id', driverRow.current_vehicle_id)
+      .maybeSingle()
+    if (v) {
+      let typeName: string | null = null
+      if (v.vehicle_type_id) {
+        const { data: vt } = await admin.from('vehicle_types').select('name').eq('id', v.vehicle_type_id).maybeSingle()
+        typeName = vt?.name ?? null
+      }
+      assignedVehicle = { plate_number: v.plate_number, typeName }
+    }
+  }
 
   const co = company as { name: string; logo_url: string | null; primary_color: string | null; phone: string | null } | null
   const brandColor = co?.primary_color ?? '#c9a24b'
@@ -146,6 +166,11 @@ export default async function DriverTripsPage() {
         <div className="flex items-center gap-4 ml-auto">
           <div className="text-right">
             <p className="text-sm font-medium truncate">{driverName}</p>
+            <p className="text-[11px] text-[#75716a] mt-0.5">
+              {assignedVehicle
+                ? `${dt.assignedVehicle}: ${[assignedVehicle.typeName, assignedVehicle.plate_number].filter(Boolean).join(' · ')}`
+                : dt.noVehicleAssigned}
+            </p>
             <div className="mt-1 flex justify-end">
               <DriverSelfAvailabilityToggle
                 isAvailable={isAvailable}

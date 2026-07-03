@@ -405,6 +405,8 @@ export const en = {
   driver: {
     portal: 'Driver portal',
     onDuty: 'On duty',
+    assignedVehicle: 'Your vehicle',
+    noVehicleAssigned: 'No vehicle assigned',
     offDuty: 'Off duty',
     signOut: 'Sign out',
     noTrips: 'You have no assigned trips right now.',
