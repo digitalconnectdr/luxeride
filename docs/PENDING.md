@@ -487,6 +487,27 @@ en la pantalla de éxito; ahora es parte del paso de confirmación.
       antes de que cualquier operador pueda usarlo.
 15. Íconos isométricos de vehículos — PARADO, requiere billing de Gemini
     habilitado por el usuario.
+16. **Precio "Por zona" no funciona (auditoría de pricing, 2026-07-03)**:
+    el modelo `zone_based` guarda `origin_zone_id`/`destination_zone_id`
+    pero el motor (`lib/pricing/engine.ts`) nunca los usa — ni para elegir
+    qué regla aplica a una reserva (`bestRule()` solo mira
+    `vehicle_type_id`), ni para calcular el precio (cae al mismo
+    `base_price` fijo que `flat_rate`). Verificado: 0 reglas `zone_based`
+    en uso en toda la plataforma hoy, así que no está cobrando mal a nadie
+    todavía — pero si alguien la configura esperando precio distinto por
+    zona, no pasa nada. **PARADO A PROPÓSITO (2026-07-03)**: el usuario
+    tiene cambios pendientes para la pestaña "Zonas" (`/admin/zones`) que
+    aún no ha detallado — resolver el cálculo por zona depende de cómo
+    quede esa pestaña, así que se espera esa definición antes de tocar
+    `bestRule()`/`calculateFare()` para zone_based.
+    - Nota aparte (no bloqueante, no causa cobros incorrectos): dentro de
+      una regla de precio, `airport_pickup_fee`/`airport_dropoff_fee`
+      nunca son editables desde el formulario (siempre 0) — pero ya existe
+      un mecanismo separado y funcional para cobros de aeropuerto
+      (`/admin/airports`, cargo de pickup/dropoff por aeropuerto
+      específico), así que estos campos de `pricing_rules` son
+      redundantes/muertos, no una falla activa. `holiday_surcharge_pct`
+      se guarda pero el motor nunca lo aplica (función a medio construir).
 
 ## Datos operativos
 
