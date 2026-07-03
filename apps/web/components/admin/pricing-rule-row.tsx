@@ -80,7 +80,6 @@ export function PricingRuleRow({
         <td colSpan={7} className="px-5 py-4">
           <form onSubmit={handleSubmit}>
             {/* Campos no editables aquí — se preservan tal cual */}
-            <input type="hidden" name="per_km_rate" defaultValue={num(rule.per_km_rate)} />
             <input type="hidden" name="origin_zone_id" defaultValue={rule.origin_zone_id ?? ''} />
             <input type="hidden" name="destination_zone_id" defaultValue={rule.destination_zone_id ?? ''} />
             <input type="hidden" name="airport_pickup_fee" defaultValue={num(rule.airport_pickup_fee)} />
@@ -122,6 +121,10 @@ export function PricingRuleRow({
               <div>
                 <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.perMileRate}</label>
                 <input name="per_mile_rate" type="number" step="0.0001" min="0" defaultValue={num(rule.per_mile_rate)} className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.perKmRate}</label>
+                <input name="per_km_rate" type="number" step="0.0001" min="0" defaultValue={num(rule.per_km_rate)} className={inputCls} />
               </div>
               <div>
                 <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.hourlyRate}</label>

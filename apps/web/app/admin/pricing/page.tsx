@@ -140,6 +140,19 @@ export default async function PricingPage() {
               />
             </div>
 
+            {/* Per Km Rate */}
+            <div>
+              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.perKmRate}<InfoTip text={t.help.perKmRate} /></label>
+              <input
+                name="per_km_rate"
+                type="number"
+                step="0.0001"
+                min="0"
+                defaultValue="0"
+                className="w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
+              />
+            </div>
+
             {/* Hourly Rate */}
             <div>
               <label className="block text-xs text-sl-on-surface-muted mb-1">{t.hourlyRate}<InfoTip text={t.help.hourlyRate} /></label>
