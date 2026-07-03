@@ -18,7 +18,7 @@ export default async function DispatcherDashboardPage() {
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
 
-  const [{ data: initialRows }, { data: drivers }] = await Promise.all([
+  const [{ data: initialRows }, { data: drivers }, { data: companyRow }] = await Promise.all([
     admin
       .from('bookings')
       .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, total_amount, currency, driver_id, vehicle_type_id, flight_number, flight_status, flight_delay_minutes, flight_checked_at, distance_miles, arrived_at')
@@ -43,6 +43,7 @@ export default async function DispatcherDashboardPage() {
       .eq('role', 'driver')
       .eq('is_active', true)
       .order('first_name'),
+    admin.from('companies').select('auto_assign_enabled').eq('id', user.company_id).single(),
   ])
 
   // Estado en vivo de cada conductor — disponibilidad + viaje actual + viajes
@@ -129,6 +130,7 @@ export default async function DispatcherDashboardPage() {
       }))}
       drivers={drivers ?? []}
       driverStatuses={driverStatuses}
+      autoAssignEnabled={companyRow?.auto_assign_enabled ?? true}
     />
   )
 }

@@ -59,6 +59,15 @@ export async function tryAutoAssignDriver(
   admin: ReturnType<typeof createAdminClient>,
   booking: AutoAssignBooking,
 ): Promise<AutoAssignResult> {
+  // Respeta el interruptor Automático/Manual del Dispatch Board — si la
+  // empresa lo apagó, la reserva se queda pendiente para asignación manual.
+  const { data: company } = await admin
+    .from('companies')
+    .select('auto_assign_enabled')
+    .eq('id', booking.company_id)
+    .single()
+  if (company && company.auto_assign_enabled === false) return { assigned: false }
+
   // Conductores en servicio de la empresa.
   const { data: availableDrivers } = await admin
     .from('drivers')

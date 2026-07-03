@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { updateBookingStatusAction, assignDriverAction } from '@/app/actions/bookings'
 import { DispatchLiveMap } from './dispatch-live-map'
 import { ActiveDriversPanel, type DriverStatusRow } from './active-drivers-panel'
+import { AutoAssignToggle } from './auto-assign-toggle'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
 export interface DispatchBooking {
@@ -48,6 +49,7 @@ interface Props {
   initialBookings: DispatchBooking[]
   drivers: Driver[]
   driverStatuses: DriverStatusRow[]
+  autoAssignEnabled: boolean
 }
 
 // ─── Columnas del board ───────────────────────────────────────────────────────
@@ -73,7 +75,7 @@ const NEXT_ACTION: Record<string, { to: BookingStatus; label: string } | undefin
   in_progress: { to: 'completed',   label: '✓ Completar' },
 }
 
-export function DispatchBoard({ companyId, initialBookings, drivers, driverStatuses }: Props) {
+export function DispatchBoard({ companyId, initialBookings, drivers, driverStatuses, autoAssignEnabled }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
@@ -171,9 +173,12 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
               ` · último cambio ${lastUpdate.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`}
           </p>
         </div>
-        {isPending && (
-          <span className="text-xs text-sl-on-surface-muted animate-pulse">Guardando…</span>
-        )}
+        <div className="flex items-center gap-3">
+          <AutoAssignToggle initialEnabled={autoAssignEnabled} />
+          {isPending && (
+            <span className="text-xs text-sl-on-surface-muted animate-pulse">Guardando…</span>
+          )}
+        </div>
       </div>
 
       {error && (
