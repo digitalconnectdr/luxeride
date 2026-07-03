@@ -48,9 +48,9 @@ export function DriverChannelChat({
   const [expanded, setExpanded] = useState(false)
   const [isPending, startTransition] = useTransition()
   const scrollRef = useRef<HTMLDivElement>(null)
-  const initializedRef = useRef(false)
   const mySender = variant === 'dispatch' ? 'dispatch' : 'driver'
   const showPanel = !collapsible || expanded
+  const unreadCount = messages.filter((m) => m.sender !== mySender && !m.readAt).length
 
   const load = useCallback(async () => {
     const res =
@@ -59,20 +59,19 @@ export function DriverChannelChat({
         : await getDriverChannelMessagesAction()
     if (res.success && res.messages) {
       setMessages(res.messages)
-      // Primera carga: si ya hay una conversación, ábrela sola para que no se
-      // pierda un mensaje. Después de eso, el toggle queda 100% en manos del
-      // usuario (botón 💬 para abrir/ocultar), igual que en el tablero de Dispatch.
-      if (!initializedRef.current) {
-        initializedRef.current = true
-        if (res.messages.length > 0) setExpanded(true)
-      }
-      const hasUnread = res.messages.some((m) => m.sender !== mySender && !m.readAt)
-      if (hasUnread) {
-        if (variant === 'dispatch' && driverId) markDispatchMessagesReadAction(driverId)
-        else if (variant === 'driver') markDriverChannelMessagesReadAction()
-      }
     }
-  }, [variant, driverId, mySender])
+  }, [variant, driverId])
+
+  // Marcar como leído SOLO cuando el panel está realmente visible — así el
+  // conductor ve el aviso ámbar mientras conduce y decide cuándo mirarlo, en
+  // vez de que se marque leído solo por haberse cargado en segundo plano.
+  useEffect(() => {
+    if (!showPanel || unreadCount === 0) return
+    if (variant === 'dispatch' && driverId) markDispatchMessagesReadAction(driverId)
+    else if (variant === 'driver') markDriverChannelMessagesReadAction()
+    setMessages((prev) => prev.map((m) => (m.sender !== mySender && !m.readAt ? { ...m, readAt: new Date().toISOString() } : m)))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPanel, unreadCount])
 
   useEffect(() => {
     load()
@@ -125,9 +124,21 @@ export function DriverChannelChat({
       <button
         type="button"
         onClick={() => setExpanded(true)}
-        className="w-full flex items-center gap-2 rounded-2xl border border-[#e5e1d8] bg-white px-4 py-3 text-sm text-[#1d1b18] hover:bg-[#faf8f3] transition-colors"
+        className={`w-full flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm transition-colors ${
+          unreadCount > 0
+            ? 'border-amber-300 bg-amber-50 text-[#1d1b18] hover:bg-amber-100'
+            : 'border-[#e5e1d8] bg-white text-[#1d1b18] hover:bg-[#faf8f3]'
+        }`}
       >
         💬 {labels.title}
+        {unreadCount > 0 && (
+          <span className="ml-auto flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+            <span className="text-[11px] font-semibold text-amber-700 bg-amber-100 rounded-full px-1.5 py-0.5 leading-none">
+              {unreadCount}
+            </span>
+          </span>
+        )}
       </button>
     )
   }
