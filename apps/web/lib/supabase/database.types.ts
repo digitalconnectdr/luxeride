@@ -694,6 +694,32 @@ export type Database = {
         Relationships: []
       }
 
+      // ── live_tracking_usage_by_booking (consumo de mapa por viaje) ────────────
+      live_tracking_usage_by_booking: {
+        Row: {
+          booking_id: string
+          company_id: string
+          year_month: string
+          refresh_count: number
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          company_id: string
+          year_month: string
+          refresh_count?: number | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          booking_id?: string | undefined
+          company_id?: string | undefined
+          year_month?: string | undefined
+          refresh_count?: number | undefined
+          updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── service_zones ───────────────────────────────────────────────────────
       service_zones: {
         Row: {

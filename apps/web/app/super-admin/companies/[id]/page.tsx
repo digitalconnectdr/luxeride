@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/server'
 import { StatusSelect, PlanSelect } from '@/components/super-admin/status-forms'
+import { currentYearMonth } from '@/lib/tracking/live-tracking-quota'
+import { InfoTip } from '@/components/ui/info-tip'
 import type { CompanyStatus } from '@/lib/supabase/database.types'
 
 export const metadata: Metadata = { title: 'Company Detail — Super Admin' }
@@ -32,19 +34,41 @@ interface PageProps {
 export default async function CompanyDetailPage({ params }: PageProps) {
   const admin = createAdminClient()
 
-  const [{ data: company, error: companyError }, { data: users }] = await Promise.all([
+  const yearMonth = currentYearMonth()
+
+  const [{ data: company, error: companyError }, { data: users }, { data: mapUsageRows }] = await Promise.all([
     admin.from('companies').select('*').eq('id', params.id).single(),
     admin
       .from('user_profiles')
       .select('id, role, first_name, last_name, phone, is_active, created_at')
       .eq('company_id', params.id)
       .order('created_at', { ascending: true }),
+    admin
+      .from('live_tracking_usage_by_booking')
+      .select('booking_id, refresh_count')
+      .eq('company_id', params.id)
+      .eq('year_month', yearMonth)
+      .order('refresh_count', { ascending: false })
+      .limit(15),
   ])
 
   if (companyError || !company) return notFound()
 
   const allUsers = users ?? []
   const activeCount = allUsers.filter((u) => u.is_active).length
+  const usersById = new Map(allUsers.map((u) => [u.id, u]))
+
+  const topMapUsageBookingIds = (mapUsageRows ?? []).map((r) => r.booking_id)
+  const { data: mapUsageBookings } = topMapUsageBookingIds.length
+    ? await admin
+        .from('bookings')
+        .select('id, booking_number, driver_id, passenger_name, scheduled_at')
+        .in('id', topMapUsageBookingIds)
+    : { data: [] as { id: string; booking_number: string; driver_id: string | null; passenger_name: string | null; scheduled_at: string }[] }
+  const bookingById = new Map((mapUsageBookings ?? []).map((b) => [b.id, b]))
+  const mapUsageRowsWithDetail = (mapUsageRows ?? [])
+    .map((r) => ({ ...r, booking: bookingById.get(r.booking_id) }))
+    .filter((r) => r.booking)
 
   // Info rows helper
   const info = [
@@ -233,6 +257,60 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   </td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Live tracking — map load by trip */}
+      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-sl-outline-variant">
+          <h2 className="text-sm font-semibold text-sl-on-surface flex items-center">
+            Live Tracking — Map Load by Trip ({yearMonth})
+            <InfoTip text="Cuántas veces se refrescó el mapa en vivo del pasajero en CADA viaje este mes, con el conductor y pasajero de ese viaje. Útil para investigar feedback puntual (¿este conductor dejó el tracking abierto sin necesidad? ¿este cliente tuvo un viaje inusualmente largo/con muchos refrescos?) sin depender solo del total agregado de la empresa." />
+          </h2>
+        </div>
+        {mapUsageRowsWithDetail.length === 0 ? (
+          <div className="px-6 py-12 text-center text-sm text-sl-on-surface-muted">
+            No live-tracking refreshes recorded for any trip this month.
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-sl-outline-variant">
+                {['Trip', 'Driver', 'Passenger', 'Scheduled', 'Refreshes'].map((h) => (
+                  <th key={h} className="text-left px-6 py-3 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-sl-outline-variant/50">
+              {mapUsageRowsWithDetail.map((r) => {
+                const b = r.booking!
+                const driver = b.driver_id ? usersById.get(b.driver_id) : null
+                return (
+                  <tr key={r.booking_id} className="hover:bg-sl-bg/40 transition-colors">
+                    <td className="px-6 py-4">
+                      <span className="font-mono text-xs text-bronze">{b.booking_number}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-sl-on-surface">{driver ? `${driver.first_name} ${driver.last_name}` : '—'}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-sl-on-surface-muted">{b.passenger_name ?? '—'}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-xs text-sl-on-surface-muted">
+                        {new Date(b.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-semibold text-sl-on-surface">{r.refresh_count.toLocaleString()}</span>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}

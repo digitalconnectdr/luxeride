@@ -130,7 +130,7 @@ export async function refreshLiveMapAction(bookingId: string): Promise<LiveMapRe
 
   if (!mapsKey) return null
 
-  const allowed = await consumeLiveTrackingQuota(booking.company_id)
+  const allowed = await consumeLiveTrackingQuota(booking.company_id, bookingId)
   const url = buildTripStaticMapUrl({
     pickup: { lat: pLoc.lat, lng: pLoc.lng },
     dropoff: { lat: dLoc.lat, lng: dLoc.lng },

@@ -17,7 +17,10 @@ export function currentYearMonth(): string {
 // Devuelve true si la empresa puede consumir UN refresco más este mes (y lo
 // registra); false si ya alcanzó su cuota (el llamador debe usar el mapa
 // estático sin marcador en vivo en ese caso).
-export async function consumeLiveTrackingQuota(companyId: string): Promise<boolean> {
+// `bookingId` (siempre lo pasa refreshLiveMapAction) también registra el
+// consumo POR VIAJE — permite ver, en el detalle de una empresa, qué
+// conductor/pasajero generó más carga de mapas en un viaje puntual.
+export async function consumeLiveTrackingQuota(companyId: string, bookingId?: string): Promise<boolean> {
   const admin = createAdminClient()
   const yearMonth = currentYearMonth()
 
@@ -50,5 +53,26 @@ export async function consumeLiveTrackingQuota(companyId: string): Promise<boole
   } else {
     await admin.from('live_tracking_usage').insert({ company_id: companyId, year_month: yearMonth, refresh_count: 1 })
   }
+
+  if (bookingId) {
+    const { data: bookingUsage } = await admin
+      .from('live_tracking_usage_by_booking')
+      .select('refresh_count')
+      .eq('booking_id', bookingId)
+      .eq('year_month', yearMonth)
+      .maybeSingle()
+    if (bookingUsage) {
+      await admin
+        .from('live_tracking_usage_by_booking')
+        .update({ refresh_count: bookingUsage.refresh_count + 1 })
+        .eq('booking_id', bookingId)
+        .eq('year_month', yearMonth)
+    } else {
+      await admin
+        .from('live_tracking_usage_by_booking')
+        .insert({ booking_id: bookingId, company_id: companyId, year_month: yearMonth, refresh_count: 1 })
+    }
+  }
+
   return true
 }
