@@ -58,6 +58,7 @@ export default async function SuperAdminDashboardPage() {
     { count: availableDriversNow },
     { count: totalVehicles },
     { data: driverCompanyRows },
+    { data: vehicleCompanyRows },
   ] = await Promise.all([
     admin
       .from('companies')
@@ -78,7 +79,8 @@ export default async function SuperAdminDashboardPage() {
     admin.from('drivers').select('id', { count: 'exact', head: true }),
     admin.from('drivers').select('id', { count: 'exact', head: true }).eq('is_available', true),
     admin.from('vehicles').select('id', { count: 'exact', head: true }),
-    admin.from('drivers').select('company_id'),
+    admin.from('drivers').select('company_id, is_available'),
+    admin.from('vehicles').select('company_id'),
   ])
 
   const companies = companiesRaw ?? []
@@ -149,9 +151,27 @@ export default async function SuperAdminDashboardPage() {
   for (const p of succeededPayments) methodCounts.set(p.payment_method, (methodCounts.get(p.payment_method) ?? 0) + 1)
   const companiesWithoutConnect = active.filter((c) => !c.stripe_connect_onboarded)
 
-  // ── E. Flota y conductores (plataforma) ────────────────────────────────────
-  const companiesWithDrivers = new Set((driverCompanyRows ?? []).map((d) => d.company_id))
+  // ── E. Flota y conductores (plataforma + detalle por empresa) ──────────────
+  const driverCountByCompany = new Map<string, number>()
+  const availableDriverCountByCompany = new Map<string, number>()
+  for (const d of driverCompanyRows ?? []) {
+    driverCountByCompany.set(d.company_id, (driverCountByCompany.get(d.company_id) ?? 0) + 1)
+    if (d.is_available) availableDriverCountByCompany.set(d.company_id, (availableDriverCountByCompany.get(d.company_id) ?? 0) + 1)
+  }
+  const vehicleCountByCompany = new Map<string, number>()
+  for (const v of vehicleCompanyRows ?? []) {
+    vehicleCountByCompany.set(v.company_id, (vehicleCountByCompany.get(v.company_id) ?? 0) + 1)
+  }
+  const companiesWithDrivers = new Set(driverCountByCompany.keys())
   const companiesWithoutDrivers = active.filter((c) => !companiesWithDrivers.has(c.id))
+  const fleetByCompany = [...active, ...trial]
+    .map((c) => ({
+      company: c,
+      drivers: driverCountByCompany.get(c.id) ?? 0,
+      available: availableDriverCountByCompany.get(c.id) ?? 0,
+      vehicles: vehicleCountByCompany.get(c.id) ?? 0,
+    }))
+    .sort((a, b) => a.drivers - b.drivers)
 
   const card = 'bg-white border border-[#e5e1d8] rounded-xl'
 
@@ -433,6 +453,51 @@ export default async function SuperAdminDashboardPage() {
               </p>
               <p className="text-2xl font-playfair font-semibold mt-1 text-[#1d1b18]">{totalVehicles ?? 0}</p>
             </div>
+          </div>
+
+          <div className={`${card} overflow-hidden`}>
+            <div className="px-6 py-4 border-b border-[#f0ede5]">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
+                Flota por empresa
+                <InfoTip text="Detalle de conductores y vehículos registrados en cada empresa activa o en prueba, ordenado de menos a más conductores — así las que están en riesgo (0 o pocos conductores) aparecen primero." />
+              </p>
+            </div>
+            {fleetByCompany.length === 0 ? (
+              <p className="p-6 text-sm text-[#75716a] text-center">Sin empresas activas o en prueba todavía.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#f0ede5]">
+                    {[
+                      { label: 'Empresa' },
+                      { label: 'Estado' },
+                      { label: 'Conductores', tip: 'Total de conductores con ficha registrada en esta empresa (tabla drivers), sin importar si están en servicio.' },
+                      { label: 'En servicio', tip: 'De esos conductores, cuántos están marcados como disponibles ahora mismo.' },
+                      { label: 'Vehículos', tip: 'Total de vehículos con ficha registrada en esta empresa (tabla vehicles).' },
+                    ].map((h) => (
+                      <th key={h.label} className="text-left px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
+                        <span className="inline-flex items-center">{h.label}{h.tip && <InfoTip text={h.tip} />}</span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#f0ede5]">
+                  {fleetByCompany.map((r) => (
+                    <tr key={r.company.id} className="hover:bg-[#faf8f3] transition-colors">
+                      <td className="px-5 py-3">
+                        <Link href={`/super-admin/companies/${r.company.id}`} className="font-medium text-[#1d1b18] hover:text-[#8a6520] transition-colors">
+                          {r.company.name}
+                        </Link>
+                      </td>
+                      <td className="px-5 py-3"><StatusBadge status={r.company.status} /></td>
+                      <td className={`px-5 py-3 text-sm font-medium ${r.drivers === 0 ? 'text-red-500' : 'text-[#1d1b18]'}`}>{r.drivers}</td>
+                      <td className="px-5 py-3 text-sm text-green-600">{r.available}</td>
+                      <td className="px-5 py-3 text-sm text-[#1d1b18]">{r.vehicles}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </section>
 
