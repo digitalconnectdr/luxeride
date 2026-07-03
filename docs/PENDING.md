@@ -474,6 +474,34 @@ en la pantalla de éxito; ahora es parte del paso de confirmación.
       alerta de presupuesto en Google Cloud Console → Billing → Budgets &
       Alerts, sobre el mismo proyecto donde vive la API key de Maps.
 
+13. **✅ HECHO (2026-07-03) — Auto-asignación justa de viajes + panel de
+    conductores activos + chat Dispatch↔Conductor** (feature no planificada,
+    pedida directamente por el usuario): al crear una reserva, el sistema
+    intenta asignarla sola al conductor "en servicio" (`drivers.is_available`,
+    controlado por el propio conductor desde /driver/trips, antes solo lo
+    tocaba un admin) sin choque de horario y con MENOS viajes COMPLETADOS
+    hoy (`lib/dispatch/auto-assign.ts`) — un viaje cancelado/rechazado antes
+    de empezar no cuenta en contra del conductor. Barrido diario de respaldo
+    (`/api/cron/auto-assign`, límite de 1x/día del plan Hobby de Vercel) para
+    lo que quede pendiente. Dispatch Board: el mapa en vivo pasó de Static
+    Maps (imagen fija, se veía pegado a un solo marcador) a un mapa
+    interactivo real (pan/zoom, Google Maps JS) — ya no consume la cuota
+    mensual de Static Maps del tracking del pasajero. Nuevo panel
+    "Conductores activos ahora mismo" (estado, viaje actual, viajes
+    completados hoy) con botón de chat por conductor. Tarjetas del board:
+    distancia del viaje + hora de "Llegó al pickup" con indicador a-tiempo/
+    tarde (margen de 10 min, mismo criterio que /admin/drivers/[id]). Canal
+    nuevo `driver_messages` (migración 24): Dispatch puede escribirle a
+    cualquier conductor en servicio aunque no tenga un viaje activo (no
+    atado a una reserva, a diferencia de `trip_messages`) — visible en el
+    panel de conductores activos y en /driver/trips (colapsable: solo un
+    botón cuando no hay nada que ver, se resalta en ámbar con contador si
+    llega un mensaje nuevo mientras está oculto, para no distraer al
+    conductor en movimiento pero tampoco dejar pasar un aviso). Bug
+    encontrado y corregido en el camino: `driverSetAvailabilityAction` usaba
+    UPDATE, que no da error si el conductor nunca tuvo fila en `drivers`
+    (solo en `user_profiles`) — el toggle "funcionaba" sin cambiar nada;
+    cambiado a upsert.
 14. **Facturación vía Whop.com** (analizado 2026-07-02, dos partes
     independientes):
     - **A. Whop para cobrar el acceso a LuxeRide** (viable, confirmado —
