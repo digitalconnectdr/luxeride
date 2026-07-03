@@ -732,7 +732,7 @@ export const en = {
       radiusPlaceholder: 'e.g. 15',
       postalCodesLabel: 'Postal codes (optional)',
       postalCodesPlaceholder: 'Type a code and press Enter…',
-      mapHint: 'Tap the map to set the circle\'s center. Pins appear automatically for the postal codes above.',
+      mapHint: 'Tap the map to set the circle\'s center. If you don\'t, the center is derived automatically from the average of the postal codes above.',
       clearCenter: 'Clear center',
       addButton: 'Add Zone',
       addButtonSaving: 'Saving…',

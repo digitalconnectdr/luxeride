@@ -733,7 +733,7 @@ export const pt: Dictionary = {
       radiusPlaceholder: 'ex. 15',
       postalCodesLabel: 'Códigos postais (opcional)',
       postalCodesPlaceholder: 'Digite um código e pressione Enter…',
-      mapHint: 'Toque no mapa para fixar o centro do círculo. Os pinos aparecem sozinhos conforme os códigos postais acima.',
+      mapHint: 'Toque no mapa para fixar o centro do círculo. Se não tocar, o centro é derivado automaticamente da média dos códigos postais acima.',
       clearCenter: 'Limpar centro',
       addButton: 'Adicionar zona',
       addButtonSaving: 'Salvando…',

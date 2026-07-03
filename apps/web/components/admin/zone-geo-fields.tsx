@@ -78,8 +78,17 @@ export function ZoneGeoFields({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [codes])
 
+  // Si el admin no fija un centro a mano (clic en el mapa), lo derivamos del
+  // centroide de los códigos postales ya geocodificados — antes, sin clic,
+  // el círculo se guardaba sin centro y el radio nunca se veía ni funcionaba.
+  const pinList = Object.values(pins)
+  const autoCenter = pinList.length > 0
+    ? { lat: pinList.reduce((s, p) => s + p.lat, 0) / pinList.length, lng: pinList.reduce((s, p) => s + p.lng, 0) / pinList.length }
+    : null
+  const effectiveCenter = center ?? autoCenter
+
   const radiusNum = parseFloat(radius)
-  const hasCircle = !!center && Number.isFinite(radiusNum) && radiusNum > 0
+  const hasCircle = !!effectiveCenter && Number.isFinite(radiusNum) && radiusNum > 0
 
   function handleMapClick(e: MapMouseEvent) {
     if (e.detail.latLng) setCenter({ lat: e.detail.latLng.lat, lng: e.detail.latLng.lng })
@@ -132,8 +141,8 @@ export function ZoneGeoFields({
 
       <div className="rounded-xl overflow-hidden border border-sl-outline-variant h-56">
         <Map
-          defaultCenter={center ?? DEFAULT_MAP_CENTER}
-          defaultZoom={center ? 12 : DEFAULT_MAP_ZOOM}
+          defaultCenter={effectiveCenter ?? DEFAULT_MAP_CENTER}
+          defaultZoom={effectiveCenter ? 12 : DEFAULT_MAP_ZOOM}
           styles={APPLE_WHITE_MAP_STYLES}
           gestureHandling="greedy"
           disableDefaultUI={false}
@@ -146,7 +155,7 @@ export function ZoneGeoFields({
           {center && <Marker position={center} />}
           {hasCircle && (
             <Circle
-              center={center}
+              center={effectiveCenter!}
               radius={radiusNum * MILES_TO_METERS}
               fillColor="#8a6520"
               fillOpacity={0.12}
@@ -168,9 +177,11 @@ export function ZoneGeoFields({
         )}
       </div>
 
-      {/* Hidden inputs — lo que realmente lee el server action */}
-      {center && <input type="hidden" name="center_lat" value={center.lat} />}
-      {center && <input type="hidden" name="center_lng" value={center.lng} />}
+      {/* Hidden inputs — lo que realmente lee el server action. Si no hay
+          centro manual, se persiste el centroide auto-derivado de los
+          códigos postales para que el radio sí tenga un ancla real. */}
+      {effectiveCenter && <input type="hidden" name="center_lat" value={effectiveCenter.lat} />}
+      {effectiveCenter && <input type="hidden" name="center_lng" value={effectiveCenter.lng} />}
       {codes.map((c) => (
         <input key={c} type="hidden" name="postal_codes" value={c} />
       ))}

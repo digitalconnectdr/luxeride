@@ -67,8 +67,15 @@ export function ZoneCoverageMap({ zone, noGeoHint }: { zone: ZoneForCoverage; no
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [codes.join(',')])
 
-  const hasCircle = zone.center_lat != null && zone.center_lng != null && zone.radius_miles != null
-  const center = hasCircle ? { lat: zone.center_lat!, lng: zone.center_lng! } : null
+  // Si la zona no tiene centro manual guardado, derivamos uno del centroide
+  // de sus códigos postales ya geocodificados para que el radio sí se dibuje.
+  const manualCenter = zone.center_lat != null && zone.center_lng != null ? { lat: zone.center_lat, lng: zone.center_lng } : null
+  const geocodedPins = codes.filter((c) => c in pins).map((c) => pins[c])
+  const autoCenter = geocodedPins.length > 0
+    ? { lat: geocodedPins.reduce((s, p) => s + p.lat, 0) / geocodedPins.length, lng: geocodedPins.reduce((s, p) => s + p.lng, 0) / geocodedPins.length }
+    : null
+  const center = manualCenter ?? autoCenter
+  const hasCircle = !!center && zone.radius_miles != null
   const hasAnyGeo = hasCircle || codes.length > 0
 
   return (

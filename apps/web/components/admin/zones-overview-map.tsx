@@ -51,7 +51,24 @@ export function ZonesOverviewMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, zones])
 
-  const circleZones = zones.filter((z) => z.center_lat != null && z.center_lng != null && z.radius_miles != null)
+  // Si una zona no tiene centro manual pero sí códigos postales ya
+  // geocodificados, derivamos el centro del círculo de su centroide — antes
+  // el radio quedaba invisible en el mapa si nunca se hacía clic para fijar
+  // un centro (ej. zona creada solo con radio + código postal).
+  function centerFor(z: ZoneForOverview): { lat: number; lng: number } | null {
+    if (z.center_lat != null && z.center_lng != null) return { lat: z.center_lat, lng: z.center_lng }
+    const zonePins = (z.postal_codes ?? []).filter((c) => c in pins).map((c) => pins[c])
+    if (zonePins.length === 0) return null
+    return {
+      lat: zonePins.reduce((s, p) => s + p.lat, 0) / zonePins.length,
+      lng: zonePins.reduce((s, p) => s + p.lng, 0) / zonePins.length,
+    }
+  }
+
+  const circleZones = zones
+    .filter((z) => z.radius_miles != null)
+    .map((z) => ({ zone: z, center: centerFor(z) }))
+    .filter((c): c is { zone: ZoneForOverview; center: { lat: number; lng: number } } => c.center != null)
 
   if (zones.length === 0) return null
 
@@ -78,10 +95,10 @@ export function ZonesOverviewMap({
             mapTypeControl={false}
             fullscreenControl={false}
           >
-            {circleZones.map((z) => (
+            {circleZones.map(({ zone: z, center }) => (
               <Circle
                 key={z.id}
-                center={{ lat: z.center_lat!, lng: z.center_lng! }}
+                center={center}
                 radius={z.radius_miles! * MILES_TO_METERS}
                 fillColor={z.color ?? '#8a6520'}
                 fillOpacity={0.12}
