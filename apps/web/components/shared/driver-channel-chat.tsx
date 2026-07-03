@@ -31,19 +31,25 @@ export function DriverChannelChat({
   driverId,
   labels,
   brandColor = '#e9c176',
+  collapsible = false,
 }: {
   variant: 'dispatch' | 'driver'
   /** Requerido cuando variant === 'dispatch' */
   driverId?: string
   labels: Labels
   brandColor?: string
+  /** Si es true: sin mensajes, muestra solo un botón en vez del panel completo
+   *  (el conductor lo abre cuando lo necesita, sin ocupar espacio siempre). */
+  collapsible?: boolean
 }) {
   const [messages, setMessages] = useState<DriverChannelMessage[]>([])
   const [draft, setDraft] = useState('')
   const [error, setError] = useState('')
+  const [expanded, setExpanded] = useState(false)
   const [isPending, startTransition] = useTransition()
   const scrollRef = useRef<HTMLDivElement>(null)
   const mySender = variant === 'dispatch' ? 'dispatch' : 'driver'
+  const showPanel = !collapsible || expanded || messages.length > 0
 
   const load = useCallback(async () => {
     const res =
@@ -104,6 +110,18 @@ export function DriverChannelChat({
       }
       await load()
     })
+  }
+
+  if (!showPanel) {
+    return (
+      <button
+        type="button"
+        onClick={() => setExpanded(true)}
+        className="w-full flex items-center gap-2 rounded-2xl border border-[#e5e1d8] bg-white px-4 py-3 text-sm text-[#1d1b18] hover:bg-[#faf8f3] transition-colors"
+      >
+        💬 {labels.title}
+      </button>
+    )
   }
 
   return (

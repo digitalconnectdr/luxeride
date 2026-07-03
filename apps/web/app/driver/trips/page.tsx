@@ -164,6 +164,7 @@ export default async function DriverTripsPage() {
         {/* Mensajes de Dispatch — canal general, no atado a un viaje específico */}
         <DriverChannelChat
           variant="driver"
+          collapsible
           brandColor={brandColor}
           labels={{
             title: dt.dispatchChat.title,
