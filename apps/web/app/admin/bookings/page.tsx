@@ -76,7 +76,7 @@ export default async function AdminBookingsPage({
   // Lista filtrada
   let query = admin
     .from('bookings')
-    .select('id, booking_number, status, type, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, total_amount, currency, vehicle_type_id, driver_id')
+    .select('id, booking_number, status, type, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, total_amount, currency, vehicle_type_id, driver_id, rating')
     .eq('company_id', companyId)
     .order('scheduled_at', { ascending: false })
     .limit(100)
@@ -86,6 +86,36 @@ export default async function AdminBookingsPage({
   }
 
   const { data: bookings } = await query
+
+  // Método de pago por reserva — para cada booking_id nos quedamos con el
+  // pago exitoso más reciente (o, si no hubo ninguno exitoso, el más
+  // reciente en cualquier estado) para mostrar efectivo/tarjeta/Zelle/etc.
+  const bookingIds = (bookings ?? []).map((b) => b.id)
+  const { data: paymentsData } = bookingIds.length
+    ? await admin
+        .from('payments')
+        .select('booking_id, payment_method, status, metadata, created_at')
+        .in('booking_id', bookingIds)
+        .order('created_at', { ascending: false })
+    : { data: [] as { booking_id: string | null; payment_method: string; status: string; metadata: unknown; created_at: string }[] }
+
+  const succeededPaymentByBooking = new Map<string, { payment_method: string; metadata: unknown }>()
+  const anyPaymentByBooking = new Map<string, { payment_method: string; metadata: unknown }>()
+  for (const p of paymentsData ?? []) {
+    if (!p.booking_id) continue
+    if (!anyPaymentByBooking.has(p.booking_id)) anyPaymentByBooking.set(p.booking_id, p)
+    if (p.status === 'succeeded' && !succeededPaymentByBooking.has(p.booking_id)) succeededPaymentByBooking.set(p.booking_id, p)
+  }
+
+  function paymentInfo(bookingId: string): { label: string; kind: 'cash' | 'digital' | 'none' } {
+    const p = succeededPaymentByBooking.get(bookingId) ?? anyPaymentByBooking.get(bookingId)
+    if (!p) return { label: t.paymentPending, kind: 'none' }
+    const meta = (p.metadata ?? {}) as { method?: string }
+    if (p.payment_method === 'cash') return { label: t.paymentCash, kind: 'cash' }
+    if (p.payment_method === 'bank_transfer') return { label: meta.method === 'zelle' ? t.paymentZelle : t.paymentTransfer, kind: 'digital' }
+    if (p.payment_method === 'corporate_account') return { label: t.paymentCorporate, kind: 'digital' }
+    return { label: t.paymentCard, kind: 'digital' }
+  }
 
   const totalActive = (counts['pending'] ?? 0) + (counts['assigned'] ?? 0) +
     (counts['en_route'] ?? 0) + (counts['arrived'] ?? 0) + (counts['in_progress'] ?? 0)
@@ -163,6 +193,8 @@ export default async function AdminBookingsPage({
                 <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPickup}</th>
                 <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDropoff}</th>
                 <th className="text-right px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colTotal}</th>
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPayment}</th>
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colRating}</th>
               </tr>
             </thead>
             <tbody>
@@ -198,6 +230,26 @@ export default async function AdminBookingsPage({
                     {b.total_amount != null
                       ? `$${Number(b.total_amount).toFixed(2)}`
                       : '—'}
+                  </td>
+                  <td className="px-5 py-3">
+                    {(() => {
+                      const payment = paymentInfo(b.id)
+                      const badgeCls = payment.kind === 'cash'
+                        ? 'bg-green-50 text-green-700 border-green-200'
+                        : payment.kind === 'digital'
+                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                        : 'bg-gray-50 text-gray-500 border-gray-200'
+                      return (
+                        <span className={`inline-flex text-xs font-medium px-2 py-0.5 rounded-full border ${badgeCls}`}>
+                          {payment.label}
+                        </span>
+                      )
+                    })()}
+                  </td>
+                  <td className="px-5 py-3 text-sl-on-surface-muted">
+                    {b.rating != null ? (
+                      <span className="text-bronze font-medium">★ {b.rating}</span>
+                    ) : '—'}
                   </td>
                 </tr>
               ))}

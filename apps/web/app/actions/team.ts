@@ -134,6 +134,49 @@ export async function updateTeamMemberRoleAction(
   return { success: true }
 }
 
+export type ResetPasswordResult = {
+  success: boolean
+  error?: string
+  tempPassword?: string
+}
+
+// Reseteo de contraseña por el owner/admin de la empresa — útil cuando un
+// conductor (u otro miembro) pierde su contraseña y no puede recibir el
+// correo de "¿Olvidaste tu contraseña?" o simplemente prefiere que se la
+// entreguen directo. Genera una nueva temporal, igual que en la invitación.
+export async function resetTeamMemberPasswordAction(memberId: string): Promise<ResetPasswordResult> {
+  const user = await requireRole('company_owner', 'company_admin')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  if (memberId === user.id) {
+    return { success: false, error: 'Usa "¿Olvidaste tu contraseña?" para tu propia cuenta' }
+  }
+
+  const admin = createAdminClient()
+
+  // IDOR guard: el miembro debe pertenecer a la misma empresa
+  const { data: member } = await admin
+    .from('user_profiles')
+    .select('company_id, role')
+    .eq('id', memberId)
+    .single()
+  if (!member || member.company_id !== user.company_id) {
+    return { success: false, error: 'Miembro no encontrado' }
+  }
+  if (member.role === 'company_owner') {
+    return { success: false, error: 'No se puede resetear la contraseña del dueño de la empresa' }
+  }
+
+  const tempPassword = generateTempPassword()
+  const { error } = await admin.auth.admin.updateUserById(memberId, { password: tempPassword })
+  if (error) {
+    console.error('[resetTeamMemberPasswordAction]', error)
+    return { success: false, error: 'Error al resetear la contraseña' }
+  }
+
+  return { success: true, tempPassword }
+}
+
 export async function toggleTeamMemberActiveAction(
   memberId: string,
   isActive: boolean,

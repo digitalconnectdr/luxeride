@@ -1,7 +1,7 @@
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { TeamInviteForm } from '@/components/admin/team-invite-form'
-import { TeamMemberActiveToggle, TeamMemberRoleSelect } from '@/components/admin/team-controls'
+import { TeamMemberActiveToggle, TeamMemberRoleSelect, TeamMemberResetPasswordButton } from '@/components/admin/team-controls'
 import { getDict } from '@/lib/i18n/server'
 import type { UserRole } from '@/lib/auth/permissions'
 
@@ -59,6 +59,7 @@ export default async function TeamPage() {
                 <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thMember}</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thRole}</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thStatus}</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thActions}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-sl-outline-variant/40">
@@ -103,6 +104,23 @@ export default async function TeamPage() {
                           memberId={member.id}
                           isActive={member.is_active}
                           labels={{ active: t.active, inactive: t.inactive }}
+                        />
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      {!isOwnerRole && !isSelf && (
+                        <TeamMemberResetPasswordButton
+                          memberId={member.id}
+                          memberName={`${member.first_name} ${member.last_name}`}
+                          labels={{
+                            resetPassword: t.resetPassword,
+                            resetPasswordConfirm: t.resetPasswordConfirm,
+                            resetting: t.resetting,
+                            resetSuccess: t.resetSuccess,
+                            tempPasswordLabel: t.tempPasswordLabel,
+                            copy: t.copy,
+                            copied: t.copied,
+                          }}
                         />
                       )}
                     </td>

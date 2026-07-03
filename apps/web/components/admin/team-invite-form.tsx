@@ -28,6 +28,7 @@ function SubmitButton({ t }: { t: TeamDict }) {
 export function TeamInviteForm({ t, isOwner }: { t: TeamDict; isOwner: boolean }) {
   const [state, formAction] = useFormState(inviteTeamMemberAction, null)
   const [copied, setCopied] = useState(false)
+  const [open, setOpen] = useState(false)
 
   function copyCreds() {
     if (!state?.email || !state?.tempPassword) return
@@ -42,8 +43,21 @@ export function TeamInviteForm({ t, isOwner }: { t: TeamDict; isOwner: boolean }
 
   return (
     <div className="bg-sl-surface border border-sl-outline-variant rounded-xl p-5 mb-6">
-      <h2 className="text-sm font-semibold text-sl-on-surface mb-4">{t.inviteTitle}</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-sl-on-surface">{t.inviteTitle}</h2>
+        {!open && (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors"
+          >
+            {t.addButton}
+          </button>
+        )}
+      </div>
 
+      {open && (
+      <>
       {state && !state.success && state.error && (
         <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
           <p className="text-sm text-red-600">{state.error}</p>
@@ -105,10 +119,15 @@ export function TeamInviteForm({ t, isOwner }: { t: TeamDict; isOwner: boolean }
             </select>
           </div>
         </div>
-        <div className="flex justify-end">
+        <div className="flex justify-end items-center gap-4">
+          <button type="button" onClick={() => setOpen(false)} className="text-xs text-sl-on-surface-muted hover:text-sl-on-surface">
+            {t.cancel}
+          </button>
           <SubmitButton t={t} />
         </div>
       </form>
+      </>
+      )}
     </div>
   )
 }

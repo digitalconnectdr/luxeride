@@ -1,7 +1,7 @@
 'use client'
 
-import { useTransition } from 'react'
-import { toggleTeamMemberActiveAction, updateTeamMemberRoleAction } from '@/app/actions/team'
+import { useState, useTransition } from 'react'
+import { toggleTeamMemberActiveAction, updateTeamMemberRoleAction, resetTeamMemberPasswordAction } from '@/app/actions/team'
 import type { UserRole } from '@/lib/auth/permissions'
 
 const DEFAULT_ROLES: Record<string, string> = {
@@ -76,6 +76,77 @@ export function TeamMemberRoleSelect({
         ))}
       </select>
       {isPending && <span className="text-xs text-sl-on-surface-muted animate-pulse">{saving}</span>}
+    </div>
+  )
+}
+
+export function TeamMemberResetPasswordButton({
+  memberId,
+  memberName,
+  labels,
+}: {
+  memberId: string
+  memberName: string
+  labels: {
+    resetPassword: string
+    resetPasswordConfirm: string
+    resetting: string
+    resetSuccess: string
+    tempPasswordLabel: string
+    copy: string
+    copied: string
+  }
+}) {
+  const [isPending, startTransition] = useTransition()
+  const [tempPassword, setTempPassword] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  function handleClick() {
+    if (!window.confirm(labels.resetPasswordConfirm.replace('{name}', memberName))) return
+    setError(null)
+    startTransition(async () => {
+      const res = await resetTeamMemberPasswordAction(memberId)
+      if (res.success && res.tempPassword) setTempPassword(res.tempPassword)
+      else setError(res.error ?? 'Error')
+    })
+  }
+
+  function copyPassword() {
+    if (!tempPassword) return
+    navigator.clipboard?.writeText(tempPassword).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => {})
+  }
+
+  if (tempPassword) {
+    return (
+      <div className="rounded-lg bg-green-50 border border-green-200 px-3 py-2 max-w-xs">
+        <p className="text-xs text-green-700 font-medium">{labels.resetSuccess}</p>
+        <div className="mt-1.5 flex items-center gap-2">
+          <code className="text-xs bg-white border border-green-200 rounded px-2 py-1 font-mono text-gray-800">
+            {tempPassword}
+          </code>
+          <button type="button" onClick={copyPassword} className="text-xs font-medium text-bronze hover:text-bronze/80 shrink-0">
+            {copied ? labels.copied : labels.copy}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        disabled={isPending}
+        onClick={handleClick}
+        className="text-xs font-medium text-sl-on-surface-muted hover:text-bronze disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+      >
+        {isPending ? labels.resetting : labels.resetPassword}
+      </button>
+      {error && <p className="text-[11px] text-red-500 mt-0.5">{error}</p>}
     </div>
   )
 }
