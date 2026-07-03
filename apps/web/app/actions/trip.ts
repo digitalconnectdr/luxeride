@@ -88,7 +88,7 @@ export async function cancelTripByClientAction(
   const admin = createAdminClient()
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, status, company_id, scheduled_at, total_amount')
+    .select('id, status, company_id, driver_id, scheduled_at, total_amount')
     .eq('id', bookingId)
     .single()
 
@@ -111,6 +111,20 @@ export async function cancelTripByClientAction(
   if (error) {
     console.error('[cancelTripByClientAction]', error)
     return { success: false, error: 'No se pudo cancelar. Intenta de nuevo.' }
+  }
+
+  // Distingue "canceló antes de tener conductor" (rutinario) de "rechazó el
+  // servicio ya asignado" (señal a vigilar — repetido con un conductor
+  // específico puede indicar un problema real).
+  if (booking.driver_id) {
+    await admin.from('booking_events').insert({
+      booking_id: bookingId,
+      company_id: booking.company_id,
+      type: 'customer_rejected',
+      actor: 'customer',
+      reason: cleanReason || null,
+      metadata: { driver_id: booking.driver_id },
+    })
   }
 
   // ── Política de cancelación: registrar el cargo si aplica (mismo motor que admin)

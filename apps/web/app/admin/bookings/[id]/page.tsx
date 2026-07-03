@@ -66,7 +66,7 @@ export default async function BookingDetailPage({
   if (!booking) return notFound()
 
   // Datos relacionados
-  const [{ data: fees }, { data: drivers }, { data: vehicleType }, { data: payments }] = await Promise.all([
+  const [{ data: fees }, { data: drivers }, { data: vehicleType }, { data: payments }, { data: events }] = await Promise.all([
     admin
       .from('booking_fees')
       .select('*')
@@ -89,6 +89,11 @@ export default async function BookingDetailPage({
     admin
       .from('payments')
       .select('id, amount, currency, status, payment_method, description, failure_message, captured_at, created_at')
+      .eq('booking_id', booking.id)
+      .order('created_at', { ascending: false }),
+    admin
+      .from('booking_events')
+      .select('id, type, actor, reason, metadata, created_at')
       .eq('booking_id', booking.id)
       .order('created_at', { ascending: false }),
   ])
@@ -362,6 +367,41 @@ export default async function BookingDetailPage({
           </div>
         )}
       </div>
+
+      {/* Bitácora de eventos: rechazos, incidentes, reasignaciones */}
+      {!!events?.length && (
+        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-3">
+            {t.eventsTitle}
+          </p>
+          <div className="space-y-3">
+            {events.map((ev) => {
+              const isIncident = ev.type === 'driver_incident'
+              const category = (ev.metadata as { category?: string } | null)?.category
+              return (
+                <div
+                  key={ev.id}
+                  className={`rounded-xl border p-3.5 ${isIncident ? 'border-amber-200 bg-amber-50' : 'border-sl-outline-variant bg-sl-bg'}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`text-xs font-semibold ${isIncident ? 'text-amber-800' : 'text-sl-on-surface'}`}>
+                      {t.eventTypes[ev.type as keyof typeof t.eventTypes] ?? ev.type}
+                      {category && ` — ${t.incidentCategories[category as keyof typeof t.incidentCategories] ?? category}`}
+                    </span>
+                    <span className="text-[11px] text-sl-on-surface-muted">{fmt(ev.created_at, localeTag)}</span>
+                  </div>
+                  {ev.reason && (
+                    <p className="text-sm text-sl-on-surface mt-1.5">{ev.reason}</p>
+                  )}
+                  <p className="text-[11px] text-sl-on-surface-muted mt-1.5">
+                    {t.eventActors[ev.actor as keyof typeof t.eventActors] ?? ev.actor}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Calificación del cliente (review post-viaje) */}
       {booking.rating != null && (

@@ -45,6 +45,19 @@ export default async function DispatcherDashboardPage() {
       .order('first_name'),
   ])
 
+  // Conteo de eventos recientes (24h) por reserva — rechazos/incidentes/
+  // reasignaciones, para mostrar un aviso en el tablero sin abrir cada viaje.
+  const eventsSince = new Date(Date.now() - 24 * 3_600_000).toISOString()
+  const { data: recentEvents } = await admin
+    .from('booking_events')
+    .select('booking_id, type')
+    .eq('company_id', user.company_id)
+    .gte('created_at', eventsSince)
+  const eventCounts = new Map<string, number>()
+  for (const ev of recentEvents ?? []) {
+    eventCounts.set(ev.booking_id, (eventCounts.get(ev.booking_id) ?? 0) + 1)
+  }
+
   // Flight tracking: refrescar vuelos con datos viejos (>30 min, máx. 5 por carga)
   let bookings = initialRows ?? []
   const refreshed = await refreshFlightsForBookings(bookings)
@@ -81,6 +94,7 @@ export default async function DispatcherDashboardPage() {
         flight_status: b.flight_status,
         flight_delay_minutes: b.flight_delay_minutes,
         stops_count: Array.isArray(b.waypoints) ? b.waypoints.length : 0,
+        events_count: eventCounts.get(b.id) ?? 0,
       }))}
       drivers={drivers ?? []}
     />

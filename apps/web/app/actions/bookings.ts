@@ -14,7 +14,7 @@ import {
   validateBookingTime,
 } from '@/lib/policy/engine'
 import { waitUntil } from '@vercel/functions'
-import { notifyBookingEventInBackground } from '@/lib/notifications'
+import { notifyBookingEventInBackground, notify } from '@/lib/notifications'
 import { trackBookingFlight } from '@/lib/flights/refresh'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
 import { getAppUrl } from '@/lib/app-url'
@@ -517,6 +517,7 @@ export async function assignDriverAction(
   bookingId: string,
   driverId: string,
   vehicleId?: string,
+  reassignReason?: string,
 ): Promise<{ success: boolean; error?: string }> {
   const user = await requireRole('company_owner', 'company_admin', 'dispatcher')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
@@ -525,7 +526,7 @@ export async function assignDriverAction(
 
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, status, company_id, scheduled_at, total_amount, booking_number, passenger_name, passenger_email, passenger_phone, pickup_location, dropoff_location, currency')
+    .select('id, status, company_id, driver_id, scheduled_at, total_amount, booking_number, passenger_name, passenger_email, passenger_phone, pickup_location, dropoff_location, currency')
     .eq('id', bookingId)
     .eq('company_id', user.company_id)
     .single()
@@ -536,6 +537,13 @@ export async function assignDriverAction(
   if (!assignable.includes(booking.status as BookingStatus)) {
     return { success: false, error: 'Solo reservaciones pendientes o asignadas pueden recibir conductor' }
   }
+
+  // Reasignación = ya tenía OTRO conductor asignado. Se registra en
+  // booking_events y se avisa por SMS al conductor que pierde el viaje —
+  // no le llega vía la app (el viaje simplemente desaparece de su lista en
+  // el próximo refresh), así que necesita un aviso explícito.
+  const previousDriverId = booking.driver_id
+  const isReassignment = !!previousDriverId && previousDriverId !== driverId
 
   const updates: {
     driver_id: string
@@ -572,8 +580,37 @@ export async function assignDriverAction(
     tracking_url: `${getAppUrl()}/track/${booking.id}`,
   }))
 
+  if (isReassignment && previousDriverId) {
+    await admin.from('booking_events').insert({
+      booking_id: bookingId,
+      company_id: user.company_id,
+      type: 'driver_reassigned',
+      actor: 'dispatcher',
+      actor_id: user.id,
+      reason: reassignReason?.trim().slice(0, 500) || null,
+      metadata: { previous_driver_id: previousDriverId, new_driver_id: driverId },
+    })
+
+    const { data: prevDriver } = await admin
+      .from('user_profiles')
+      .select('phone')
+      .eq('id', previousDriverId)
+      .single()
+    if (prevDriver?.phone) {
+      notify({
+        companyId: user.company_id,
+        channel: 'sms',
+        type: 'driver_unassigned',
+        recipient: prevDriver.phone,
+        vars: { booking_number: booking.booking_number },
+        bookingId,
+      }).catch((err) => console.error('[assignDriverAction] driver_unassigned notify', err))
+    }
+  }
+
   revalidatePath('/admin/bookings')
   revalidatePath(`/admin/bookings/${bookingId}`)
+  revalidatePath('/dispatcher/dashboard')
   return { success: true }
 }
 

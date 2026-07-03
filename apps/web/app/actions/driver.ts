@@ -225,3 +225,132 @@ export async function revealPassengerPhoneAction(
 
   return { success: true, phone: booking.passenger_phone }
 }
+
+// ─── Rechazar un viaje asignado (antes de iniciar ruta) ────────────────────────
+// Solo mientras status='assigned' — una vez el conductor ya inició la ruta, un
+// rechazo se maneja como cancelación/reasignación normal, no como esto. Libera
+// el viaje de vuelta a 'pending' para que el dispatcher lo reasigne, y deja
+// registro del motivo en booking_events (bitácora, no cambia el enum de status).
+
+export async function driverRejectTripAction(
+  bookingId: string,
+  reason: string,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('driver')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const admin = createAdminClient()
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('id, status, company_id')
+    .eq('id', bookingId)
+    .eq('company_id', user.company_id)
+    .eq('driver_id', user.id)
+    .single()
+
+  if (!booking) return { success: false, error: 'Viaje no encontrado o no asignado a ti' }
+  if (booking.status !== 'assigned') {
+    return { success: false, error: 'Solo puedes rechazar un viaje antes de iniciar la ruta' }
+  }
+
+  const { error } = await admin
+    .from('bookings')
+    .update({ driver_id: null, vehicle_id: null, status: 'pending', dispatched_at: null })
+    .eq('id', bookingId)
+    .eq('driver_id', user.id)
+
+  if (error) {
+    console.error('[driverRejectTripAction]', error)
+    return { success: false, error: 'Error al rechazar el viaje' }
+  }
+
+  await admin.from('booking_events').insert({
+    booking_id: bookingId,
+    company_id: booking.company_id,
+    type: 'driver_rejected',
+    actor: 'driver',
+    actor_id: user.id,
+    reason: reason.trim().slice(0, 500) || null,
+  })
+
+  revalidatePath('/driver/trips')
+  revalidatePath('/dispatcher/dashboard')
+  return { success: true }
+}
+
+// ─── Reportar un incidente durante un viaje activo ─────────────────────────────
+// No cambia el estado del viaje (es una alerta, no una transición) — el
+// operador decide qué hacer (reasignar, cancelar, dejar continuar) desde el
+// dispatch board. Se notifica por email al contacto de la empresa.
+
+const INCIDENT_CATEGORIES = ['accident', 'breakdown', 'safety', 'unable_to_reach_passenger', 'other']
+
+export async function reportDriverIncidentAction(
+  bookingId: string,
+  category: string,
+  reason: string,
+): Promise<{ success: boolean; error?: string }> {
+  if (!INCIDENT_CATEGORIES.includes(category)) return { success: false, error: 'Categoría inválida' }
+  const cleanReason = reason.trim()
+  if (!cleanReason) return { success: false, error: 'Describe brevemente el incidente' }
+
+  const user = await requireRole('driver')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const admin = createAdminClient()
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('id, status, company_id, booking_number, passenger_name')
+    .eq('id', bookingId)
+    .eq('company_id', user.company_id)
+    .eq('driver_id', user.id)
+    .single()
+
+  if (!booking) return { success: false, error: 'Viaje no encontrado o no asignado a ti' }
+  const activeStatuses = ['en_route', 'arrived', 'in_progress']
+  if (!activeStatuses.includes(booking.status)) {
+    return { success: false, error: 'Solo puedes reportar un incidente durante un viaje activo' }
+  }
+
+  const { error } = await admin.from('booking_events').insert({
+    booking_id: bookingId,
+    company_id: booking.company_id,
+    type: 'driver_incident',
+    actor: 'driver',
+    actor_id: user.id,
+    reason: cleanReason.slice(0, 1000),
+    metadata: { category },
+  })
+  if (error) {
+    console.error('[reportDriverIncidentAction]', error)
+    return { success: false, error: 'Error al registrar el incidente' }
+  }
+
+  // Alerta por email al contacto de la empresa — no bloquea si falla.
+  try {
+    const { data: company } = await admin.from('companies').select('email').eq('id', user.company_id).single()
+    if (company?.email) {
+      const { notify } = await import('@/lib/notifications')
+      await notify({
+        companyId: user.company_id,
+        channel: 'email',
+        type: 'driver_incident_alert',
+        recipient: company.email,
+        vars: {
+          booking_number: booking.booking_number,
+          driver_name: `${user.profile.first_name} ${user.profile.last_name}`,
+          category,
+          reason: cleanReason,
+          passenger_name: booking.passenger_name ?? 'Pasajero',
+        },
+        bookingId,
+      })
+    }
+  } catch (err) {
+    console.error('[reportDriverIncidentAction] alert', err)
+  }
+
+  revalidatePath('/driver/trips')
+  revalidatePath('/dispatcher/dashboard')
+  return { success: true }
+}

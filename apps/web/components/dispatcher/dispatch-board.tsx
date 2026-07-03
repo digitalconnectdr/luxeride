@@ -8,6 +8,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { updateBookingStatusAction, assignDriverAction } from '@/app/actions/bookings'
+import { DispatchLiveMap } from './dispatch-live-map'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
 export interface DispatchBooking {
@@ -26,6 +27,7 @@ export interface DispatchBooking {
   flight_status?: string | null
   flight_delay_minutes?: number | null
   stops_count?: number
+  events_count?: number
 }
 
 interface Driver {
@@ -124,11 +126,19 @@ export function DispatchBoard({ companyId, initialBookings, drivers }: Props) {
     })
   }
 
-  function assign(bookingId: string, driverId: string) {
+  function assign(bookingId: string, driverId: string, currentDriverId: string | null) {
     if (!driverId) return
+    let reason: string | undefined
+    // Ya tenía OTRO conductor asignado → es una reasignación, no una asignación
+    // inicial. Se pide motivo (opcional) para dejarlo en la bitácora del viaje.
+    if (currentDriverId && currentDriverId !== driverId) {
+      const r = window.prompt('Motivo de la reasignación (opcional):')
+      if (r === null) return // canceló el prompt
+      reason = r
+    }
     setError('')
     startTransition(async () => {
-      const result = await assignDriverAction(bookingId, driverId)
+      const result = await assignDriverAction(bookingId, driverId, undefined, reason)
       if (!result.success) setError(result.error ?? 'Error al asignar')
       router.refresh()
     })
@@ -164,6 +174,16 @@ export function DispatchBoard({ companyId, initialBookings, drivers }: Props) {
         </p>
       )}
 
+      <DispatchLiveMap
+        labels={{
+          title: 'Mapa en vivo de la flota',
+          empty: 'Sin conductores en viaje ni recogidas pendientes con ubicación ahora mismo.',
+          quotaExceeded: 'Cuota mensual de mapa en vivo agotada — el mapa vuelve a mostrarse el próximo mes.',
+          legendDriver: 'en viaje',
+          legendPending: 'pendientes',
+        }}
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {COLUMNS.map((col) => {
           const items = initialBookings.filter((b) => col.statuses.includes(b.status))
@@ -197,9 +217,20 @@ export function DispatchBoard({ companyId, initialBookings, drivers }: Props) {
                         >
                           {b.booking_number}
                         </a>
-                        <span className="text-[10px] font-semibold text-sl-on-surface-muted uppercase">
-                          {STATUS_LABELS[b.status] ?? b.status}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {!!b.events_count && (
+                            <a
+                              href={`/admin/bookings/${b.id}`}
+                              title="Rechazos/incidentes recientes"
+                              className="text-[10px] font-semibold text-amber-700 bg-amber-100 rounded-full px-1.5 py-0.5"
+                            >
+                              ⚠️ {b.events_count}
+                            </a>
+                          )}
+                          <span className="text-[10px] font-semibold text-sl-on-surface-muted uppercase">
+                            {STATUS_LABELS[b.status] ?? b.status}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="text-xs space-y-1">
@@ -255,15 +286,15 @@ export function DispatchBoard({ companyId, initialBookings, drivers }: Props) {
                         )}
                       </div>
 
-                      {/* Asignar conductor (pendientes y asignados) */}
+                      {/* Asignar / reasignar conductor (pendientes y asignados) */}
                       {['pending', 'assigned'].includes(b.status) && drivers.length > 0 && (
                         <select
                           defaultValue={b.driver_id ?? ''}
                           disabled={isPending}
-                          onChange={(e) => assign(b.id, e.target.value)}
+                          onChange={(e) => assign(b.id, e.target.value, b.driver_id)}
                           className="w-full text-[11px] bg-white border border-sl-outline-variant rounded-lg px-2 py-1.5 text-sl-on-surface focus:border-bronze focus:outline-none disabled:opacity-50"
                         >
-                          <option value="">— Asignar conductor —</option>
+                          <option value="">{b.driver_id ? '— Reasignar conductor —' : '— Asignar conductor —'}</option>
                           {drivers.map((d) => (
                             <option key={d.id} value={d.id}>
                               {d.first_name} {d.last_name}

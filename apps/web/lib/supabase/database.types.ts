@@ -543,6 +543,44 @@ export type Database = {
         Relationships: []
       }
 
+      // ── booking_events (bitácora: rechazos, incidentes, reasignaciones) ───────
+      booking_events: {
+        Row: {
+          id: string
+          booking_id: string
+          company_id: string
+          type: string
+          actor: string
+          actor_id: string | null
+          reason: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          booking_id: string
+          company_id: string
+          type: string
+          actor: string
+          actor_id?: string | null | undefined
+          reason?: string | null | undefined
+          metadata?: Json | undefined
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          booking_id?: string | undefined
+          company_id?: string | undefined
+          type?: string | undefined
+          actor?: string | undefined
+          actor_id?: string | null | undefined
+          reason?: string | null | undefined
+          metadata?: Json | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── trip_locations (tracking en vivo) ─────────────────────────────────────
       trip_locations: {
         Row: {
