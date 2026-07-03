@@ -534,19 +534,29 @@ en la pantalla de éxito; ahora es parte del paso de confirmación.
       antes de que cualquier operador pueda usarlo.
 15. Íconos isométricos de vehículos — PARADO, requiere billing de Gemini
     habilitado por el usuario.
-16. **Precio "Por zona" no funciona (auditoría de pricing, 2026-07-03)**:
-    el modelo `zone_based` guarda `origin_zone_id`/`destination_zone_id`
-    pero el motor (`lib/pricing/engine.ts`) nunca los usa — ni para elegir
-    qué regla aplica a una reserva (`bestRule()` solo mira
-    `vehicle_type_id`), ni para calcular el precio (cae al mismo
-    `base_price` fijo que `flat_rate`). Verificado: 0 reglas `zone_based`
-    en uso en toda la plataforma hoy, así que no está cobrando mal a nadie
-    todavía — pero si alguien la configura esperando precio distinto por
-    zona, no pasa nada. **PARADO A PROPÓSITO (2026-07-03)**: el usuario
-    tiene cambios pendientes para la pestaña "Zonas" (`/admin/zones`) que
-    aún no ha detallado — resolver el cálculo por zona depende de cómo
-    quede esa pestaña, así que se espera esa definición antes de tocar
-    `bestRule()`/`calculateFare()` para zone_based.
+16. **✅ HECHO (2026-07-03) — Precio "Por zona"**: antes el modelo
+    `zone_based` guardaba `origin_zone_id`/`destination_zone_id` pero el
+    motor nunca los usaba (caía al mismo `base_price` fijo que `flat_rate`,
+    sin importar la zona). Diseño acordado con el usuario (inspirado en
+    Moovs, adaptado a RD): una zona se define por **códigos postales**
+    (chips en `/admin/zones`, estilo Moovs) y/o por **círculo**
+    (centro+radio, ya existía) — el código postal tiene prioridad, el
+    círculo es respaldo; si varias zonas compiten gana la más específica
+    (menos códigos agrupados, o radio más chico). El precio es un **par
+    fijo origen→destino** en Reglas de precio (selects de zona que
+    aparecen solo cuando el modelo es "Por zona"), y SÍ respeta el tipo de
+    vehículo (ej. "Aeropuerto → 51000 en Sedán" vs "…en SUV" son reglas
+    distintas con prioridad sobre el par de zona genérico).
+    - `lib/pricing/zones.ts` (nuevo, puro/testeado): `resolveZoneId()`
+      determina la zona de un punto (código postal del componente
+      `postal_code` de Google Places, capturado ahora en `AddressInput` —
+      círculo como respaldo por distancia haversine).
+    - `lib/pricing/engine.ts`: `bestRule()` ahora recibe un `zonePair`
+      opcional — prioriza el match EXACTO de zona+tipo de vehículo, luego
+      zona+cualquier tipo, y solo si no hay match de zona cae a las reglas
+      normales (una regla `zone_based` sin par de zona coincidente NUNCA
+      se usa como respaldo genérico — antes ahí estaba el bug).
+    - Migraciones 27 (`service_zones.postal_codes TEXT[]`).
     - Nota aparte (no bloqueante, no causa cobros incorrectos): dentro de
       una regla de precio, `airport_pickup_fee`/`airport_dropoff_fee`
       nunca son editables desde el formulario (siempre 0) — pero ya existe

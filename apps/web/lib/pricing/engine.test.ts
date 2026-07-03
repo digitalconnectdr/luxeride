@@ -17,6 +17,8 @@ function rule(overrides: Partial<PricingRuleFields> = {}): PricingRuleFields {
     per_km_rate: null,
     hourly_rate: null,
     minimum_fare: null,
+    origin_zone_id: null,
+    destination_zone_id: null,
     airport_pickup_fee: null,
     airport_dropoff_fee: null,
     night_surcharge_pct: null,
@@ -204,6 +206,33 @@ describe('bestRule', () => {
   it('devuelve undefined sin reglas aplicables', () => {
     const other = rule({ id: 'other', vehicle_type_id: 'vt2' })
     expect(bestRule([other], 'vt1')).toBeUndefined()
+  })
+
+  it('zona: coincide el par exacto origen/destino sobre las reglas normales', () => {
+    const generic = rule({ id: 'generic', vehicle_type_id: null })
+    const zoneRule = rule({ id: 'zone', model: 'zone_based', vehicle_type_id: null, origin_zone_id: 'airport', destination_zone_id: 'downtown' })
+    const zonePair = { originZoneId: 'airport', destinationZoneId: 'downtown' }
+    expect(bestRule([generic, zoneRule], null, zonePair)?.id).toBe('zone')
+  })
+
+  it('zona: prefiere el match de zona CON tipo de vehículo específico sobre el general', () => {
+    const zoneGeneral = rule({ id: 'zone-general', model: 'zone_based', vehicle_type_id: null, origin_zone_id: 'a', destination_zone_id: 'b' })
+    const zoneSuv = rule({ id: 'zone-suv', model: 'zone_based', vehicle_type_id: 'suv', origin_zone_id: 'a', destination_zone_id: 'b' })
+    const zonePair = { originZoneId: 'a', destinationZoneId: 'b' }
+    expect(bestRule([zoneGeneral, zoneSuv], 'suv', zonePair)?.id).toBe('zone-suv')
+    expect(bestRule([zoneGeneral, zoneSuv], 'sedan', zonePair)?.id).toBe('zone-general')
+  })
+
+  it('zona: sin par exacto, cae a las reglas normales (zone_based nunca es fallback genérico)', () => {
+    const zoneRule = rule({ id: 'zone', model: 'zone_based', vehicle_type_id: null, origin_zone_id: 'a', destination_zone_id: 'b' })
+    const generic = rule({ id: 'generic', vehicle_type_id: null })
+    const zonePair = { originZoneId: 'a', destinationZoneId: 'c' } // no coincide destino
+    expect(bestRule([zoneRule, generic], null, zonePair)?.id).toBe('generic')
+  })
+
+  it('zona: sin zonePair, zone_based se ignora por completo', () => {
+    const zoneRule = rule({ id: 'zone', model: 'zone_based', vehicle_type_id: null, origin_zone_id: 'a', destination_zone_id: 'b' })
+    expect(bestRule([zoneRule], null)).toBeUndefined()
   })
 })
 

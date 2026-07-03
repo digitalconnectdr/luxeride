@@ -3,6 +3,7 @@
 import { useState, useTransition, type FormEvent } from 'react'
 import { updateZoneAction } from '@/app/actions/services'
 import { ZoneActiveToggle, ZoneDeleteButton } from './zone-controls'
+import { PostalCodesInput } from './postal-codes-input'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 
 type ZonesDict = Dictionary['admin']['zones']
@@ -24,6 +25,7 @@ interface Zone {
   type: string
   color: string | null
   radius_miles: number | null
+  postal_codes: string[] | null
   is_active: boolean
 }
 
@@ -60,7 +62,7 @@ export function ZoneRow({
   if (editing) {
     return (
       <tr className="bg-sl-bg/40">
-        <td colSpan={5} className="px-5 py-4">
+        <td colSpan={6} className="px-5 py-4">
           <form onSubmit={handleSubmit} className="flex flex-wrap gap-3 items-end">
             <div className="space-y-1 flex-1 min-w-[160px]">
               <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{t.nameLabel}</label>
@@ -90,6 +92,10 @@ export function ZoneRow({
                 {actions.cancel}
               </button>
             </div>
+            <div className="space-y-1 w-full">
+              <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{t.postalCodesLabel}</label>
+              <PostalCodesInput defaultValue={zone.postal_codes ?? []} placeholder={t.postalCodesPlaceholder} />
+            </div>
           </form>
           {err && <p className="mt-2 text-xs text-red-500">{err}</p>}
         </td>
@@ -112,6 +118,22 @@ export function ZoneRow({
       </td>
       <td className="px-5 py-3.5 text-sl-on-surface-muted text-xs">
         {zone.radius_miles ? `${zone.radius_miles} mi` : '—'}
+      </td>
+      <td className="px-5 py-3.5">
+        {zone.postal_codes && zone.postal_codes.length > 0 ? (
+          <div className="flex flex-wrap gap-1 max-w-[220px]">
+            {zone.postal_codes.slice(0, 4).map((c) => (
+              <span key={c} className="text-[11px] bg-sl-bg border border-sl-outline-variant rounded-full px-2 py-0.5 text-sl-on-surface-muted">
+                {c}
+              </span>
+            ))}
+            {zone.postal_codes.length > 4 && (
+              <span className="text-[11px] text-sl-on-surface-muted">+{zone.postal_codes.length - 4}</span>
+            )}
+          </div>
+        ) : (
+          <span className="text-xs text-sl-on-surface-muted">—</span>
+        )}
       </td>
       <td className="px-5 py-3.5">
         {isAdmin ? (

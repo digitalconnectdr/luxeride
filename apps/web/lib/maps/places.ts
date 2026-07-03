@@ -13,4 +13,6 @@ export interface PlaceResult {
   lng: number
   /** Google Place ID */
   placeId: string
+  /** Código postal (componente `postal_code`), si Google lo devuelve para esta dirección */
+  postalCode?: string
 }

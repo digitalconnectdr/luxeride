@@ -13,12 +13,19 @@ export interface PricingRuleFields {
   per_km_rate: number | null
   hourly_rate: number | null
   minimum_fare: number | null
+  origin_zone_id: string | null
+  destination_zone_id: string | null
   airport_pickup_fee: number | null
   airport_dropoff_fee: number | null
   night_surcharge_pct: number | null
   weekend_surcharge_pct: number | null
   surge_enabled: boolean | null
   surge_multiplier: number | null
+}
+
+export interface ZonePair {
+  originZoneId: string | null
+  destinationZoneId: string | null
 }
 
 export interface FareResult {
@@ -131,16 +138,47 @@ export function calculateFare(
 }
 
 /**
- * Mejor regla para un tipo de vehículo: específica del tipo primero,
- * luego la regla general (vehicle_type_id NULL). Las reglas vienen
- * ordenadas por priority DESC.
+ * Mejor regla para un tipo de vehículo (+ opcionalmente un par de zona
+ * origen/destino). Prioridad:
+ *   1. Regla "Por zona" que coincida EXACTO con el par de zonas Y el tipo
+ *      de vehículo específico (ej. "Aeropuerto → 51000 en SUV").
+ *   2. Regla "Por zona" que coincida con el par de zonas para CUALQUIER
+ *      tipo de vehículo (vehicle_type_id NULL).
+ *   3. Si no hay match de zona (o no se pasó zonePair): regla NO-zona
+ *      específica del tipo de vehículo, luego la general. Las reglas
+ *      "Por zona" quedan EXCLUIDAS de este paso — sin un par de zona que
+ *      coincida, una regla zone_based no tiene un precio que tenga sentido
+ *      usar como respaldo genérico.
+ * Las reglas vienen ordenadas por priority DESC.
  */
 export function bestRule(
   rules: PricingRuleFields[],
   vehicleTypeId: string | null,
+  zonePair?: ZonePair,
 ): PricingRuleFields | undefined {
+  if (zonePair?.originZoneId && zonePair?.destinationZoneId) {
+    const zoneMatch =
+      rules.find(
+        (r) =>
+          r.model === 'zone_based' &&
+          r.origin_zone_id === zonePair.originZoneId &&
+          r.destination_zone_id === zonePair.destinationZoneId &&
+          vehicleTypeId &&
+          r.vehicle_type_id === vehicleTypeId,
+      ) ??
+      rules.find(
+        (r) =>
+          r.model === 'zone_based' &&
+          r.origin_zone_id === zonePair.originZoneId &&
+          r.destination_zone_id === zonePair.destinationZoneId &&
+          r.vehicle_type_id === null,
+      )
+    if (zoneMatch) return zoneMatch
+  }
+
+  const nonZoneRules = rules.filter((r) => r.model !== 'zone_based')
   return (
-    rules.find((r) => vehicleTypeId && r.vehicle_type_id === vehicleTypeId) ??
-    rules.find((r) => r.vehicle_type_id === null)
+    nonZoneRules.find((r) => vehicleTypeId && r.vehicle_type_id === vehicleTypeId) ??
+    nonZoneRules.find((r) => r.vehicle_type_id === null)
   )
 }

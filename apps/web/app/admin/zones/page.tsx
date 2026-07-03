@@ -2,6 +2,7 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { createZoneAction } from '@/app/actions/services'
 import { ZoneRow } from '@/components/admin/zone-row'
+import { PostalCodesInput } from '@/components/admin/postal-codes-input'
 import { getDict } from '@/lib/i18n/server'
 
 const ZONE_TYPES = ['standard', 'airport', 'premium', 'restricted'] as const
@@ -13,7 +14,7 @@ export default async function ZonesPage() {
   const admin = createAdminClient()
   const { data: zones } = await admin
     .from('service_zones')
-    .select('id, name, type, color, radius_miles, sort_order, is_active, created_at')
+    .select('id, name, type, color, radius_miles, postal_codes, sort_order, is_active, created_at')
     .eq('company_id', user.company_id!)
     .order('sort_order', { ascending: true })
     .order('name', { ascending: true })
@@ -94,6 +95,11 @@ export default async function ZonesPage() {
             >
               {t.addButton}
             </button>
+            <div className="w-full">
+              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.postalCodesLabel}</label>
+              <PostalCodesInput placeholder={t.postalCodesPlaceholder} />
+              <p className="mt-1 text-[11px] text-sl-on-surface-muted">{t.postalCodesHint}</p>
+            </div>
           </form>
         </div>
       )}
@@ -114,6 +120,7 @@ export default async function ZonesPage() {
                 <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thZone}</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thType}</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thRadius}</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thPostalCodes}</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thStatus}</th>
                 {isAdmin && (
                   <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thActions}</th>

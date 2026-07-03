@@ -731,6 +731,7 @@ export type Database = {
           center_lat: number | null
           center_lng: number | null
           radius_miles: number | null
+          postal_codes: string[]
           color: string | null
           sort_order: number
           is_active: boolean
@@ -746,6 +747,7 @@ export type Database = {
           center_lat?: number | null | undefined
           center_lng?: number | null | undefined
           radius_miles?: number | null | undefined
+          postal_codes?: string[] | undefined
           color?: string | null | undefined
           sort_order?: number | undefined
           is_active?: boolean | undefined
@@ -761,6 +763,7 @@ export type Database = {
           center_lat?: number | null | undefined
           center_lng?: number | null | undefined
           radius_miles?: number | null | undefined
+          postal_codes?: string[] | undefined
           color?: string | null | undefined
           sort_order?: number | undefined
           is_active?: boolean | undefined

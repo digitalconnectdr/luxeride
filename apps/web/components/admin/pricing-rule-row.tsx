@@ -3,6 +3,7 @@
 import { useState, useTransition, type FormEvent } from 'react'
 import { updatePricingRuleAction } from '@/app/actions/pricing'
 import { PricingRuleActiveToggle, PricingRuleDeleteButton } from './pricing-controls'
+import { ZoneSelectFields } from './zone-select-fields'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 import type { PricingModel } from '@/lib/supabase/database.types'
 
@@ -49,17 +50,20 @@ const num = (v: number | string | null): number => (v == null ? 0 : Number(v))
 export function PricingRuleRow({
   rule,
   vehicleTypes,
+  zones,
   vtName,
   t,
   actions,
 }: {
   rule: Rule
   vehicleTypes: { id: string; name: string }[]
+  zones: { id: string; name: string }[]
   vtName: string | null
   t: PricingDict
   actions: ActionsDict
 }) {
   const [editing, setEditing] = useState(false)
+  const [model, setModel] = useState(rule.model)
   const [isPending, startTransition] = useTransition()
   const [err, setErr] = useState<string | null>(null)
 
@@ -80,8 +84,6 @@ export function PricingRuleRow({
         <td colSpan={7} className="px-5 py-4">
           <form onSubmit={handleSubmit}>
             {/* Campos no editables aquí — se preservan tal cual */}
-            <input type="hidden" name="origin_zone_id" defaultValue={rule.origin_zone_id ?? ''} />
-            <input type="hidden" name="destination_zone_id" defaultValue={rule.destination_zone_id ?? ''} />
             <input type="hidden" name="airport_pickup_fee" defaultValue={num(rule.airport_pickup_fee)} />
             <input type="hidden" name="airport_dropoff_fee" defaultValue={num(rule.airport_dropoff_fee)} />
             <input type="hidden" name="holiday_surcharge_pct" defaultValue={num(rule.holiday_surcharge_pct)} />
@@ -95,12 +97,27 @@ export function PricingRuleRow({
               </div>
               <div>
                 <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.model}</label>
-                <select name="model" defaultValue={rule.model} required className={inputCls}>
+                <select name="model" value={model} onChange={(e) => setModel(e.target.value as PricingModel)} required className={inputCls}>
                   {Object.entries(t.models).map(([val, label]) => (
                     <option key={val} value={val}>{label}</option>
                   ))}
                 </select>
               </div>
+              {model === 'zone_based' && (
+                <ZoneSelectFields
+                  zones={zones}
+                  inputCls={inputCls}
+                  defaultOriginZoneId={rule.origin_zone_id}
+                  defaultDestinationZoneId={rule.destination_zone_id}
+                  labels={{
+                    originZone: t.originZone,
+                    destinationZone: t.destinationZone,
+                    selectZone: t.selectZone,
+                    helpOriginZone: t.help.originZone,
+                    helpDestinationZone: t.help.destinationZone,
+                  }}
+                />
+              )}
               <div>
                 <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.vehicleType}</label>
                 <select name="vehicle_type_id" defaultValue={rule.vehicle_type_id ?? ''} className={inputCls}>

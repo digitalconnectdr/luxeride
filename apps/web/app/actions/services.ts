@@ -20,6 +20,7 @@ export async function createZoneAction(
   const color = (formData.get('color') as string ?? '#e9c176').trim()
   const radiusRaw = parseFloat(formData.get('radius_miles') as string)
   const radius = isNaN(radiusRaw) || radiusRaw <= 0 ? null : radiusRaw
+  const postalCodes = [...new Set(formData.getAll('postal_codes').map((v) => String(v).trim()).filter(Boolean))]
 
   if (!name) return { success: false, error: 'Nombre requerido' }
 
@@ -30,6 +31,7 @@ export async function createZoneAction(
     type,
     color,
     radius_miles: radius,
+    postal_codes: postalCodes,
   })
 
   if (error) {
@@ -53,13 +55,14 @@ export async function updateZoneAction(
   const color = (formData.get('color') as string ?? '').trim()
   const radiusRaw = parseFloat(formData.get('radius_miles') as string)
   const radius = isNaN(radiusRaw) || radiusRaw <= 0 ? null : radiusRaw
+  const postalCodes = [...new Set(formData.getAll('postal_codes').map((v) => String(v).trim()).filter(Boolean))]
 
   if (!name) return { success: false, error: 'Nombre requerido' }
 
   const admin = createAdminClient()
   const { error } = await admin
     .from('service_zones')
-    .update({ name, type: type || undefined, color: color || undefined, radius_miles: radius })
+    .update({ name, type: type || undefined, color: color || undefined, radius_miles: radius, postal_codes: postalCodes })
     .eq('id', zoneId)
     .eq('company_id', user.company_id)
 

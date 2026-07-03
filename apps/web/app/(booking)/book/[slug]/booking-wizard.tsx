@@ -205,14 +205,19 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
     }
     setRouteData(newRouteData)
 
+    const pickupPostalCode = (fd.get('pickup_postal_code') as string) || null
+    const dropoffPostalCode = (fd.get('dropoff_postal_code') as string) || null
+
     startTransition(async () => {
       const result = await getPublicVehicleQuotesAction(company.slug, {
         pickupLat:    newRouteData.pickupLat,
         pickupLng:    newRouteData.pickupLng,
         pickupAddress: newRouteData.pickupAddress,
+        pickupPostalCode,
         dropoffLat:   newRouteData.dropoffLat,
         dropoffLng:   newRouteData.dropoffLng,
         dropoffAddress: newRouteData.dropoffAddress,
+        dropoffPostalCode,
         scheduledAt:  newRouteData.scheduledAt,
         bookingType:  newRouteData.bookingType,
         stops:        newRouteData.stops,

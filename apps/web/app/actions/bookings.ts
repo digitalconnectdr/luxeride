@@ -19,6 +19,7 @@ import { trackBookingFlight } from '@/lib/flights/refresh'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
 import { getAppUrl } from '@/lib/app-url'
 import { calculateFare, bestRule, type PricingRuleFields } from '@/lib/pricing/engine'
+import { resolveZoneId, type ServiceZoneForMatch } from '@/lib/pricing/zones'
 import { tryAutoAssignDriver } from '@/lib/dispatch/auto-assign'
 import type { BookingStatus, BookingType, Json } from '@/lib/supabase/database.types'
 
@@ -157,9 +158,11 @@ export async function calculateQuoteAction(
   const pickupLat    = parseFloat(formData.get('pickup_lat')  as string)
   const pickupLng    = parseFloat(formData.get('pickup_lng')  as string)
   const pickupAddr   = (formData.get('pickup')  as string) ?? ''
+  const pickupPostalCode  = (formData.get('pickup_postal_code')  as string) || null
   const dropoffLat   = parseFloat(formData.get('dropoff_lat') as string)
   const dropoffLng   = parseFloat(formData.get('dropoff_lng') as string)
   const dropoffAddr  = (formData.get('dropoff') as string) ?? ''
+  const dropoffPostalCode = (formData.get('dropoff_postal_code') as string) || null
   const vehicleTypeId = (formData.get('vehicle_type_id') as string) || null
   const scheduledAtStr = formData.get('scheduled_at') as string
   const bookingType  = ((formData.get('booking_type') as string) || 'one_way') as BookingType
@@ -180,19 +183,30 @@ export async function calculateQuoteAction(
     .eq('id', user.company_id)
     .single()
 
-  // Obtener reglas de precio
-  const { data: rulesRaw } = await admin
-    .from('pricing_rules')
-    .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, surge_enabled, surge_multiplier, vehicle_type_id, priority')
-    .eq('company_id', user.company_id)
-    .eq('is_active', true)
-    .order('priority', { ascending: false })
+  // Obtener reglas de precio + zonas activas (para precio "Por zona")
+  const [{ data: rulesRaw }, { data: zonesRaw }] = await Promise.all([
+    admin
+      .from('pricing_rules')
+      .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, surge_enabled, surge_multiplier, vehicle_type_id, priority')
+      .eq('company_id', user.company_id)
+      .eq('is_active', true)
+      .order('priority', { ascending: false }),
+    admin
+      .from('service_zones')
+      .select('id, postal_codes, center_lat, center_lng, radius_miles')
+      .eq('company_id', user.company_id)
+      .eq('is_active', true),
+  ])
 
   if (!rulesRaw?.length) {
     return { success: false, error: 'No hay reglas de precio activas. Configura precios en /admin/pricing.' }
   }
 
-  const rule = bestRule(rulesRaw as unknown as PricingRuleFields[], vehicleTypeId)
+  const zones = (zonesRaw ?? []) as ServiceZoneForMatch[]
+  const originZoneId = resolveZoneId(zones, { lat: pickupLat, lng: pickupLng, postalCode: pickupPostalCode })
+  const destinationZoneId = resolveZoneId(zones, { lat: dropoffLat, lng: dropoffLng, postalCode: dropoffPostalCode })
+
+  const rule = bestRule(rulesRaw as unknown as PricingRuleFields[], vehicleTypeId, { originZoneId, destinationZoneId })
   if (!rule) {
     return {
       success: false,
@@ -647,9 +661,11 @@ export async function getPublicVehicleQuotesAction(
     pickupLat: number
     pickupLng: number
     pickupAddress: string
+    pickupPostalCode?: string | null
     dropoffLat: number
     dropoffLng: number
     dropoffAddress: string
+    dropoffPostalCode?: string | null
     scheduledAt: string
     bookingType?: BookingType
     stops?: StopInput[]
@@ -695,13 +711,24 @@ export async function getPublicVehicleQuotesAction(
     return { success: false, error: 'No hay tipos de vehículo disponibles' }
   }
 
-  // Reglas de precio
-  const { data: rulesRaw } = await admin
-    .from('pricing_rules')
-    .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, surge_enabled, surge_multiplier, vehicle_type_id, priority')
-    .eq('company_id', companyId)
-    .eq('is_active', true)
-    .order('priority', { ascending: false })
+  // Reglas de precio + zonas activas (para precio "Por zona")
+  const [{ data: rulesRaw }, { data: zonesRaw }] = await Promise.all([
+    admin
+      .from('pricing_rules')
+      .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, surge_enabled, surge_multiplier, vehicle_type_id, priority')
+      .eq('company_id', companyId)
+      .eq('is_active', true)
+      .order('priority', { ascending: false }),
+    admin
+      .from('service_zones')
+      .select('id, postal_codes, center_lat, center_lng, radius_miles')
+      .eq('company_id', companyId)
+      .eq('is_active', true),
+  ])
+
+  const zones = (zonesRaw ?? []) as ServiceZoneForMatch[]
+  const originZoneId = resolveZoneId(zones, { lat: data.pickupLat, lng: data.pickupLng, postalCode: data.pickupPostalCode })
+  const destinationZoneId = resolveZoneId(zones, { lat: data.dropoffLat, lng: data.dropoffLng, postalCode: data.dropoffPostalCode })
 
   // Calcular ruta una sola vez (incluye paradas intermedias)
   const publicStops = sanitizeStops(data.stops)
@@ -716,7 +743,7 @@ export async function getPublicVehicleQuotesAction(
   const quotes: VehicleQuote[] = []
 
   for (const vt of vehicleTypes) {
-    const rule = bestRule(rulesRaw as unknown as PricingRuleFields[], vt.id)
+    const rule = bestRule(rulesRaw as unknown as PricingRuleFields[], vt.id, { originZoneId, destinationZoneId })
 
     if (!rule) {
       quotes.push({

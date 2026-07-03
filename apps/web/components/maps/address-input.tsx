@@ -45,6 +45,7 @@ export function AddressInput({
   const [lat,     setLat]     = useState<number | ''>('')
   const [lng,     setLng]     = useState<number | ''>('')
   const [placeId, setPlaceId] = useState('')
+  const [postalCode, setPostalCode] = useState('')
   const [authFailed, setAuthFailed] = useState(false)
 
   const placesLib = useMapsLibrary('places')
@@ -69,17 +70,21 @@ export function AddressInput({
     const place = acRef.current?.getPlace()
     if (!place?.geometry?.location) return
 
+    const postal = place.address_components?.find((c) => c.types.includes('postal_code'))?.long_name
+
     const result: PlaceResult = {
       address: place.formatted_address ?? '',
       lat:     place.geometry.location.lat(),
       lng:     place.geometry.location.lng(),
       placeId: place.place_id ?? '',
+      postalCode: postal,
     }
 
     setText(result.address)
     setLat(result.lat)
     setLng(result.lng)
     setPlaceId(result.placeId)
+    setPostalCode(postal ?? '')
     onChange?.(result.address)
     onPlaceSelect?.(result)
   }, [onChange, onPlaceSelect])
@@ -88,7 +93,7 @@ export function AddressInput({
     if (!placesLib || !inputRef.current || acRef.current) return
 
     acRef.current = new placesLib.Autocomplete(inputRef.current, {
-      fields: ['geometry', 'formatted_address', 'place_id'],
+      fields: ['geometry', 'formatted_address', 'place_id', 'address_components'],
     })
     acRef.current.addListener('place_changed', handlePlaceChanged)
 
@@ -121,6 +126,7 @@ export function AddressInput({
           setLat('')
           setLng('')
           setPlaceId('')
+          setPostalCode('')
         }}
         placeholder={placeholder}
         required={required}
@@ -145,6 +151,7 @@ export function AddressInput({
           <input type="hidden" name={`${name}_lat`}     value={lat} />
           <input type="hidden" name={`${name}_lng`}     value={lng} />
           <input type="hidden" name={`${name}_place_id`} value={placeId} />
+          <input type="hidden" name={`${name}_postal_code`} value={postalCode} />
         </>
       )}
     </>

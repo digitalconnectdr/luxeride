@@ -2,6 +2,7 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { createPricingRuleAction } from '@/app/actions/pricing'
 import { PricingRuleRow } from '@/components/admin/pricing-rule-row'
+import { PricingModelField } from '@/components/admin/pricing-model-field'
 import { getDict } from '@/lib/i18n/server'
 import { InfoTip } from '@/components/ui/info-tip'
 
@@ -73,20 +74,8 @@ export default async function PricingPage() {
               />
             </div>
 
-            {/* Model */}
-            <div>
-              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.model} *<InfoTip text={t.help.model} /></label>
-              <select
-                name="model"
-                required
-                className="w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
-              >
-                <option value="">{t.selectModel}</option>
-                {Object.entries(t.models).map(([val, label]) => (
-                  <option key={val} value={val}>{label}</option>
-                ))}
-              </select>
-            </div>
+            {/* Model (+ selects de zona condicionales si es "Por zona") */}
+            <PricingModelField t={t} zones={zones ?? []} />
 
             {/* Vehicle Type */}
             <div>
@@ -244,6 +233,7 @@ export default async function PricingPage() {
                   key={rule.id}
                   rule={rule}
                   vehicleTypes={vehicleTypes ?? []}
+                  zones={zones ?? []}
                   vtName={rule.vehicle_type_id ? vtMap.get(rule.vehicle_type_id) ?? null : null}
                   t={t}
                   actions={actions}
