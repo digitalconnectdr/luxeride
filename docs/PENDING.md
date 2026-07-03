@@ -111,12 +111,20 @@ Cada operador elige el diseño de su micrositio en Ajustes → Portada:
 Observaciones 10 y 12 del usuario — features nuevas que requieren tablas +
 realtime + geolocalización. Plan para una fase dedicada:
 
-### A. Dispatch avanzado (obs. 10)
-1. **Mapa en vivo** en el Dispatch Board: ubicación de conductores
+### A. Dispatch avanzado (obs. 10) — ✅ HECHO (2026-07-03)
+Implementado con desviaciones deliberadas del plan original abajo (confirmadas
+con el usuario antes de construir) — ver ítem 9 más abajo para el detalle
+completo de lo construido. Diferencias clave: (a) el mapa en vivo reutiliza
+`trip_locations` (ya existía, no se creó `drivers.current_lat/lng`); (b) los
+rechazos/incidentes NO se agregaron como estados nuevos de `booking_status`
+— se registran en la tabla `booking_events` (punto 4 de abajo) mientras la
+reserva vuelve a un estado ya existente, evitando tocar el enum que se usa en
+~15 archivos distintos.
+1. ~~Mapa en vivo~~ en el Dispatch Board: ubicación de conductores
    (drivers.current_lat/lng vía web push del navegador del conductor o la
    futura PWA) + pins de los pickups pendientes. Usar Google Maps JS
    (ya tenemos la key) o Mapbox. Realtime de Supabase para mover los pines.
-2. **Estados de rechazo / incidente**: agregar a booking status
+2. ~~Estados de rechazo / incidente~~: agregar a booking status
    `rejected_by_driver`, `rejected_by_customer`, `driver_incident`. Migración
    del enum + UI en el board + registro en audit_log. Notificar a la otra parte.
 3. **Reasignación de conductor**: acción "Reasignar" en un viaje ya asignado
@@ -382,8 +390,19 @@ en la pantalla de éxito; ahora es parte del paso de confirmación.
 8. **Gaps mayores**: QuickBooks, e-signatures, farm-in/farm-out, promo codes,
    detección de conflictos de vehículo, nómina de conductores, WhatsApp
    Business. Pospuesto a propósito.
-9. **Dispatch avanzado** (sección A): mapa en vivo de conductores, estados
-   rejected_by_*/incident, reasignación de conductor, tabla `booking_events`.
+9. **✅ HECHO (2026-07-03) — Dispatch avanzado** (sección A): construido sobre
+   una tabla nueva `booking_events` (tipo/actor/motivo/hora) EN VEZ DE agregar
+   estados nuevos a `booking_status` (ese enum se referencia en ~15 archivos —
+   se prefirió esta ruta, confirmada con el usuario, por mucho menos riesgo,
+   misma trazabilidad). Incluye: conductor rechaza un viaje asignado (vuelve
+   a "pending"); conductor reporta incidente en viaje activo (alerta por
+   email al operador, no cambia el estado); reasignación de conductor con
+   motivo + aviso SMS al conductor que pierde el viaje; cancelación del
+   cliente con conductor ya asignado también queda registrada; bitácora
+   visible en `/admin/bookings/[id]` + badge en el dispatch board; mapa en
+   vivo de la flota en el dispatch board (reutiliza `trip_locations`, misma
+   cuota mensual de Static Maps que el tracking del pasajero — no es un
+   consumidor de costo nuevo/separado). Migración 23.
 10. **✅ HECHO (2026-07-03) — Calificaciones bidireccionales** (sección B.1):
     ver detalle arriba.
 11. **✅ HECHO (2026-07-03) — Chat**: realtime de Supabase en vez de solo
