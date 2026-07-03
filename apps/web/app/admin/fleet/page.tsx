@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
-import { VehicleStatusSelect } from '@/components/admin/fleet-controls'
+import { VehicleStatusSelect, DriverAssignSelect } from '@/components/admin/fleet-controls'
 import { VehicleTypeRow } from '@/components/admin/vehicle-type-row'
 import { AddVehicleTypeForm } from '@/components/admin/add-vehicle-type-form'
 import { getDict } from '@/lib/i18n/server'
@@ -51,8 +51,7 @@ export default async function FleetPage({ searchParams }: PageProps) {
   const allTypes    = vtypes   ?? []
   const allDrivers  = profiles ?? []
 
-  const typeMap   = Object.fromEntries(allTypes.map((t) => [t.id, t]))
-  const driverMap = Object.fromEntries(allDrivers.map((d) => [d.id, d]))
+  const typeMap = Object.fromEntries(allTypes.map((t) => [t.id, t]))
 
   const dict = getDict().admin
   const t = dict.fleet
@@ -132,8 +131,7 @@ export default async function FleetPage({ searchParams }: PageProps) {
               </thead>
               <tbody className="divide-y divide-sl-outline-variant/50">
                 {allVehicles.map((v) => {
-                  const type   = v.vehicle_type_id ? typeMap[v.vehicle_type_id] : null
-                  const driver = v.current_driver_id ? driverMap[v.current_driver_id] : null
+                  const type = v.vehicle_type_id ? typeMap[v.vehicle_type_id] : null
                   return (
                     <tr key={v.id} className="hover:bg-sl-bg/40 transition-colors group">
                       <td className="px-5 py-4">
@@ -153,13 +151,12 @@ export default async function FleetPage({ searchParams }: PageProps) {
                         <VehicleStatusSelect vehicleId={v.id} current={v.status} statuses={t.statuses} saving={t.saving} />
                       </td>
                       <td className="px-5 py-4">
-                        {driver ? (
-                          <span className="text-xs text-sl-on-surface">
-                            {driver.first_name} {driver.last_name}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-sl-on-surface-muted">Sin asignar</span>
-                        )}
+                        <DriverAssignSelect
+                          vehicleId={v.id}
+                          currentDriverId={v.current_driver_id}
+                          drivers={allDrivers}
+                          unassigned={t.unassigned}
+                        />
                       </td>
                       <td className="px-5 py-4 text-right">
                         <Link
