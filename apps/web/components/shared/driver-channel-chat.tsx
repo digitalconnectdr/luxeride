@@ -48,8 +48,9 @@ export function DriverChannelChat({
   const [expanded, setExpanded] = useState(false)
   const [isPending, startTransition] = useTransition()
   const scrollRef = useRef<HTMLDivElement>(null)
+  const initializedRef = useRef(false)
   const mySender = variant === 'dispatch' ? 'dispatch' : 'driver'
-  const showPanel = !collapsible || expanded || messages.length > 0
+  const showPanel = !collapsible || expanded
 
   const load = useCallback(async () => {
     const res =
@@ -58,6 +59,13 @@ export function DriverChannelChat({
         : await getDriverChannelMessagesAction()
     if (res.success && res.messages) {
       setMessages(res.messages)
+      // Primera carga: si ya hay una conversación, ábrela sola para que no se
+      // pierda un mensaje. Después de eso, el toggle queda 100% en manos del
+      // usuario (botón 💬 para abrir/ocultar), igual que en el tablero de Dispatch.
+      if (!initializedRef.current) {
+        initializedRef.current = true
+        if (res.messages.length > 0) setExpanded(true)
+      }
       const hasUnread = res.messages.some((m) => m.sender !== mySender && !m.readAt)
       if (hasUnread) {
         if (variant === 'dispatch' && driverId) markDispatchMessagesReadAction(driverId)
@@ -126,8 +134,18 @@ export function DriverChannelChat({
 
   return (
     <div className="border rounded-2xl overflow-hidden bg-white border-[#e5e1d8]">
-      <div className="px-4 py-2.5 border-b border-[#f0ede5]">
+      <div className="px-4 py-2.5 border-b border-[#f0ede5] flex items-center justify-between gap-2">
         <p className="text-sm font-semibold text-[#1d1b18]">{labels.title}</p>
+        {collapsible && (
+          <button
+            type="button"
+            onClick={() => setExpanded(false)}
+            className="text-sm text-[#a8a39a] hover:text-[#1d1b18] transition-colors"
+            aria-label="Ocultar"
+          >
+            💬
+          </button>
+        )}
       </div>
       <div ref={scrollRef} className="max-h-60 overflow-y-auto px-3 py-3 space-y-2.5">
         {messages.length === 0 ? (
