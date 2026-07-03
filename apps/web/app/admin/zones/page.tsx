@@ -2,7 +2,9 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { createZoneAction } from '@/app/actions/services'
 import { ZoneRow } from '@/components/admin/zone-row'
-import { PostalCodesInput } from '@/components/admin/postal-codes-input'
+import { ZoneGeoFields } from '@/components/admin/zone-geo-fields'
+import { ZonesOverviewMap } from '@/components/admin/zones-overview-map'
+import { InfoTip } from '@/components/ui/info-tip'
 import { getDict } from '@/lib/i18n/server'
 
 const ZONE_TYPES = ['standard', 'airport', 'premium', 'restricted'] as const
@@ -14,7 +16,7 @@ export default async function ZonesPage() {
   const admin = createAdminClient()
   const { data: zones } = await admin
     .from('service_zones')
-    .select('id, name, type, color, radius_miles, postal_codes, sort_order, is_active, created_at')
+    .select('id, name, type, color, radius_miles, center_lat, center_lng, postal_codes, sort_order, is_active, created_at')
     .eq('company_id', user.company_id!)
     .order('sort_order', { ascending: true })
     .order('name', { ascending: true })
@@ -49,7 +51,10 @@ export default async function ZonesPage() {
           <h2 className="text-sm font-semibold text-sl-on-surface mb-4">{t.addTitle}</h2>
           <form action={zoneAction} className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[180px]">
-              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.nameLabel}</label>
+              <label className="block text-xs text-sl-on-surface-muted mb-1">
+                {t.nameLabel}
+                <InfoTip text={t.help.name} />
+              </label>
               <input
                 name="name"
                 required
@@ -58,7 +63,10 @@ export default async function ZonesPage() {
               />
             </div>
             <div>
-              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.typeLabel}</label>
+              <label className="block text-xs text-sl-on-surface-muted mb-1">
+                {t.typeLabel}
+                <InfoTip text={t.help.type} />
+              </label>
               <select
                 name="type"
                 defaultValue="standard"
@@ -68,17 +76,6 @@ export default async function ZonesPage() {
                   <option key={zt} value={zt}>{t.types[zt]}</option>
                 ))}
               </select>
-            </div>
-            <div className="w-28">
-              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.radiusLabel}</label>
-              <input
-                name="radius_miles"
-                type="number"
-                min="0"
-                step="0.1"
-                placeholder={t.radiusPlaceholder}
-                className="w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface placeholder:text-sl-on-surface-muted/50 focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
-              />
             </div>
             <div>
               <label className="block text-xs text-sl-on-surface-muted mb-1">{t.colorLabel}</label>
@@ -95,11 +92,18 @@ export default async function ZonesPage() {
             >
               {t.addButton}
             </button>
-            <div className="w-full">
-              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.postalCodesLabel}</label>
-              <PostalCodesInput placeholder={t.postalCodesPlaceholder} />
-              <p className="mt-1 text-[11px] text-sl-on-surface-muted">{t.postalCodesHint}</p>
-            </div>
+            <ZoneGeoFields
+              labels={{
+                radiusLabel: t.radiusLabel,
+                radiusPlaceholder: t.radiusPlaceholder,
+                radiusHelp: t.help.radius,
+                postalCodesLabel: t.postalCodesLabel,
+                postalCodesPlaceholder: t.postalCodesPlaceholder,
+                postalCodesHelp: t.help.postalCodes,
+                mapHint: t.mapHint,
+                clearCenter: t.clearCenter,
+              }}
+            />
           </form>
         </div>
       )}
@@ -134,6 +138,10 @@ export default async function ZonesPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {zones && zones.length > 0 && (
+        <ZonesOverviewMap zones={zones} labels={{ viewMap: t.viewMap, hideMap: t.hideMap }} />
       )}
     </div>
   )

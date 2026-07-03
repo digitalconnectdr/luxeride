@@ -21,6 +21,10 @@ export async function createZoneAction(
   const radiusRaw = parseFloat(formData.get('radius_miles') as string)
   const radius = isNaN(radiusRaw) || radiusRaw <= 0 ? null : radiusRaw
   const postalCodes = [...new Set(formData.getAll('postal_codes').map((v) => String(v).trim()).filter(Boolean))]
+  const centerLatRaw = parseFloat(formData.get('center_lat') as string)
+  const centerLngRaw = parseFloat(formData.get('center_lng') as string)
+  const centerLat = Number.isFinite(centerLatRaw) ? centerLatRaw : null
+  const centerLng = Number.isFinite(centerLngRaw) ? centerLngRaw : null
 
   if (!name) return { success: false, error: 'Nombre requerido' }
 
@@ -32,6 +36,8 @@ export async function createZoneAction(
     color,
     radius_miles: radius,
     postal_codes: postalCodes,
+    center_lat: centerLat,
+    center_lng: centerLng,
   })
 
   if (error) {
@@ -56,13 +62,17 @@ export async function updateZoneAction(
   const radiusRaw = parseFloat(formData.get('radius_miles') as string)
   const radius = isNaN(radiusRaw) || radiusRaw <= 0 ? null : radiusRaw
   const postalCodes = [...new Set(formData.getAll('postal_codes').map((v) => String(v).trim()).filter(Boolean))]
+  const centerLatRaw = parseFloat(formData.get('center_lat') as string)
+  const centerLngRaw = parseFloat(formData.get('center_lng') as string)
+  const centerLat = Number.isFinite(centerLatRaw) ? centerLatRaw : null
+  const centerLng = Number.isFinite(centerLngRaw) ? centerLngRaw : null
 
   if (!name) return { success: false, error: 'Nombre requerido' }
 
   const admin = createAdminClient()
   const { error } = await admin
     .from('service_zones')
-    .update({ name, type: type || undefined, color: color || undefined, radius_miles: radius, postal_codes: postalCodes })
+    .update({ name, type: type || undefined, color: color || undefined, radius_miles: radius, postal_codes: postalCodes, center_lat: centerLat, center_lng: centerLng })
     .eq('id', zoneId)
     .eq('company_id', user.company_id)
 

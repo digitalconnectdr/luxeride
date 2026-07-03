@@ -3,7 +3,8 @@
 import { useState, useTransition, type FormEvent } from 'react'
 import { updateZoneAction } from '@/app/actions/services'
 import { ZoneActiveToggle, ZoneDeleteButton } from './zone-controls'
-import { PostalCodesInput } from './postal-codes-input'
+import { ZoneGeoFields } from './zone-geo-fields'
+import { InfoTip } from '@/components/ui/info-tip'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 
 type ZonesDict = Dictionary['admin']['zones']
@@ -25,6 +26,8 @@ interface Zone {
   type: string
   color: string | null
   radius_miles: number | null
+  center_lat: number | null
+  center_lng: number | null
   postal_codes: string[] | null
   is_active: boolean
 }
@@ -65,20 +68,22 @@ export function ZoneRow({
         <td colSpan={6} className="px-5 py-4">
           <form onSubmit={handleSubmit} className="flex flex-wrap gap-3 items-end">
             <div className="space-y-1 flex-1 min-w-[160px]">
-              <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{t.nameLabel}</label>
+              <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">
+                {t.nameLabel}
+                <InfoTip text={t.help.name} />
+              </label>
               <input name="name" defaultValue={zone.name} required className={`${inputCls} w-full`} />
             </div>
             <div className="space-y-1">
-              <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{t.typeLabel}</label>
+              <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">
+                {t.typeLabel}
+                <InfoTip text={t.help.type} />
+              </label>
               <select name="type" defaultValue={zone.type} className={inputCls}>
                 {ZONE_TYPES.map((zt) => (
                   <option key={zt} value={zt}>{t.types[zt]}</option>
                 ))}
               </select>
-            </div>
-            <div className="space-y-1 w-28">
-              <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{t.radiusLabel}</label>
-              <input name="radius_miles" type="number" min="0" step="0.1" defaultValue={zone.radius_miles ?? ''} placeholder={t.radiusPlaceholder} className={`${inputCls} w-full`} />
             </div>
             <div className="space-y-1">
               <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{t.colorLabel}</label>
@@ -92,10 +97,22 @@ export function ZoneRow({
                 {actions.cancel}
               </button>
             </div>
-            <div className="space-y-1 w-full">
-              <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{t.postalCodesLabel}</label>
-              <PostalCodesInput defaultValue={zone.postal_codes ?? []} placeholder={t.postalCodesPlaceholder} />
-            </div>
+            <ZoneGeoFields
+              defaultRadius={zone.radius_miles}
+              defaultCenterLat={zone.center_lat}
+              defaultCenterLng={zone.center_lng}
+              defaultPostalCodes={zone.postal_codes ?? []}
+              labels={{
+                radiusLabel: t.radiusLabel,
+                radiusPlaceholder: t.radiusPlaceholder,
+                radiusHelp: t.help.radius,
+                postalCodesLabel: t.postalCodesLabel,
+                postalCodesPlaceholder: t.postalCodesPlaceholder,
+                postalCodesHelp: t.help.postalCodes,
+                mapHint: t.mapHint,
+                clearCenter: t.clearCenter,
+              }}
+            />
           </form>
           {err && <p className="mt-2 text-xs text-red-500">{err}</p>}
         </td>
