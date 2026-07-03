@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createHmac } from 'crypto'
-import { verifyWhopSignature, mapWhopPlanId, parseWhopEvent, isWhopSuccessEvent } from './whop'
+import { verifyWhopSignature, mapWhopPlanId, parseWhopEvent, isWhopSuccessEvent, isWhopDeactivationEvent } from './whop'
 
 const SECRET = 'test-secret'
 
@@ -60,11 +60,11 @@ describe('mapWhopPlanId', () => {
 describe('parseWhopEvent', () => {
   it('extrae type/email/planId/membershipId de la forma más común (data.*)', () => {
     const body = {
-      type: 'payment.succeeded',
+      type: 'membership_activated',
       data: { id: 'mem_123', email: 'owner@empresa.com', plan_id: 'plan_starter' },
     }
     expect(parseWhopEvent(body)).toEqual({
-      type: 'payment.succeeded',
+      type: 'membership_activated',
       email: 'owner@empresa.com',
       planId: 'plan_starter',
       membershipId: 'mem_123',
@@ -72,7 +72,7 @@ describe('parseWhopEvent', () => {
   })
 
   it('prueba rutas alternativas de email (data.user.email)', () => {
-    const body = { type: 'membership.went_valid', data: { user: { email: 'a@b.com' } } }
+    const body = { type: 'membership_activated', data: { user: { email: 'a@b.com' } } }
     expect(parseWhopEvent(body).email).toBe('a@b.com')
   })
 
@@ -82,13 +82,23 @@ describe('parseWhopEvent', () => {
 })
 
 describe('isWhopSuccessEvent', () => {
-  it('reconoce eventos de pago/membresía exitosa', () => {
-    expect(isWhopSuccessEvent('payment.succeeded')).toBe(true)
-    expect(isWhopSuccessEvent('membership.went_valid')).toBe(true)
+  it('reconoce membership_activated (confirmado en el dashboard de Whop)', () => {
+    expect(isWhopSuccessEvent('membership_activated')).toBe(true)
   })
 
   it('ignora eventos no relacionados', () => {
-    expect(isWhopSuccessEvent('membership.went_invalid')).toBe(false)
+    expect(isWhopSuccessEvent('membership_deactivated')).toBe(false)
     expect(isWhopSuccessEvent('unknown')).toBe(false)
+  })
+})
+
+describe('isWhopDeactivationEvent', () => {
+  it('reconoce membership_deactivated', () => {
+    expect(isWhopDeactivationEvent('membership_deactivated')).toBe(true)
+  })
+
+  it('ignora eventos no relacionados', () => {
+    expect(isWhopDeactivationEvent('membership_activated')).toBe(false)
+    expect(isWhopDeactivationEvent('unknown')).toBe(false)
   })
 })

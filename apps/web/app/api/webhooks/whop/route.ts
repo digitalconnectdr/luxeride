@@ -1,13 +1,22 @@
-// ── Webhook de Whop — activación automática de la suscripción a la plataforma ──
+// ── Webhook de Whop — activación/suspensión automática de la suscripción ───────
 // Reemplaza (complementa) la aprobación manual en /super-admin/subscriptions:
-// cuando un operador paga vía Whop, este endpoint activa su empresa sin
-// intervención del super-admin. Correlación por EMAIL (companies.email) —
-// ver nota de diseño en lib/billing/whop.ts sobre los campos del payload.
+// cuando un operador paga vía Whop (membership_activated), este endpoint
+// activa su empresa; cuando deja de pagar/cancela (membership_deactivated),
+// la suspende. Correlación por EMAIL en la activación (companies.email);
+// en la desactivación se prioriza whop_membership_id (guardado al activar)
+// con email como respaldo. Ver nota de diseño en lib/billing/whop.ts.
 
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { activateCompanySubscription } from '@/lib/billing/subscriptions'
-import { isWhopConfigured, verifyWhopSignature, parseWhopEvent, isWhopSuccessEvent, mapWhopPlanId } from '@/lib/billing/whop'
+import {
+  isWhopConfigured,
+  verifyWhopSignature,
+  parseWhopEvent,
+  isWhopSuccessEvent,
+  isWhopDeactivationEvent,
+  mapWhopPlanId,
+} from '@/lib/billing/whop'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -33,22 +42,55 @@ export async function POST(request: Request) {
   }
 
   const event = parseWhopEvent(body)
-
-  if (!isWhopSuccessEvent(event.type)) {
-    // Evento que no nos interesa (ej. cancelación, expiración) — 200 para no
-    // que Whop lo reintente. Se puede extender más adelante si se necesita
-    // desactivar automáticamente al cancelar.
-    return NextResponse.json({ received: true, ignored: event.type })
-  }
-
-  if (!event.email) {
-    console.error('[whop/webhook] no email found in payload', JSON.stringify(body))
-    return NextResponse.json({ received: true, warning: 'no email in payload' })
-  }
-
   const admin = createAdminClient()
 
   try {
+    // ── Desactivación: el operador dejó de pagar o canceló ──────────────────
+    if (isWhopDeactivationEvent(event.type)) {
+      let companyId: string | null = null
+
+      if (event.membershipId) {
+        const { data } = await admin
+          .from('companies')
+          .select('id')
+          .eq('whop_membership_id', event.membershipId)
+          .maybeSingle()
+        companyId = data?.id ?? null
+      }
+      if (!companyId && event.email) {
+        const { data } = await admin
+          .from('companies')
+          .select('id')
+          .ilike('email', event.email)
+          .maybeSingle()
+        companyId = data?.id ?? null
+      }
+
+      if (!companyId) {
+        console.error('[whop/webhook] deactivation: no matching company', JSON.stringify(body))
+        return NextResponse.json({ received: true, warning: 'no matching company for deactivation' })
+      }
+
+      const { error } = await admin.from('companies').update({ status: 'suspended' }).eq('id', companyId)
+      if (error) {
+        console.error('[whop/webhook] suspension failed', error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+
+      return NextResponse.json({ received: true, suspended: companyId })
+    }
+
+    // ── Cualquier otro evento no manejado ────────────────────────────────────
+    if (!isWhopSuccessEvent(event.type)) {
+      return NextResponse.json({ received: true, ignored: event.type })
+    }
+
+    // ── Activación ───────────────────────────────────────────────────────────
+    if (!event.email) {
+      console.error('[whop/webhook] no email found in payload', JSON.stringify(body))
+      return NextResponse.json({ received: true, warning: 'no email in payload' })
+    }
+
     const { data: company } = await admin
       .from('companies')
       .select('id, whop_membership_id')
