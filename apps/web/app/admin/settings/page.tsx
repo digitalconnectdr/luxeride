@@ -17,8 +17,16 @@ import { BookingLinkCard } from '@/components/admin/booking-link-card'
 import { BookingWidgetCard } from '@/components/admin/booking-widget-card'
 import { CoverForm } from '@/components/admin/cover-form'
 import { ServicesManager, type Service } from '@/components/admin/services-manager'
-import { getDict } from '@/lib/i18n/server'
+import { getDict, getLocale } from '@/lib/i18n/server'
 import { getAppUrl } from '@/lib/app-url'
+
+const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
+
+const WHOP_CHECKOUT_URLS: Record<string, string | undefined> = {
+  starter: process.env.WHOP_CHECKOUT_URL_STARTER,
+  professional: process.env.WHOP_CHECKOUT_URL_PROFESSIONAL,
+  enterprise: process.env.WHOP_CHECKOUT_URL_ENTERPRISE,
+}
 
 const TIMEZONES = [
   'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
@@ -64,7 +72,7 @@ export default async function SettingsPage({
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('name, slug, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, logo_url, primary_color, tagline, hero_image_url, about')
+    .select('name, slug, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, logo_url, primary_color, tagline, hero_image_url, about, status, plan, subscription_ends_at, whop_membership_id')
     .eq('id', user.company_id)
     .single()
 
@@ -110,6 +118,26 @@ export default async function SettingsPage({
   const adminDict = getDict().admin
   const t = adminDict.settings
   const actions = adminDict.actions
+  const localeTag = LOCALE_TAGS[getLocale()] ?? 'en-US'
+
+  const SUBSCRIPTION_STATUS_BADGE: Record<string, string> = {
+    active:    'bg-green-100 text-green-700',
+    trial:     'bg-blue-100 text-blue-700',
+    suspended: 'bg-yellow-100 text-yellow-700',
+    cancelled: 'bg-gray-100 text-gray-600',
+  }
+  const SUBSCRIPTION_STATUS_LABEL: Record<string, string> = {
+    active: t.subscriptionStatusActive,
+    trial: t.subscriptionStatusTrial,
+    suspended: t.subscriptionStatusSuspended,
+    cancelled: t.subscriptionStatusCancelled,
+  }
+  const subscriptionEndsAt = company.subscription_ends_at ? new Date(company.subscription_ends_at) : null
+  const isExpired = !!subscriptionEndsAt && subscriptionEndsAt < new Date()
+  const needsCheckout = company.status !== 'active' || isExpired
+  const checkoutPlans = (['starter', 'professional', 'enterprise'] as const)
+    .map((plan) => ({ plan, url: WHOP_CHECKOUT_URLS[plan] }))
+    .filter((p): p is { plan: typeof p.plan; url: string } => !!p.url)
 
   return (
     <div className="p-8 max-w-[1400px] mx-auto space-y-8">
@@ -118,6 +146,48 @@ export default async function SettingsPage({
         <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface">{t.title}</h1>
         <p className="mt-1 text-sm text-sl-on-surface-muted">{t.subtitle}</p>
       </div>
+
+      {/* ── Suscripción a la plataforma (Whop) ── */}
+      <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+        <h2 className="text-sm font-semibold text-sl-on-surface mb-3">{t.subscriptionTitle}</h2>
+        <div className="flex flex-wrap items-center gap-3 mb-2">
+          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${SUBSCRIPTION_STATUS_BADGE[company.status] ?? 'bg-gray-100 text-gray-600'}`}>
+            {SUBSCRIPTION_STATUS_LABEL[company.status] ?? company.status}
+          </span>
+          <span className="text-xs text-sl-on-surface-muted">
+            {t.subscriptionPlan}: <span className="font-medium text-sl-on-surface capitalize">{company.plan}</span>
+          </span>
+          {company.whop_membership_id && (
+            <span className="text-[11px] text-sl-on-surface-muted">({t.subscriptionViaWhop})</span>
+          )}
+        </div>
+        <p className="text-xs text-sl-on-surface-muted mb-4">
+          {subscriptionEndsAt
+            ? (isExpired ? t.subscriptionExpiredOn : t.subscriptionRenewsOn).replace(
+                '{date}',
+                subscriptionEndsAt.toLocaleDateString(localeTag, { day: '2-digit', month: 'short', year: 'numeric' }),
+              )
+            : t.subscriptionNoDate}
+        </p>
+        {needsCheckout && checkoutPlans.length > 0 && (
+          <div>
+            <p className="text-xs text-sl-on-surface-muted mb-2">{t.subscriptionChoosePlan}</p>
+            <div className="flex flex-wrap gap-3">
+              {checkoutPlans.map(({ plan, url }) => (
+                <a
+                  key={plan}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors capitalize"
+                >
+                  {t.subscriptionSubscribe} — {plan}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* ── Link de reservas del operador ── */}
       {company.slug && (

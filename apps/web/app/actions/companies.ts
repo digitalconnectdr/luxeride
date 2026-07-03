@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
+import { activateCompanySubscription } from '@/lib/billing/subscriptions'
 import type { CompanyStatus, CompanyPlan } from '@/lib/supabase/database.types'
 
 export type CompanyActionResult = {
@@ -106,33 +107,9 @@ export async function renewSubscriptionAction(
 ): Promise<CompanyActionResult> {
   await requireRole('super_admin')
 
-  const safeMonths = Math.min(24, Math.max(1, Math.floor(months) || 1))
   const admin = createAdminClient()
-
-  const { data: company } = await admin
-    .from('companies')
-    .select('subscription_ends_at')
-    .eq('id', companyId)
-    .single()
-
-  if (!company) return { success: false, error: 'Empresa no encontrada' }
-
-  const current = company.subscription_ends_at
-    ? new Date(company.subscription_ends_at)
-    : null
-  const base = current && current > new Date() ? current : new Date()
-  const newEnd = new Date(base)
-  newEnd.setMonth(newEnd.getMonth() + safeMonths)
-
-  const { error } = await admin
-    .from('companies')
-    .update({
-      subscription_ends_at: newEnd.toISOString(),
-      status: 'active',
-    })
-    .eq('id', companyId)
-
-  if (error) return { success: false, error: error.message }
+  const result = await activateCompanySubscription(admin, companyId, months)
+  if (!result.success) return result
 
   revalidatePath('/super-admin/subscriptions')
   revalidatePath('/super-admin/companies')

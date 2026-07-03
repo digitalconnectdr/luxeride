@@ -103,6 +103,8 @@ export type Database = {
           stripe_subscription_id: string | null
           stripe_connect_account_id: string | null
           stripe_connect_onboarded: boolean | null
+          whop_membership_id: string | null
+          whop_plan_id: string | null
           auto_assign_enabled: boolean
           settings: Json
           trial_ends_at: string | null
@@ -133,6 +135,8 @@ export type Database = {
           stripe_subscription_id?: string | null | undefined
           stripe_connect_account_id?: string | null | undefined
           stripe_connect_onboarded?: boolean | null | undefined
+          whop_membership_id?: string | null | undefined
+          whop_plan_id?: string | null | undefined
           auto_assign_enabled?: boolean | undefined
           settings?: Json | undefined
           trial_ends_at?: string | null | undefined
@@ -163,6 +167,8 @@ export type Database = {
           stripe_subscription_id?: string | null | undefined
           stripe_connect_account_id?: string | null | undefined
           stripe_connect_onboarded?: boolean | null | undefined
+          whop_membership_id?: string | null | undefined
+          whop_plan_id?: string | null | undefined
           auto_assign_enabled?: boolean | undefined
           settings?: Json | undefined
           trial_ends_at?: string | null | undefined

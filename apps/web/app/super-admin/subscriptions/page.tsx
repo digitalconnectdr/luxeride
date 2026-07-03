@@ -39,7 +39,7 @@ export default async function SubscriptionsPage() {
   const admin = createAdminClient()
   const { data: companies } = await admin
     .from('companies')
-    .select('id, name, slug, email, phone, status, plan, created_at, trial_ends_at, subscription_ends_at')
+    .select('id, name, slug, email, phone, status, plan, created_at, trial_ends_at, subscription_ends_at, whop_membership_id')
     .order('created_at', { ascending: false })
 
   const all = companies ?? []
@@ -160,6 +160,11 @@ export default async function SubscriptionsPage() {
                       >
                         {c.name}
                       </Link>
+                      {c.whop_membership_id && (
+                        <span className="ml-1.5 inline-flex items-center rounded-full bg-[#f0ede5] px-1.5 py-0.5 text-[9px] font-semibold text-[#75716a] align-middle">
+                          Whop
+                        </span>
+                      )}
                       <p className="text-xs text-[#75716a]">/{c.slug}</p>
                     </td>
                     <td className="px-5 py-3.5">
