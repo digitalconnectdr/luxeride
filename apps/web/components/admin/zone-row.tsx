@@ -4,6 +4,7 @@ import { useState, useTransition, type FormEvent } from 'react'
 import { updateZoneAction } from '@/app/actions/services'
 import { ZoneActiveToggle, ZoneDeleteButton } from './zone-controls'
 import { ZoneGeoFields } from './zone-geo-fields'
+import { ZoneCoverageMap } from './zone-coverage-map'
 import { InfoTip } from '@/components/ui/info-tip'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 
@@ -48,6 +49,7 @@ export function ZoneRow({
   isAdmin: boolean
 }) {
   const [editing, setEditing] = useState(false)
+  const [showMap, setShowMap] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [err, setErr] = useState<string | null>(null)
 
@@ -121,6 +123,7 @@ export function ZoneRow({
   }
 
   return (
+    <>
     <tr className="hover:bg-sl-bg/40 transition-colors">
       <td className="px-5 py-3.5">
         <div className="flex items-center gap-2.5">
@@ -164,6 +167,9 @@ export function ZoneRow({
       {isAdmin && (
         <td className="px-5 py-3.5 text-right">
           <div className="flex items-center justify-end gap-3">
+            <button onClick={() => setShowMap((v) => !v)} className="text-xs font-medium text-bronze hover:text-bronze/80 transition-colors">
+              {showMap ? t.hideZoneAction : t.viewZoneAction}
+            </button>
             <button onClick={() => setEditing(true)} className="text-xs font-medium text-bronze hover:text-bronze/80 transition-colors">
               {actions.edit}
             </button>
@@ -172,5 +178,13 @@ export function ZoneRow({
         </td>
       )}
     </tr>
+    {showMap && (
+      <tr className="bg-sl-bg/40">
+        <td colSpan={isAdmin ? 6 : 5} className="px-5 py-4">
+          <ZoneCoverageMap zone={zone} noGeoHint={t.noGeoHint} />
+        </td>
+      </tr>
+    )}
+    </>
   )
 }

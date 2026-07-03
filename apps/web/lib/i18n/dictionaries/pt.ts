@@ -750,6 +750,9 @@ export const pt: Dictionary = {
       types: { standard: 'Padrão', airport: 'Aeroporto', premium: 'Premium', restricted: 'Restrita' },
       viewMap: 'Ver zonas no mapa',
       hideMap: 'Ocultar mapa',
+      viewZoneAction: 'Ver zona',
+      hideZoneAction: 'Ocultar',
+      noGeoHint: 'Esta zona ainda não tem círculo nem códigos postais — adicione-os editando a zona para vê-la no mapa.',
       help: {
         name: 'Nome interno para identificar a zona (ex. "Aeroporto", "Centro"). Usado em Regras de preço para escolher a origem/destino do preço "Por zona".',
         type: 'Categoria informativa — não afeta o cálculo do preço, só ajuda a organizar visualmente suas zonas (ex. diferenciar aeroporto de residencial).',

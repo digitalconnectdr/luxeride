@@ -749,6 +749,9 @@ export const en = {
       types: { standard: 'Standard', airport: 'Airport', premium: 'Premium', restricted: 'Restricted' },
       viewMap: 'View zones on map',
       hideMap: 'Hide map',
+      viewZoneAction: 'View zone',
+      hideZoneAction: 'Hide',
+      noGeoHint: 'This zone has no circle or postal codes yet — add them by editing the zone to see it on the map.',
       help: {
         name: 'Internal name to identify the zone (e.g. "Airport", "Downtown"). Used in Pricing Rules to pick the origin/destination for "Zone-based" pricing.',
         type: 'Informational category — doesn\'t affect pricing, just helps you visually organize your zones (e.g. telling airport zones apart from residential ones).',
