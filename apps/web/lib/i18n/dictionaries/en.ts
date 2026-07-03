@@ -405,6 +405,7 @@ export const en = {
   driver: {
     portal: 'Driver portal',
     onDuty: 'On duty',
+    offDuty: 'Off duty',
     signOut: 'Sign out',
     noTrips: 'You have no assigned trips right now.',
     currentStatus: 'Current status',
@@ -454,6 +455,14 @@ export const en = {
       you: 'You',
       seen: 'seen',
       quick: ['On my way', 'I arrived at the pickup point', 'Please confirm your location', 'I have a traffic delay'],
+    },
+    dispatchChat: {
+      title: 'Messages from Dispatch',
+      placeholder: 'Type a message…',
+      send: 'Send',
+      empty: 'No messages from dispatch yet.',
+      you: 'You',
+      them: 'Dispatch',
     },
     actions: {
       assigned: '🚗 Start route to pickup',

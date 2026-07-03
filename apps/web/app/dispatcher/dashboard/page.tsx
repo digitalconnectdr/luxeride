@@ -21,7 +21,7 @@ export default async function DispatcherDashboardPage() {
   const [{ data: initialRows }, { data: drivers }] = await Promise.all([
     admin
       .from('bookings')
-      .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, total_amount, currency, driver_id, vehicle_type_id, flight_number, flight_status, flight_delay_minutes, flight_checked_at')
+      .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, total_amount, currency, driver_id, vehicle_type_id, flight_number, flight_status, flight_delay_minutes, flight_checked_at, distance_miles, arrived_at')
       .eq('company_id', user.company_id)
       .or(
         // Activos (cualquier fecha) + finalizados de hoy. Se usa el timestamp
@@ -44,6 +44,14 @@ export default async function DispatcherDashboardPage() {
       .eq('is_active', true)
       .order('first_name'),
   ])
+
+  // Estado en vivo de cada conductor — disponibilidad + viaje actual + viajes
+  // completados hoy (mismo pool que usa la auto-asignación justa).
+  const driverIds = (drivers ?? []).map((d) => d.id)
+  const { data: driverAvailability } = driverIds.length
+    ? await admin.from('drivers').select('id, is_available').in('id', driverIds)
+    : { data: [] as { id: string; is_available: boolean }[] }
+  const availabilityById = new Map((driverAvailability ?? []).map((d) => [d.id, d.is_available]))
 
   // Conteo de eventos recientes (24h) por reserva — rechazos/incidentes/
   // reasignaciones, para mostrar un aviso en el tablero sin abrir cada viaje.
@@ -75,6 +83,27 @@ export default async function DispatcherDashboardPage() {
     })
   }
 
+  // Viaje actual (activo) y viajes completados hoy por conductor — mismo
+  // criterio de "hoy" que ya trae `bookings` (activos + finalizados de hoy).
+  const currentBookingByDriver = new Map<string, string>()
+  const completedTodayByDriver = new Map<string, number>()
+  for (const b of bookings) {
+    if (!b.driver_id) continue
+    if (['assigned', 'en_route', 'arrived', 'in_progress'].includes(b.status)) {
+      currentBookingByDriver.set(b.driver_id, b.booking_number)
+    }
+    if (b.status === 'completed') {
+      completedTodayByDriver.set(b.driver_id, (completedTodayByDriver.get(b.driver_id) ?? 0) + 1)
+    }
+  }
+  const driverStatuses = (drivers ?? []).map((d) => ({
+    id: d.id,
+    name: `${d.first_name} ${d.last_name}`,
+    isAvailable: availabilityById.get(d.id) ?? false,
+    currentBookingNumber: currentBookingByDriver.get(d.id) ?? null,
+    tripsCompletedToday: completedTodayByDriver.get(d.id) ?? 0,
+  }))
+
   return (
     <DispatchBoard
       companyId={user.company_id}
@@ -95,8 +124,11 @@ export default async function DispatcherDashboardPage() {
         flight_delay_minutes: b.flight_delay_minutes,
         stops_count: Array.isArray(b.waypoints) ? b.waypoints.length : 0,
         events_count: eventCounts.get(b.id) ?? 0,
+        distance_miles: b.distance_miles,
+        arrived_at: b.arrived_at,
       }))}
       drivers={drivers ?? []}
+      driverStatuses={driverStatuses}
     />
   )
 }

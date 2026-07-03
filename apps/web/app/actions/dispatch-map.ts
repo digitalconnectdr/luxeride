@@ -1,14 +1,15 @@
 'use server'
 // ── Mapa en vivo de la flota (Dispatch Board) ──────────────────────────────────
-// Un solo mapa estático con: conductores de viajes activos (última posición
-// reportada en trip_locations, ya construido para el tracking del pasajero) +
-// pines de recogidas pendientes. Reutiliza la MISMA cuota mensual por plan que
-// el tracking del pasajero (consumeLiveTrackingQuota) — es otro consumidor de
-// Static Maps, así que cuenta contra el mismo tope de costo por empresa.
+// Mapa interactivo (JS API, con pan/zoom real): conductores de viajes activos
+// (última posición reportada en trip_locations, ya construido para el tracking
+// del pasajero) + pines de recogidas pendientes. Al ser un mapa JS que se carga
+// una sola vez y solo reposiciona marcadores en cada refresco (no genera una
+// imagen nueva por consulta), NO consume la cuota de Static Maps del tracking
+// del pasajero — esa cuota existe específicamente por el costo de imagen-por-
+// refresco, que aquí ya no aplica.
 
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
-import { consumeLiveTrackingQuota } from '@/lib/tracking/live-tracking-quota'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
 const ACTIVE_STATUSES: BookingStatus[] = ['en_route', 'arrived', 'in_progress']
@@ -17,12 +18,12 @@ export interface DispatchMapPoint {
   bookingId: string
   bookingNumber: string
   kind: 'driver' | 'pending'
+  lat: number
+  lng: number
 }
 
 export interface DispatchMapRefresh {
-  url: string | null
   points: DispatchMapPoint[]
-  quotaExceeded: boolean
 }
 
 export async function refreshDispatchMapAction(): Promise<DispatchMapRefresh | null> {
@@ -62,8 +63,7 @@ export async function refreshDispatchMapAction(): Promise<DispatchMapRefresh | n
     }
   }
 
-  type Point = DispatchMapPoint & { lat: number; lng: number }
-  const points: Point[] = []
+  const points: DispatchMapPoint[] = []
 
   for (const b of activeBookings ?? []) {
     const pos = driverPosByBooking.get(b.id)
@@ -76,30 +76,5 @@ export async function refreshDispatchMapAction(): Promise<DispatchMapRefresh | n
     }
   }
 
-  const publicPoints: DispatchMapPoint[] = points.map(({ bookingId, bookingNumber, kind }) => ({ bookingId, bookingNumber, kind }))
-  if (!points.length) return { url: null, points: publicPoints, quotaExceeded: false }
-
-  const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  if (!mapsKey) return { url: null, points: publicPoints, quotaExceeded: false }
-
-  const allowed = await consumeLiveTrackingQuota(companyId)
-  if (!allowed) return { url: null, points: publicPoints, quotaExceeded: true }
-
-  // Verde = conductor en viaje activo. Ámbar = recogida pendiente sin asignar.
-  // Static Maps solo admite una letra/número por marcador — con >9 puntos se
-  // repiten (limitación aceptada, no hace falta más precisión visual aquí).
-  const markers = points
-    .map((p, i) => {
-      const color = p.kind === 'driver' ? '0x22c55e' : '0xf59e0b'
-      const label = String((i % 9) + 1)
-      return `markers=${encodeURIComponent(`size:mid|color:${color}|label:${label}|${p.lat},${p.lng}`)}`
-    })
-    .join('&')
-
-  const url =
-    `https://maps.googleapis.com/maps/api/staticmap?size=1200x420&scale=2&maptype=roadmap&` +
-    markers +
-    `&key=${mapsKey}`
-
-  return { url, points: publicPoints, quotaExceeded: false }
+  return { points }
 }

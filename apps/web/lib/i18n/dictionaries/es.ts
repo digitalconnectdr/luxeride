@@ -406,6 +406,7 @@ export const es: Dictionary = {
   driver: {
     portal: 'Portal del conductor',
     onDuty: 'En servicio',
+    offDuty: 'Fuera de servicio',
     signOut: 'Cerrar sesión',
     noTrips: 'No tienes viajes asignados ahora.',
     currentStatus: 'Estado actual',
@@ -455,6 +456,14 @@ export const es: Dictionary = {
       you: 'Tú',
       seen: 'visto',
       quick: ['Ya voy en camino', 'Llegué al punto de recogida', 'Por favor confirma tu ubicación', 'Tengo un retraso por tráfico'],
+    },
+    dispatchChat: {
+      title: 'Mensajes de Dispatch',
+      placeholder: 'Escribe un mensaje…',
+      send: 'Enviar',
+      empty: 'Sin mensajes de dispatch todavía.',
+      you: 'Tú',
+      them: 'Dispatch',
     },
     actions: {
       assigned: '🚗 Iniciar ruta al pickup',

@@ -1,33 +1,60 @@
 'use client'
 // ── Mapa en vivo de la flota — arriba del tablero de columnas ─────────────────
-// Se refresca solo (mismo patrón que el tracking del pasajero): funciona sin
-// depender de Realtime, respeta la misma cuota mensual por plan.
+// Mapa interactivo (JS API) con pan/zoom real — antes era una imagen Static
+// Maps sin control de zoom que quedaba pegada al único marcador disponible.
+// Se refresca solo cada 20s reposicionando los marcadores (sin recargar el
+// mapa en sí), mismo patrón de polling que el resto del sistema.
 
 import { useCallback, useEffect, useState } from 'react'
+import { Map, Marker, useMap } from '@vis.gl/react-google-maps'
 import { refreshDispatchMapAction, type DispatchMapPoint } from '@/app/actions/dispatch-map'
+import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, APPLE_WHITE_MAP_STYLES } from '@/lib/maps/config'
 
 const REFRESH_INTERVAL_MS = 20_000
+const SINGLE_POINT_ZOOM = 13
+const FIT_BOUNDS_PADDING = 56
 
 export interface DispatchLiveMapLabels {
   title: string
   empty: string
-  quotaExceeded: string
   legendDriver: string
   legendPending: string
 }
 
+function markerIcon(color: string) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"><circle cx="11" cy="11" r="9" fill="${color}" stroke="#ffffff" stroke-width="2"/></svg>`
+  return { url: `data:image/svg+xml;utf-8,${encodeURIComponent(svg)}` }
+}
+
+/** Encuadra el mapa según los puntos disponibles — con un solo punto, fitBounds
+ *  produciría un zoom absurdo (bounds de tamaño cero), así que ese caso se
+ *  maneja aparte con un zoom fijo razonable. */
+function FitToPoints({ points }: { points: DispatchMapPoint[] }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!map || points.length === 0) return
+    if (points.length === 1) {
+      map.setCenter({ lat: points[0].lat, lng: points[0].lng })
+      map.setZoom(SINGLE_POINT_ZOOM)
+      return
+    }
+    const bounds = new google.maps.LatLngBounds()
+    points.forEach((p) => bounds.extend({ lat: p.lat, lng: p.lng }))
+    map.fitBounds(bounds, FIT_BOUNDS_PADDING)
+  }, [map, points])
+
+  return null
+}
+
 export function DispatchLiveMap({ labels }: { labels: DispatchLiveMapLabels }) {
-  const [url, setUrl] = useState<string | null>(null)
   const [points, setPoints] = useState<DispatchMapPoint[]>([])
-  const [quotaExceeded, setQuotaExceeded] = useState(false)
   const [loaded, setLoaded] = useState(false)
 
   const refresh = useCallback(async () => {
     const res = await refreshDispatchMapAction()
     if (!res) return
-    setUrl(res.url)
     setPoints(res.points)
-    setQuotaExceeded(res.quotaExceeded)
     setLoaded(true)
   }, [])
 
@@ -53,13 +80,32 @@ export function DispatchLiveMap({ labels }: { labels: DispatchLiveMapLabels }) {
           </div>
         )}
       </div>
-      {url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt={labels.title} className="w-full h-auto block" />
+      {points.length > 0 ? (
+        <div className="h-[420px] w-full">
+          <Map
+            defaultCenter={DEFAULT_MAP_CENTER}
+            defaultZoom={DEFAULT_MAP_ZOOM}
+            styles={APPLE_WHITE_MAP_STYLES}
+            gestureHandling="greedy"
+            disableDefaultUI={false}
+            zoomControl={true}
+            streetViewControl={false}
+            mapTypeControl={false}
+            fullscreenControl={false}
+          >
+            <FitToPoints points={points} />
+            {points.map((p) => (
+              <Marker
+                key={p.bookingId}
+                position={{ lat: p.lat, lng: p.lng }}
+                icon={markerIcon(p.kind === 'driver' ? '#22c55e' : '#f59e0b')}
+                title={p.bookingNumber}
+              />
+            ))}
+          </Map>
+        </div>
       ) : (
-        <p className="text-sm text-sl-on-surface-muted text-center py-10">
-          {quotaExceeded ? labels.quotaExceeded : labels.empty}
-        </p>
+        <p className="text-sm text-sl-on-surface-muted text-center py-10">{labels.empty}</p>
       )}
     </div>
   )

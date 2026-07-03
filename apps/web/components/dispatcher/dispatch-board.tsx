@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { updateBookingStatusAction, assignDriverAction } from '@/app/actions/bookings'
 import { DispatchLiveMap } from './dispatch-live-map'
+import { ActiveDriversPanel, type DriverStatusRow } from './active-drivers-panel'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
 export interface DispatchBooking {
@@ -28,7 +29,13 @@ export interface DispatchBooking {
   flight_delay_minutes?: number | null
   stops_count?: number
   events_count?: number
+  distance_miles?: number | null
+  arrived_at?: string | null
 }
+
+// Margen de tolerancia para "llegó a tiempo" — mismo criterio que la métrica
+// de puntualidad en /admin/drivers/[id].
+const ON_TIME_GRACE_MINUTES = 10
 
 interface Driver {
   id: string
@@ -40,6 +47,7 @@ interface Props {
   companyId: string
   initialBookings: DispatchBooking[]
   drivers: Driver[]
+  driverStatuses: DriverStatusRow[]
 }
 
 // ─── Columnas del board ───────────────────────────────────────────────────────
@@ -65,7 +73,7 @@ const NEXT_ACTION: Record<string, { to: BookingStatus; label: string } | undefin
   in_progress: { to: 'completed',   label: '✓ Completar' },
 }
 
-export function DispatchBoard({ companyId, initialBookings, drivers }: Props) {
+export function DispatchBoard({ companyId, initialBookings, drivers, driverStatuses }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
@@ -178,11 +186,12 @@ export function DispatchBoard({ companyId, initialBookings, drivers }: Props) {
         labels={{
           title: 'Mapa en vivo de la flota',
           empty: 'Sin conductores en viaje ni recogidas pendientes con ubicación ahora mismo.',
-          quotaExceeded: 'Cuota mensual de mapa en vivo agotada — el mapa vuelve a mostrarse el próximo mes.',
           legendDriver: 'en viaje',
           legendPending: 'pendientes',
         }}
       />
+
+      <ActiveDriversPanel drivers={driverStatuses} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {COLUMNS.map((col) => {
@@ -254,6 +263,11 @@ export function DispatchBoard({ companyId, initialBookings, drivers }: Props) {
                         <p className="text-sl-on-surface-muted truncate" title={b.dropoff_address}>
                           ▼ {b.dropoff_address || '—'}
                         </p>
+                        {b.distance_miles != null && (
+                          <p className="text-sl-on-surface-muted">
+                            ⟷ {Number(b.distance_miles).toFixed(1)} mi
+                          </p>
+                        )}
                         {b.flight_number && (
                           <p
                             className={
@@ -279,6 +293,16 @@ export function DispatchBoard({ companyId, initialBookings, drivers }: Props) {
                         {driverName(b.driver_id) && (
                           <p className="text-[#0071e3]">⊙ {driverName(b.driver_id)}</p>
                         )}
+                        {b.arrived_at && (() => {
+                          const grace = new Date(b.scheduled_at).getTime() + ON_TIME_GRACE_MINUTES * 60_000
+                          const onTime = new Date(b.arrived_at).getTime() <= grace
+                          const time = new Date(b.arrived_at).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })
+                          return (
+                            <p className={onTime ? 'text-green-600' : 'text-red-500 font-semibold'}>
+                              {onTime ? '✓' : '⚠'} Llegó al pickup {time}{!onTime && ' · tarde'}
+                            </p>
+                          )
+                        })()}
                         {b.total_amount != null && (
                           <p className="font-semibold text-sl-on-surface">
                             ${Number(b.total_amount).toFixed(2)} {b.currency}

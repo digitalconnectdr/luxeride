@@ -17,6 +17,8 @@ import { LiveTrackingMap } from '@/components/trip/live-tracking-map'
 import { LiveLocationReporter } from '@/components/driver/live-location-reporter'
 import { DriverRateForm } from '@/components/driver/driver-rate-form'
 import { buildTripStaticMapUrl, tripDirectionsHref } from '@/lib/tracking/static-map-url'
+import { DriverSelfAvailabilityToggle } from '@/components/driver/availability-toggle'
+import { DriverChannelChat } from '@/components/shared/driver-channel-chat'
 
 export const dynamic = 'force-dynamic'
 
@@ -75,7 +77,7 @@ export default async function DriverTripsPage() {
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString()
 
-  const [{ data: trips }, { data: company }, { data: unratedTrips }] = await Promise.all([
+  const [{ data: trips }, { data: company }, { data: unratedTrips }, { data: driverRow }] = await Promise.all([
     admin
       .from('bookings')
       .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id, route_polyline')
@@ -94,7 +96,9 @@ export default async function DriverTripsPage() {
       .gte('completed_at', sevenDaysAgo)
       .order('completed_at', { ascending: false })
       .limit(10),
+    admin.from('drivers').select('is_available').eq('id', user.id).maybeSingle(),
   ])
+  const isAvailable = driverRow?.is_available ?? false
 
   const co = company as { name: string; logo_url: string | null; primary_color: string | null; phone: string | null } | null
   const brandColor = co?.primary_color ?? '#c9a24b'
@@ -142,9 +146,12 @@ export default async function DriverTripsPage() {
         <div className="flex items-center gap-4 ml-auto">
           <div className="text-right">
             <p className="text-sm font-medium truncate">{driverName}</p>
-            <p className="text-[11px] text-green-600 flex items-center gap-1.5 justify-end">
-              <span className="h-1.5 w-1.5 rounded-full bg-green-500" /> {dt.onDuty}
-            </p>
+            <div className="mt-1 flex justify-end">
+              <DriverSelfAvailabilityToggle
+                isAvailable={isAvailable}
+                labels={{ onDuty: dt.onDuty, offDuty: dt.offDuty, saving: dt.actions.saving }}
+              />
+            </div>
           </div>
           <LanguageSwitcher current={locale} variant="light" />
           <form action={logoutAction}>
@@ -154,6 +161,20 @@ export default async function DriverTripsPage() {
       </header>
 
       <main className="max-w-6xl mx-auto px-5 py-8 space-y-6">
+        {/* Mensajes de Dispatch — canal general, no atado a un viaje específico */}
+        <DriverChannelChat
+          variant="driver"
+          brandColor={brandColor}
+          labels={{
+            title: dt.dispatchChat.title,
+            placeholder: dt.dispatchChat.placeholder,
+            send: dt.dispatchChat.send,
+            empty: dt.dispatchChat.empty,
+            you: dt.dispatchChat.you,
+            them: dt.dispatchChat.them,
+          }}
+        />
+
         {!trips?.length ? (
           <div className={`${card} p-12 text-center`}>
             <p className="text-sm text-[#75716a]">{dt.noTrips}</p>

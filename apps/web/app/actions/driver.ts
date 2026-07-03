@@ -9,6 +9,32 @@ import { notifyBookingEventInBackground } from '@/lib/notifications'
 import { getAppUrl } from '@/lib/app-url'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
+// ─── Disponibilidad del conductor (para auto-asignación de viajes) ────────────
+// El conductor controla su propio "en servicio / fuera de servicio". Antes
+// solo el admin podía tocar drivers.is_available (toggleDriverAvailability en
+// fleet.ts) — la vista del conductor solo mostraba una etiqueta fija.
+
+export async function driverSetAvailabilityAction(
+  isAvailable: boolean,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('driver')
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('drivers')
+    .update({ is_available: isAvailable })
+    .eq('id', user.id)
+
+  if (error) {
+    console.error('[driverSetAvailabilityAction]', error)
+    return { success: false, error: 'Error al actualizar disponibilidad' }
+  }
+
+  revalidatePath('/driver/trips')
+  revalidatePath('/dispatcher/dashboard')
+  return { success: true }
+}
+
 // Transiciones permitidas al conductor (subset de la máquina de estados)
 const DRIVER_TRANSITIONS: Partial<Record<BookingStatus, BookingStatus>> = {
   assigned:    'en_route',

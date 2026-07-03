@@ -581,6 +581,41 @@ export type Database = {
         Relationships: []
       }
 
+      // ── driver_messages (chat Dispatch ↔ Conductor, canal general) ────────────
+      driver_messages: {
+        Row: {
+          id: string
+          company_id: string
+          driver_id: string
+          sender: 'dispatch' | 'driver'
+          sender_name: string | null
+          body: string
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          driver_id: string
+          sender: 'dispatch' | 'driver'
+          sender_name?: string | null | undefined
+          body: string
+          read_at?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          driver_id?: string | undefined
+          sender?: 'dispatch' | 'driver' | undefined
+          sender_name?: string | null | undefined
+          body?: string | undefined
+          read_at?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── trip_locations (tracking en vivo) ─────────────────────────────────────
       trip_locations: {
         Row: {

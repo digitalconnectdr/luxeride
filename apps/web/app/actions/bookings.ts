@@ -19,6 +19,7 @@ import { trackBookingFlight } from '@/lib/flights/refresh'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
 import { getAppUrl } from '@/lib/app-url'
 import { calculateFare, bestRule, type PricingRuleFields } from '@/lib/pricing/engine'
+import { tryAutoAssignDriver } from '@/lib/dispatch/auto-assign'
 import type { BookingStatus, BookingType, Json } from '@/lib/supabase/database.types'
 
 // ─── Multi-stop: validación de paradas intermedias ────────────────────────────
@@ -365,6 +366,30 @@ export async function createBookingAction(
     fees.push({ booking_id: booking.id, company_id: user.company_id, type: 'surcharge', description: 'Recargo', amount: quote.surcharge_amount })
   }
   if (fees.length > 0) await admin.from('booking_fees').insert(fees)
+
+  // Auto-asignación a un conductor en servicio (best-effort — si no hay
+  // conductores disponibles o hay choque de horario, la reserva queda
+  // pendiente igual que antes, para asignación manual o el barrido diario).
+  if (!asQuote) {
+    try {
+      await tryAutoAssignDriver(admin, {
+        id: booking.id,
+        company_id: user.company_id,
+        booking_number: booking.booking_number,
+        scheduled_at: scheduledAt,
+        duration_minutes: quote.duration_minutes,
+        passenger_name: passengerName,
+        passenger_email: passengerEmail || null,
+        passenger_phone: passengerPhone || null,
+        pickup_location: { address: pickupAddr },
+        dropoff_location: { address: dropoffAddr },
+        total_amount: quote.total_amount,
+        currency: quote.currency ?? 'USD',
+      })
+    } catch (e) {
+      console.error('[createBookingAction] auto-assign', e)
+    }
+  }
 
   // Flight tracking — consulta el vuelo en background si aplica
   if (flightNumber && ['airport_pickup', 'airport_dropoff'].includes(bookingType)) {
@@ -867,6 +892,26 @@ export async function createPublicBookingAction(data: {
     fees.push({ booking_id: booking.id, company_id: company.id, type: 'surcharge', description: 'Recargo', amount: quote.surcharge_amount })
   }
   if (fees.length > 0) await admin.from('booking_fees').insert(fees)
+
+  // Auto-asignación a un conductor en servicio (best-effort)
+  try {
+    await tryAutoAssignDriver(admin, {
+      id: booking.id,
+      company_id: company.id,
+      booking_number: booking.booking_number,
+      scheduled_at: data.scheduledAt,
+      duration_minutes: quote.duration_minutes,
+      passenger_name: name,
+      passenger_email: email || null,
+      passenger_phone: phone,
+      pickup_location: { address: data.pickupAddress },
+      dropoff_location: { address: data.dropoffAddress },
+      total_amount: quote.total_amount,
+      currency: quote.currency ?? 'USD',
+    })
+  } catch (e) {
+    console.error('[createPublicBookingAction] auto-assign', e)
+  }
 
   // Flight tracking — consulta el vuelo en background si aplica
   const publicFlightNumber = data.flightNumber?.trim()
