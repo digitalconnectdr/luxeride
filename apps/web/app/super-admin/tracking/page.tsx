@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { currentYearMonth } from '@/lib/tracking/live-tracking-quota'
-import { QuotaInput } from '@/components/super-admin/tracking-quota-controls'
+import { QuotaInput, PriceInput } from '@/components/super-admin/tracking-quota-controls'
 import type { CompanyPlan } from '@/lib/supabase/database.types'
 
 export const metadata: Metadata = { title: 'Tracking en vivo' }
@@ -21,12 +21,13 @@ export default async function TrackingUsagePage() {
   const yearMonth = currentYearMonth()
 
   const [{ data: quotas }, { data: usage }, { data: companies }] = await Promise.all([
-    admin.from('plan_quotas').select('plan, live_tracking_monthly_quota'),
+    admin.from('plan_quotas').select('plan, live_tracking_monthly_quota, monthly_price'),
     admin.from('live_tracking_usage').select('company_id, refresh_count').eq('year_month', yearMonth),
     admin.from('companies').select('id, name, slug, plan').order('name'),
   ])
 
   const quotaByPlan = new Map((quotas ?? []).map((q) => [q.plan, q.live_tracking_monthly_quota]))
+  const priceByPlan = new Map((quotas ?? []).map((q) => [q.plan, q.monthly_price]))
   const usageByCompany = new Map((usage ?? []).map((u) => [u.company_id, u.refresh_count]))
   const totalRefreshes = (usage ?? []).reduce((sum, u) => sum + u.refresh_count, 0)
 
@@ -61,13 +62,17 @@ export default async function TrackingUsagePage() {
       {/* ── Cuotas por plan ── */}
       <div className="bg-white border border-[#e5e1d8] rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-[#f0ede5]">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#75716a]">Cuota mensual por plan</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#75716a]">Precio y cuota mensual por plan</p>
+          <p className="text-[11px] text-[#75716a] mt-0.5">El precio se usa para calcular el MRR en el cuadro de mando.</p>
         </div>
         <div className="divide-y divide-[#f0ede5]">
           {PLAN_ORDER.map((plan) => (
-            <div key={plan} className="px-6 py-4 flex items-center justify-between gap-4">
+            <div key={plan} className="px-6 py-4 flex items-center justify-between gap-6">
               <span className="text-sm font-medium text-[#1d1b18]">{PLAN_LABEL[plan]}</span>
-              <QuotaInput plan={plan} current={quotaByPlan.get(plan) ?? null} />
+              <div className="flex items-center gap-6">
+                <PriceInput plan={plan} current={priceByPlan.get(plan) ?? 0} />
+                <QuotaInput plan={plan} current={quotaByPlan.get(plan) ?? null} />
+              </div>
             </div>
           ))}
         </div>

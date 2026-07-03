@@ -70,6 +70,30 @@ export async function updatePlanQuotaAction(
   return { success: true }
 }
 
+// ─── Precio mensual por plan (para calcular MRR real en el dashboard) ─────────
+
+export async function updatePlanPriceAction(
+  plan: CompanyPlan,
+  price: number,
+): Promise<CompanyActionResult> {
+  await requireRole('super_admin')
+
+  if (!Number.isFinite(price) || price < 0) {
+    return { success: false, error: 'Precio inválido' }
+  }
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('plan_quotas')
+    .update({ monthly_price: price })
+    .eq('plan', plan)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/super-admin/tracking')
+  revalidatePath('/super-admin/dashboard')
+  return { success: true }
+}
+
 // ─── Suscripciones (panel del owner de la plataforma) ─────────────────────────
 
 /**

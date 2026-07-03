@@ -648,21 +648,24 @@ export type Database = {
         Relationships: []
       }
 
-      // ── plan_quotas (cuota de tracking en vivo por plan) ──────────────────────
+      // ── plan_quotas (cuota de tracking en vivo + precio mensual por plan) ─────
       plan_quotas: {
         Row: {
           plan: 'free' | 'starter' | 'professional' | 'enterprise'
           live_tracking_monthly_quota: number | null
+          monthly_price: number
           updated_at: string
         }
         Insert: {
           plan: 'free' | 'starter' | 'professional' | 'enterprise'
           live_tracking_monthly_quota?: number | null | undefined
+          monthly_price?: number | undefined
           updated_at?: string | undefined
         }
         Update: {
           plan?: 'free' | 'starter' | 'professional' | 'enterprise' | undefined
           live_tracking_monthly_quota?: number | null | undefined
+          monthly_price?: number | undefined
           updated_at?: string | undefined
         }
         Relationships: []
