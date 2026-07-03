@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/server'
+import { InfoTip } from '@/components/ui/info-tip'
 import type { CompanyStatus, CompanyPlan, BookingStatus } from '@/lib/supabase/database.types'
 
 export const metadata: Metadata = { title: 'Cuadro de mando — Super Admin' }
@@ -175,17 +176,27 @@ export default async function SuperAdminDashboardPage() {
 
           <div className={`${card} border-l-[3px] border-l-[#8a6520] rounded-l-none px-6 py-5 flex flex-wrap items-center gap-x-10 gap-y-4`}>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520]">MRR</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520] flex items-center">
+                MRR
+                <InfoTip text="Ingreso Mensual Recurrente: suma del precio mensual del plan de cada empresa con estado ACTIVA (pagando) ahora mismo. Se recalcula solo si cambias el precio de un plan o si una empresa cambia de plan/estado." />
+              </p>
               <p className="text-4xl font-playfair font-semibold text-[#1d1b18] mt-1">{money(mrr)}</p>
               <p className="text-[11px] text-[#75716a] mt-0.5">{active.length} empresa{active.length === 1 ? '' : 's'} activa{active.length === 1 ? '' : 's'} pagando</p>
             </div>
             <div className="h-10 w-px bg-[#e5e1d8] hidden sm:block" />
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">ARPU</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
+                ARPU
+                <InfoTip text="Ingreso promedio por empresa activa: MRR dividido entre el número de empresas activas. Sube si cambian de un plan barato a uno caro, o baja si entran muchas empresas nuevas en planes económicos." />
+              </p>
               <p className="text-2xl font-playfair font-semibold text-[#1d1b18] mt-1">{money(arpu)}</p>
             </div>
             <div className="h-10 w-px bg-[#e5e1d8] hidden sm:block" />
             <div className="flex items-center gap-4 flex-wrap">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center w-full">
+                Por plan
+                <InfoTip text="Cuántas empresas ACTIVAS (pagando) hay en cada plan pagado. No incluye Free ni empresas en prueba/suspendidas/canceladas." />
+              </p>
               {(['starter', 'professional', 'enterprise'] as CompanyPlan[]).map((plan) => (
                 <div key={plan}>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">{PLAN_LABEL[plan]}</p>
@@ -200,19 +211,22 @@ export default async function SuperAdminDashboardPage() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
             {[
-              { label: 'Total empresas', value: companies.length, href: '/super-admin/companies' },
-              { label: 'Activas',        value: active.length,    href: '/super-admin/companies?status=active' },
-              { label: 'En prueba',      value: trial.length,     href: '/super-admin/subscriptions' },
-              { label: 'Suspendidas',    value: suspended.length, href: '/super-admin/companies?status=suspended', accent: suspended.length > 0 },
-              { label: 'Nuevas (7 d)',   value: newThisWeek,      href: '/super-admin/companies' },
-              { label: 'Nuevas (mes)',   value: newThisMonth,     href: '/super-admin/companies' },
+              { label: 'Total empresas', value: companies.length, href: '/super-admin/companies', tip: 'Todas las empresas registradas en LuxeRide, sin importar su estado (activa, prueba, suspendida o cancelada).' },
+              { label: 'Activas',        value: active.length,    href: '/super-admin/companies?status=active', tip: 'Empresas con estado ACTIVA — son las que pagan y cuentan para el MRR.' },
+              { label: 'En prueba',      value: trial.length,     href: '/super-admin/subscriptions', tip: 'Empresas que se registraron desde el landing y aún no han sido aprobadas/activadas — todavía no pagan.' },
+              { label: 'Suspendidas',    value: suspended.length, href: '/super-admin/companies?status=suspended', accent: suspended.length > 0, tip: 'Empresas a las que les cerraste el acceso manualmente (ej. por falta de pago). No pueden operar hasta reactivarlas.' },
+              { label: 'Nuevas (7 d)',   value: newThisWeek,      href: '/super-admin/companies', tip: 'Empresas creadas (cualquier estado) en los últimos 7 días — mide el ritmo de altas nuevas.' },
+              { label: 'Nuevas (mes)',   value: newThisMonth,     href: '/super-admin/companies', tip: 'Empresas creadas (cualquier estado) desde el día 1 del mes calendario actual.' },
             ].map((k) => (
               <Link
                 key={k.label}
                 href={k.href}
                 className={`${card} px-4 py-3.5 hover:border-[#8a6520]/50 transition-colors group`}
               >
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">{k.label}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
+                  {k.label}
+                  <InfoTip text={k.tip} />
+                </p>
                 <p className={`text-2xl font-playfair font-semibold mt-1 transition-colors group-hover:text-[#8a6520] ${k.accent ? 'text-red-500' : 'text-[#1d1b18]'}`}>
                   {k.value}
                 </p>
@@ -227,43 +241,59 @@ export default async function SuperAdminDashboardPage() {
 
           <div className={`${card} border-l-[3px] border-l-[#8a6520] rounded-l-none px-6 py-5 flex flex-wrap items-center gap-x-10 gap-y-4`}>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520]">GMV este mes</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520] flex items-center">
+                GMV este mes
+                <InfoTip text="Gross Merchandise Value: suma del monto total de TODAS las reservas COMPLETADAS de TODAS las empresas, desde el día 1 del mes calendario actual. No es ingreso de LuxeRide — es el volumen de negocio que procesan tus operadores." />
+              </p>
               <p className="text-4xl font-playfair font-semibold text-[#1d1b18] mt-1">{money(gmvMonth)}</p>
             </div>
             <div className="h-10 w-px bg-[#e5e1d8] hidden sm:block" />
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">GMV hoy</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
+                GMV hoy
+                <InfoTip text="Suma del monto de reservas completadas HOY, en todas las empresas." />
+              </p>
               <p className="text-2xl font-playfair font-semibold text-[#1d1b18] mt-1">{money(gmvToday)}</p>
             </div>
             <div className="h-10 w-px bg-[#e5e1d8] hidden sm:block" />
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">GMV histórico</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
+                GMV histórico
+                <InfoTip text="Suma de TODAS las reservas completadas desde siempre, en todas las empresas (hasta las últimas 10,000 reservas más recientes)." />
+              </p>
               <p className="text-2xl font-playfair font-semibold text-[#1d1b18] mt-1">{money(gmvAllTime)}</p>
             </div>
             <div className="h-10 w-px bg-[#e5e1d8] hidden sm:block" />
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">Valor promedio</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
+                Valor promedio
+                <InfoTip text="GMV histórico dividido entre el número de reservas completadas — el ticket promedio de un viaje en toda la plataforma." />
+              </p>
               <p className="text-2xl font-playfair font-semibold text-[#1d1b18] mt-1">{money(avgBookingValue)}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: 'Reservas totales', value: totalBookingsAllTime ?? 0 },
-              { label: 'En curso ahora',   value: activeBookingsCount ?? 0 },
-              { label: 'Completadas (30 d)', value: completedCount30 },
-              { label: 'Cancel./no-show (30 d)', value: `${(cancellationRate30 * 100).toFixed(1)}%`, accent: cancellationRate30 > 0.15 },
+              { label: 'Reservas totales', value: totalBookingsAllTime ?? 0, tip: 'Cuenta de TODAS las reservas creadas en la plataforma, en cualquier estado (pendiente, cancelada, completada, etc.), desde siempre.' },
+              { label: 'En curso ahora',   value: activeBookingsCount ?? 0, tip: 'Reservas ahora mismo en estado pendiente, asignada, en ruta, en el pickup o en viaje — el volumen operativo "en vivo" de toda la plataforma.' },
+              { label: 'Completadas (30 d)', value: completedCount30, tip: 'Reservas que llegaron a estado COMPLETADA en los últimos 30 días, en todas las empresas.' },
+              { label: 'Cancel./no-show (30 d)', value: `${(cancellationRate30 * 100).toFixed(1)}%`, accent: cancellationRate30 > 0.15, tip: 'De las reservas que terminaron (completadas + canceladas + no-show) en los últimos 30 días, qué porcentaje NO se completó. Arriba de 15% se resalta en rojo como señal de calidad de servicio a vigilar.' },
             ].map((k) => (
               <div key={k.label} className={`${card} px-4 py-3.5`}>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">{k.label}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
+                  {k.label}
+                  <InfoTip text={k.tip} />
+                </p>
                 <p className={`text-2xl font-playfair font-semibold mt-1 ${'accent' in k && k.accent ? 'text-red-500' : 'text-[#1d1b18]'}`}>{k.value}</p>
               </div>
             ))}
           </div>
 
           <div className={`${card} p-6`}>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] mb-4">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] mb-4 flex items-center">
               Reservas completadas — últimos {TREND_DAYS} días
+              <InfoTip text="Cada barra es un día: cuántas reservas se completaron ese día en toda la plataforma (todas las empresas juntas). Pasa el mouse sobre una barra para ver el GMV de ese día." />
             </p>
             <div className="flex items-end justify-between gap-1.5">
               {trend.map((d, i) => (
@@ -293,8 +323,15 @@ export default async function SuperAdminDashboardPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#f0ede5]">
-                    {['Empresa', 'Plan', 'Reservas', 'GMV'].map((h) => (
-                      <th key={h} className="text-left px-6 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">{h}</th>
+                    {[
+                      { label: 'Empresa' },
+                      { label: 'Plan' },
+                      { label: 'Reservas', tip: 'Reservas completadas de esta empresa en el mes calendario actual.' },
+                      { label: 'GMV', tip: 'Suma del monto de las reservas completadas de esta empresa, en el mes calendario actual.' },
+                    ].map((h) => (
+                      <th key={h.label} className="text-left px-6 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
+                        <span className="inline-flex items-center">{h.label}{h.tip && <InfoTip text={h.tip} />}</span>
+                      </th>
                     ))}
                   </tr>
                 </thead>
@@ -322,17 +359,26 @@ export default async function SuperAdminDashboardPage() {
           <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520]">Pagos (Stripe) — últimos 30 días</p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className={`${card} px-4 py-3.5`}>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">Volumen exitoso</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
+                Volumen exitoso
+                <InfoTip text="Suma de los pagos con Stripe que se cobraron con éxito en los últimos 30 días, en todas las empresas. No incluye pagos en efectivo/Zelle/transferencia (esos no pasan por Stripe)." />
+              </p>
               <p className="text-2xl font-playfair font-semibold mt-1 text-[#1d1b18]">{money(succeededVolume)}</p>
             </div>
             <div className={`${card} px-4 py-3.5`}>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">Pagos fallidos</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
+                Pagos fallidos
+                <InfoTip text="Intentos de cobro con Stripe que fallaron (tarjeta rechazada, fondos insuficientes, etc.) en los últimos 30 días. Arriba de 10% se resalta en rojo." />
+              </p>
               <p className={`text-2xl font-playfair font-semibold mt-1 ${failureRate > 0.1 ? 'text-red-500' : 'text-[#1d1b18]'}`}>
                 {failedPayments.length} <span className="text-sm font-normal text-[#75716a]">({(failureRate * 100).toFixed(1)}%)</span>
               </p>
             </div>
             <div className={`${card} px-4 py-3.5 col-span-2`}>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] mb-1.5">Método de pago (exitosos)</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] mb-1.5 flex items-center">
+                Método de pago (exitosos)
+                <InfoTip text="Cómo pagaron los pasajeros en los pagos exitosos de los últimos 30 días: tarjeta (Stripe), efectivo, cuenta corporativa o transferencia bancaria." />
+              </p>
               {methodCounts.size === 0 ? (
                 <p className="text-xs text-[#75716a]">Sin pagos en este período.</p>
               ) : (
@@ -367,15 +413,24 @@ export default async function SuperAdminDashboardPage() {
           <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520]">Flota y conductores (plataforma)</p>
           <div className="grid grid-cols-3 gap-3">
             <div className={`${card} px-4 py-3.5`}>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">Conductores totales</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
+                Conductores totales
+                <InfoTip text="Cuántos conductores tienen ficha registrada (tabla drivers) en cualquier empresa de la plataforma, sin importar si están en servicio ahora mismo." />
+              </p>
               <p className="text-2xl font-playfair font-semibold mt-1 text-[#1d1b18]">{totalDrivers ?? 0}</p>
             </div>
             <div className={`${card} px-4 py-3.5`}>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">En servicio ahora</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
+                En servicio ahora
+                <InfoTip text="Conductores marcados como disponibles ('en servicio') en este momento, en toda la plataforma — el conductor controla esto desde su propio portal." />
+              </p>
               <p className="text-2xl font-playfair font-semibold mt-1 text-green-600">{availableDriversNow ?? 0}</p>
             </div>
             <div className={`${card} px-4 py-3.5`}>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">Vehículos totales</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
+                Vehículos totales
+                <InfoTip text="Cuántos vehículos tienen ficha registrada (tabla vehicles) en cualquier empresa de la plataforma." />
+              </p>
               <p className="text-2xl font-playfair font-semibold mt-1 text-[#1d1b18]">{totalVehicles ?? 0}</p>
             </div>
           </div>
@@ -383,7 +438,10 @@ export default async function SuperAdminDashboardPage() {
 
         {/* ── F. Alertas y vigilancia ── */}
         <section className="space-y-3">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520]">Alertas y vigilancia</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520] flex items-center">
+            Alertas y vigilancia
+            <InfoTip text="Cosas que probablemente quieras revisar: empresas suspendidas, pruebas o suscripciones que vencen en 7 días o menos, empresas activas sin ningún conductor cargado, y cancelación/no-show por encima de 15% en los últimos 30 días. Cada alerta enlaza a la página donde puedes actuar." />
+          </p>
           <div className={`${card} divide-y divide-[#f0ede5]`}>
             {[
               {

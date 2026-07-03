@@ -4,6 +4,7 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { currentYearMonth } from '@/lib/tracking/live-tracking-quota'
 import { QuotaInput, PriceInput } from '@/components/super-admin/tracking-quota-controls'
+import { InfoTip } from '@/components/ui/info-tip'
 import type { CompanyPlan } from '@/lib/supabase/database.types'
 
 export const metadata: Metadata = { title: 'Tracking en vivo' }
@@ -53,8 +54,9 @@ export default async function TrackingUsagePage() {
 
       {/* KPI */}
       <div className="bg-white border border-[#e5e1d8] rounded-xl px-4 py-3.5 w-fit">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
           Refrescos totales — {yearMonth}
+          <InfoTip text="Cada vez que el mapa de seguimiento en vivo del pasajero (/track/[id]) se actualiza automáticamente, cuenta como un 'refresco' de Google Static Maps — el costo real que se mide y limita por plan. (El mapa del Dispatch Board es un mapa interactivo aparte y no consume esta cuota.)" />
         </p>
         <p className="text-2xl font-playfair font-semibold mt-1 text-[#1d1b18]">{totalRefreshes.toLocaleString()}</p>
       </div>
@@ -70,8 +72,14 @@ export default async function TrackingUsagePage() {
             <div key={plan} className="px-6 py-4 flex items-center justify-between gap-6">
               <span className="text-sm font-medium text-[#1d1b18]">{PLAN_LABEL[plan]}</span>
               <div className="flex items-center gap-6">
-                <PriceInput plan={plan} current={priceByPlan.get(plan) ?? 0} />
-                <QuotaInput plan={plan} current={quotaByPlan.get(plan) ?? null} />
+                <div className="flex items-center">
+                  <PriceInput plan={plan} current={priceByPlan.get(plan) ?? 0} />
+                  <InfoTip text="Lo que le cobras a una empresa por mes en este plan. Se usa para calcular el MRR (ingreso recurrente) en el cuadro de mando — cambia el precio aquí y el MRR se recalcula solo." />
+                </div>
+                <div className="flex items-center">
+                  <QuotaInput plan={plan} current={quotaByPlan.get(plan) ?? null} />
+                  <InfoTip text="Límite mensual de 'refrescos' del mapa de seguimiento del pasajero para empresas en este plan. Al superarlo, esa empresa vuelve automáticamente a un mapa estático simple (sin actualización en vivo) el resto del mes — nunca se bloquea nada, solo se degrada." />
+                </div>
               </div>
             </div>
           ))}
@@ -91,9 +99,18 @@ export default async function TrackingUsagePage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#f0ede5]">
-                {['Empresa', 'Plan', 'Consumido', 'Cuota', 'Estado'].map((h) => (
-                  <th key={h} className="text-left px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
-                    {h}
+                {[
+                  { label: 'Empresa' },
+                  { label: 'Plan' },
+                  { label: 'Consumido', tip: 'Cuántas veces se refrescó el mapa de seguimiento en vivo del pasajero para esta empresa, este mes. Cada refresco = una carga de imagen de Google Static Maps.' },
+                  { label: 'Cuota', tip: 'Límite mensual de refrescos según el plan de la empresa. "Sin límite" significa que su plan no tiene tope configurado.' },
+                  { label: 'Estado', tip: 'Si ya alcanzó su cuota, esa empresa vuelve automáticamente a un mapa estático simple (sin actualización en vivo) el resto del mes — no se bloquea nada, solo se degrada.' },
+                ].map((h) => (
+                  <th key={h.label} className="text-left px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
+                    <span className="inline-flex items-center">
+                      {h.label}
+                      {h.tip && <InfoTip text={h.tip} />}
+                    </span>
                   </th>
                 ))}
               </tr>
