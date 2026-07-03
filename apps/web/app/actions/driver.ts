@@ -18,12 +18,15 @@ export async function driverSetAvailabilityAction(
   isAvailable: boolean,
 ): Promise<{ success: boolean; error?: string }> {
   const user = await requireRole('driver')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
   const admin = createAdminClient()
+  // upsert (no update): algunos conductores nunca llegaron a tener una fila
+  // en `drivers` (solo user_profiles) — con update() eso falla en silencio
+  // (0 filas afectadas, sin error) y el toggle parece no hacer nada.
   const { error } = await admin
     .from('drivers')
-    .update({ is_available: isAvailable })
-    .eq('id', user.id)
+    .upsert({ id: user.id, company_id: user.company_id, is_available: isAvailable }, { onConflict: 'id' })
 
   if (error) {
     console.error('[driverSetAvailabilityAction]', error)
