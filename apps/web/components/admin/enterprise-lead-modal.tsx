@@ -33,10 +33,12 @@ const inputCls =
 export function EnterpriseLeadModal({
   defaultCompanyName,
   defaultEmail,
+  benefits = [],
   labels,
 }: {
   defaultCompanyName?: string
   defaultEmail?: string
+  benefits?: string[]
   labels: EnterpriseLeadLabels
 }) {
   const [open, setOpen] = useState(false)
@@ -99,6 +101,16 @@ export function EnterpriseLeadModal({
               <>
                 <h3 className="font-playfair text-lg font-semibold text-sl-on-surface">{labels.modalTitle}</h3>
                 <p className="mt-1 text-xs text-sl-on-surface-muted">{labels.modalDesc}</p>
+
+                {benefits.length > 0 && (
+                  <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 rounded-lg bg-gold/10 border border-gold/30 px-4 py-3">
+                    {benefits.map((b) => (
+                      <li key={b} className="text-[11px] text-sl-on-surface flex items-start gap-1.5">
+                        <span className="text-bronze shrink-0">✓</span>{b}
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
                 <form onSubmit={handleSubmit} className="mt-5 space-y-3">
                   <div>

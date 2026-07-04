@@ -194,7 +194,7 @@ export default async function SettingsPage({
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex flex-col justify-between gap-3 rounded-xl border border-sl-outline-variant bg-sl-bg px-4 py-3.5 hover:border-bronze hover:bg-bronze/5 transition-colors"
+                    className="group flex items-center justify-between gap-3 rounded-xl border border-sl-outline-variant bg-sl-bg px-4 py-3.5 hover:border-bronze hover:bg-gold/15 hover:shadow-sm transition-colors"
                   >
                     <div>
                       <p className="text-sm font-semibold text-sl-on-surface">{PLAN_LABEL[plan]}</p>
@@ -202,7 +202,7 @@ export default async function SettingsPage({
                         <p className="text-xs text-sl-on-surface-muted mt-0.5">${Number(price).toFixed(0)}/mes</p>
                       )}
                     </div>
-                    <span className="text-xs font-medium text-bronze group-hover:text-bronze/80">
+                    <span className="text-xs font-medium text-bronze group-hover:text-bronze/80 shrink-0">
                       {t.subscriptionSubscribe} →
                     </span>
                   </a>
@@ -210,19 +210,15 @@ export default async function SettingsPage({
               })}
 
               {/* Enterprise — venta consultiva, sin checkout: abre un modal de solicitud */}
-              <div className="group flex flex-col justify-between gap-3 rounded-xl border border-sl-outline-variant bg-sl-bg px-4 py-3.5">
+              <div className="group flex items-center justify-between gap-3 rounded-xl border border-sl-outline-variant bg-sl-bg px-4 py-3.5 hover:border-bronze hover:bg-gold/15 hover:shadow-sm transition-colors">
                 <div>
                   <p className="text-sm font-semibold text-sl-on-surface">{t.enterprisePlanName}</p>
                   <p className="text-xs text-sl-on-surface-muted mt-0.5">{t.enterpriseCustomPricing}</p>
-                  <ul className="mt-2 space-y-0.5">
-                    {[t.enterpriseBenefit1, t.enterpriseBenefit2, t.enterpriseBenefit3, t.enterpriseBenefit4].map((b) => (
-                      <li key={b} className="text-[11px] text-sl-on-surface-muted">✓ {b}</li>
-                    ))}
-                  </ul>
                 </div>
                 <EnterpriseLeadModal
                   defaultCompanyName={company.name}
                   defaultEmail={company.email ?? undefined}
+                  benefits={[t.enterpriseBenefit1, t.enterpriseBenefit2, t.enterpriseBenefit3, t.enterpriseBenefit4]}
                   labels={{
                     requestButton: t.enterpriseRequest,
                     modalTitle: t.enterpriseModalTitle,
