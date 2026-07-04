@@ -12,7 +12,7 @@ import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { Reveal } from '@/components/landing/reveal'
 import { ServiceWorkerRegister } from '@/components/pwa/sw-register'
-import { PaymentMethodsBadges } from '@/components/booking/payment-methods-badges'
+import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
 import { MicrositeIvory } from '@/components/booking/microsite-ivory'
 import { MicrositeBold } from '@/components/booking/microsite-bold'
 import { MicrositeCorporate } from '@/components/booking/microsite-corporate'
@@ -391,6 +391,11 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
         </div>
       </section>
 
+      {/* Formas de pago — cinta con desplazamiento lateral */}
+      <section className="py-20 lg:py-24 bg-[#0b0b0e] border-t border-white/[0.06]">
+        <PaymentMethodsMarquee acceptsCardOnline={acceptsCardOnline} t={t} tone="dark" brandColor={brandColor} />
+      </section>
+
       {/* Footer */}
       <footer className="bg-[#060608] border-t border-white/[0.06]">
         <div className="max-w-[1500px] mx-auto px-6 lg:px-10 py-16 lg:py-20">
@@ -435,11 +440,6 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
                 {waNumber && <li><a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="lux-link hover:text-white transition-colors">WhatsApp</a></li>}
                 {company.city && <li className="text-white/45">{company.city}</li>}
               </ul>
-            </div>
-
-            {/* Formas de pago */}
-            <div className="lg:col-span-12 pt-10 border-t border-white/[0.06]">
-              <PaymentMethodsBadges acceptsCardOnline={acceptsCardOnline} t={t} tone="dark" />
             </div>
           </div>
 

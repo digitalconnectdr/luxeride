@@ -10,7 +10,7 @@ import { Reveal, RevealStagger, RevealItem } from '@/components/landing/reveal'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
-import { PaymentMethodsBadges } from '@/components/booking/payment-methods-badges'
+import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 import type { GoogleReview } from '@/lib/reviews/google'
@@ -295,6 +295,13 @@ export function MicrositeCorporate(props: {
         </div>
       </section>
 
+      {/* Formas de pago — cinta con desplazamiento lateral */}
+      <section className="py-20 bg-black/[0.02] border-t border-black/[0.06]">
+        <div className="max-w-[1280px] mx-auto px-6 lg:px-10">
+          <PaymentMethodsMarquee acceptsCardOnline={acceptsCardOnline} t={t} tone="light" brandColor={brandColor} />
+        </div>
+      </section>
+
       {/* FOOTER */}
       <footer className="border-t border-black/[0.07]">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-12">
@@ -317,9 +324,6 @@ export function MicrositeCorporate(props: {
               {company.email && <li><a href={`mailto:${company.email}`} className="hover:text-[#161a1f] transition-colors">{company.email}</a></li>}
               {waNumber && <li><a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="hover:text-[#161a1f] transition-colors">WhatsApp</a></li>}
             </ul>
-          </div>
-          <div className="lg:col-span-12 pt-8 border-t border-black/[0.06]">
-            <PaymentMethodsBadges acceptsCardOnline={acceptsCardOnline} t={t} tone="light" />
           </div>
         </div>
         <div className="border-t border-black/[0.06] py-5">

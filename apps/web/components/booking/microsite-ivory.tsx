@@ -11,7 +11,7 @@ import { Reveal, RevealStagger, RevealItem } from '@/components/landing/reveal'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
-import { PaymentMethodsBadges } from '@/components/booking/payment-methods-badges'
+import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 import type { GoogleReview } from '@/lib/reviews/google'
@@ -321,6 +321,13 @@ export function MicrositeIvory(props: {
         </div>
       </section>
 
+      {/* Formas de pago — cinta con desplazamiento lateral */}
+      <section className="py-20 lg:py-24 bg-[#17140f]">
+        <div className="max-w-[1300px] mx-auto px-6 lg:px-10">
+          <PaymentMethodsMarquee acceptsCardOnline={acceptsCardOnline} t={t} tone="dark" brandColor={brandColor} />
+        </div>
+      </section>
+
       {/* FOOTER (oscuro) */}
       <footer className="bg-[#17140f] text-white/70">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-16 grid gap-10 sm:grid-cols-2 lg:grid-cols-12">
@@ -367,9 +374,6 @@ export function MicrositeIvory(props: {
               {waNumber && <li><a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">WhatsApp</a></li>}
               {company.city && <li className="text-white/45">{company.city}</li>}
             </ul>
-          </div>
-          <div className="lg:col-span-12 pt-8 border-t border-white/[0.08]">
-            <PaymentMethodsBadges acceptsCardOnline={acceptsCardOnline} t={t} tone="dark" />
           </div>
         </div>
         <div className="border-t border-white/[0.08] py-6">

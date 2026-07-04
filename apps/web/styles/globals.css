@@ -369,3 +369,23 @@
 @media (prefers-reduced-motion: reduce) {
   .lux-breathe-soft { animation: none; }
 }
+
+/* Cinta de formas de pago — desplazamiento lateral lento y continuo (señal de
+   confianza antes de reservar). La pista duplica su contenido una vez y
+   recorre -50% para un loop perfectamente continuo; se pausa al pasar el
+   mouse. En reduced-motion se congela como fila estática (sin duplicado —
+   ver payment-methods-marquee.tsx, que no duplica los items cuando detecta
+   la preferencia en el cliente). */
+@keyframes lux-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.lux-marquee-track {
+  animation: lux-marquee 34s linear infinite;
+}
+.lux-marquee-group:hover .lux-marquee-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lux-marquee-track { animation: none; transform: none; }
+}

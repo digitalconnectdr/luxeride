@@ -5,6 +5,7 @@ import { getLocale, getDict } from '@/lib/i18n/server'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { Reveal, RevealStagger, RevealItem } from '@/components/landing/reveal'
 import { HeroMockup } from '@/components/landing/hero-mockup'
+import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
 import { brand, withBrand } from '@/lib/brand'
 
 export const metadata: Metadata = {
@@ -383,6 +384,13 @@ export default async function LandingPage() {
               )
             })}
           </RevealStagger>
+        </div>
+      </section>
+
+      {/* ── Formas de pago — cinta con desplazamiento lateral ── */}
+      <section className="border-t border-white/[0.06] py-20 lg:py-24">
+        <div className="max-w-5xl mx-auto px-6">
+          <PaymentMethodsMarquee acceptsCardOnline t={t} tone="dark" />
         </div>
       </section>
 
