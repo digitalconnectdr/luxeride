@@ -9,6 +9,7 @@ import { BookingPayments } from '@/components/admin/booking-payments'
 import { CopyButton } from '@/components/trip/copy-button'
 import { getAppUrl } from '@/lib/app-url'
 import { isStripeConfigured } from '@/lib/stripe/server'
+import { isWhopConnectConfigured } from '@/lib/whop/connect-server'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 import { getDict, getLocale } from '@/lib/i18n/server'
 
@@ -333,7 +334,7 @@ export default async function BookingDetailPage({
       <BookingPayments
         bookingId={booking.id}
         payments={payments ?? []}
-        stripeConfigured={isStripeConfigured()}
+        stripeConfigured={isStripeConfigured() || isWhopConnectConfigured()}
         canRefund={['company_owner', 'company_admin', 'accounting'].includes(user.role)}
         bookingTotal={booking.total_amount}
       />

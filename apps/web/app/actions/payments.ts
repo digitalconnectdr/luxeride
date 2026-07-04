@@ -8,6 +8,8 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
 import { getStripe } from '@/lib/stripe/server'
+import { getWhopClient } from '@/lib/whop/connect-server'
+import { createWhopCheckout } from '@/lib/whop/checkout'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
 import { getAppUrl } from '@/lib/app-url'
 
@@ -221,11 +223,6 @@ async function createCheckoutForBooking(
   },
   opts?: { gratuityPct?: number },
 ): Promise<ActionResult<{ url: string }>> {
-  const stripe = getStripe()
-  if (!stripe) {
-    return { success: false, error: 'Pagos online no disponibles — Stripe no configurado' }
-  }
-
   if (!booking.total_amount || booking.total_amount <= 0) {
     return { success: false, error: 'La reservación no tiene monto a cobrar' }
   }
@@ -249,7 +246,9 @@ async function createCheckoutForBooking(
 
   const { data: company } = await admin
     .from('companies')
-    .select('stripe_connect_account_id, stripe_connect_onboarded, settings')
+    .select(
+      'stripe_connect_account_id, stripe_connect_onboarded, settings, whop_connect_company_id, whop_connect_onboarded, active_payment_provider',
+    )
     .eq('id', companyId)
     .single()
 
@@ -274,8 +273,13 @@ async function createCheckoutForBooking(
   const useConnect = Boolean(
     company?.stripe_connect_account_id && company?.stripe_connect_onboarded,
   )
+  const useWhop = Boolean(
+    company?.active_payment_provider === 'whop' &&
+      company?.whop_connect_company_id &&
+      company?.whop_connect_onboarded,
+  )
   const feePct = platformFeePct(company?.settings)
-  const feeCents = useConnect ? Math.round(amountCents * (feePct / 100)) : 0
+  const feeCents = useConnect || useWhop ? Math.round(amountCents * (feePct / 100)) : 0
 
   // Registrar pago pendiente ANTES de crear la sesión (idempotencia vía metadata)
   const { data: payment, error: payErr } = await admin
@@ -300,6 +304,45 @@ async function createCheckoutForBooking(
   if (payErr || !payment) {
     console.error('[createCheckoutForBooking] payment insert', payErr)
     return { success: false, error: 'Error al registrar el pago' }
+  }
+
+  // ── Whop: un solo precio (main + propina combinados) — sin line items ──────
+  if (useWhop) {
+    const result = await createWhopCheckout({
+      whopConnectCompanyId: company!.whop_connect_company_id!,
+      amountCents,
+      feeCents,
+      currency,
+      title: `${mainLabel}${gratPct > 0 ? ` (incl. propina ${gratPct}%)` : ''}`,
+      productExternalId: `luxeride-booking-${companyId}`,
+      productTitle: 'Reservaciones LuxeRide',
+      redirectUrl: `${APP_URL}/payment/success?booking=${encodeURIComponent(booking.booking_number)}`,
+      metadata: {
+        payment_id: payment.id,
+        booking_id: booking.id,
+        company_id: companyId,
+        kind: isDeposit ? 'deposit' : 'full',
+      },
+    })
+
+    if (!result.ok) {
+      await admin.from('payments').update({ status: 'cancelled' }).eq('id', payment.id)
+      return { success: false, error: 'Error al crear el checkout de Whop' }
+    }
+
+    await admin
+      .from('payments')
+      .update({ whop_checkout_id: result.checkoutConfigurationId })
+      .eq('id', payment.id)
+
+    revalidatePath(`/admin/bookings/${booking.id}`)
+    return { success: true, data: { url: result.url } }
+  }
+
+  const stripe = getStripe()
+  if (!stripe) {
+    await admin.from('payments').update({ status: 'cancelled' }).eq('id', payment.id)
+    return { success: false, error: 'Pagos online no disponibles — Stripe no configurado' }
   }
 
   try {
@@ -448,13 +491,10 @@ export async function refundPaymentAction(
   const user = await requireRole('company_owner', 'company_admin', 'accounting')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
-  const stripe = getStripe()
-  if (!stripe) return { success: false, error: 'Stripe no está configurado' }
-
   const admin = createAdminClient()
   const { data: payment } = await admin
     .from('payments')
-    .select('id, booking_id, company_id, amount, status, stripe_payment_intent_id')
+    .select('id, booking_id, company_id, amount, status, stripe_payment_intent_id, whop_payment_id')
     .eq('id', paymentId)
     .eq('company_id', user.company_id)
     .single()
@@ -463,6 +503,40 @@ export async function refundPaymentAction(
   if (payment.status !== 'succeeded') {
     return { success: false, error: 'Solo pagos exitosos pueden reembolsarse' }
   }
+
+  // ── Reembolso vía Whop ──────────────────────────────────────────────────────
+  if (payment.whop_payment_id) {
+    const whop = getWhopClient()
+    if (!whop) return { success: false, error: 'Whop no está configurado' }
+
+    try {
+      // El SDK devuelve el Payment actualizado, no un Refund con ID propio —
+      // el webhook refund.created rellena refunds.whop_refund_id cuando llegue.
+      await whop.payments.refund(payment.whop_payment_id, {})
+
+      await admin.from('refunds').insert({
+        company_id: payment.company_id,
+        payment_id: payment.id,
+        booking_id: payment.booking_id,
+        amount: payment.amount,
+        reason: reason?.trim() || 'requested_by_customer',
+        status: 'pending',
+        initiated_by: user.id,
+      })
+
+      await admin.from('payments').update({ status: 'refunded' }).eq('id', payment.id)
+
+      if (payment.booking_id) revalidatePath(`/admin/bookings/${payment.booking_id}`)
+      return { success: true }
+    } catch (err) {
+      console.error('[refundPaymentAction] whop', err)
+      return { success: false, error: 'Error al procesar el reembolso con Whop' }
+    }
+  }
+
+  // ── Reembolso vía Stripe ─────────────────────────────────────────────────────
+  const stripe = getStripe()
+  if (!stripe) return { success: false, error: 'Stripe no está configurado' }
   if (!payment.stripe_payment_intent_id) {
     return { success: false, error: 'Pago sin PaymentIntent de Stripe' }
   }

@@ -50,6 +50,42 @@ export async function updateCompanyPlan(
   return { success: true }
 }
 
+// ─── Comisión de la plataforma sobre cobros a pasajeros (Stripe/Whop Connect) ─
+// Vive en companies.settings.payments.platform_fee_pct (mismo campo que ya
+// leen app/actions/payments.ts y app/actions/trip.ts para calcular
+// application_fee_amount) — sin migración nueva, solo la UI para editarlo.
+
+export async function updateCompanyCommissionAction(
+  companyId: string,
+  pct: number,
+): Promise<CompanyActionResult> {
+  await requireRole('super_admin')
+
+  if (!Number.isFinite(pct) || pct < 0 || pct > 50) {
+    return { success: false, error: 'La comisión debe estar entre 0% y 50%' }
+  }
+
+  const admin = createAdminClient()
+  const { data: company } = await admin
+    .from('companies')
+    .select('settings')
+    .eq('id', companyId)
+    .single()
+
+  const settings = (company?.settings as Record<string, unknown> | null) ?? {}
+  const payments = (settings.payments as Record<string, unknown> | undefined) ?? {}
+
+  const { error } = await admin
+    .from('companies')
+    .update({ settings: { ...settings, payments: { ...payments, platform_fee_pct: pct } } })
+    .eq('id', companyId)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath(`/super-admin/companies/${companyId}`)
+  return { success: true }
+}
+
 // ─── Cuota de tracking en vivo por plan (protege el costo de Google Maps) ─────
 
 export async function updatePlanQuotaAction(

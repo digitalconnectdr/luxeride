@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/server'
 import { StatusSelect, PlanSelect } from '@/components/super-admin/status-forms'
+import { CommissionInput } from '@/components/super-admin/commission-input'
 import { currentYearMonth } from '@/lib/tracking/live-tracking-quota'
 import { InfoTip } from '@/components/ui/info-tip'
 import type { CompanyStatus } from '@/lib/supabase/database.types'
@@ -53,6 +54,9 @@ export default async function CompanyDetailPage({ params }: PageProps) {
   ])
 
   if (companyError || !company) return notFound()
+
+  const currentCommissionPct =
+    (company.settings as { payments?: { platform_fee_pct?: number } } | null)?.payments?.platform_fee_pct ?? 0
 
   const allUsers = users ?? []
   const activeCount = allUsers.filter((u) => u.is_active).length
@@ -144,6 +148,16 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             Subscription Plan
           </h2>
           <PlanSelect companyId={company.id} current={company.plan} />
+        </div>
+
+        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6 space-y-3 sm:col-span-2">
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+            Platform Commission
+          </h2>
+          <p className="text-xs text-sl-on-surface-muted">
+            % retained by LuxeRide from this company&apos;s passenger charges (Stripe/Whop Connect). 0% = no commission.
+          </p>
+          <CommissionInput companyId={company.id} current={currentCommissionPct} />
         </div>
       </div>
 

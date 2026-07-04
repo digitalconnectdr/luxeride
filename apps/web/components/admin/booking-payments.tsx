@@ -142,7 +142,7 @@ export function BookingPayments({ bookingId, payments, stripeConfigured, canRefu
               </button>
             ) : (
               <span className="text-xs text-sl-on-surface-muted">
-                Stripe no configurado
+                Pagos en línea no configurados
               </span>
             )
           )}

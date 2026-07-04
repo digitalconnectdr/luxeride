@@ -1338,6 +1338,7 @@ export type Database = {
           stripe_charge_id: string | null
           stripe_connect_account_id: string | null
           whop_checkout_id: string | null
+          whop_payment_id: string | null
           amount: number
           currency: string
           platform_fee: number | null
@@ -1362,6 +1363,7 @@ export type Database = {
           stripe_charge_id?: string | null | undefined
           stripe_connect_account_id?: string | null | undefined
           whop_checkout_id?: string | null | undefined
+          whop_payment_id?: string | null | undefined
           amount: number
           currency?: string | undefined
           platform_fee?: number | null | undefined
@@ -1386,6 +1388,7 @@ export type Database = {
           stripe_charge_id?: string | null | undefined
           stripe_connect_account_id?: string | null | undefined
           whop_checkout_id?: string | null | undefined
+          whop_payment_id?: string | null | undefined
           amount?: number | undefined
           currency?: string | undefined
           platform_fee?: number | null | undefined
@@ -1412,6 +1415,7 @@ export type Database = {
           payment_id: string
           booking_id: string | null
           stripe_refund_id: string | null
+          whop_refund_id: string | null
           amount: number
           reason: string | null
           status: string
@@ -1426,6 +1430,7 @@ export type Database = {
           payment_id: string
           booking_id?: string | null | undefined
           stripe_refund_id?: string | null | undefined
+          whop_refund_id?: string | null | undefined
           amount: number
           reason?: string | null | undefined
           status?: string | undefined
@@ -1440,6 +1445,7 @@ export type Database = {
           payment_id?: string | undefined
           booking_id?: string | null | undefined
           stripe_refund_id?: string | null | undefined
+          whop_refund_id?: string | null | undefined
           amount?: number | undefined
           reason?: string | null | undefined
           status?: string | undefined

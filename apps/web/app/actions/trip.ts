@@ -11,6 +11,7 @@ import { parsePolicy, computeCancellationFee } from '@/lib/policy/engine'
 import { calculateFare, bestRule, type PricingRuleFields } from '@/lib/pricing/engine'
 import { calculateRoute } from '@/lib/maps/routes'
 import { getStripe } from '@/lib/stripe/server'
+import { createWhopCheckout } from '@/lib/whop/checkout'
 import { getAppUrl } from '@/lib/app-url'
 import type { BookingStatus, BookingType, Json } from '@/lib/supabase/database.types'
 
@@ -392,9 +393,6 @@ async function createStopChargeIfPaidOnline(
   booking: { id: string; company_id: string; booking_number: string; currency: string | null; passenger_email: string | null; passenger_name: string | null },
   extra: number,
 ): Promise<string | undefined> {
-  const stripe = getStripe()
-  if (!stripe) return undefined
-
   // ¿Hubo un pago con tarjeta exitoso? (si pagó en efectivo, no aplica link)
   const { data: paid } = await admin
     .from('payments')
@@ -407,12 +405,19 @@ async function createStopChargeIfPaidOnline(
 
   const { data: company } = await admin
     .from('companies')
-    .select('stripe_connect_account_id, stripe_connect_onboarded, settings')
+    .select(
+      'stripe_connect_account_id, stripe_connect_onboarded, settings, whop_connect_company_id, whop_connect_onboarded, active_payment_provider',
+    )
     .eq('id', booking.company_id)
     .single()
 
   const useConnect = Boolean(company?.stripe_connect_account_id && company?.stripe_connect_onboarded)
-  if (!useConnect) return undefined
+  const useWhop = Boolean(
+    company?.active_payment_provider === 'whop' &&
+      company?.whop_connect_company_id &&
+      company?.whop_connect_onboarded,
+  )
+  if (!useConnect && !useWhop) return undefined
 
   const currency = (booking.currency ?? 'USD').toLowerCase()
   const cents = Math.round(extra * 100)
@@ -432,11 +437,39 @@ async function createStopChargeIfPaidOnline(
       status: 'pending',
       payment_method: 'card',
       description: `Parada adicional — Booking ${booking.booking_number}`,
-      stripe_connect_account_id: company!.stripe_connect_account_id,
+      stripe_connect_account_id: useConnect ? company!.stripe_connect_account_id : null,
     })
     .select('id')
     .single()
   if (!payment) return undefined
+
+  if (useWhop) {
+    const result = await createWhopCheckout({
+      whopConnectCompanyId: company!.whop_connect_company_id!,
+      amountCents: cents,
+      feeCents,
+      currency,
+      title: `Parada adicional — Reservación ${booking.booking_number}`,
+      productExternalId: `luxeride-booking-${booking.company_id}`,
+      productTitle: 'Reservaciones LuxeRide',
+      redirectUrl: `${getAppUrl()}/payment/success?booking=${encodeURIComponent(booking.booking_number)}`,
+      metadata: { payment_id: payment.id, booking_id: booking.id, company_id: booking.company_id, kind: 'route_change' },
+    })
+
+    if (!result.ok) {
+      await admin.from('payments').update({ status: 'cancelled' }).eq('id', payment.id)
+      return undefined
+    }
+
+    await admin.from('payments').update({ whop_checkout_id: result.checkoutConfigurationId }).eq('id', payment.id)
+    return result.url
+  }
+
+  const stripe = getStripe()
+  if (!stripe) {
+    await admin.from('payments').update({ status: 'cancelled' }).eq('id', payment.id)
+    return undefined
+  }
 
   try {
     const appUrl = getAppUrl()
