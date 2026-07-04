@@ -11,6 +11,7 @@ import { Reveal, RevealStagger, RevealItem } from '@/components/landing/reveal'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
+import { PaymentMethodsBadges } from '@/components/booking/payment-methods-badges'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 import type { GoogleReview } from '@/lib/reviews/google'
@@ -64,8 +65,9 @@ export function MicrositeIvory(props: {
   waNumber: string
   qrDataUrl: string
   reviews: Reviews
+  acceptsCardOnline: boolean
 }) {
-  const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews } = props
+  const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline } = props
 
   const heading = (eyebrow: string, title: string, sub?: string) => (
     <Reveal className="mb-12 lg:mb-14 max-w-2xl">
@@ -365,6 +367,9 @@ export function MicrositeIvory(props: {
               {waNumber && <li><a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">WhatsApp</a></li>}
               {company.city && <li className="text-white/45">{company.city}</li>}
             </ul>
+          </div>
+          <div className="lg:col-span-12 pt-8 border-t border-white/[0.08]">
+            <PaymentMethodsBadges acceptsCardOnline={acceptsCardOnline} t={t} tone="dark" />
           </div>
         </div>
         <div className="border-t border-white/[0.08] py-6">

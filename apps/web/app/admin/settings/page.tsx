@@ -31,6 +31,13 @@ import type { CompanyPlan } from '@/lib/supabase/database.types'
 
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
 
+// Stripe Connect requiere que el operador tenga una entidad registrada en un
+// país soportado por Stripe (RD no lo es) — inviable para la mayoría de
+// nuestros operadores actuales sin una LLC en EE.UU. Se oculta la tarjeta de
+// Configuración para no ofrecer un camino sin salida; el código y las server
+// actions de Stripe Connect quedan intactos para reactivarse cuando aplique.
+const STRIPE_CONNECT_ENABLED = false
+
 const WHOP_CHECKOUT_URLS: Record<string, string | undefined> = {
   starter: process.env.WHOP_CHECKOUT_URL_STARTER,
   professional: process.env.WHOP_CHECKOUT_URL_PROFESSIONAL,
@@ -507,7 +514,8 @@ export default async function SettingsPage({
         </form>
       </section>
 
-      {/* ── Payments / Stripe Connect ── */}
+      {/* ── Payments / Stripe Connect (oculto — ver STRIPE_CONNECT_ENABLED) ── */}
+      {STRIPE_CONNECT_ENABLED && (
       <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
         <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.paymentsTitle}</h2>
 
@@ -583,6 +591,7 @@ export default async function SettingsPage({
           </div>
         )}
       </section>
+      )}
 
       {/* ── Payments / Whop Connect ── */}
       <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
@@ -657,7 +666,7 @@ export default async function SettingsPage({
               )}
             </div>
 
-            {onboarded && whopOnboarded && (
+            {STRIPE_CONNECT_ENABLED && onboarded && whopOnboarded && (
               <div className="pt-2 border-t border-sl-outline-variant">
                 <p className="text-xs text-sl-on-surface-muted mb-2">{t.activeProviderHint}</p>
                 <ActivePaymentProviderSelect

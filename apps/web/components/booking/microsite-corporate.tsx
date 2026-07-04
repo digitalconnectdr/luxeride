@@ -10,6 +10,7 @@ import { Reveal, RevealStagger, RevealItem } from '@/components/landing/reveal'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
+import { PaymentMethodsBadges } from '@/components/booking/payment-methods-badges'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 import type { GoogleReview } from '@/lib/reviews/google'
@@ -59,8 +60,9 @@ export function MicrositeCorporate(props: {
   waNumber: string
   qrDataUrl: string
   reviews: Reviews
+  acceptsCardOnline: boolean
 }) {
-  const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews } = props
+  const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline } = props
 
   const heading = (eyebrow: string, title: string, sub?: string) => (
     <Reveal className="mb-12 max-w-xl">
@@ -315,6 +317,9 @@ export function MicrositeCorporate(props: {
               {company.email && <li><a href={`mailto:${company.email}`} className="hover:text-[#161a1f] transition-colors">{company.email}</a></li>}
               {waNumber && <li><a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="hover:text-[#161a1f] transition-colors">WhatsApp</a></li>}
             </ul>
+          </div>
+          <div className="lg:col-span-12 pt-8 border-t border-black/[0.06]">
+            <PaymentMethodsBadges acceptsCardOnline={acceptsCardOnline} t={t} tone="light" />
           </div>
         </div>
         <div className="border-t border-black/[0.06] py-5">

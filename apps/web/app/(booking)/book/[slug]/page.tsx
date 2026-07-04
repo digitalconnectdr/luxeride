@@ -12,6 +12,7 @@ import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { Reveal } from '@/components/landing/reveal'
 import { ServiceWorkerRegister } from '@/components/pwa/sw-register'
+import { PaymentMethodsBadges } from '@/components/booking/payment-methods-badges'
 import { MicrositeIvory } from '@/components/booking/microsite-ivory'
 import { MicrositeBold } from '@/components/booking/microsite-bold'
 import { MicrositeCorporate } from '@/components/booking/microsite-corporate'
@@ -86,7 +87,7 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
 
   const { data: company } = await admin
     .from('companies')
-    .select('id, name, slug, status, currency, primary_color, phone, email, city, logo_url, tagline, hero_image_url, about, stripe_connect_onboarded, settings')
+    .select('id, name, slug, status, currency, primary_color, phone, email, city, logo_url, tagline, hero_image_url, about, stripe_connect_onboarded, whop_connect_onboarded, settings')
     .eq('slug', params.slug)
     .single()
   if (!company) return notFound()
@@ -118,6 +119,10 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
     description: resolveLocalizedField(s.i18n, locale, 'description', s.description),
   }))
   const fleet = vehicleTypes ?? []
+  // Tarjeta online solo si la empresa completó el onboarding de Whop Connect
+  // (Stripe Connect queda fuera de foco por ahora — ver STRIPE_CONNECT_ENABLED
+  // en admin/settings). Efectivo/Zelle/transferencia siempre están disponibles.
+  const acceptsCardOnline = Boolean((company as { whop_connect_onboarded?: boolean }).whop_connect_onboarded)
   const brandColor = (company.primary_color as string | null) || '#c9a24b'
   const heroImg = (company as { hero_image_url?: string | null }).hero_image_url || DEFAULT_HERO
   const logoUrl = (company as { logo_url?: string | null }).logo_url ?? null
@@ -165,7 +170,7 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
     const sharedProps = {
       company: { name: company.name, slug: company.slug, city: company.city, phone: company.phone, email: company.email },
       logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale,
-      reservarUrl, waNumber, qrDataUrl, reviews: googleReviews,
+      reservarUrl, waNumber, qrDataUrl, reviews: googleReviews, acceptsCardOnline,
     }
     const Template = template === 'ivory' ? MicrositeIvory : template === 'bold' ? MicrositeBold : MicrositeCorporate
     return (
@@ -430,6 +435,11 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
                 {waNumber && <li><a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="lux-link hover:text-white transition-colors">WhatsApp</a></li>}
                 {company.city && <li className="text-white/45">{company.city}</li>}
               </ul>
+            </div>
+
+            {/* Formas de pago */}
+            <div className="lg:col-span-12 pt-10 border-t border-white/[0.06]">
+              <PaymentMethodsBadges acceptsCardOnline={acceptsCardOnline} t={t} tone="dark" />
             </div>
           </div>
 
