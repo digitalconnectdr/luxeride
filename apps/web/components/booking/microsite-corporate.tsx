@@ -227,7 +227,7 @@ export function MicrositeCorporate(props: {
                 <Reveal key={s.id}>
                   <article className="group rounded-xl overflow-hidden bg-white border border-black/[0.08] hover:shadow-md hover:shadow-black/[0.05] transition-shadow h-full flex flex-col">
                     <div className="relative h-36 overflow-hidden">
-                      <Image src={s.image_url || resolveServiceFallbackImage(s.title)} alt={s.title} fill sizes="(max-width:1024px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                      <Image src={s.image_url || resolveServiceFallbackImage(s.title, i)} alt={s.title} fill sizes="(max-width:1024px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
                     </div>
                     <div className="p-5 flex flex-col flex-1">
                       <h3 className="text-[15px] font-semibold text-[#161a1f]">{s.title}</h3>

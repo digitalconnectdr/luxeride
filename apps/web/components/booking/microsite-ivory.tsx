@@ -247,7 +247,7 @@ export function MicrositeIvory(props: {
                 <Reveal key={s.id}>
                   <div className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
                     <div className={`relative h-64 lg:h-[22rem] rounded-[1.4rem] overflow-hidden ring-1 ring-black/10 ${i % 2 === 1 ? 'lg:order-2' : ''}`}>
-                      <Image src={s.image_url || resolveServiceFallbackImage(s.title)} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover" />
+                      <Image src={s.image_url || resolveServiceFallbackImage(s.title, i)} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover" />
                     </div>
                     <div className={i % 2 === 1 ? 'lg:order-1' : ''}>
                       {s.icon && <span className="text-3xl block mb-4">{s.icon}</span>}

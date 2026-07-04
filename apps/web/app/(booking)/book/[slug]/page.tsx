@@ -247,7 +247,7 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
                 <Reveal key={s.id}>
                   <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
                     <div className={`group relative h-72 lg:h-[24rem] rounded-[1.25rem] overflow-hidden ring-1 ring-white/10 ${i % 2 === 1 ? 'lg:order-2' : ''}`}>
-                      <Image src={s.image_url || resolveServiceFallbackImage(s.title)} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-105" />
+                      <Image src={s.image_url || resolveServiceFallbackImage(s.title, i)} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-105" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                     </div>
                     <div className={i % 2 === 1 ? 'lg:order-1' : ''}>

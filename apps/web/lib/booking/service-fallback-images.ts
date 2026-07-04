@@ -2,11 +2,16 @@
 // Antes: se elegía una foto de stock por POSICIÓN en un array (i % length),
 // sin relación con el contenido real del servicio — por eso "Bodas y eventos"
 // podía caer en una foto de una furgoneta en la nieve. Ahora se elige por
-// COINCIDENCIA DE PALABRA CLAVE en el título del servicio (ES/EN/PT), y solo
-// si nada coincide se usa un genérico de sedán ejecutivo negro — nunca un
-// ícono ni una foto que no tenga que ver con lo que se vende. Todas las fotos
-// verificadas contra su descripción real en Unsplash (no solo el nombre del
-// archivo) antes de usarlas aquí.
+// COINCIDENCIA DE PALABRA CLAVE en el título del servicio (ES/EN/PT). Si el
+// título no coincide con ninguna categoría conocida (nombres reales varían
+// mucho: "City-to-City Transportation", "In-City Rides", "Port Transfers"...),
+// cae a un POOL de fotos genéricas de sedán de lujo que ROTA por índice — así
+// varios servicios sin categoría reconocida en la misma página nunca repiten
+// la misma foto (antes: los 3 sin match mostraban literalmente la misma
+// imagen). Todas las fotos verificadas con una petición HTTP real contra el
+// endpoint de descarga de Unsplash (no solo su descripción de búsqueda) antes
+// de usarlas aquí — dos elegidas solo por descripción resultaron rotas
+// (404/403) en una pasada anterior.
 
 const U = (slug: string) => `https://unsplash.com/photos/${slug}/download?force=true&w=1600`
 
@@ -17,8 +22,11 @@ interface Category {
 
 const CATEGORIES: Category[] = [
   {
-    // Bodas y eventos / Weddings and events / Casamentos e eventos
-    keywords: ['boda', 'bodas', 'wedding', 'casamento', 'casamentos', 'quincea', 'evento', 'eventos', 'event'],
+    // Bodas, eventos, prom / Weddings, events, prom / Casamentos, eventos
+    keywords: [
+      'boda', 'bodas', 'wedding', 'casamento', 'casamentos', 'quincea', 'evento', 'eventos', 'event',
+      'prom', 'graduacion', 'graduación', 'formatura',
+    ],
     url: U('d_wZcidBNl0'), // Novia subiendo a una limusina blanca elegante
   },
   {
@@ -38,18 +46,38 @@ const CATEGORIES: Category[] = [
   },
   {
     // Tours / paseos por la ciudad
-    keywords: ['tour', 'paseo', 'passeio', 'sightsee', 'city tour'],
+    keywords: ['tour', 'paseo', 'passeio', 'sightsee', 'excursion', 'excursión'],
     url: U('bVMv6f_2aEE'), // Auto negro circulando entre edificios altos
+  },
+  {
+    // Intermunicipal / larga distancia / ciudad a ciudad
+    keywords: ['city-to-city', 'city to city', 'intercity', 'inter-city', 'long distance', 'long-distance', 'interurbano', 'larga distancia'],
+    url: U('a0SRjVsk7Jg'), // Sedán Audi negro en carretera abierta
+  },
+  {
+    // Puerto / crucero
+    keywords: ['port', 'puerto', 'muelle', 'cruise', 'crucero', 'cruzeiro', 'dock'],
+    url: U('_SlOgSKro2I'), // Crucero atracado en un puerto costero
   },
 ]
 
-// Genérico: sedán ejecutivo negro — solo si ninguna categoría coincide.
-const DEFAULT_IMAGE = U('L5MoSNaOEcU')
+// Pool genérico (sedanes/SUVs de lujo, distintos entre sí) — solo para
+// servicios cuyo título no coincide con ninguna categoría. Rota por índice
+// para que dos servicios "sin match" en la misma página no repitan foto.
+const GENERIC_POOL = [
+  U('swH_BwdisfQ'), // Cadillac negro estacionado
+  U('Wj4Ny_cMUrE'), // SUV negra en un garaje
+  U('r73ofIPEfag'), // Cadillac Escalade negra estacionada
+  U('j1p0gpG_yuA'), // Cadillac SUV negra estacionada
+  U('OinkFJ4Ueg8'), // Mercedes-Benz negro estacionado
+  U('xdYroKLD92U'), // Limusina negra frente a una entrada elegante
+  U('L5MoSNaOEcU'), // Sedán Mercedes-Benz negro circulando
+]
 
-export function resolveServiceFallbackImage(title: string): string {
+export function resolveServiceFallbackImage(title: string, index: number): string {
   const t = title.toLowerCase()
   for (const category of CATEGORIES) {
     if (category.keywords.some((k) => t.includes(k))) return category.url
   }
-  return DEFAULT_IMAGE
+  return GENERIC_POOL[index % GENERIC_POOL.length]
 }
