@@ -13,6 +13,7 @@ import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { Reveal } from '@/components/landing/reveal'
 import { ServiceWorkerRegister } from '@/components/pwa/sw-register'
 import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
+import { resolveServiceFallbackImage } from '@/lib/booking/service-fallback-images'
 import { MicrositeIvory } from '@/components/booking/microsite-ivory'
 import { MicrositeBold } from '@/components/booking/microsite-bold'
 import { MicrositeCorporate } from '@/components/booking/microsite-corporate'
@@ -246,18 +247,8 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
                 <Reveal key={s.id}>
                   <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
                     <div className={`group relative h-72 lg:h-[24rem] rounded-[1.25rem] overflow-hidden ring-1 ring-white/10 ${i % 2 === 1 ? 'lg:order-2' : ''}`}>
-                      {s.image_url ? (
-                        <>
-                          <Image src={s.image_url} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-105" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                        </>
-                      ) : (
-                        // Sin foto propia: ícono del servicio en vez de una foto genérica que
-                        // podría no corresponder (ej. una furgoneta nevada para "Bodas y eventos").
-                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/[0.07] via-transparent to-transparent">
-                          <span className="text-7xl transition-transform duration-700 group-hover:scale-110" style={{ filter: `drop-shadow(0 0 24px ${brandColor}33)` }}>{s.icon || '✦'}</span>
-                        </div>
-                      )}
+                      <Image src={s.image_url || resolveServiceFallbackImage(s.title)} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                     </div>
                     <div className={i % 2 === 1 ? 'lg:order-1' : ''}>
                       {s.icon && <span className="text-3xl block mb-4 opacity-90">{s.icon}</span>}

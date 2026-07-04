@@ -12,6 +12,7 @@ import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
 import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
+import { resolveServiceFallbackImage } from '@/lib/booking/service-fallback-images'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 import type { GoogleReview } from '@/lib/reviews/google'
@@ -246,15 +247,7 @@ export function MicrositeIvory(props: {
                 <Reveal key={s.id}>
                   <div className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
                     <div className={`relative h-64 lg:h-[22rem] rounded-[1.4rem] overflow-hidden ring-1 ring-black/10 ${i % 2 === 1 ? 'lg:order-2' : ''}`}>
-                      {s.image_url ? (
-                        <Image src={s.image_url} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover" />
-                      ) : (
-                        // Sin foto propia: ícono del servicio en vez de una foto genérica que
-                        // podría no corresponder al servicio real.
-                        <div className="absolute inset-0 flex items-center justify-center bg-[#f6f3ec]">
-                          <span className="text-7xl" style={{ filter: `drop-shadow(0 0 20px ${brandColor}22)` }}>{s.icon || '✦'}</span>
-                        </div>
-                      )}
+                      <Image src={s.image_url || resolveServiceFallbackImage(s.title)} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover" />
                     </div>
                     <div className={i % 2 === 1 ? 'lg:order-1' : ''}>
                       {s.icon && <span className="text-3xl block mb-4">{s.icon}</span>}
