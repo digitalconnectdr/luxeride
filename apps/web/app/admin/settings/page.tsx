@@ -17,6 +17,7 @@ import { BookingLinkCard } from '@/components/admin/booking-link-card'
 import { BookingWidgetCard } from '@/components/admin/booking-widget-card'
 import { CoverForm } from '@/components/admin/cover-form'
 import { ServicesManager, type Service } from '@/components/admin/services-manager'
+import { EnterpriseLeadModal } from '@/components/admin/enterprise-lead-modal'
 import { getDict, getLocale } from '@/lib/i18n/server'
 import { getAppUrl } from '@/lib/app-url'
 import type { CompanyPlan } from '@/lib/supabase/database.types'
@@ -181,10 +182,10 @@ export default async function SettingsPage({
             : t.subscriptionNoDate}
         </p>
 
-        {needsCheckout && checkoutPlans.length > 0 && (
+        {needsCheckout && (
           <div className="mt-5 pt-5 border-t border-sl-outline-variant">
             <p className="text-xs font-medium text-sl-on-surface mb-3">{t.subscriptionChoosePlan}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
               {checkoutPlans.map(({ plan, url }) => {
                 const price = priceByPlan[plan]
                 return (
@@ -193,7 +194,7 @@ export default async function SettingsPage({
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex items-center justify-between gap-3 rounded-xl border border-sl-outline-variant bg-sl-bg px-4 py-3.5 hover:border-bronze hover:bg-bronze/5 transition-colors"
+                    className="group flex flex-col justify-between gap-3 rounded-xl border border-sl-outline-variant bg-sl-bg px-4 py-3.5 hover:border-bronze hover:bg-bronze/5 transition-colors"
                   >
                     <div>
                       <p className="text-sm font-semibold text-sl-on-surface">{PLAN_LABEL[plan]}</p>
@@ -201,28 +202,63 @@ export default async function SettingsPage({
                         <p className="text-xs text-sl-on-surface-muted mt-0.5">${Number(price).toFixed(0)}/mes</p>
                       )}
                     </div>
-                    <span className="text-xs font-medium text-bronze group-hover:text-bronze/80 shrink-0">
+                    <span className="text-xs font-medium text-bronze group-hover:text-bronze/80">
                       {t.subscriptionSubscribe} →
                     </span>
                   </a>
                 )
               })}
+
+              {/* Enterprise — venta consultiva, sin checkout: abre un modal de solicitud */}
+              <div className="group flex flex-col justify-between gap-3 rounded-xl border border-sl-outline-variant bg-sl-bg px-4 py-3.5">
+                <div>
+                  <p className="text-sm font-semibold text-sl-on-surface">{t.enterprisePlanName}</p>
+                  <p className="text-xs text-sl-on-surface-muted mt-0.5">{t.enterpriseCustomPricing}</p>
+                  <ul className="mt-2 space-y-0.5">
+                    {[t.enterpriseBenefit1, t.enterpriseBenefit2, t.enterpriseBenefit3, t.enterpriseBenefit4].map((b) => (
+                      <li key={b} className="text-[11px] text-sl-on-surface-muted">✓ {b}</li>
+                    ))}
+                  </ul>
+                </div>
+                <EnterpriseLeadModal
+                  defaultCompanyName={company.name}
+                  defaultEmail={company.email ?? undefined}
+                  labels={{
+                    requestButton: t.enterpriseRequest,
+                    modalTitle: t.enterpriseModalTitle,
+                    modalDesc: t.enterpriseModalDesc,
+                    companyName: t.enterpriseCompanyName,
+                    contactName: t.enterpriseContactName,
+                    email: t.enterpriseEmail,
+                    phone: t.enterprisePhone,
+                    fleetSize: t.enterpriseFleetSize,
+                    message: t.enterpriseMessage,
+                    submit: t.enterpriseSubmit,
+                    submitting: t.enterpriseSubmitting,
+                    success: t.enterpriseSuccess,
+                    cancel: t.enterpriseCancel,
+                    close: t.enterpriseClose,
+                  }}
+                />
+              </div>
             </div>
 
-            {company.email ? (
-              <div className="flex items-start gap-2.5 rounded-lg bg-amber-50 border border-amber-200 px-3.5 py-2.5">
-                <span className="w-4 h-4 mt-0.5 shrink-0 inline-flex items-center justify-center rounded-full border border-amber-400 text-amber-600 text-[9px] font-bold">i</span>
-                <p className="text-[11px] leading-relaxed text-amber-800">
-                  {t.subscriptionEmailHint.replace('{email}', company.email)}
-                </p>
-              </div>
-            ) : (
-              <div className="flex items-start gap-2.5 rounded-lg bg-red-50 border border-red-200 px-3.5 py-2.5">
-                <span className="w-4 h-4 mt-0.5 shrink-0 inline-flex items-center justify-center rounded-full border border-red-400 text-red-600 text-[9px] font-bold">i</span>
-                <p className="text-[11px] leading-relaxed text-red-700">
-                  {t.subscriptionEmailMissing}
-                </p>
-              </div>
+            {checkoutPlans.length > 0 && (
+              company.email ? (
+                <div className="flex items-start gap-2.5 rounded-lg bg-amber-50 border border-amber-200 px-3.5 py-2.5">
+                  <span className="w-4 h-4 mt-0.5 shrink-0 inline-flex items-center justify-center rounded-full border border-amber-400 text-amber-600 text-[9px] font-bold">i</span>
+                  <p className="text-[11px] leading-relaxed text-amber-800">
+                    {t.subscriptionEmailHint.replace('{email}', company.email)}
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2.5 rounded-lg bg-red-50 border border-red-200 px-3.5 py-2.5">
+                  <span className="w-4 h-4 mt-0.5 shrink-0 inline-flex items-center justify-center rounded-full border border-red-400 text-red-600 text-[9px] font-bold">i</span>
+                  <p className="text-[11px] leading-relaxed text-red-700">
+                    {t.subscriptionEmailMissing}
+                  </p>
+                </div>
+              )
             )}
           </div>
         )}

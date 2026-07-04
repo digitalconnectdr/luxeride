@@ -34,6 +34,7 @@ export type UserRole =
 
 export type CompanyStatus = 'active' | 'suspended' | 'trial' | 'cancelled'
 export type CompanyPlan = 'free' | 'starter' | 'professional' | 'enterprise'
+export type EnterpriseLeadStatus = 'new' | 'contacted' | 'converted' | 'rejected'
 export type VehicleClass = 'sedan' | 'suv' | 'van' | 'limousine' | 'sprinter' | 'bus' | 'exotic'
 export type VehicleStatus = 'available' | 'on_trip' | 'maintenance' | 'offline' | 'retired'
 export type BookingStatus =
@@ -551,6 +552,53 @@ export type Database = {
           resolved_at?: string | null | undefined
           resolved_by?: string | null | undefined
           created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── enterprise_leads (venta consultiva del plan Enterprise) ───────────────
+      enterprise_leads: {
+        Row: {
+          id: string
+          company_id: string | null
+          requested_by: string | null
+          company_name: string
+          contact_name: string
+          email: string
+          phone: string
+          fleet_size: string | null
+          message: string | null
+          status: EnterpriseLeadStatus
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id?: string | null | undefined
+          requested_by?: string | null | undefined
+          company_name: string
+          contact_name: string
+          email: string
+          phone: string
+          fleet_size?: string | null | undefined
+          message?: string | null | undefined
+          status?: EnterpriseLeadStatus | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | null | undefined
+          requested_by?: string | null | undefined
+          company_name?: string | undefined
+          contact_name?: string | undefined
+          email?: string | undefined
+          phone?: string | undefined
+          fleet_size?: string | null | undefined
+          message?: string | null | undefined
+          status?: EnterpriseLeadStatus | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
         }
         Relationships: []
       }
