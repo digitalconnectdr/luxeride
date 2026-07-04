@@ -64,6 +64,7 @@ const CATEGORIES: Category[] = [
 // Pool genérico (sedanes/SUVs de lujo, distintos entre sí) — solo para
 // servicios cuyo título no coincide con ninguna categoría. Rota por índice
 // para que dos servicios "sin match" en la misma página no repitan foto.
+// 16 fotos: cubre con margen a empresas con muchos servicios sin repetir.
 const GENERIC_POOL = [
   U('swH_BwdisfQ'), // Cadillac negro estacionado
   U('Wj4Ny_cMUrE'), // SUV negra en un garaje
@@ -72,6 +73,15 @@ const GENERIC_POOL = [
   U('OinkFJ4Ueg8'), // Mercedes-Benz negro estacionado
   U('xdYroKLD92U'), // Limusina negra frente a una entrada elegante
   U('L5MoSNaOEcU'), // Sedán Mercedes-Benz negro circulando
+  U('FMbWFDiVRPs'), // Sedán negro
+  U('y3neNkE6efI'), // BMW M3 negro estacionado en la calle
+  U('PKdQIG4goQc'), // Mercedes-Benz Clase C negro estacionado
+  U('hFA1GbXWb_8'), // Rolls-Royce negro frente a árboles
+  U('gmpU5NBYISQ'), // Auto negro junto a una pared de ladrillo
+  U('6PMsXs0heLo'), // Auto negro frente a un edificio
+  U('aiTB7gO4s2g'), // Vehículo en un garaje
+  U('nM6DOKLZkHc'), // Automóvil oscuro junto a la carretera
+  U('eig1_P6XW9Q'), // SUV negra estacionada bajo árboles
 ]
 
 export function resolveServiceFallbackImage(title: string, index: number): string {
