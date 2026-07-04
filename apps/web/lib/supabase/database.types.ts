@@ -107,6 +107,9 @@ export type Database = {
           whop_membership_id: string | null
           whop_plan_id: string | null
           whop_last_event_id: string | null
+          whop_connect_company_id: string | null
+          whop_connect_onboarded: boolean
+          active_payment_provider: string | null
           auto_assign_enabled: boolean
           settings: Json
           trial_ends_at: string | null
@@ -140,6 +143,9 @@ export type Database = {
           whop_membership_id?: string | null | undefined
           whop_plan_id?: string | null | undefined
           whop_last_event_id?: string | null | undefined
+          whop_connect_company_id?: string | null | undefined
+          whop_connect_onboarded?: boolean | undefined
+          active_payment_provider?: string | null | undefined
           auto_assign_enabled?: boolean | undefined
           settings?: Json | undefined
           trial_ends_at?: string | null | undefined
@@ -173,6 +179,9 @@ export type Database = {
           whop_membership_id?: string | null | undefined
           whop_plan_id?: string | null | undefined
           whop_last_event_id?: string | null | undefined
+          whop_connect_company_id?: string | null | undefined
+          whop_connect_onboarded?: boolean | undefined
+          active_payment_provider?: string | null | undefined
           auto_assign_enabled?: boolean | undefined
           settings?: Json | undefined
           trial_ends_at?: string | null | undefined
@@ -1328,6 +1337,7 @@ export type Database = {
           stripe_payment_intent_id: string | null
           stripe_charge_id: string | null
           stripe_connect_account_id: string | null
+          whop_checkout_id: string | null
           amount: number
           currency: string
           platform_fee: number | null
@@ -1351,6 +1361,7 @@ export type Database = {
           stripe_payment_intent_id?: string | null | undefined
           stripe_charge_id?: string | null | undefined
           stripe_connect_account_id?: string | null | undefined
+          whop_checkout_id?: string | null | undefined
           amount: number
           currency?: string | undefined
           platform_fee?: number | null | undefined
@@ -1374,6 +1385,7 @@ export type Database = {
           stripe_payment_intent_id?: string | null | undefined
           stripe_charge_id?: string | null | undefined
           stripe_connect_account_id?: string | null | undefined
+          whop_checkout_id?: string | null | undefined
           amount?: number | undefined
           currency?: string | undefined
           platform_fee?: number | null | undefined

@@ -30,6 +30,7 @@
     "@upstash/redis": "^1.38.0",
     "@vercel/functions": "^3.7.0",
     "@vis.gl/react-google-maps": "^1.1.2",
+    "@whop/sdk": "^0.0.40",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",

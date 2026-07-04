@@ -11,13 +11,20 @@ import {
   createConnectOnboardingAction,
   refreshConnectStatusAction,
 } from '@/app/actions/payments'
+import {
+  createWhopConnectOnboardingAction,
+  refreshWhopConnectStatusAction,
+  setActivePaymentProviderAction,
+} from '@/app/actions/whop-connect'
 import { isStripeConfigured } from '@/lib/stripe/server'
+import { isWhopConnectConfigured } from '@/lib/whop/connect-server'
 import { BrandingForm } from '@/components/admin/branding-form'
 import { BookingLinkCard } from '@/components/admin/booking-link-card'
 import { BookingWidgetCard } from '@/components/admin/booking-widget-card'
 import { CoverForm } from '@/components/admin/cover-form'
 import { ServicesManager, type Service } from '@/components/admin/services-manager'
 import { EnterpriseLeadModal } from '@/components/admin/enterprise-lead-modal'
+import { ActivePaymentProviderSelect } from '@/components/admin/active-payment-provider-select'
 import { getDict, getLocale } from '@/lib/i18n/server'
 import { getAppUrl } from '@/lib/app-url'
 import type { CompanyPlan } from '@/lib/supabase/database.types'
@@ -67,10 +74,17 @@ const STRIPE_ERRORS: Record<string, string> = {
   no_company: 'Tu usuario no tiene empresa asignada.',
 }
 
+const WHOP_ERRORS: Record<string, string> = {
+  connect_failed: 'No se pudo iniciar el onboarding con Whop. Revisa los logs del servidor.',
+  not_configured: 'Whop Connect no está configurado (falta WHOP_API_KEY o WHOP_PARENT_COMPANY_ID).',
+  email_required: 'Agrega un email a tu empresa abajo antes de conectar Whop.',
+  no_company: 'Tu usuario no tiene empresa asignada.',
+}
+
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: { stripe_error?: string; connect?: string }
+  searchParams: { stripe_error?: string; connect?: string; whop_error?: string; whop_connect?: string }
 }) {
   const user = await requireRole('company_owner')
   if (!user.company_id) return <p className="p-8 text-sl-on-surface-muted">Sin empresa asignada.</p>
@@ -78,7 +92,7 @@ export default async function SettingsPage({
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('name, slug, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, logo_url, primary_color, tagline, hero_image_url, about, status, plan, subscription_ends_at, whop_membership_id')
+    .select('name, slug, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, whop_connect_company_id, whop_connect_onboarded, active_payment_provider, logo_url, primary_color, tagline, hero_image_url, about, status, plan, subscription_ends_at, whop_membership_id')
     .eq('id', user.company_id)
     .single()
 
@@ -118,12 +132,19 @@ export default async function SettingsPage({
   const connectAction:  () => void = createConnectOnboardingAction
   const refreshAction:  () => void = refreshConnectStatusAction
   const policyAction:   (fd: FormData) => void = updatePolicySettingsAction
+  const whopConnectAction: () => void = createWhopConnectOnboardingAction
+  const whopRefreshAction: () => void = refreshWhopConnectStatusAction
 
   const policy = parsePolicy(company.settings)
 
   const stripeReady = isStripeConfigured()
   const hasConnect  = Boolean(company.stripe_connect_account_id)
   const onboarded   = Boolean(company.stripe_connect_onboarded)
+
+  const whopConnectReady = isWhopConnectConfigured()
+  const hasWhopConnect   = Boolean(company.whop_connect_company_id)
+  const whopOnboarded    = Boolean(company.whop_connect_onboarded)
+  const activeProvider   = company.active_payment_provider
   const adminDict = getDict().admin
   const t = adminDict.settings
   const actions = adminDict.actions
@@ -559,6 +580,98 @@ export default async function SettingsPage({
                 </form>
               )}
             </div>
+          </div>
+        )}
+      </section>
+
+      {/* ── Payments / Whop Connect ── */}
+      <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+        <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.whopPaymentsTitle}</h2>
+
+        {searchParams.whop_error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+            <p className="text-sm text-red-700 font-medium">
+              {WHOP_ERRORS[searchParams.whop_error] ?? 'Error al conectar con Whop.'}
+            </p>
+          </div>
+        )}
+        {searchParams.whop_connect === 'return' && (
+          <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+            <p className="text-sm text-green-700 font-medium">
+              {t.returnedFromWhop}
+            </p>
+          </div>
+        )}
+        <p className="text-xs text-sl-on-surface-muted mb-2">{t.whopPaymentsIntro}</p>
+        <ul className="text-xs text-sl-on-surface-muted mb-5 space-y-1 list-disc pl-4">
+          <li>{t.whopPaymentsBullet1}</li>
+          <li>{t.whopPaymentsBullet2}</li>
+        </ul>
+
+        {!whopConnectReady ? (
+          <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3">
+            <p className="text-sm text-yellow-800 font-medium">{t.whopNotReady}</p>
+            <p className="text-xs text-yellow-700 mt-1">{t.whopNotReadyHint}</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                  whopOnboarded
+                    ? 'bg-green-100 text-green-700'
+                    : hasWhopConnect
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                {whopOnboarded ? t.connected : hasWhopConnect ? t.onboardingIncomplete : t.notConnected}
+              </span>
+              {hasWhopConnect && (
+                <span className="text-xs font-mono text-sl-on-surface-muted">
+                  {company.whop_connect_company_id}
+                </span>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              {!whopOnboarded && (
+                <form action={whopConnectAction}>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors"
+                  >
+                    {hasWhopConnect ? t.continueWhopOnboarding : t.connectWhop}
+                  </button>
+                </form>
+              )}
+              {hasWhopConnect && (
+                <form action={whopRefreshAction}>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium border border-sl-outline-variant text-sl-on-surface rounded-lg hover:border-bronze transition-colors"
+                  >
+                    {t.refreshStatus}
+                  </button>
+                </form>
+              )}
+            </div>
+
+            {onboarded && whopOnboarded && (
+              <div className="pt-2 border-t border-sl-outline-variant">
+                <p className="text-xs text-sl-on-surface-muted mb-2">{t.activeProviderHint}</p>
+                <ActivePaymentProviderSelect
+                  current={activeProvider as 'stripe' | 'whop' | null}
+                  labels={{
+                    label: t.activeProviderLabel,
+                    stripe: t.activeProviderStripe,
+                    whop: t.activeProviderWhop,
+                    saving: t.activeProviderSaving,
+                    error: '',
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
       </section>
