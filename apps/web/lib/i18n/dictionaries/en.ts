@@ -987,6 +987,8 @@ export const en = {
       subscriptionNoDate: 'No expiration date',
       subscriptionSubscribe: 'Subscribe with Whop',
       subscriptionChoosePlan: 'Choose a plan to activate your account:',
+      subscriptionEmailHint: 'Important: use exactly this email when paying on Whop so your account activates automatically: {email}',
+      subscriptionEmailMissing: 'Add an email to your company below before subscribing, so the payment can be linked to your account automatically.',
       subscriptionViaWhop: 'Managed via Whop',
       subscriptionPopupExpiringSoon: 'Your subscription expires in {days} days.',
       subscriptionPopupExpiringToday: 'Your subscription expires today.',

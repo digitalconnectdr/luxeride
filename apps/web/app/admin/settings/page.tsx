@@ -172,7 +172,7 @@ export default async function SettingsPage({
         {needsCheckout && checkoutPlans.length > 0 && (
           <div>
             <p className="text-xs text-sl-on-surface-muted mb-2">{t.subscriptionChoosePlan}</p>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 mb-3">
               {checkoutPlans.map(({ plan, url }) => (
                 <a
                   key={plan}
@@ -185,6 +185,15 @@ export default async function SettingsPage({
                 </a>
               ))}
             </div>
+            {company.email ? (
+              <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                {t.subscriptionEmailHint.replace('{email}', company.email)}
+              </p>
+            ) : (
+              <p className="text-[11px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                {t.subscriptionEmailMissing}
+              </p>
+            )}
           </div>
         )}
       </section>

@@ -988,6 +988,8 @@ export const pt: Dictionary = {
       subscriptionNoDate: 'Sem data de vencimento',
       subscriptionSubscribe: 'Assinar com Whop',
       subscriptionChoosePlan: 'Escolha um plano para ativar sua conta:',
+      subscriptionEmailHint: 'Importante: use exatamente este email ao pagar no Whop para que sua conta seja ativada automaticamente: {email}',
+      subscriptionEmailMissing: 'Adicione um email à sua empresa abaixo antes de assinar, para que o pagamento possa ser vinculado à sua conta automaticamente.',
       subscriptionViaWhop: 'Gerenciado via Whop',
       subscriptionPopupExpiringSoon: 'Sua assinatura vence em {days} dias.',
       subscriptionPopupExpiringToday: 'Sua assinatura vence hoje.',
