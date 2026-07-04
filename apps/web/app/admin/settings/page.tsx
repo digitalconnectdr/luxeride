@@ -19,6 +19,7 @@ import { CoverForm } from '@/components/admin/cover-form'
 import { ServicesManager, type Service } from '@/components/admin/services-manager'
 import { getDict, getLocale } from '@/lib/i18n/server'
 import { getAppUrl } from '@/lib/app-url'
+import type { CompanyPlan } from '@/lib/supabase/database.types'
 
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
 
@@ -26,6 +27,10 @@ const WHOP_CHECKOUT_URLS: Record<string, string | undefined> = {
   starter: process.env.WHOP_CHECKOUT_URL_STARTER,
   professional: process.env.WHOP_CHECKOUT_URL_PROFESSIONAL,
   enterprise: process.env.WHOP_CHECKOUT_URL_ENTERPRISE,
+}
+
+const PLAN_LABEL: Record<CompanyPlan, string> = {
+  free: 'Free', starter: 'Starter', professional: 'Professional', enterprise: 'Enterprise',
 }
 
 const TIMEZONES = [
@@ -78,6 +83,9 @@ export default async function SettingsPage({
 
   if (!company) return <p className="p-8 text-sl-on-surface-muted">Empresa no encontrada.</p>
 
+  const { data: planQuotasRaw } = await admin.from('plan_quotas').select('plan, monthly_price')
+  const priceByPlan = Object.fromEntries((planQuotasRaw ?? []).map((p) => [p.plan, p.monthly_price])) as Record<string, number | null>
+
   const { data: servicesRaw } = await admin
     .from('company_services')
     .select('id, title, description, icon, is_active, i18n')
@@ -120,11 +128,11 @@ export default async function SettingsPage({
   const actions = adminDict.actions
   const localeTag = LOCALE_TAGS[getLocale()] ?? 'en-US'
 
-  const SUBSCRIPTION_STATUS_BADGE: Record<string, string> = {
-    active:    'bg-green-100 text-green-700',
-    trial:     'bg-blue-100 text-blue-700',
-    suspended: 'bg-yellow-100 text-yellow-700',
-    cancelled: 'bg-gray-100 text-gray-600',
+  const SUBSCRIPTION_STATUS_STYLE: Record<string, { dot: string; badge: string }> = {
+    active:    { dot: 'bg-green-500',           badge: 'text-green-700 border-green-200 bg-green-50' },
+    trial:     { dot: 'bg-blue-500',            badge: 'text-blue-700 border-blue-200 bg-blue-50' },
+    suspended: { dot: 'bg-amber-500',           badge: 'text-amber-700 border-amber-200 bg-amber-50' },
+    cancelled: { dot: 'bg-sl-on-surface-muted', badge: 'text-sl-on-surface-muted border-sl-outline-variant bg-sl-bg' },
   }
   const SUBSCRIPTION_STATUS_LABEL: Record<string, string> = {
     active: t.subscriptionStatusActive,
@@ -132,6 +140,7 @@ export default async function SettingsPage({
     suspended: t.subscriptionStatusSuspended,
     cancelled: t.subscriptionStatusCancelled,
   }
+  const statusStyle = SUBSCRIPTION_STATUS_STYLE[company.status] ?? SUBSCRIPTION_STATUS_STYLE.cancelled
   const subscriptionEndsAt = company.subscription_ends_at ? new Date(company.subscription_ends_at) : null
   const isExpired = !!subscriptionEndsAt && subscriptionEndsAt < new Date()
   const needsCheckout = company.status !== 'active' || isExpired
@@ -149,19 +158,21 @@ export default async function SettingsPage({
 
       {/* ── Suscripción a la plataforma (Whop) ── */}
       <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
-        <h2 className="text-sm font-semibold text-sl-on-surface mb-3">{t.subscriptionTitle}</h2>
-        <div className="flex flex-wrap items-center gap-3 mb-2">
-          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${SUBSCRIPTION_STATUS_BADGE[company.status] ?? 'bg-gray-100 text-gray-600'}`}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-sl-on-surface">{t.subscriptionTitle}</h2>
+            <p className="mt-1.5 text-xs text-sl-on-surface-muted">
+              {t.subscriptionPlan} <span className="font-medium text-sl-on-surface">{PLAN_LABEL[company.plan] ?? company.plan}</span>
+              {company.whop_membership_id && <span> · {t.subscriptionViaWhop}</span>}
+            </p>
+          </div>
+          <span className={`inline-flex items-center gap-1.5 shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold ${statusStyle.badge}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
             {SUBSCRIPTION_STATUS_LABEL[company.status] ?? company.status}
           </span>
-          <span className="text-xs text-sl-on-surface-muted">
-            {t.subscriptionPlan}: <span className="font-medium text-sl-on-surface capitalize">{company.plan}</span>
-          </span>
-          {company.whop_membership_id && (
-            <span className="text-[11px] text-sl-on-surface-muted">({t.subscriptionViaWhop})</span>
-          )}
         </div>
-        <p className="text-xs text-sl-on-surface-muted mb-4">
+
+        <p className="mt-3 text-xs text-sl-on-surface-muted">
           {subscriptionEndsAt
             ? (isExpired ? t.subscriptionExpiredOn : t.subscriptionRenewsOn).replace(
                 '{date}',
@@ -169,30 +180,49 @@ export default async function SettingsPage({
               )
             : t.subscriptionNoDate}
         </p>
+
         {needsCheckout && checkoutPlans.length > 0 && (
-          <div>
-            <p className="text-xs text-sl-on-surface-muted mb-2">{t.subscriptionChoosePlan}</p>
-            <div className="flex flex-wrap gap-3 mb-3">
-              {checkoutPlans.map(({ plan, url }) => (
-                <a
-                  key={plan}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors capitalize"
-                >
-                  {t.subscriptionSubscribe} — {plan}
-                </a>
-              ))}
+          <div className="mt-5 pt-5 border-t border-sl-outline-variant">
+            <p className="text-xs font-medium text-sl-on-surface mb-3">{t.subscriptionChoosePlan}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              {checkoutPlans.map(({ plan, url }) => {
+                const price = priceByPlan[plan]
+                return (
+                  <a
+                    key={plan}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-center justify-between gap-3 rounded-xl border border-sl-outline-variant bg-sl-bg px-4 py-3.5 hover:border-bronze hover:bg-bronze/5 transition-colors"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-sl-on-surface">{PLAN_LABEL[plan]}</p>
+                      {price != null && (
+                        <p className="text-xs text-sl-on-surface-muted mt-0.5">${Number(price).toFixed(0)}/mes</p>
+                      )}
+                    </div>
+                    <span className="text-xs font-medium text-bronze group-hover:text-bronze/80 shrink-0">
+                      {t.subscriptionSubscribe} →
+                    </span>
+                  </a>
+                )
+              })}
             </div>
+
             {company.email ? (
-              <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                {t.subscriptionEmailHint.replace('{email}', company.email)}
-              </p>
+              <div className="flex items-start gap-2.5 rounded-lg bg-amber-50 border border-amber-200 px-3.5 py-2.5">
+                <span className="w-4 h-4 mt-0.5 shrink-0 inline-flex items-center justify-center rounded-full border border-amber-400 text-amber-600 text-[9px] font-bold">i</span>
+                <p className="text-[11px] leading-relaxed text-amber-800">
+                  {t.subscriptionEmailHint.replace('{email}', company.email)}
+                </p>
+              </div>
             ) : (
-              <p className="text-[11px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                {t.subscriptionEmailMissing}
-              </p>
+              <div className="flex items-start gap-2.5 rounded-lg bg-red-50 border border-red-200 px-3.5 py-2.5">
+                <span className="w-4 h-4 mt-0.5 shrink-0 inline-flex items-center justify-center rounded-full border border-red-400 text-red-600 text-[9px] font-bold">i</span>
+                <p className="text-[11px] leading-relaxed text-red-700">
+                  {t.subscriptionEmailMissing}
+                </p>
+              </div>
             )}
           </div>
         )}
