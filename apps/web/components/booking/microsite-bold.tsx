@@ -29,8 +29,6 @@ const CLASS_LABEL: Record<string, string> = {
 }
 const classLabel = (c: string) => CLASS_LABEL[c] ?? (c.charAt(0).toUpperCase() + c.slice(1))
 
-const U = (slug: string) => `https://unsplash.com/photos/${slug}/download?force=true&w=1600`
-const SERVICE_DEFAULTS = [U('NjQmytqwDGs'), U('7I8qdKTHDp4'), U('4Dofvf-eUMs'), U('FZ5MkHkeyKM')]
 
 // Paleta fija de la plantilla (identidad propia, no depende del brandColor del
 // operador — el acento de marca se usa SOLO para highlights/CTA/icons).
@@ -274,7 +272,15 @@ export function MicrositeBold(props: {
                 <Reveal key={s.id}>
                   <div className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
                     <div className={`relative h-64 lg:h-[22rem] rounded-2xl overflow-hidden ring-1 ring-black/10 ${i % 2 === 1 ? 'lg:order-2' : ''}`}>
-                      <Image src={s.image_url || SERVICE_DEFAULTS[i % SERVICE_DEFAULTS.length]} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover" />
+                      {s.image_url ? (
+                        <Image src={s.image_url} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover" />
+                      ) : (
+                        // Sin foto propia: ícono del servicio en vez de una foto genérica que
+                        // podría no corresponder al servicio real.
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: CREAM }}>
+                          <span className="text-7xl" style={{ filter: `drop-shadow(0 0 20px ${brandColor}22)` }}>{s.icon || '✦'}</span>
+                        </div>
+                      )}
                     </div>
                     <div className={i % 2 === 1 ? 'lg:order-1' : ''}>
                       {s.icon && <span className="text-3xl block mb-4">{s.icon}</span>}

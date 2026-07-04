@@ -208,7 +208,7 @@ export const en = {
       },
       {
         q: 'Can my clients pay cash or Zelle?',
-        a: 'Yes. Your team can record cash, Zelle and bank transfer payments so every trip is reconciled, even when paid offline.',
+        a: 'Yes. Besides card payments online (via Whop), your team can record cash, Zelle and bank transfer payments so every trip is reconciled, whether paid online or not.',
       },
       {
         q: 'Does it work in my language?',

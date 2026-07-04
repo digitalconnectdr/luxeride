@@ -209,7 +209,7 @@ export const es: Dictionary = {
       },
       {
         q: '¿Mis clientes pueden pagar en efectivo o Zelle?',
-        a: 'Sí. Tu equipo registra pagos en efectivo, Zelle y transferencias para que cada viaje quede conciliado, aunque se cobre fuera de línea.',
+        a: 'Sí. Además de tarjeta en línea (vía Whop), tu equipo registra pagos en efectivo, Zelle y transferencias para que cada viaje quede conciliado, se cobre online o no.',
       },
       {
         q: '¿Funciona en mi idioma?',

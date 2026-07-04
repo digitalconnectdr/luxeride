@@ -22,7 +22,6 @@ import { BookingWizard } from './booking-wizard'
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
 const U = (slug: string) => `https://unsplash.com/photos/${slug}/download?force=true&w=1600`
 const DEFAULT_HERO = U('9XVJ-Jq7Ke8')
-const DEFAULT_CARS = [U('NjQmytqwDGs'), U('9XVJ-Jq7Ke8'), U('7I8qdKTHDp4'), U('4Dofvf-eUMs'), U('FZ5MkHkeyKM')]
 
 // Glifo de WhatsApp (para los enlaces "contáctanos por WhatsApp" del micrositio).
 function WhatsAppIcon({ size = 16, className }: { size?: number; className?: string }) {
@@ -247,8 +246,18 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
                 <Reveal key={s.id}>
                   <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
                     <div className={`group relative h-72 lg:h-[24rem] rounded-[1.25rem] overflow-hidden ring-1 ring-white/10 ${i % 2 === 1 ? 'lg:order-2' : ''}`}>
-                      <Image src={s.image_url || DEFAULT_CARS[i % DEFAULT_CARS.length]} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-105" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                      {s.image_url ? (
+                        <>
+                          <Image src={s.image_url} alt={s.title} fill sizes="(max-width:1024px) 100vw, 50vw" className="object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-105" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                        </>
+                      ) : (
+                        // Sin foto propia: ícono del servicio en vez de una foto genérica que
+                        // podría no corresponder (ej. una furgoneta nevada para "Bodas y eventos").
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/[0.07] via-transparent to-transparent">
+                          <span className="text-7xl transition-transform duration-700 group-hover:scale-110" style={{ filter: `drop-shadow(0 0 24px ${brandColor}33)` }}>{s.icon || '✦'}</span>
+                        </div>
+                      )}
                     </div>
                     <div className={i % 2 === 1 ? 'lg:order-1' : ''}>
                       {s.icon && <span className="text-3xl block mb-4 opacity-90">{s.icon}</span>}

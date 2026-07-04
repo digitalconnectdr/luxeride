@@ -209,7 +209,7 @@ export const pt: Dictionary = {
       },
       {
         q: 'Meus clientes podem pagar em dinheiro ou Zelle?',
-        a: 'Sim. Sua equipe registra pagamentos em dinheiro, Zelle e transferências para que cada viagem fique conciliada, mesmo cobrada offline.',
+        a: 'Sim. Além do cartão online (via Whop), sua equipe registra pagamentos em dinheiro, Zelle e transferências para que cada viagem fique conciliada, cobrada online ou não.',
       },
       {
         q: 'Funciona no meu idioma?',
