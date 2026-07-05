@@ -25,7 +25,7 @@ export default async function ReservarPage({ params }: { params: { slug: string 
 
   const { data: company } = await admin
     .from('companies')
-    .select('id, name, slug, status, currency, primary_color, phone, email, logo_url, tagline, hero_image_url, stripe_connect_onboarded, settings')
+    .select('id, name, slug, status, currency, primary_color, phone, email, logo_url, tagline, hero_image_url, stripe_connect_onboarded, active_payment_provider, whop_connect_company_id, whop_connect_onboarded, settings')
     .eq('slug', params.slug)
     .single()
   if (!company) return notFound()
@@ -54,6 +54,14 @@ export default async function ReservarPage({ params }: { params: { slug: string 
   const heroImg = (company as { hero_image_url?: string | null }).hero_image_url || DEFAULT_HERO
   const site = ((company.settings as { site?: { i18n?: SiteI18n } } | null)?.site) ?? {}
   const tagline = resolveLocalizedField(site.i18n, locale, 'tagline', (company as { tagline?: string | null }).tagline ?? null)
+
+  const onlinePaymentsEnabled =
+    (isStripeConfigured() && Boolean(company.stripe_connect_onboarded)) ||
+    Boolean(
+      company.active_payment_provider === 'whop' &&
+        company.whop_connect_company_id &&
+        company.whop_connect_onboarded,
+    )
 
   const gratuity = (() => {
     const g = (company.settings as { gratuity?: { enabled?: boolean; options?: number[]; default_percentage?: number }; booking?: { require_deposit?: boolean } } | null)?.gratuity
@@ -106,7 +114,7 @@ export default async function ReservarPage({ params }: { params: { slug: string 
               <BookingWizard
                 company={{ id: company.id, name: company.name, slug: company.slug, currency: (company.currency as string | null) ?? 'USD', primaryColor: brandColor, phone: (company.phone as string | null) ?? null, email: (company.email as string | null) ?? null }}
                 vehicleTypes={fleet.map((vt) => ({ id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null }))}
-                onlinePaymentsEnabled={isStripeConfigured() && Boolean(company.stripe_connect_onboarded)}
+                onlinePaymentsEnabled={onlinePaymentsEnabled}
                 dict={dict.wizard}
                 localeTag={LOCALE_TAGS[locale] ?? 'en-US'}
                 gratuity={gratuity}

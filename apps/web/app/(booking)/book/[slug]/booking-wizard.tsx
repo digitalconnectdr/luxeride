@@ -607,11 +607,6 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
                           ${q.totalAmount.toFixed(2)}
                         </p>
                         <p className="text-xs text-gray-400">{q.currency}</p>
-                        {q.surchargeAmount > 0 && (
-                          <p className="text-xs text-gray-400">
-                            {dict.inclSurcharge} ${q.surchargeAmount.toFixed(2)}
-                          </p>
-                        )}
                       </>
                     )}
                   </div>
@@ -872,7 +867,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
           )}
 
           <p className="text-xs text-center text-gray-400">
-            {dict.confirmNote}
+            {onlinePaymentsEnabled ? dict.confirmNoteOnline : dict.confirmNote}
           </p>
         </div>
       )}

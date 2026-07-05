@@ -25,7 +25,7 @@ export default async function EmbedBookingPage({ params }: { params: { slug: str
 
   const { data: company } = await admin
     .from('companies')
-    .select('id, name, slug, status, currency, primary_color, phone, email, logo_url, stripe_connect_onboarded, settings')
+    .select('id, name, slug, status, currency, primary_color, phone, email, logo_url, stripe_connect_onboarded, active_payment_provider, whop_connect_company_id, whop_connect_onboarded, settings')
     .eq('slug', params.slug)
     .single()
   if (!company) return notFound()
@@ -52,6 +52,14 @@ export default async function EmbedBookingPage({ params }: { params: { slug: str
   const fleet = vehicleTypes ?? []
   const brandColor = (company.primary_color as string | null) || '#c9a24b'
 
+  const onlinePaymentsEnabled =
+    (isStripeConfigured() && Boolean(company.stripe_connect_onboarded)) ||
+    Boolean(
+      company.active_payment_provider === 'whop' &&
+        company.whop_connect_company_id &&
+        company.whop_connect_onboarded,
+    )
+
   const gratuity = (() => {
     const g = (company.settings as { gratuity?: { enabled?: boolean; options?: number[]; default_percentage?: number }; booking?: { require_deposit?: boolean } } | null)?.gratuity
     const requiresDeposit = Boolean((company.settings as { booking?: { require_deposit?: boolean } } | null)?.booking?.require_deposit)
@@ -68,7 +76,7 @@ export default async function EmbedBookingPage({ params }: { params: { slug: str
           <BookingWizard
             company={{ id: company.id, name: company.name, slug: company.slug, currency: (company.currency as string | null) ?? 'USD', primaryColor: brandColor, phone: (company.phone as string | null) ?? null, email: (company.email as string | null) ?? null }}
             vehicleTypes={fleet.map((vt) => ({ id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null }))}
-            onlinePaymentsEnabled={isStripeConfigured() && Boolean(company.stripe_connect_onboarded)}
+            onlinePaymentsEnabled={onlinePaymentsEnabled}
             dict={dict.wizard}
             localeTag={LOCALE_TAGS[locale] ?? 'en-US'}
             gratuity={gratuity}
