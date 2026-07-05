@@ -19,6 +19,8 @@ import { DriverRateForm } from '@/components/driver/driver-rate-form'
 import { buildTripStaticMapUrl, tripDirectionsHref } from '@/lib/tracking/static-map-url'
 import { DriverSelfAvailabilityToggle } from '@/components/driver/availability-toggle'
 import { DriverChannelChat } from '@/components/shared/driver-channel-chat'
+import { ShareMenu } from '@/components/share/share-menu'
+import { getAppUrl } from '@/lib/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,7 +87,7 @@ export default async function DriverTripsPage() {
       .in('status', ['assigned', 'en_route', 'arrived', 'in_progress'])
       .order('scheduled_at'),
     user.company_id
-      ? admin.from('companies').select('name, logo_url, primary_color, phone').eq('id', user.company_id).single()
+      ? admin.from('companies').select('name, slug, logo_url, primary_color, phone').eq('id', user.company_id).single()
       : Promise.resolve({ data: null }),
     admin
       .from('bookings')
@@ -120,12 +122,13 @@ export default async function DriverTripsPage() {
     }
   }
 
-  const co = company as { name: string; logo_url: string | null; primary_color: string | null; phone: string | null } | null
+  const co = company as { name: string; slug: string | null; logo_url: string | null; primary_color: string | null; phone: string | null } | null
   const brandColor = co?.primary_color ?? '#c9a24b'
   const companyName = co?.name ?? brand.name
   const logoUrl = co?.logo_url ?? null
   const dispatchPhone = co?.phone ?? null
   const driverName = user.profile.first_name
+  const bookingUrl = co?.slug ? `${getAppUrl()}/book/${co.slug}` : null
 
   const vehicleIds = Array.from(new Set((trips ?? []).map((t) => t.vehicle_id).filter((id): id is string => !!id)))
   const { data: vehiclesData } = vehicleIds.length
@@ -178,6 +181,17 @@ export default async function DriverTripsPage() {
               />
             </div>
           </div>
+          {bookingUrl && (
+            <div className="flex items-center gap-1.5">
+              <span className="hidden sm:inline text-[11px] text-[#75716a]">{dt.shareBookingLink}</span>
+              <ShareMenu
+                url={bookingUrl}
+                title={companyName}
+                variant="light"
+                labels={{ share: dt.share, copyLink: dt.shareCopyLink, copied: dt.copied, instagramHint: dt.shareInstagramHint }}
+              />
+            </div>
+          )}
           <LanguageSwitcher current={locale} variant="light" />
           <form action={logoutAction}>
             <button type="submit" className="text-xs text-[#75716a] hover:text-red-500 transition-colors">{dt.signOut} →</button>

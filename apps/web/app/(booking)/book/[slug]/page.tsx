@@ -13,6 +13,7 @@ import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { Reveal } from '@/components/landing/reveal'
 import { ServiceWorkerRegister } from '@/components/pwa/sw-register'
 import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
+import { ShareMenu } from '@/components/share/share-menu'
 import { resolveServiceFallbackImage } from '@/lib/booking/service-fallback-images'
 import { MicrositeIvory } from '@/components/booking/microsite-ivory'
 import { MicrositeBold } from '@/components/booking/microsite-bold'
@@ -170,7 +171,7 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
     const sharedProps = {
       company: { name: company.name, slug: company.slug, city: company.city, phone: company.phone, email: company.email },
       logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale,
-      reservarUrl, waNumber, qrDataUrl, reviews: googleReviews, acceptsCardOnline,
+      reservarUrl, waNumber, qrDataUrl, reviews: googleReviews, acceptsCardOnline, shareUrl: shortUrl,
     }
     const Template = template === 'ivory' ? MicrositeIvory : template === 'bold' ? MicrositeBold : MicrositeCorporate
     return (
@@ -198,6 +199,12 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
             {services.length > 0 && <a href="#servicios" className="hidden md:inline-block lux-link hover:text-white transition-colors">{t.ourServices}</a>}
             {fleet.length > 0 && <a href="#flota" className="hidden md:inline-block lux-link hover:text-white transition-colors">{t.ourFleet}</a>}
             <LanguageSwitcher current={locale} variant="dark" />
+            <ShareMenu
+              url={shortUrl}
+              title={company.name}
+              variant="dark"
+              labels={{ share: t.share, copyLink: t.copyLink, copied: t.copied, instagramHint: t.instagramHint }}
+            />
             <a href={reservarUrl} className="px-5 py-2 rounded-full text-[#08080a] font-semibold text-xs tracking-wide transition-transform hover:scale-[1.04]" style={{ backgroundColor: brandColor }}>{t.bookNow}</a>
           </nav>
         </div>

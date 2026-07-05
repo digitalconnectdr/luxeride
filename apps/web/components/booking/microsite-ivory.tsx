@@ -12,6 +12,7 @@ import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
 import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
+import { ShareMenu } from '@/components/share/share-menu'
 import { resolveServiceFallbackImage } from '@/lib/booking/service-fallback-images'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
@@ -65,8 +66,9 @@ export function MicrositeIvory(props: {
   qrDataUrl: string
   reviews: Reviews
   acceptsCardOnline: boolean
+  shareUrl: string
 }) {
-  const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline } = props
+  const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline, shareUrl } = props
 
   const heading = (eyebrow: string, title: string, sub?: string) => (
     <Reveal className="mb-12 lg:mb-14 max-w-2xl">
@@ -104,6 +106,12 @@ export function MicrositeIvory(props: {
             {fleet.length > 0 && <a href="#flota" className="hidden md:inline-block hover:text-[#1d1b18] transition-colors">{t.ourFleet}</a>}
             {services.length > 0 && <a href="#servicios" className="hidden lg:inline-block hover:text-[#1d1b18] transition-colors">{t.ourServices}</a>}
             <LanguageSwitcher current={locale} variant="light" />
+            <ShareMenu
+              url={shareUrl}
+              title={company.name}
+              variant="light"
+              labels={{ share: t.share, copyLink: t.copyLink, copied: t.copied, instagramHint: t.instagramHint }}
+            />
             <a href={reservarUrl} className="px-5 py-2 rounded-full text-white font-semibold text-xs tracking-wide transition-transform hover:scale-[1.04]" style={{ backgroundColor: brandColor }}>{t.bookNow}</a>
           </nav>
         </div>

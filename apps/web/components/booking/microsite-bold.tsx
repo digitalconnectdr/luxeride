@@ -12,6 +12,7 @@ import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
 import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
+import { ShareMenu } from '@/components/share/share-menu'
 import { resolveServiceFallbackImage } from '@/lib/booking/service-fallback-images'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
@@ -71,8 +72,9 @@ export function MicrositeBold(props: {
   qrDataUrl: string
   reviews: Reviews
   acceptsCardOnline: boolean
+  shareUrl: string
 }) {
-  const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline } = props
+  const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline, shareUrl } = props
 
   const heading = (eyebrow: string, title: string, sub?: string, dark = false) => (
     <Reveal className="mb-12 lg:mb-14 max-w-2xl">
@@ -114,6 +116,12 @@ export function MicrositeBold(props: {
               </a>
             )}
             <LanguageSwitcher current={locale} variant="dark" />
+            <ShareMenu
+              url={shareUrl}
+              title={company.name}
+              variant="dark"
+              labels={{ share: t.share, copyLink: t.copyLink, copied: t.copied, instagramHint: t.instagramHint }}
+            />
             <a href={reservarUrl} className="px-5 py-2 rounded-full text-xs font-semibold tracking-wide transition-transform hover:scale-[1.04]" style={{ backgroundColor: brandColor, color: INK }}>{t.bookNow}</a>
           </nav>
         </div>
