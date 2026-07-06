@@ -367,6 +367,73 @@ onboarded (onlinePaymentsEnabled). No se piden datos de tarjeta en el formulario
 (va por la página segura de Stripe, por PCI). Antes el pago online solo aparecía
 en la pantalla de éxito; ahora es parte del paso de confirmación.
 
+### G. Farm-out entre operadores — red LuxeRide (investigado 2026-07-06)
+Pedido del usuario: explorar cómo resuelven esto Limo Anywhere (**LA Net**) y
+**GroundXchange**, cuál sería más fácil de construir, y qué se puede ofrecer
+que la industria hoy no tiene. Investigación + diseño ya hechos; falta
+construir.
+
+**Cómo lo resuelve la competencia:**
+- **LA Net**: directorio de +5,400 afiliados, TODOS con Limo Anywhere. Dos
+  operadores se buscan, uno manda solicitud, el otro acepta manualmente. Ya
+  afiliados, el viaje se transfiere a mano ("Farm Out") o por reglas de
+  región (Auto Farm, solo en el plan más caro). Comparten en tiempo real
+  (opcional): estado, GPS del chofer, foto/nombre/placa, monto final
+  facturado — como dato informativo, sin mover dinero.
+- **GroundXchange**: mismo concepto pero ENTRE softwares distintos (Limo
+  Anywhere, SantaCruz, Livery Coach). Requiere registro + aprobación +
+  **mapeo manual** de tipos de servicio/tarifas/métodos de pago/clases de
+  vehículo/códigos de estado entre los dos sistemas, porque cada uno tiene
+  su propio modelo de datos.
+
+**Por qué LuxeRide parte con ventaja estructural:** todas las empresas de
+LuxeRide ya comparten el MISMO esquema (`vehicle_types`, `service_zones`,
+`bookings`, `drivers`) — no hace falta el paso de "mapeo" que sí necesita
+GroundXchange (e incluso LA Net entre afiliados del mismo software). Se
+puede construir sobre infraestructura que YA EXISTE:
+- `booking_events` (bitácora tipo/actor/motivo) → mismo mecanismo para
+  registrar "viaje transferido a Empresa X, motivo Y".
+- `trip_messages`/`driver_messages` en Supabase Realtime → coordinación
+  entre operadores sin tabla nueva de mensajería.
+- `lib/dispatch/auto-assign.ts` → extender la búsqueda de conductor
+  disponible más allá de la propia empresa cuando no hay match interno.
+- Whop Connect (`application_fee_amount`) → ya existe el mecanismo de
+  split de pagos, reutilizable para repartir el cobro entre dos empresas.
+
+**Alcance decidido: SOLO LuxeRide↔LuxeRide** (no cross-platform tipo
+GroundXchange — eso requeriría API pública + acuerdos con terceros,
+fuera de alcance por ahora, coherente con "dejalo asi" ya acordado sobre
+la API pública). Debe seguir siendo **estrictamente opt-in entre empresas
+que se aprueban mutuamente** — NUNCA un directorio público (coherente con
+la decisión de white-label puro del 2026-06-14, directorio ya eliminado
+del landing).
+
+**Plan de implementación (fases):**
+1. Tabla `company_affiliates` (company_id, affiliate_company_id, status
+   pending/accepted/rejected/revoked, created_at) — relación bidireccional
+   con aprobación manual, igual que LA Net.
+2. Acción "Transferir viaje" en el Dispatch Board: elegir empresa afiliada,
+   motivo, registra en `booking_events`; la reserva pasa a
+   `company_id`/`vehicle_id`/`driver_id` de la empresa receptora.
+   Notificación a ambas partes (email/chat).
+3. Auto-farm-out (fase 2, opcional): extender `auto-assign.ts` — si no hay
+   conductor propio disponible O la reserva cae fuera de `service_zones` de
+   la empresa, buscar automáticamente entre afiliados con cobertura y
+   tipo de vehículo compatible antes de dejarla `pending` sin asignar.
+4. Tracking transparente para el pasajero: el link `/track/[id]` sigue
+   funcionando igual aunque el viaje lo ejecute la empresa afiliada (mapa
+   en vivo real, no solo texto de estado como LA Net) — ninguna
+   competencia ofrece esto hoy.
+5. Reparto automático del cobro (diferenciador fuerte): al confirmarse la
+   transferencia, dividir el `application_fee_amount` de Whop Connect entre
+   empresa originadora y ejecutora según % acordado — sin facturación manual
+   entre operadores, que es justamente el punto débil de LA Net/GroundXchange
+   (ambos solo "informan" el monto final, el dinero se arregla por fuera).
+6. (Opcional, fase 3) Score de confiabilidad por empresa afiliada
+   (puntualidad/cancelaciones, mismo cálculo que ya existe por conductor en
+   `/admin/drivers/[id]`) para que el auto-farm-out priorice al afiliado con
+   mejor historial, no solo al más cercano.
+
 ## Backlog de DESARROLLO (0–6 ✅ COMPLETO, ver resumen arriba — detalle histórico abajo)
 
 0. ✅ **Limpieza de marca**: literales "LuxeRide" hardcodeados migrados a
@@ -387,9 +454,10 @@ en la pantalla de éxito; ahora es parte del paso de confirmación.
 
 7. **Fase 2B móvil nativo** (driver app primero, SOLO si la PWA valida bien)
    — plan en docs/PHASE-2-MOBILE.md. Pospuesto a propósito.
-8. **Gaps mayores**: QuickBooks, e-signatures, farm-in/farm-out, promo codes,
-   detección de conflictos de vehículo, nómina de conductores, WhatsApp
-   Business. Pospuesto a propósito.
+8. **Gaps mayores**: QuickBooks, e-signatures, promo codes, detección de
+   conflictos de vehículo, nómina de conductores, WhatsApp Business.
+   Pospuesto a propósito. (farm-in/farm-out ya tiene diseño concreto, ver
+   sección G más abajo.)
 9. **✅ HECHO (2026-07-03) — Dispatch avanzado** (sección A): construido sobre
    una tabla nueva `booking_events` (tipo/actor/motivo/hora) EN VEZ DE agregar
    estados nuevos a `booking_status` (ese enum se referencia en ~15 archivos —
