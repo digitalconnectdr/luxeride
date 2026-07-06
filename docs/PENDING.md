@@ -434,6 +434,38 @@ del landing).
    `/admin/drivers/[id]`) para que el auto-farm-out priorice al afiliado con
    mejor historial, no solo al más cercano.
 
+### H. Gaps vs. Taxi Web Design (investigado 2026-07-06)
+Comparación directa contra Taxi Web Design (competidor con apps nativas,
+modelo cero-comisión). LuxeRide ya iguala o supera su motor de precios
+(zonas con códigos postales), cuentas corporativas con facturación
+mensual, dispatch board con auto-asignación y mapa en vivo, y el widget
+embebible. Gaps reales identificados, priorizados por esfuerzo:
+
+1. **Importación masiva por CSV** (flota + reglas de precio): hoy Flota y
+   Reglas de precio en `/admin/fleet` y `/admin/pricing` solo permiten
+   alta uno por uno. Agregar un uploader (drag-and-drop, plantilla
+   descargable) que cree varios `vehicle_types`/`pricing_rules` de una vez
+   — reduce fricción de onboarding para operadores con flotas grandes.
+2. **Programador de mantenimiento por vehículo**: `vehicles` no tiene
+   campos de mantenimiento hoy. Agregar `last_service_date`/
+   `next_service_due` (por fecha o por millaje si se captura odómetro) +
+   alerta visual en Flota cuando un vehículo está vencido o próximo a
+   vencer. Posible cron de aviso por email al operador (mismo patrón que
+   `document-alerts`).
+3. **Fechas bloqueadas / horario de operación**: hoy se puede reservar
+   cualquier fecha/hora sin restricción del operador (solo existe el
+   motor de políticas de cancelación, no de disponibilidad). Agregar en
+   Configuración un horario de atención (día/hora) + fechas puntuales
+   bloqueadas (feriados, mantenimiento de flota); el wizard de reserva
+   valida contra esto antes de mostrar el paso de vehículo.
+4. **Terminar "Meet & Greet"**: la columna `bookings.meet_and_greet`
+   YA EXISTE (boolean) pero no está conectada a ningún formulario ni
+   lógica — quedó de una migración anterior sin wiring. Es la victoria
+   más barata de las 4: agregar el checkbox en el wizard de reserva (y en
+   `/admin/bookings/new`), mostrarlo en el detalle de la reserva y en la
+   vista del conductor (instrucción especial de recogida), i18n EN/ES/PT.
+   No requiere migración nueva.
+
 ## Backlog de DESARROLLO (0–6 ✅ COMPLETO, ver resumen arriba — detalle histórico abajo)
 
 0. ✅ **Limpieza de marca**: literales "LuxeRide" hardcodeados migrados a
