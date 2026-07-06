@@ -466,6 +466,57 @@ embebible. Gaps reales identificados, priorizados por esfuerzo:
    vista del conductor (instrucción especial de recogida), i18n EN/ES/PT.
    No requiere migración nueva.
 
+### I. Experiencia del pasajero recurrente — sin cambiar la filosofía "sin instalar nada" (investigado 2026-07-06)
+Duda del usuario: el PWA del conductor se ofrece instalar solo (manifest +
+service worker en `/manifest/driver/[slug]` + `/driver/trips`), pero el del
+pasajero (`/manifest/[slug]` + `/book/[slug]`) no lo hace visible aunque
+también está correctamente cableado. **No es un bug**: Chrome/Safari solo
+muestran el banner de instalación tras suficiente "engagement" (visitas
+repetidas), algo que el conductor acumula (usa el portal a diario) y el
+pasajero no (escanea el QR una vez). Es coherente además con el FAQ del
+landing: *"¿Tengo que instalar algo? No."* ([es.ts:219](../apps/web/lib/i18n/dictionaries/es.ts)) — mensaje de venta
+deliberado contra apps tipo Uber/Cabify.
+
+El problema real planteado: un viajero frecuente hoy re-escribe su nombre y
+re-hace el pago completo en cada reserva. Se puede resolver sin exigir
+cuenta/login ni instalar nada, en 3 capas (orden por esfuerzo):
+
+1. **Autocompletar local (sin backend nuevo)**: guardar nombre/teléfono/
+   email en `localStorage` al confirmar una reserva y precargar el
+   formulario en la próxima visita al mismo `/book/<slug>` desde el mismo
+   dispositivo/navegador.
+2. **Reconocer por teléfono (cross-device)**: como el teléfono ya es
+   obligatorio en el wizard, buscar server-side por
+   `company_id + passenger_phone` la última reserva y ofrecer "¿Eres
+   Juan? Usar los mismos datos" con un clic — sin contraseña ni cuenta.
+3. **Tarjeta guardada vía Whop** (la pieza de más impacto — confirmado
+   contra `node_modules/@whop/sdk/resources/*.d.ts`, no es suposición):
+   - `checkoutConfigurations.create({ mode: 'setup' })` guarda una tarjeta
+     sin cobrar nada (genera un `SetupIntent`); el checkout normal de pago
+     también puede guardarla si el pasajero lo permite.
+   - `paymentMethods.list({ member_id })` lista las tarjetas guardadas de
+     ese pasajero para esa empresa (marca, últimos 4, vencimiento).
+   - `payments.create({ company_id, member_id, payment_method_id, plan })`
+     — cobro off-session con la tarjeta guardada, sin checkout nuevo. Este
+     es el método clave para "Pagar con tarjeta •••1234" en un clic.
+   - El "member" de Whop es **por empresa conectada**: un pasajero que
+     viaja con la Empresa A y la Empresa B es un member distinto en cada
+     una — correcto y coherente con el modelo white-label (tarjeta guardada
+     por operador, no global en LuxeRide).
+
+   Trabajo pendiente del lado LuxeRide (nada de esto existe hoy —
+   `lib/whop/checkout.ts` solo crea checkouts de un solo uso):
+   - Tabla nueva ligera `passenger_whop_members` (company_id, phone o
+     email, whop_member_id) para asociar al pasajero con su member de Whop
+     tras el primer pago.
+   - En la siguiente reserva, si existe member con tarjeta guardada →
+     botón directo "Pagar con tarjeta •••1234" (llama `payments.create`),
+     con "usar otra tarjeta" como respaldo al checkout completo de siempre.
+   - **Permisos del API key de Whop**: verificar que `WHOP_API_KEY` tenga
+     `payment:charge`, `member:payment_methods:read` y
+     `payment:setup_intent:read` habilitados en el dashboard de Whop antes
+     de construir — el usuario lo está revisando directamente.
+
 ## Backlog de DESARROLLO (0–6 ✅ COMPLETO, ver resumen arriba — detalle histórico abajo)
 
 0. ✅ **Limpieza de marca**: literales "LuxeRide" hardcodeados migrados a
