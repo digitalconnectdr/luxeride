@@ -763,7 +763,7 @@ entre `professional` y `enterprise`):
 
 | | Starter | Professional | Elite | Enterprise |
 |---|---|---|---|---|
-| Precio | $99/mes | $299/mes | $549/mes | A medida |
+| Precio | $99/mes | $299/mes | $548.99/mes | A medida |
 | Vehículos | 6 | 15 | Ilimitados | Ilimitados |
 | Choferes | 6 | 15 | Ilimitados | Ilimitados |
 | Fee por viaje | 3% | 1.5% | 0.5% | A medida |

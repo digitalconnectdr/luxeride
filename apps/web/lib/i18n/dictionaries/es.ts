@@ -176,7 +176,7 @@ export const es: Dictionary = {
       },
       {
         name: 'Elite',
-        price: '$549',
+        price: '$548.99',
         period: '/mes',
         desc: 'Flota ilimitada, red de afiliados, la comisión más baja.',
         features: [

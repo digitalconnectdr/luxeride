@@ -175,7 +175,7 @@ export const en = {
       },
       {
         name: 'Elite',
-        price: '$549',
+        price: '$548.99',
         period: '/month',
         desc: 'Unlimited fleet, affiliate network, lowest fees.',
         features: [
