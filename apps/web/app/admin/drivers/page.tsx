@@ -247,7 +247,7 @@ export default async function DriversPage() {
                     <td className="px-5 py-4 text-right">
                       <Link
                         href={`/admin/drivers/${p.id}`}
-                        className="text-xs text-bronze opacity-0 group-hover:opacity-100 hover:text-bronze/80 transition-all"
+                        className="text-xs font-medium text-bronze hover:text-bronze/80 hover:underline transition-colors"
                       >
                         Perfil →
                       </Link>
