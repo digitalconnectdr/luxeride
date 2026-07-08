@@ -39,3 +39,6 @@ next-env.d.ts
 
 # Claude Code local config
 .claude/
+
+# Obsidian vault (notas personales, no parte del código)
+/LuxeRide/
