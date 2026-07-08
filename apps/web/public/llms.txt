@@ -1,0 +1,47 @@
+# LuxeRide
+
+> LuxeRide is a white-label software platform for luxury ground transportation
+> operators (limousine, black car, chauffeur, and airport transfer companies).
+> It is operated by JPRS Digital Connect. LuxeRide is software only — it is
+> not a transportation carrier, does not own vehicles, and does not employ
+> drivers. Each operator runs its own independent transportation business on
+> top of LuxeRide's software.
+
+## What LuxeRide does
+
+- Online booking engine with instant, rule-based fare pricing (by zone, distance, or fixed route)
+- Real-time dispatch board and driver assignment (manual or automatic)
+- Card payments via Whop, plus manual payment tracking (cash, Zelle, bank transfer)
+- Corporate accounts with credit lines, per-user limits, and automatic invoicing
+- Cancellation and no-show policy engine, deposits and gratuities
+- Live GPS trip tracking shared with passengers, in-app chat, and post-trip ratings
+- Compliance Center: tracks license, permit, and insurance expiration dates for the operator's own records (an organizational tool — LuxeRide does not certify or guarantee regulatory compliance)
+- Each operator gets its own branded booking page, available in English, Spanish, and Portuguese
+- Reports, CSV exports, and audit trail
+
+## Pricing (as of 2026-07-08)
+
+- Starter — $99/month: up to 6 vehicles and 6 chauffeurs, up to 150 bookings/month, 2 team members, 3% platform fee per completed trip
+- Professional — $299/month: up to 15 vehicles and 15 chauffeurs, unlimited bookings, 8 team members, corporate accounts, real-time dispatch, 1.5% platform fee
+- Elite — $548.99/month: unlimited vehicles, chauffeurs and team members, affiliate network (send/receive trips with other LuxeRide operators), 0.5% platform fee
+- Enterprise — custom pricing: multiple companies/DBAs, dedicated account manager, custom integrations
+
+No setup fees on any plan.
+
+## Key differentiators vs. competitors (Limo Anywhere, Moovs)
+
+- Trilingual (English/Spanish/Portuguese) out of the box — competitors are English-only
+- No setup fee on any plan
+- Platform fee decreases as operators grow, rather than a flat per-trip charge regardless of fare
+
+## Pages
+
+- [Home / pricing](/) — product overview, pricing plans, FAQ
+- [Privacy Policy](/privacy)
+- [Terms of Service](/terms)
+
+## Contact
+
+- General: hello@luxeride.app
+- Privacy questions: privacy@luxeride.app
+- Legal questions: legal@luxeride.app

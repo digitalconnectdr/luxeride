@@ -45,9 +45,18 @@ export const metadata: Metadata = {
     'airport transfer',
     'executive travel',
   ],
+  alternates: {
+    canonical: '/',
+  },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
   // Google Search Console — meta de verificación (solo si está configurada)
   verification: GOOGLE_VERIFICATION ? { google: GOOGLE_VERIFICATION } : undefined,

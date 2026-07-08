@@ -7,11 +7,15 @@ import { Reveal, RevealStagger, RevealItem } from '@/components/landing/reveal'
 import { HeroMockup } from '@/components/landing/hero-mockup'
 import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
 import { brand, withBrand } from '@/lib/brand'
+import { getAppUrl } from '@/lib/app-url'
+import { buildLandingStructuredData } from '@/lib/seo/structured-data'
+
+const DESCRIPTION =
+  'All-in-one platform for limousine, airport transfer and executive chauffeur companies: online reservations, live dispatch, card payments and corporate accounts.'
 
 export const metadata: Metadata = {
   title: { absolute: `${brand.name} — Premium Transportation Software | by ${brand.poweredBy}` },
-  description:
-    'All-in-one platform for limousine, airport transfer and executive chauffeur companies: online reservations, live dispatch, card payments and corporate accounts.',
+  description: DESCRIPTION,
 }
 
 export const dynamic = 'force-dynamic' // locale por cookie
@@ -44,8 +48,20 @@ export default async function LandingPage() {
   // Directorio de operadores (marketplace) desactivado — ver sección comentada
   // más abajo. LuxeRide es white-label: el landing solo vende el software.
 
+  const structuredData = buildLandingStructuredData({
+    baseUrl: getAppUrl(),
+    description: DESCRIPTION,
+    plans: t.plans,
+    faq: t.faq.map((item) => ({ q: item.q, a: withBrand(item.a) })),
+  })
+
   return (
     <div className="min-h-screen bg-[#0c0b0a] text-white antialiased overflow-x-hidden">
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       {/* ── Nav ── */}
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#0c0b0a]/90 backdrop-blur">
         <div className="max-w-[1400px] mx-auto px-6 py-4 flex items-center justify-between">
