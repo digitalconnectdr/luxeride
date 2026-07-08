@@ -335,6 +335,17 @@ export default async function LandingPage() {
             </p>
             <h2 className="font-playfair text-3xl sm:text-4xl font-semibold">{t.pricingTitle}</h2>
             <p className="text-white/45 mt-3 text-sm">{t.pricingSubtitle}</p>
+            <p className="inline-flex items-center gap-2 mt-5 px-4 py-1.5 rounded-full bg-[#e9c176]/10 border border-[#e9c176]/30 text-sm font-semibold text-[#e9c176]">
+              {t.pricingNoSetupBadge}
+            </p>
+          </Reveal>
+
+          <Reveal className="flex flex-wrap justify-center gap-x-6 gap-y-2 max-w-3xl mx-auto mb-12">
+            {t.pricingIncluded.map((item) => (
+              <span key={item} className="inline-flex items-center gap-1.5 text-xs text-white/55">
+                <span className="text-[#e9c176]">✓</span> {item}
+              </span>
+            ))}
           </Reveal>
 
           <RevealStagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">

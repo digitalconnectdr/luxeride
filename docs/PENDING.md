@@ -97,14 +97,25 @@ Cada operador elige el diseño de su micrositio en Ajustes → Portada:
 2. (Opcional) Vercel → Settings → Deployment Protection → desactivar
    "Vercel Authentication" si se quiere compartir previews de develop sin
    login de Vercel. Producción (getluxeride.vercel.app) ya es pública.
-3. **Vercel env vars** (opcionales, activan features): RESEND_API_KEY +
-   RESEND_FROM_EMAIL (key ya existe, dominio por verificar en resend.com),
-   CRON_SECRET (facturación corporativa + alertas de documentos),
-   UPSTASH_REDIS_REST_URL/TOKEN (rate limit distribuido).
+3. **Vercel env vars** (opcionales, activan features — verificado 2026-07-08
+   que degradan limpio sin romper nada si faltan): RESEND_API_KEY +
+   RESEND_FROM_EMAIL (key ya existe, dominio por verificar en resend.com —
+   sin esto, `lib/notifications/index.ts` deja las notificaciones en status
+   `pending` sin enviar, no falla), CRON_SECRET (facturación corporativa +
+   alertas de documentos), UPSTASH_REDIS_REST_URL/TOKEN (rate limit
+   distribuido — sin esto, `lib/security/rate-limit.ts` cae a un límite en
+   memoria por instancia, más débil bajo carga distribuida real en
+   serverless pero no deja de proteger nada).
 4. **Stripe real** cuando haya clientes: keys + webhook
    (/api/stripe/webhook) + habilitar Connect en dashboard.stripe.com.
-5. **Twilio** (SMS) cuando se quiera activar.
+5. **Twilio** (SMS) cuando se quiera activar — mismo patrón placeholder-safe,
+   sin las 3 env vars (`TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`/
+   `TWILIO_FROM_NUMBER`) los SMS simplemente no salen.
 6. Probar /super-admin/subscriptions con el usuario super_admin.
+7. **Páginas de Privacy Policy y Terms of Service** — no existen todavía
+   (footer del landing no las enlaza porque no hay ruta). Pendiente crear
+   `/privacy` y `/terms` con contenido real antes de que importen para SEO
+   o confianza del comprador B2B.
 
 ## ⬜ Funciones grandes pospuestas (decisión 2026-06-14: bugs primero)
 
