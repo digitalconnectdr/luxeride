@@ -62,6 +62,42 @@ describe('computeDriverCompliance', () => {
     expect(r.blocked).toBe(false)
     expect(r.score).toBeLessThan(100)
   })
+
+  it('perfil casi vacío (solo licencia y permiso parcial) no debe verse casi perfecto', () => {
+    // Caso real reportado: license_number sí, license_state no, sin vencimiento,
+    // permiso con número pero sin jurisdicción — antes daba 75/100 (engañoso).
+    const r = computeDriverCompliance(
+      {
+        licenseNumber: 'D9988776',
+        licenseState: null,
+        licenseExpiry: null,
+        chauffeurPermitNumber: 'CH-1234',
+        chauffeurPermitJurisdiction: null,
+        chauffeurPermitExpiresAt: null,
+        manualReviewRequired: true,
+      },
+      NOW,
+    )
+    expect(r.score).toBeLessThanOrEqual(60)
+    expect(r.blocked).toBe(false)
+    expect(r.status).toBe('pending_review')
+  })
+
+  it('conductor completamente vacío queda en zona de riesgo, no compliant', () => {
+    const r = computeDriverCompliance(
+      {
+        licenseNumber: null,
+        licenseState: null,
+        licenseExpiry: null,
+        chauffeurPermitNumber: null,
+        chauffeurPermitJurisdiction: null,
+        chauffeurPermitExpiresAt: null,
+        manualReviewRequired: true,
+      },
+      NOW,
+    )
+    expect(r.score).toBeLessThanOrEqual(50)
+  })
 })
 
 describe('computeVehicleCompliance', () => {
@@ -97,6 +133,22 @@ describe('computeVehicleCompliance', () => {
     const r = computeVehicleCompliance({ ...complete, forhirePermitExpiresAt: daysFromNow(-2) }, NOW)
     expect(r.blocked).toBe(true)
     expect(r.blockReason).toMatch(/for-hire/i)
+  })
+
+  it('vehículo completamente vacío no debe verse casi perfecto', () => {
+    const r = computeVehicleCompliance(
+      {
+        insuranceExpiresAt: null,
+        forhirePermitNumber: null,
+        forhirePermitJurisdiction: null,
+        forhirePermitExpiresAt: null,
+        inspectionDate: null,
+        inspectionStatus: null,
+        manualReviewRequired: true,
+      },
+      NOW,
+    )
+    expect(r.score).toBeLessThanOrEqual(60)
   })
 })
 
@@ -137,6 +189,26 @@ describe('computeCompanyCompliance', () => {
 
   it('flota mayormente bloqueada genera alerta', () => {
     const r = computeCompanyCompliance({ ...complete, fleetBlockedPct: 60 }, NOW)
+    expect(r.alert).toBe(true)
+  })
+
+  it('empresa sin ningún dato de cumplimiento no debe verse casi completa', () => {
+    // Caso real reportado: compliance = {} completo, nada declarado — antes daba 75/100.
+    const r = computeCompanyCompliance(
+      {
+        legalName: null,
+        stateRegistrationNumber: null,
+        operatingLicenseNumber: null,
+        operatingLicenseExpiresAt: null,
+        operatesInterstate: false,
+        usdotNumber: null,
+        commercialInsuranceExpiresAt: null,
+        fleetBlockedPct: 0,
+        manualReviewRequired: true,
+      },
+      NOW,
+    )
+    expect(r.score).toBeLessThanOrEqual(60)
     expect(r.alert).toBe(true)
   })
 })

@@ -296,15 +296,16 @@ async function createCheckoutForBooking(
   const { currency, mainCents, tipCents, amountCents, feeCents, mainLabel, isDeposit, depPct, gratPct } =
     computeChargeAmounts(booking, company?.settings, opts?.gratuityPct)
 
-  // Destination charge si la empresa completó Connect onboarding
-  const useConnect = Boolean(
-    company?.stripe_connect_account_id && company?.stripe_connect_onboarded,
-  )
-  const useWhop = Boolean(
-    company?.active_payment_provider === 'whop' &&
-      company?.whop_connect_company_id &&
-      company?.whop_connect_onboarded,
-  )
+  // Destination charge si la empresa completó Connect onboarding.
+  // "active_payment_provider" es la preferencia explícita del operador, pero
+  // no todas las empresas la tienen seteada (p.ej. si terminaron el onboarding
+  // de Whop antes de que existiera el selector, o si Stripe Connect nunca
+  // estuvo disponible para ellas) — por eso el riel realmente usable se
+  // resuelve por disponibilidad real, no solo por esa columna.
+  const stripeReady = Boolean(company?.stripe_connect_account_id && company?.stripe_connect_onboarded)
+  const whopReady = Boolean(company?.whop_connect_company_id && company?.whop_connect_onboarded)
+  const useWhop = whopReady && (company?.active_payment_provider === 'whop' || !stripeReady)
+  const useConnect = stripeReady && !useWhop
 
   // Registrar pago pendiente ANTES de crear la sesión (idempotencia vía metadata)
   const { data: payment, error: payErr } = await admin
@@ -367,7 +368,12 @@ async function createCheckoutForBooking(
   const stripe = getStripe()
   if (!stripe) {
     await admin.from('payments').update({ status: 'cancelled' }).eq('id', payment.id)
-    return { success: false, error: 'Pagos online no disponibles — Stripe no configurado' }
+    const error = whopReady
+      ? 'Pagos online no disponibles — activa Whop como método de cobro en Configuración'
+      : company?.whop_connect_company_id
+        ? 'Pagos online no disponibles — termina de conectar Whop en Configuración (Stripe tampoco está configurado)'
+        : 'Pagos online no disponibles — conecta Stripe o Whop en Configuración'
+    return { success: false, error }
   }
 
   try {

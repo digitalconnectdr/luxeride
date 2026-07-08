@@ -84,7 +84,7 @@ export async function refreshWhopConnectStatusAction(): Promise<ActionResult> {
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('whop_connect_company_id')
+    .select('whop_connect_company_id, active_payment_provider, stripe_connect_onboarded')
     .eq('id', user.company_id)
     .single()
 
@@ -99,9 +99,19 @@ export async function refreshWhopConnectStatusAction(): Promise<ActionResult> {
     // para recibir pagos" (Whop no expone un campo tipo charges_enabled).
     const onboarded = Boolean(account.verified)
 
+    // Si Whop termina de habilitarse y la empresa todavía no tiene un riel
+    // activo explícito (o Stripe nunca se conectó), Whop pasa a ser el
+    // proveedor activo automáticamente — evita que quede "conectado" en
+    // este panel pero sin poder cobrar por no haber una elección explícita.
+    const shouldActivateWhop =
+      onboarded && !company.active_payment_provider && !company.stripe_connect_onboarded
+
     await admin
       .from('companies')
-      .update({ whop_connect_onboarded: onboarded })
+      .update({
+        whop_connect_onboarded: onboarded,
+        ...(shouldActivateWhop ? { active_payment_provider: 'whop' } : {}),
+      })
       .eq('id', user.company_id)
   } catch (err) {
     console.error('[refreshWhopConnectStatusAction]', err)

@@ -65,17 +65,24 @@ export interface DriverComplianceInput {
 export function computeDriverCompliance(input: DriverComplianceInput, now: Date = new Date()): ComplianceResult {
   const deductions: Deduction[] = []
 
-  if (!input.licenseNumber || !input.licenseState) {
-    deductions.push({ points: 10, reason: 'Falta información de la licencia de conducir' })
+  if (!input.licenseNumber) {
+    deductions.push({ points: 15, reason: 'Falta el número de licencia de conducir' })
+  }
+  if (!input.licenseState) {
+    deductions.push({ points: 10, reason: 'Falta el estado emisor de la licencia' })
   }
   if (isPast(input.licenseExpiry, now)) {
     deductions.push({ points: 30, reason: 'Licencia de conducir vencida', blocking: true })
+  } else if (!input.licenseExpiry) {
+    deductions.push({ points: 10, reason: 'Falta la fecha de vencimiento de la licencia' })
   }
 
   if (!input.chauffeurPermitNumber || !input.chauffeurPermitJurisdiction) {
-    deductions.push({ points: 15, reason: 'Falta el permiso chauffeur/for-hire' })
+    deductions.push({ points: 20, reason: 'Falta el permiso chauffeur/for-hire' })
   } else if (isPast(input.chauffeurPermitExpiresAt, now)) {
     deductions.push({ points: 30, reason: 'Permiso chauffeur/for-hire vencido', blocking: true })
+  } else if (!input.chauffeurPermitExpiresAt) {
+    deductions.push({ points: 10, reason: 'Falta la fecha de vencimiento del permiso chauffeur/for-hire' })
   }
 
   return finalize(deductions, input.manualReviewRequired)
@@ -96,16 +103,18 @@ export interface VehicleComplianceInput {
 export function computeVehicleCompliance(input: VehicleComplianceInput, now: Date = new Date()): ComplianceResult {
   const deductions: Deduction[] = []
 
-  if (!input.insuranceExpiresAt) {
-    deductions.push({ points: 15, reason: 'Falta fecha de vencimiento del seguro' })
-  } else if (isPast(input.insuranceExpiresAt, now)) {
+  if (isPast(input.insuranceExpiresAt, now)) {
     deductions.push({ points: 25, reason: 'Seguro comercial vencido', blocking: true })
+  } else if (!input.insuranceExpiresAt) {
+    deductions.push({ points: 15, reason: 'Falta fecha de vencimiento del seguro' })
   }
 
   if (!input.forhirePermitNumber || !input.forhirePermitJurisdiction) {
-    deductions.push({ points: 15, reason: 'Falta el permiso for-hire del vehículo' })
+    deductions.push({ points: 20, reason: 'Falta el permiso for-hire del vehículo' })
   } else if (isPast(input.forhirePermitExpiresAt, now)) {
     deductions.push({ points: 30, reason: 'Permiso for-hire del vehículo vencido', blocking: true })
+  } else if (!input.forhirePermitExpiresAt) {
+    deductions.push({ points: 10, reason: 'Falta la fecha de vencimiento del permiso for-hire' })
   }
 
   if (input.inspectionStatus === 'failed') {
@@ -139,14 +148,19 @@ export interface CompanyComplianceResult extends ComplianceResult {
 export function computeCompanyCompliance(input: CompanyComplianceInput, now: Date = new Date()): CompanyComplianceResult {
   const deductions: Deduction[] = []
 
-  if (!input.legalName || !input.stateRegistrationNumber) {
-    deductions.push({ points: 10, reason: 'Falta identidad legal (nombre legal / número de registro estatal)' })
+  if (!input.legalName) {
+    deductions.push({ points: 10, reason: 'Falta el nombre legal de la empresa' })
+  }
+  if (!input.stateRegistrationNumber) {
+    deductions.push({ points: 10, reason: 'Falta el número de registro estatal' })
   }
 
   if (!input.operatingLicenseNumber) {
     deductions.push({ points: 15, reason: 'Falta la licencia operativa for-hire' })
   } else if (isPast(input.operatingLicenseExpiresAt, now)) {
     deductions.push({ points: 25, reason: 'Licencia operativa for-hire vencida' })
+  } else if (!input.operatingLicenseExpiresAt) {
+    deductions.push({ points: 10, reason: 'Falta la fecha de vencimiento de la licencia operativa' })
   }
 
   if (input.operatesInterstate && !input.usdotNumber) {
@@ -155,6 +169,8 @@ export function computeCompanyCompliance(input: CompanyComplianceInput, now: Dat
 
   if (isPast(input.commercialInsuranceExpiresAt, now)) {
     deductions.push({ points: 25, reason: 'Seguro comercial de la empresa vencido' })
+  } else if (!input.commercialInsuranceExpiresAt) {
+    deductions.push({ points: 10, reason: 'Falta la fecha de vencimiento del seguro comercial' })
   }
 
   if (input.fleetBlockedPct >= 50) {

@@ -6,7 +6,7 @@ import type { Dictionary } from '@/lib/i18n/server'
 
 type Labels = Pick<
   Dictionary['admin']['vehicleDetail'],
-  | 'complianceTitle' | 'forhirePermitNumber' | 'forhirePermitJurisdiction' | 'forhirePermitExpires'
+  | 'forhirePermitNumber' | 'forhirePermitJurisdiction' | 'forhirePermitExpires'
   | 'inspectionDate' | 'inspectionStatus' | 'inspectionUnknown' | 'inspectionPassed' | 'inspectionFailed'
   | 'insuranceCarrier' | 'insurancePolicyNumber' | 'complianceSave' | 'complianceSaved'
 >
@@ -34,10 +34,6 @@ export function VehicleComplianceForm({ vehicleId, current, labels: t }: Props) 
 
   return (
     <div className="border-t border-sl-outline-variant pt-4">
-      <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-3">
-        {t.complianceTitle}
-      </p>
-
       {state && !state.success && (
         <div className="mb-3 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-2.5">
           <p className="text-xs text-red-400">{state.error}</p>
