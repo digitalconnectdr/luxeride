@@ -268,6 +268,9 @@ export const en = {
     phone: 'Phone',
     email: 'Email',
     optional: '(optional)',
+    returningMatch: 'Are you {name}? We can use your details.',
+    returningMatchUse: 'Use these details',
+    returningMatchDismiss: "No, I'm someone else",
     recommended: '(recommended)',
     passengerCount: 'Number of passengers',
     flightNumber: 'Flight number',
@@ -531,6 +534,11 @@ export const en = {
       confirm: 'Confirm charge',
       cancel: 'Cancel',
       done: '✓ Charge added to the trip.',
+    },
+    history: {
+      sectionTitle: 'My recent trips',
+      sectionSubtitle: 'Trips completed in the last 7 days.',
+      empty: 'No completed trips in the last 7 days.',
     },
     rateForm: {
       sectionTitle: 'Rate your recent passengers',

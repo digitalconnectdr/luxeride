@@ -81,7 +81,7 @@ export default async function DriverTripsPage() {
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString()
 
-  const [{ data: trips }, { data: company }, { data: unratedTrips }, { data: driverRow }] = await Promise.all([
+  const [{ data: trips }, { data: company }, { data: unratedTrips }, { data: driverRow }, { data: recentCompleted }] = await Promise.all([
     admin
       .from('bookings')
       .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id, route_polyline')
@@ -101,6 +101,17 @@ export default async function DriverTripsPage() {
       .order('completed_at', { ascending: false })
       .limit(10),
     admin.from('drivers').select('is_available, current_vehicle_id').eq('id', user.id).maybeSingle(),
+    // Historial: TODOS los viajes completados de los últimos 7 días (calificados
+    // o no), con detalle completo — distinto de `unratedTrips` (solo pendientes
+    // de calificar, sin ruta/precio, usado para la tarjeta de calificación).
+    admin
+      .from('bookings')
+      .select('id, booking_number, passenger_name, scheduled_at, completed_at, pickup_location, dropoff_location, distance_miles, duration_minutes, total_amount, currency, vehicle_id')
+      .eq('driver_id', user.id)
+      .eq('status', 'completed')
+      .gte('completed_at', sevenDaysAgo)
+      .order('completed_at', { ascending: false })
+      .limit(50),
   ])
   const isAvailable = driverRow?.is_available ?? false
 
@@ -132,10 +143,13 @@ export default async function DriverTripsPage() {
   const driverName = user.profile.first_name
   const bookingUrl = co?.slug ? `${getAppUrl()}/book/${co.slug}` : null
 
-  const vehicleIds = Array.from(new Set((trips ?? []).map((t) => t.vehicle_id).filter((id): id is string => !!id)))
+  const vehicleIds = Array.from(new Set([
+    ...(trips ?? []).map((t) => t.vehicle_id),
+    ...(recentCompleted ?? []).map((t) => t.vehicle_id),
+  ].filter((id): id is string => !!id)))
   const { data: vehiclesData } = vehicleIds.length
-    ? await admin.from('vehicles').select('id, color, plate_number').in('id', vehicleIds)
-    : { data: [] as { id: string; color: string | null; plate_number: string | null }[] }
+    ? await admin.from('vehicles').select('id, color, plate_number, make, model').in('id', vehicleIds)
+    : { data: [] as { id: string; color: string | null; plate_number: string | null; make: string; model: string }[] }
   const vehiclesById = new Map((vehiclesData ?? []).map((v) => [v.id, v]))
 
   const addStopLabels = { ...dt.addStop, saving: dt.actions.saving }
@@ -465,6 +479,51 @@ export default async function DriverTripsPage() {
             </div>
           </div>
         )}
+
+        {/* Historial: viajes completados de los últimos 7 días, con detalle */}
+        <div className={`${card} p-5 sm:p-6`}>
+          <p className="text-sm font-semibold text-[#1d1b18]">{dt.history.sectionTitle}</p>
+          <p className="text-xs text-[#75716a] mt-0.5">{dt.history.sectionSubtitle}</p>
+          {!recentCompleted?.length ? (
+            <p className="text-xs text-[#a8a39a] mt-4">{dt.history.empty}</p>
+          ) : (
+            <div className="divide-y divide-[#f0ede5] mt-2">
+              {recentCompleted.map((rt) => {
+                const pLoc = rt.pickup_location as { address?: string } | null
+                const dLoc = rt.dropoff_location as { address?: string } | null
+                const v = rt.vehicle_id ? vehiclesById.get(rt.vehicle_id) : null
+                const vehicleLabel = v ? [v.make, v.model, v.color].filter(Boolean).join(' ') : null
+                return (
+                  <div key={rt.id} className="py-3 flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-[11px] text-[#8a6520]">{rt.booking_number}</span>
+                        <span className="text-[11px] text-[#a8a39a]">
+                          {rt.completed_at
+                            ? new Date(rt.completed_at).toLocaleDateString(localeTag, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                            : '—'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-[#1d1b18] mt-1">{rt.passenger_name ?? dt.passenger}</p>
+                      <p className="text-xs text-[#75716a] mt-0.5 truncate max-w-md">
+                        {pLoc?.address ?? '—'} → {dLoc?.address ?? '—'}
+                      </p>
+                      <p className="text-[11px] text-[#a8a39a] mt-1">
+                        {rt.distance_miles != null ? `${Number(rt.distance_miles).toFixed(1)} mi` : '—'}
+                        {rt.duration_minutes != null ? ` · ${rt.duration_minutes} min` : ''}
+                        {vehicleLabel ? ` · ${vehicleLabel}` : ''}
+                        {v?.plate_number ? ` · ${v.plate_number}` : ''}
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold text-[#1d1b18] shrink-0">
+                      {rt.total_amount != null ? `${Number(rt.total_amount).toFixed(2)} ${rt.currency ?? 'USD'}` : '—'}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
 
         <p className="text-xs text-center text-[#a8a39a] pt-4">{dt.mobileSoon}</p>
       </main>

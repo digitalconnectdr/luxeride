@@ -269,6 +269,9 @@ export const es: Dictionary = {
     phone: 'Teléfono',
     email: 'Email',
     optional: '(opcional)',
+    returningMatch: '¿Eres {name}? Podemos usar tus datos.',
+    returningMatchUse: 'Usar estos datos',
+    returningMatchDismiss: 'No, soy otro',
     recommended: '(recomendado)',
     passengerCount: 'Número de pasajeros',
     flightNumber: 'Número de vuelo',
@@ -532,6 +535,11 @@ export const es: Dictionary = {
       confirm: 'Confirmar cargo',
       cancel: 'Cancelar',
       done: '✓ Cargo agregado al viaje.',
+    },
+    history: {
+      sectionTitle: 'Mis viajes recientes',
+      sectionSubtitle: 'Viajes completados en los últimos 7 días.',
+      empty: 'Sin viajes completados en los últimos 7 días.',
     },
     rateForm: {
       sectionTitle: 'Califica a tus pasajeros recientes',

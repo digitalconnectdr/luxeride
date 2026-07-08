@@ -815,6 +815,40 @@ export async function getPublicVehicleQuotesAction(
   return { success: true, data: quotes }
 }
 
+// ─── Público: reconocer pasajero recurrente por teléfono ──────────────────────
+// Viajero frecuente cross-device: al escribir el teléfono en el wizard,
+// buscamos su última reserva CON esa empresa (guest checkout, sin cuenta) y
+// ofrecemos autocompletar nombre/email — con un clic explícito, nunca
+// automático. Rate-limited porque es una consulta pública sin autenticación
+// (evita usarla para enumerar teléfonos). Solo empareja por texto exacto del
+// teléfono tal como el pasajero lo escribió antes (suficiente para el mismo
+// dispositivo/persona reutilizando el mismo formato).
+export async function lookupReturningPassengerAction(
+  slug: string,
+  phone: string,
+): Promise<{ found: boolean; name?: string; email?: string }> {
+  const cleanPhone = (phone ?? '').trim()
+  if (cleanPhone.replace(/[^0-9]/g, '').length < 7) return { found: false }
+
+  if (!(await checkRateLimit('passenger_lookup', 15))) return { found: false }
+
+  const admin = createAdminClient()
+  const { data: company } = await admin.from('companies').select('id').eq('slug', slug).single()
+  if (!company) return { found: false }
+
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('passenger_name, passenger_email')
+    .eq('company_id', company.id)
+    .eq('passenger_phone', cleanPhone)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (!booking?.passenger_name) return { found: false }
+  return { found: true, name: booking.passenger_name, email: booking.passenger_email ?? undefined }
+}
+
 // ─── Público: Crear reservación (guest checkout) ──────────────────────────────
 
 export async function createPublicBookingAction(data: {

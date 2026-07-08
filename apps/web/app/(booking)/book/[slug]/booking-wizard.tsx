@@ -5,12 +5,13 @@
 // Paso 3: Datos del pasajero
 // Paso 4: Confirmación + creación
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AddressInput } from '@/components/maps/address-input'
 import {
   getPublicVehicleQuotesAction,
   createPublicBookingAction,
+  lookupReturningPassengerAction,
   type VehicleQuote,
   type BookingResult,
 } from '@/app/actions/bookings'
@@ -131,6 +132,50 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
     name: '', phone: '', email: '', count: 1, instructions: '', flightNumber: '',
   })
   const [confirmation, setConfirmation] = useState<BookingResult | null>(null)
+
+  // Viajero recurrente — capa 1: autocompletar desde este navegador (sin
+  // cuenta, sin backend). Capa 2: reconocer por teléfono en otro dispositivo,
+  // ofreciendo sus datos con un clic explícito (nunca automático).
+  const prefillKey = `luxeride:passenger:${company.slug}`
+  const [returningMatch, setReturningMatch] = useState<{ name: string; email?: string } | null>(null)
+  const [returningDismissed, setReturningDismissed] = useState(false)
+  const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(prefillKey)
+      if (!raw) return
+      const saved = JSON.parse(raw) as { name?: string; phone?: string; email?: string }
+      setPassengerData((p) => ({
+        ...p,
+        name: saved.name ?? p.name,
+        phone: saved.phone ?? p.phone,
+        email: saved.email ?? p.email,
+      }))
+      // eslint-disable-next-line no-empty
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  function handlePhoneChange(value: string) {
+    setPassengerData((p) => ({ ...p, phone: value }))
+    setReturningDismissed(false)
+    setReturningMatch(null)
+    if (lookupTimer.current) clearTimeout(lookupTimer.current)
+    if (value.replace(/[^0-9]/g, '').length < 7) return
+    lookupTimer.current = setTimeout(() => {
+      lookupReturningPassengerAction(company.slug, value).then((r) => {
+        if (r.found && r.name) setReturningMatch({ name: r.name, email: r.email })
+      })
+    }, 600)
+  }
+
+  function acceptReturningMatch() {
+    if (!returningMatch) return
+    setPassengerData((p) => ({ ...p, name: returningMatch.name, email: returningMatch.email ?? p.email }))
+    setReturningMatch(null)
+    setReturningDismissed(true)
+  }
 
   // Hora local de hoy (para el min del input de fecha)
   const todayStr = useMemo(() => {
@@ -296,6 +341,15 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
         setError(result.error ?? 'Error al crear reservación')
         return
       }
+
+      // Viajero recurrente: recordar datos en este navegador para la próxima
+      // reserva (capa 1 — nunca sale del dispositivo, sin cuenta ni backend).
+      try {
+        localStorage.setItem(prefillKey, JSON.stringify({
+          name: passengerData.name, phone: passengerData.phone, email: passengerData.email,
+        }))
+        // eslint-disable-next-line no-empty
+      } catch {}
 
       // Pago al momento de reservar: crea la reserva y va directo a Stripe Checkout
       if (payNow && onlinePaymentsEnabled) {
@@ -647,6 +701,8 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               type="text"
               name="name"
               required
+              value={passengerData.name}
+              onChange={(e) => setPassengerData((p) => ({ ...p, name: e.target.value }))}
               placeholder="Juan Pérez"
               className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
             />
@@ -660,9 +716,35 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               type="tel"
               name="phone"
               required
+              value={passengerData.phone}
+              onChange={(e) => handlePhoneChange(e.target.value)}
               placeholder="+1 809 000 0000"
               className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
             />
+            {returningMatch && !returningDismissed && (
+              <div className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-[var(--brand)]/30 bg-[var(--brand)]/5 px-3 py-2">
+                <p className="text-xs text-[#1d1d1f]">
+                  {dict.returningMatch.replace('{name}', returningMatch.name)}
+                </p>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={acceptReturningMatch}
+                    className="text-xs font-semibold px-2.5 py-1 rounded-lg text-white"
+                    style={{ backgroundColor: 'var(--brand)' }}
+                  >
+                    {dict.returningMatchUse}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReturningDismissed(true)}
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    {dict.returningMatchDismiss}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -672,6 +754,8 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
             <input
               type="email"
               name="email"
+              value={passengerData.email}
+              onChange={(e) => setPassengerData((p) => ({ ...p, email: e.target.value }))}
               placeholder="juan@example.com"
               className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
             />
