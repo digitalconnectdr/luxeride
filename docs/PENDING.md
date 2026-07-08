@@ -516,6 +516,77 @@ cuenta/login ni instalar nada, en 3 capas (orden por esfuerzo):
      `payment:charge`, `member:payment_methods:read` y
      `payment:setup_intent:read` habilitados en el dashboard de Whop antes
      de construir — el usuario lo está revisando directamente.
+     ✅ CONFIRMADO 2026-07-07: el key "LuxeRide Platform" hereda del rol
+     Propietario y tiene los 3 permisos (más el set completo de Payments).
+     Sin bloqueo técnico — listo para implementar cuando se priorice.
+
+### J. Compliance Center — datos regulatorios EE.UU. (diseño 2026-07-07)
+Fuente: documento del usuario "Estructura recomendada del LuxeRide
+Compliance Center" (Word, 2026-07-07). Objetivo: datos confiables de las
+empresas que adquieran LuxeRide y posicionamiento serio como competidor
+en EE.UU. (Sunbiz/Florida, condados Miami-Dade/Broward, FMCSA/USDOT).
+Decisión del documento: NO subir documentos por ahora — solo campos
+estructurados + fechas de vencimiento + estados de verificación +
+bloqueo operativo calculado.
+
+**Lo que YA existe** (no duplicar en la implementación):
+- `companies`: teléfono, email, dirección, ciudad, país, zona horaria,
+  moneda — falta toda la identidad legal y regulatoria.
+- `drivers`: `license_number`, `license_expiry`, `license_state` — falta
+  el permiso chauffeur/for-hire y el motor de elegibilidad.
+- `vehicles`: VIN, `mileage`, `last/next_maintenance_at`,
+  `insurance_expires_at` (con warning visual en `/admin/fleet/[id]`) y la
+  tabla `maintenance_records` — falta permiso for-hire, inspección y
+  datos de póliza estructurados.
+- Cron `document-alerts` — patrón directamente reutilizable para el
+  barrido diario de vencimientos.
+
+**Lo que FALTA (MVP del documento, resumido)**:
+- Empresa: nombre legal, DBA, tipo de entidad, estado de registro, número
+  de registro estatal (cruce con Sunbiz), EIN últimos 4, condado, ZIP,
+  áreas/aeropuertos/tipo de operación, licencia operativa for-hire
+  (tipo/número/jurisdicción/vencimiento/estado), ¿opera entre estados? +
+  USDOT/MC/estado FMCSA, seguro comercial (aseguradora/vencimiento/estado).
+- Conductor: permiso chauffeur/for-hire (tipo/número/jurisdicción/
+  vencimiento/estado), clase de licencia, elegibilidad calculada
+  ("puede recibir viajes" + motivo).
+- Vehículo: permiso for-hire del vehículo, inspección (fecha/estado),
+  póliza estructurada, capacidad de equipaje, "puede ser asignado" +
+  motivo de bloqueo.
+
+**Motor de cumplimiento (calculado, no manual)** — 3 capas del documento:
+declarado (lo llena el cliente) → calculado (reglas: vencimientos, campos
+faltantes) → revisado (aprobación admin una sola vez + excepciones).
+Campos internos: `compliance_status` (Compliant/Partial/At Risk/
+Non-Compliant/Pending Review), `compliance_score` 0-100 (100 base menos
+deducciones: -30 licencia vencida, -25 seguro vencido, -15 sin
+jurisdicción, etc.), `risk_level`, `operational_block` + `block_reason`,
+`manual_review_required`, `verification_status`, `last_reviewed_at`,
+`next_review_at`, `reviewed_by`, `internal_notes`.
+
+**Reglas de bloqueo**: conductor bloqueado si licencia o permiso vencido
+o suspendido; vehículo bloqueado si seguro/permiso/inspección vencidos o
+en mantenimiento; empresa alertada (no bloqueada automáticamente) si
+licencia operativa o seguro comercial vencen, o si >X% de su flota está
+vencida. El admin solo ve una cola de revisión (Compliance Review Queue),
+no revisa campo por campo.
+
+**Plan de implementación por fases** (sin romper lo construido — todo es
+aditivo):
+1. Migración: columnas de fechas/estados indexables (vencimientos que el
+   cron consulta) + JSONB `compliance` para el resto de campos MVP en
+   `companies`, `drivers` y `vehicles`. Nada existente cambia.
+2. `lib/compliance/engine.ts` — funciones puras (mismo patrón que
+   `lib/policy/engine.ts`): computeComplianceScore, computeStatus,
+   reglas de bloqueo. Testeable con Vitest sin tocar la DB.
+3. UI operador: sección/página en `/admin` para llenar los datos
+   (empresa + por conductor + por vehículo), con estados visuales.
+4. UI super-admin: Compliance Review Queue (pendientes, por vencer,
+   bloqueados, incompletos) + aprobación manual inicial.
+5. Cron diario (patrón `document-alerts`): recalcula estados por
+   vencimiento, dispara alertas email, alimenta la cola.
+6. Enforcement: `lib/dispatch/auto-assign.ts` salta conductores/vehículos
+   bloqueados; la asignación manual muestra el motivo del bloqueo.
 
 ## Backlog de DESARROLLO (0–6 ✅ COMPLETO, ver resumen arriba — detalle histórico abajo)
 
