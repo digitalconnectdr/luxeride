@@ -4,7 +4,8 @@
 // autenticidad viene de la verificación de firma, no de un rol de usuario).
 
 import type { createAdminClient } from '@/lib/supabase/server'
-import type { CompanyPlan } from '@/lib/supabase/database.types'
+import { getPlanLimits } from '@/lib/plans/limits'
+import type { CompanyPlan, Json } from '@/lib/supabase/database.types'
 
 export interface ActivateSubscriptionResult {
   success: boolean
@@ -14,7 +15,9 @@ export interface ActivateSubscriptionResult {
 /**
  * Extiende subscription_ends_at `months` meses desde max(hoy, vencimiento
  * actual) y marca la empresa como 'active'. Si se pasa `plan`, también lo
- * actualiza (nunca degrada el plan si no se especifica uno nuevo).
+ * actualiza (nunca degrada el plan si no se especifica uno nuevo) y — Sección
+ * K — resetea el fee por viaje (settings.payments.platform_fee_pct) al
+ * default del plan nuevo.
  */
 export async function activateCompanySubscription(
   admin: ReturnType<typeof createAdminClient>,
@@ -26,7 +29,7 @@ export async function activateCompanySubscription(
 
   const { data: company } = await admin
     .from('companies')
-    .select('subscription_ends_at')
+    .select('subscription_ends_at, settings')
     .eq('id', companyId)
     .single()
 
@@ -37,11 +40,23 @@ export async function activateCompanySubscription(
   const newEnd = new Date(base)
   newEnd.setMonth(newEnd.getMonth() + safeMonths)
 
-  const updates: { subscription_ends_at: string; status: 'active'; plan?: CompanyPlan } = {
+  const updates: {
+    subscription_ends_at: string
+    status: 'active'
+    plan?: CompanyPlan
+    settings?: Json
+  } = {
     subscription_ends_at: newEnd.toISOString(),
     status: 'active',
   }
-  if (plan) updates.plan = plan
+
+  if (plan) {
+    updates.plan = plan
+    const settings = (company.settings as Record<string, unknown> | null) ?? {}
+    const payments = (settings.payments as Record<string, unknown> | undefined) ?? {}
+    const { platformFeePct } = await getPlanLimits(admin, plan)
+    updates.settings = { ...settings, payments: { ...payments, platform_fee_pct: platformFeePct } } as Json
+  }
 
   const { error } = await admin.from('companies').update(updates).eq('id', companyId)
   if (error) return { success: false, error: error.message }

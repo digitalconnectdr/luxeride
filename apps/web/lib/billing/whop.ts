@@ -35,6 +35,7 @@ export function mapWhopPlanId(whopPlanId: string | null): CompanyPlan | undefine
   if (!whopPlanId) return undefined
   if (whopPlanId === process.env.WHOP_PLAN_ID_STARTER) return 'starter'
   if (whopPlanId === process.env.WHOP_PLAN_ID_PROFESSIONAL) return 'professional'
+  if (whopPlanId === process.env.WHOP_PLAN_ID_ELITE) return 'elite'
   if (whopPlanId === process.env.WHOP_PLAN_ID_ENTERPRISE) return 'enterprise'
   return undefined
 }

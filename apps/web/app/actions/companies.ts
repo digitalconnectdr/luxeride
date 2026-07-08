@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
 import { activateCompanySubscription } from '@/lib/billing/subscriptions'
+import { getPlanLimits } from '@/lib/plans/limits'
 import type { CompanyStatus, CompanyPlan } from '@/lib/supabase/database.types'
 
 export type CompanyActionResult = {
@@ -38,9 +39,18 @@ export async function updateCompanyPlan(
   await requireRole('super_admin')
 
   const admin = createAdminClient()
+
+  // Sección K: al cambiar de plan, el fee por viaje vuelve al default del
+  // plan nuevo (el super-admin puede volver a sobreescribirlo después desde
+  // updateCompanyCommissionAction si el caso lo amerita).
+  const { data: current } = await admin.from('companies').select('settings').eq('id', companyId).single()
+  const settings = (current?.settings as Record<string, unknown> | null) ?? {}
+  const payments = (settings.payments as Record<string, unknown> | undefined) ?? {}
+  const { platformFeePct } = await getPlanLimits(admin, plan)
+
   const { error } = await admin
     .from('companies')
-    .update({ plan })
+    .update({ plan, settings: { ...settings, payments: { ...payments, platform_fee_pct: platformFeePct } } })
     .eq('id', companyId)
 
   if (error) return { success: false, error: error.message }

@@ -42,11 +42,12 @@ const STRIPE_CONNECT_ENABLED = false
 const WHOP_CHECKOUT_URLS: Record<string, string | undefined> = {
   starter: process.env.WHOP_CHECKOUT_URL_STARTER,
   professional: process.env.WHOP_CHECKOUT_URL_PROFESSIONAL,
+  elite: process.env.WHOP_CHECKOUT_URL_ELITE,
   enterprise: process.env.WHOP_CHECKOUT_URL_ENTERPRISE,
 }
 
 const PLAN_LABEL: Record<CompanyPlan, string> = {
-  free: 'Free', starter: 'Starter', professional: 'Professional', enterprise: 'Enterprise',
+  free: 'Free', starter: 'Starter', professional: 'Professional', elite: 'Elite', enterprise: 'Enterprise',
 }
 
 const TIMEZONES = [
@@ -179,7 +180,7 @@ export default async function SettingsPage({
   const subscriptionEndsAt = company.subscription_ends_at ? new Date(company.subscription_ends_at) : null
   const isExpired = !!subscriptionEndsAt && subscriptionEndsAt < new Date()
   const needsCheckout = company.status !== 'active' || isExpired
-  const checkoutPlans = (['starter', 'professional', 'enterprise'] as const)
+  const checkoutPlans = (['starter', 'professional', 'elite', 'enterprise'] as const)
     .map((plan) => ({ plan, url: WHOP_CHECKOUT_URLS[plan] }))
     .filter((p): p is { plan: typeof p.plan; url: string } => !!p.url)
 

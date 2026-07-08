@@ -10,9 +10,9 @@ import type { CompanyPlan } from '@/lib/supabase/database.types'
 export const metadata: Metadata = { title: 'Tracking en vivo' }
 export const dynamic = 'force-dynamic'
 
-const PLAN_ORDER: CompanyPlan[] = ['free', 'starter', 'professional', 'enterprise']
+const PLAN_ORDER: CompanyPlan[] = ['free', 'starter', 'professional', 'elite', 'enterprise']
 const PLAN_LABEL: Record<CompanyPlan, string> = {
-  free: 'Free', starter: 'Starter', professional: 'Professional', enterprise: 'Enterprise',
+  free: 'Free', starter: 'Starter', professional: 'Professional', elite: 'Elite', enterprise: 'Enterprise',
 }
 
 export default async function TrackingUsagePage() {

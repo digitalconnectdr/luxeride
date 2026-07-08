@@ -10,7 +10,7 @@ import {
 } from '@/app/actions/companies'
 import type { CompanyPlan } from '@/lib/supabase/database.types'
 
-const PLANS: CompanyPlan[] = ['free', 'starter', 'professional', 'enterprise']
+const PLANS: CompanyPlan[] = ['free', 'starter', 'professional', 'elite', 'enterprise']
 
 export function RenewButtons({ companyId }: { companyId: string }) {
   const [isPending, startTransition] = useTransition()

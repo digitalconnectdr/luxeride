@@ -337,9 +337,10 @@ export default async function LandingPage() {
             <p className="text-white/45 mt-3 text-sm">{t.pricingSubtitle}</p>
           </Reveal>
 
-          <RevealStagger className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+          <RevealStagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
             {t.plans.map((plan, i) => {
               const popular = i === 1
+              const isLast = i === t.plans.length - 1
               return (
                 <RevealItem
                   key={plan.name}
@@ -378,7 +379,7 @@ export default async function LandingPage() {
                         : 'border border-white/20 hover:border-[#e9c176]/60 hover:text-[#e9c176]'
                     }`}
                   >
-                    {i === 2 ? t.pricingContact : t.pricingCta}
+                    {isLast ? t.pricingContact : t.pricingCta}
                   </Link>
                 </RevealItem>
               )

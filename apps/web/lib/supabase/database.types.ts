@@ -33,7 +33,7 @@ export type UserRole =
   | 'corporate_user'
 
 export type CompanyStatus = 'active' | 'suspended' | 'trial' | 'cancelled'
-export type CompanyPlan = 'free' | 'starter' | 'professional' | 'enterprise'
+export type CompanyPlan = 'free' | 'starter' | 'professional' | 'elite' | 'enterprise'
 export type EnterpriseLeadStatus = 'new' | 'contacted' | 'converted' | 'rejected'
 export type VehicleClass = 'sedan' | 'suv' | 'van' | 'limousine' | 'sprinter' | 'bus' | 'exotic'
 export type VehicleStatus = 'available' | 'on_trip' | 'maintenance' | 'offline' | 'retired'
@@ -792,24 +792,39 @@ export type Database = {
         Relationships: []
       }
 
-      // ── plan_quotas (cuota de tracking en vivo + precio mensual por plan) ─────
+      // ── plan_quotas (límites de uso + fee por viaje + precio mensual por plan) ─
       plan_quotas: {
         Row: {
-          plan: 'free' | 'starter' | 'professional' | 'enterprise'
+          plan: CompanyPlan
           live_tracking_monthly_quota: number | null
           monthly_price: number
+          max_vehicles: number | null
+          max_drivers: number | null
+          max_bookings_per_month: number | null
+          max_team_members: number | null
+          platform_fee_pct: number
           updated_at: string
         }
         Insert: {
-          plan: 'free' | 'starter' | 'professional' | 'enterprise'
+          plan: CompanyPlan
           live_tracking_monthly_quota?: number | null | undefined
           monthly_price?: number | undefined
+          max_vehicles?: number | null | undefined
+          max_drivers?: number | null | undefined
+          max_bookings_per_month?: number | null | undefined
+          max_team_members?: number | null | undefined
+          platform_fee_pct?: number | undefined
           updated_at?: string | undefined
         }
         Update: {
-          plan?: 'free' | 'starter' | 'professional' | 'enterprise' | undefined
+          plan?: CompanyPlan | undefined
           live_tracking_monthly_quota?: number | null | undefined
           monthly_price?: number | undefined
+          max_vehicles?: number | null | undefined
+          max_drivers?: number | null | undefined
+          max_bookings_per_month?: number | null | undefined
+          max_team_members?: number | null | undefined
+          platform_fee_pct?: number | undefined
           updated_at?: string | undefined
         }
         Relationships: []

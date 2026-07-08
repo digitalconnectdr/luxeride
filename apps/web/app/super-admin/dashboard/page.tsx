@@ -17,7 +17,7 @@ const STATUS_LABEL: Record<CompanyStatus, string> = {
   active: 'Activa', trial: 'Prueba', suspended: 'Suspendida', cancelled: 'Cancelada',
 }
 const PLAN_LABEL: Record<CompanyPlan, string> = {
-  free: 'Free', starter: 'Starter', professional: 'Professional', enterprise: 'Enterprise',
+  free: 'Free', starter: 'Starter', professional: 'Professional', elite: 'Elite', enterprise: 'Enterprise',
 }
 const TREND_DAYS = 14
 const ACTIVE_BOOKING_STATUSES: BookingStatus[] = ['pending', 'assigned', 'en_route', 'arrived', 'in_progress']
@@ -217,7 +217,7 @@ export default async function SuperAdminDashboardPage() {
                 Por plan
                 <InfoTip text="Cuántas empresas ACTIVAS (pagando) hay en cada plan pagado. No incluye Free ni empresas en prueba/suspendidas/canceladas." />
               </p>
-              {(['starter', 'professional', 'enterprise'] as CompanyPlan[]).map((plan) => (
+              {(['starter', 'professional', 'elite', 'enterprise'] as CompanyPlan[]).map((plan) => (
                 <div key={plan}>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">{PLAN_LABEL[plan]}</p>
                   <p className="text-lg font-playfair font-semibold text-[#1d1b18] mt-0.5">{planCounts.get(plan) ?? 0}</p>

@@ -19,6 +19,7 @@ import { waitUntil } from '@vercel/functions'
 import { notifyBookingEventInBackground, notify } from '@/lib/notifications'
 import { trackBookingFlight } from '@/lib/flights/refresh'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
+import { checkMonthlyBookingLimit } from '@/lib/plans/limits'
 import { getAppUrl } from '@/lib/app-url'
 import { calculateFare, bestRule, type PricingRuleFields } from '@/lib/pricing/engine'
 import { resolveZoneId, type ServiceZoneForMatch } from '@/lib/pricing/zones'
@@ -320,6 +321,13 @@ export async function createBookingAction(
   if (!scheduledAt)   return { success: false, error: 'Fecha y hora requeridas' }
   if (!pickupAddr)    return { success: false, error: 'Dirección de pickup requerida' }
   if (!dropoffAddr)   return { success: false, error: 'Dirección de dropoff requerida' }
+
+  // Las cotizaciones guardadas (as_quote) no cuentan contra el límite mensual
+  // del plan — solo reservas reales (pending/confirmed en adelante).
+  if (!asQuote) {
+    const limitCheck = await checkMonthlyBookingLimit(admin, user.company_id)
+    if (!limitCheck.ok) return { success: false, error: limitCheck.error }
+  }
 
   // F1.11 — validar que la cuenta corporativa pertenece a la empresa y está activa
   if (corporateAccountId) {
@@ -930,6 +938,9 @@ export async function createPublicBookingAction(data: {
   if (!company || company.status !== 'active') {
     return { success: false, error: 'Empresa no disponible' }
   }
+
+  const limitCheck = await checkMonthlyBookingLimit(admin, company.id)
+  if (!limitCheck.ok) return { success: false, error: limitCheck.error }
 
   // F1.10 — ventana de reservación de la empresa
   const windowCheck = validateBookingTime(

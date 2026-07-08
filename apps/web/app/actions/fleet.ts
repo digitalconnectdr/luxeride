@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
 import { csvToRecords } from '@/lib/csv'
+import { checkVehicleLimit, checkVehicleLimitBulk } from '@/lib/plans/limits'
 import type { VehicleStatus, VehicleClass } from '@/lib/supabase/database.types'
 
 export type FleetActionResult = {
@@ -233,6 +234,9 @@ export async function createVehicleAction(
 
   const admin = createAdminClient()
 
+  const limitCheck = await checkVehicleLimit(admin, user.company_id)
+  if (!limitCheck.ok) return { success: false, error: limitCheck.error }
+
   // IDOR guard: if vehicle_type_id provided, verify it belongs to this company
   if (vehicle_type_id) {
     const { data: vtype } = await admin
@@ -302,6 +306,9 @@ export async function importVehiclesCsvAction(
   }
 
   const admin = createAdminClient()
+
+  const limitCheck = await checkVehicleLimitBulk(admin, companyId, records.length)
+  if (!limitCheck.ok) return { success: false, error: limitCheck.error, imported: 0, skipped: [] }
 
   const { data: types } = await admin
     .from('vehicle_types')

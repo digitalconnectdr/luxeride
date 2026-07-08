@@ -752,6 +752,89 @@ aditivo):
 
 </details>
 
+### K. Reestructuración de planes — límites reales + fee por viaje ✅ completado 2026-07-08
+Decidido con el usuario tras revisar `docs/COMPETITIVE-ANALYSIS.md` (pricing de
+Limo Anywhere/Moovs). Objetivo: pasar de límites que eran solo copy de
+marketing (sin enforcement real en código) a límites de uso reales, y hacer
+la estructura de precios más agresiva/competitiva.
+
+**Estructura final de planes** (4 tiers, `company_plan` ahora incluye `elite`
+entre `professional` y `enterprise`):
+
+| | Starter | Professional | Elite | Enterprise |
+|---|---|---|---|---|
+| Precio | $99/mes | $299/mes | $549/mes | A medida |
+| Vehículos | 6 | 15 | Ilimitados | Ilimitados |
+| Choferes | 6 | 15 | Ilimitados | Ilimitados |
+| Fee por viaje | 3% | 1.5% | 0.5% | A medida |
+| Reservas/mes | 150 | Ilimitadas | Ilimitadas | Ilimitadas |
+| Miembros de equipo | 2 | 8 | Ilimitados | Ilimitados |
+| Cuentas corporativas / policy engine | ✗ | ✓ | ✓ | ✓ |
+| Red de afiliados (farm-out, sección G) | Costo adicional | Costo adicional | Incluida | Incluida |
+| App móvil (futura, Android/iOS) | Costo adicional | Costo adicional | 1 incluida (la otra con costo) | Ambas incluidas |
+| Multi-marca / multi-sede | ✗ | ✗ | Parcial | Completo |
+
+**Decisión de negocio clave (fee por viaje):** es un % del valor del viaje,
+no un fee fijo por viaje como Limo Anywhere ($0.20-0.25). En tarifas de lujo
+altas ($150-300+) el % puede salir más caro por viaje que el fijo de LA —
+decisión consciente del usuario: la ganancia viene de operadores de volumen
+alto (alineación de costo con crecimiento del operador), no de competir en
+ese punto exacto. El argumento de venta pasa de "sin cargo por viaje" a
+"casi todo lo que la competencia cobra como add-on ya viene incluido en el
+plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
+
+**Decisión de alcance:** aplica a empresas existentes Y nuevas por igual
+(no solo registros nuevos) — se hizo un backfill de la migración.
+
+**Implementado:**
+1. Migración `20260708000035_plan_elite_tier.sql` — `ALTER TYPE company_plan
+   ADD VALUE 'elite'` en su propio archivo (Postgres no permite usar el
+   valor nuevo del enum en la misma transacción en que se agrega).
+2. Migración `20260708000036_plan_limits.sql` — agrega a `plan_quotas`:
+   `max_vehicles`, `max_drivers`, `max_bookings_per_month`,
+   `max_team_members`, `platform_fee_pct` (default por plan). Seed de los
+   5 planes (incluye `free`: 2/2/20/1/0%). Backfill: copia
+   `platform_fee_pct` del plan a `companies.settings.payments.platform_fee_pct`
+   de TODAS las empresas existentes (mismo campo que ya leían
+   `app/actions/payments.ts`/`trip.ts` para `application_fee_amount` en
+   Stripe/Whop Connect — el mecanismo de split YA existía como override
+   manual por empresa desde `/super-admin/companies/[id]`; esto solo le da
+   un default automático por plan).
+3. `lib/plans/limits.ts` — helper central: `getPlanLimits`, y
+   `checkVehicleLimit`/`checkVehicleLimitBulk`/`checkDriverLimit`/
+   `checkTeamMemberLimit`/`checkMonthlyBookingLimit`. Bloqueo duro (no deja
+   crear el recurso N+1, mensaje claro con hint de upgrade) — decisión del
+   usuario, no degradación silenciosa como el tracking en vivo.
+4. Enforcement conectado en: `createVehicleAction` + `importVehiclesCsvAction`
+   (fleet.ts, el bulk valida que quepan TODAS las filas antes de insertar
+   ninguna), `inviteTeamMemberAction` (team.ts — ahí se crean tanto choferes
+   como miembros de equipo, ya que no existía ninguna acción separada para
+   "crear conductor"; `drivers` como tabla operativa se llena luego al
+   editar licencia/vehículo, el conteo de "choferes" es sobre
+   `user_profiles.role='driver'`), `createBookingAction` (las cotizaciones
+   guardadas con `as_quote` NO cuentan contra el límite mensual, solo
+   reservas reales) y `createPublicBookingAction` (wizard público).
+5. `updateCompanyPlan` (companies.ts, super-admin) ahora también resetea
+   `settings.payments.platform_fee_pct` al default del plan nuevo al
+   cambiar de plan — el super-admin puede seguir sobreescribiéndolo después
+   con `updateCompanyCommissionAction` para casos negociados.
+6. Landing (`app/page.tsx` + dictionaries EN/ES/PT): grid de precios pasó de
+   3 a 4 columnas (`sm:grid-cols-2 lg:grid-cols-4`), el CTA "Talk to sales"
+   ahora se calcula por `i === plans.length - 1` en vez de índice
+   hardcodeado (`i === 2`), para no romper si se agrega/quita un tier.
+
+**Pendiente (fuera de esta ronda, no bloquea lo anterior):**
+- Red de afiliados (sección G) y apps móviles no existen todavía — los
+  flags de plan (`farm_out_included` conceptual, apps incluidas) quedan
+  como decisión de producto documentada, no hay columna/enforcement nuevo
+  para ellos hasta que esas features se construyan.
+- **NO se tocaron precios/productos reales en el dashboard de Whop** — eso
+  requiere confirmación explícita aparte del usuario antes de ejecutarse,
+  por ser un cambio de facturación en vivo.
+- UI de upsell (banner/modal cuando se llega al límite, hoy solo el mensaje
+  de error del server action) — se puede refinar en una pasada de diseño
+  aparte si se quiere algo más que el mensaje de texto plano.
+
 ## Backlog de DESARROLLO (0–6 ✅ COMPLETO, ver resumen arriba — detalle histórico abajo)
 
 0. ✅ **Limpieza de marca**: literales "LuxeRide" hardcodeados migrados a

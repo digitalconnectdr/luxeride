@@ -17,6 +17,7 @@ const PLAN_COLOR: Record<CompanyPlan, string> = {
   free:         'text-sl-on-surface-muted',
   starter:      'text-blue-400',
   professional: 'text-purple-400',
+  elite:        'text-amber-400',
   enterprise:   'text-bronze',
 }
 

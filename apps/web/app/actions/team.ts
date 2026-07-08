@@ -7,6 +7,7 @@ import { randomBytes } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
+import { checkDriverLimit, checkTeamMemberLimit } from '@/lib/plans/limits'
 import type { UserRole } from '@/lib/auth/permissions'
 
 const ASSIGNABLE_ROLES: UserRole[] = [
@@ -56,6 +57,15 @@ export async function inviteTeamMemberAction(
   }
 
   const admin = createAdminClient()
+
+  if (role === 'driver') {
+    const limitCheck = await checkDriverLimit(admin, user.company_id)
+    if (!limitCheck.ok) return { success: false, error: limitCheck.error }
+  } else if (role !== 'customer') {
+    const limitCheck = await checkTeamMemberLimit(admin, user.company_id)
+    if (!limitCheck.ok) return { success: false, error: limitCheck.error }
+  }
+
   const tempPassword = generateTempPassword()
 
   // Alta directa: el correo de invitación de Supabase no está configurado, así

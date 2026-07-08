@@ -13,8 +13,17 @@
 | Cargo por viaje | SÍ (todos los planes) | NO (su gran argumento de venta) |
 | Passenger App | $199 + $99/mes (incluida solo en Black) | $499/mes + $1,000 setup |
 
-**Posicionamiento LuxeRide:** sin cargo por viaje (como Moovs), sin setup fee
-(ninguno de los dos lo ofrece), trilingüe (ninguno lo es).
+**Posicionamiento LuxeRide (actualizado 2026-07-08, Sección K):** sin setup fee
+(ninguno de los dos lo ofrece), trilingüe (ninguno lo es). El cargo por viaje
+propio pasó de "no cobramos" a un % del valor del viaje que BAJA con el plan
+(3% Starter → 1.5% Professional → 0.5% Elite → a medida en Enterprise) — a
+diferencia del fee FIJO de LA ($0.20-0.25/viaje sin importar la tarifa), en
+tarifas de lujo altas ($150-300+) nuestro % puede salir más caro por viaje que
+el fijo de LA. El argumento de venta ya no es "más barato por viaje" sino
+"casi todo lo que LA/Moovs cobran como add-on (cuentas corporativas, policy
+engine, dispatch en tiempo real) ya viene incluido en el plan, sin fees
+adicionales por feature" — y que el fee baja a medida que el operador crece,
+alineando el costo de LuxeRide con su propio volumen de negocio.
 
 ## Funciones que ELLOS tienen y LuxeRide aún NO
 
