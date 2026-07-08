@@ -16,6 +16,7 @@ export function NavLink({ href, label }: NavLinkProps) {
   return (
     <Link
       href={href}
+      prefetch={false}
       className={[
         'flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
         isActive

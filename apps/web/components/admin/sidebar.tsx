@@ -174,6 +174,7 @@ export function AdminSidebar({
         <div className={`flex items-center ${collapsed ? 'flex-col gap-3' : 'justify-between gap-2'}`}>
           <Link
             href="/admin/dashboard"
+            prefetch={false}
             title={nav.dashboard}
             className={`flex items-center gap-2.5 min-w-0 hover:opacity-80 transition-opacity ${collapsed ? 'justify-center' : ''}`}
           >
@@ -228,6 +229,7 @@ export function AdminSidebar({
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={false}
                     title={collapsed ? item.label : undefined}
                     className={[
                       'flex items-center gap-2.5 rounded-lg text-[13px] transition-colors',

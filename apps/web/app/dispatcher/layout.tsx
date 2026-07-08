@@ -29,13 +29,13 @@ export default async function DispatcherLayout({
               </span>
             </div>
             <nav className="flex items-center gap-4">
-              <Link href="/dispatcher/dashboard" className="text-sm text-sl-on-surface-muted hover:text-bronze transition-colors">
+              <Link href="/dispatcher/dashboard" prefetch={false} className="text-sm text-sl-on-surface-muted hover:text-bronze transition-colors">
                 Board
               </Link>
-              <Link href="/admin/bookings" className="text-sm text-sl-on-surface-muted hover:text-bronze transition-colors">
+              <Link href="/admin/bookings" prefetch={false} className="text-sm text-sl-on-surface-muted hover:text-bronze transition-colors">
                 Reservaciones
               </Link>
-              <Link href="/admin/bookings/new" className="text-sm text-sl-on-surface-muted hover:text-bronze transition-colors">
+              <Link href="/admin/bookings/new" prefetch={false} className="text-sm text-sl-on-surface-muted hover:text-bronze transition-colors">
                 + Nueva
               </Link>
             </nav>

@@ -24,10 +24,10 @@ export default async function CorporateLayout({
               </span>
             </div>
             <nav className="flex items-center gap-4">
-              <Link href="/corporate/dashboard" className="text-sm text-sl-on-surface-muted hover:text-bronze transition-colors">
+              <Link href="/corporate/dashboard" prefetch={false} className="text-sm text-sl-on-surface-muted hover:text-bronze transition-colors">
                 Dashboard
               </Link>
-              <Link href="/corporate/book" className="text-sm text-sl-on-surface-muted hover:text-bronze transition-colors">
+              <Link href="/corporate/book" prefetch={false} className="text-sm text-sl-on-surface-muted hover:text-bronze transition-colors">
                 Reservar
               </Link>
             </nav>
