@@ -434,39 +434,43 @@ del landing).
    `/admin/drivers/[id]`) para que el auto-farm-out priorice al afiliado con
    mejor historial, no solo al más cercano.
 
-### H. Gaps vs. Taxi Web Design (investigado 2026-07-06)
+### H. Gaps vs. Taxi Web Design (investigado 2026-07-06, ✅ completado 2026-07-08)
 Comparación directa contra Taxi Web Design (competidor con apps nativas,
 modelo cero-comisión). LuxeRide ya iguala o supera su motor de precios
 (zonas con códigos postales), cuentas corporativas con facturación
 mensual, dispatch board con auto-asignación y mapa en vivo, y el widget
-embebible. Gaps reales identificados, priorizados por esfuerzo:
+embebible. Los 4 gaps identificados:
 
-1. **Importación masiva por CSV** (flota + reglas de precio): hoy Flota y
-   Reglas de precio en `/admin/fleet` y `/admin/pricing` solo permiten
-   alta uno por uno. Agregar un uploader (drag-and-drop, plantilla
-   descargable) que cree varios `vehicle_types`/`pricing_rules` de una vez
-   — reduce fricción de onboarding para operadores con flotas grandes.
-2. **Programador de mantenimiento por vehículo**: `vehicles` no tiene
-   campos de mantenimiento hoy. Agregar `last_service_date`/
-   `next_service_due` (por fecha o por millaje si se captura odómetro) +
-   alerta visual en Flota cuando un vehículo está vencido o próximo a
-   vencer. Posible cron de aviso por email al operador (mismo patrón que
-   `document-alerts`).
-3. **Fechas bloqueadas / horario de operación**: hoy se puede reservar
-   cualquier fecha/hora sin restricción del operador (solo existe el
-   motor de políticas de cancelación, no de disponibilidad). Agregar en
-   Configuración un horario de atención (día/hora) + fechas puntuales
-   bloqueadas (feriados, mantenimiento de flota); el wizard de reserva
-   valida contra esto antes de mostrar el paso de vehículo.
-4. **Terminar "Meet & Greet"**: la columna `bookings.meet_and_greet`
-   YA EXISTE (boolean) pero no está conectada a ningún formulario ni
-   lógica — quedó de una migración anterior sin wiring. Es la victoria
-   más barata de las 4: agregar el checkbox en el wizard de reserva (y en
-   `/admin/bookings/new`), mostrarlo en el detalle de la reserva y en la
-   vista del conductor (instrucción especial de recogida), i18n EN/ES/PT.
-   No requiere migración nueva.
+1. **✅ Importación masiva por CSV — solo flota.** `lib/csv.ts` (parser
+   propio, sin dependencia) + `importVehiclesCsvAction`: sube un CSV
+   (máx. 500 filas/1MB), valida make/model/year/plate_number, resuelve
+   `vehicle_type` por nombre (opcional) e inserta en lote. Filas
+   inválidas se reportan sin abortar el resto. Botón en `/admin/fleet`
+   con plantilla descargable.
+   **Pendiente aparte**: reglas de precio — el modelo de datos varía
+   mucho según el tipo de tarifa (flat_rate, per_mile, per_km, hourly,
+   zone_based), un CSV genérico necesita más diseño antes de construirse.
+2. **✅ Programador de mantenimiento por vehículo.** Los campos
+   (`mileage`, `last/next_maintenance_at`, `insurance_expires_at`) ya
+   existían desde la creación del vehículo pero no eran editables después.
+   `updateVehicleMaintenanceAction` los actualiza (y registra en
+   `maintenance_records` si cambia `last_maintenance_at`); tarjeta
+   editable en `/admin/fleet/[id]`; badge ⚠ en la lista principal cuando
+   vence en <14 días.
+3. **✅ Fechas bloqueadas / horario de operación.** Nuevo en
+   `settings.booking` (JSONB, sin migración): `operating_hours_start/end`
+   (HH:mm, hora local vía `Intl.DateTimeFormat`) + `blackout_dates`
+   (lista YYYY-MM-DD). Validado en `parseOperatingHours` +
+   `validateOperatingHours` (`lib/policy/engine.ts`), aplicado en los dos
+   puntos de entrada públicos (cotización inicial y creación de reserva)
+   — no en el flujo de admin, donde el staff puede reservar fuera de
+   horario a propósito. UI en `/admin/settings`.
+4. **✅ Terminar "Meet & Greet".** La columna `bookings.meet_and_greet`
+   ya existía; ahora tiene checkbox en el wizard público (solo
+   `airport_pickup`) y en `/admin/bookings/new`, badge visible en el
+   detalle de reserva y en el portal del conductor. i18n EN/ES/PT.
 
-### I. Experiencia del pasajero recurrente — sin cambiar la filosofía "sin instalar nada" (investigado 2026-07-06)
+### I. Experiencia del pasajero recurrente — sin cambiar la filosofía "sin instalar nada" (investigado 2026-07-06, ✅ completado 2026-07-08)
 Duda del usuario: el PWA del conductor se ofrece instalar solo (manifest +
 service worker en `/manifest/driver/[slug]` + `/driver/trips`), pero el del
 pasajero (`/manifest/[slug]` + `/book/[slug]`) no lo hace visible aunque
