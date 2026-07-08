@@ -138,6 +138,7 @@ export const en = {
     pricingTitle: 'Simple pricing that grows with you',
     pricingSubtitle: 'The per-trip fee drops as you grow. Cancel anytime.',
     pricingNoSetupBadge: 'No setup fee — ever',
+    pricingIncludedTitle: 'Included in every plan',
     pricingIncluded: [
       'Your own branded booking page — in English, Spanish & Portuguese',
       'Flexible fare models — by zone, distance or fixed route',

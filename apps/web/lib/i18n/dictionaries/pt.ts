@@ -139,6 +139,7 @@ export const pt: Dictionary = {
     pricingTitle: 'Preços simples que crescem com você',
     pricingSubtitle: 'A taxa por viagem cai conforme você cresce. Cancele quando quiser.',
     pricingNoSetupBadge: 'Sem taxa de instalação — nunca',
+    pricingIncludedTitle: 'Incluído em todos os planos',
     pricingIncluded: [
       'Sua própria página de reservas com sua marca — em inglês, espanhol e português',
       'Modelos de tarifa flexíveis — por zona, distância ou rota fixa',
