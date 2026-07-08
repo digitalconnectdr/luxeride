@@ -134,7 +134,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
   const [vehicleQuotes, setVehicleQuotes] = useState<VehicleQuote[]>([])
   const [selectedQuote, setSelectedQuote] = useState<VehicleQuote | null>(null)
   const [passengerData, setPassengerData] = useState({
-    name: '', phone: '', email: '', count: 1, instructions: '', flightNumber: '',
+    name: '', phone: '', email: '', count: 1, instructions: '', flightNumber: '', meetAndGreet: false,
   })
   const [confirmation, setConfirmation] = useState<BookingResult | null>(null)
 
@@ -321,14 +321,15 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
     if (!name)  { setError(dict.nameRequired); return }
     if (!phone) { setError(dict.phoneRequired); return }
 
-    setPassengerData({
+    setPassengerData((p) => ({
+      ...p,
       name,
       phone,
       email:        (fd.get('email') as string)?.trim() ?? '',
       count:        parseInt(fd.get('count') as string) || 1,
       instructions: (fd.get('instructions') as string)?.trim() ?? '',
       flightNumber: (fd.get('flight_number') as string)?.trim() ?? '',
-    })
+    }))
     setStep(3)
   }
 
@@ -349,6 +350,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
         passengerCount:      passengerData.count,
         specialInstructions: passengerData.instructions || undefined,
         flightNumber:        passengerData.flightNumber || undefined,
+        meetAndGreet:        passengerData.meetAndGreet,
         scheduledAt:         routeData.scheduledAt,
         pickupAddress:       routeData.pickupAddress,
         pickupLat:           routeData.pickupLat,
@@ -867,6 +869,18 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
               />
             </div>
+          )}
+
+          {routeData.bookingType === 'airport_pickup' && (
+            <label className="flex items-center gap-3 cursor-pointer rounded-xl border border-gray-200 px-4 py-3">
+              <input
+                type="checkbox"
+                checked={passengerData.meetAndGreet}
+                onChange={(e) => setPassengerData((p) => ({ ...p, meetAndGreet: e.target.checked }))}
+                className="w-4 h-4 rounded accent-[var(--brand)]"
+              />
+              <span className="text-sm text-[#1d1d1f]">{dict.meetAndGreet}</span>
+            </label>
           )}
 
           <div>

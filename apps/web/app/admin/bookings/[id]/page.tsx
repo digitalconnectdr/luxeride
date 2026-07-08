@@ -276,6 +276,11 @@ export default async function BookingDetailPage({
             </div>
           )}
         </div>
+        {booking.meet_and_greet && (
+          <p className="inline-flex text-xs font-medium text-bronze bg-gold/10 border border-bronze/20 rounded-lg px-3 py-1.5">
+            {t.meetAndGreet}
+          </p>
+        )}
         {booking.special_instructions && (
           <div className="pt-3 border-t border-sl-outline-variant">
             <p className="text-xs text-sl-on-surface-muted mb-1">{t.specialInstructions}</p>

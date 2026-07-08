@@ -84,7 +84,7 @@ export default async function DriverTripsPage() {
   const [{ data: trips }, { data: company }, { data: unratedTrips }, { data: driverRow }, { data: recentCompleted }] = await Promise.all([
     admin
       .from('bookings')
-      .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id, route_polyline')
+      .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id, route_polyline, meet_and_greet')
       .eq('driver_id', user.id)
       .in('status', ['assigned', 'en_route', 'arrived', 'in_progress'])
       .order('scheduled_at'),
@@ -270,6 +270,11 @@ export default async function DriverTripsPage() {
                       </div>
                       <p className="font-playfair text-xl font-semibold text-[#1d1b18]">{dt.statusTitle[stKey] ?? t.status}</p>
                       <p className="text-sm text-[#75716a] mt-2 leading-relaxed">{(dt.sentence[stKey] ?? '').replace('{name}', name)}</p>
+                      {t.meet_and_greet && (
+                        <p className="inline-flex mt-2 text-xs font-medium text-[#8a6520] bg-[#8a6520]/10 border border-[#8a6520]/20 rounded-lg px-2.5 py-1">
+                          {dt.meetAndGreet}
+                        </p>
+                      )}
                       <p className="text-[11px] text-[#75716a] mt-3 pt-3 border-t border-[#e5e1d8]">
                         {dt.scheduled}:{' '}
                         <span className="text-[#1d1b18] font-medium">

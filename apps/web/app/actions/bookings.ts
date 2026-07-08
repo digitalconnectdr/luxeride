@@ -309,6 +309,7 @@ export async function createBookingAction(
   const specialInstructions = (formData.get('special_instructions') as string)?.trim()
   const internalNotes = (formData.get('internal_notes') as string)?.trim()
   const flightNumber  = (formData.get('flight_number') as string)?.trim()
+  const meetAndGreet  = formData.get('meet_and_greet') === 'true'
   const corporateAccountId = (formData.get('corporate_account_id') as string)?.trim() || null
   // Pipeline de cotizaciones: guardar como cotización (status 'quote') en vez de confirmar.
   const asQuote = formData.get('as_quote') === 'true'
@@ -351,6 +352,7 @@ export async function createBookingAction(
       flight_number:    flightNumber || null,
       special_instructions: specialInstructions || null,
       internal_notes:   internalNotes || null,
+      meet_and_greet:   meetAndGreet,
       price_quote_id:   quoteId,
       // Montos SIEMPRE del quote (server-calculated) — nunca del form
       base_amount:      quote.base_amount,
@@ -873,6 +875,7 @@ export async function createPublicBookingAction(data: {
   passengerCount: number
   specialInstructions?: string
   flightNumber?: string
+  meetAndGreet?: boolean
   scheduledAt: string
   pickupAddress: string
   pickupLat: number
@@ -953,6 +956,7 @@ export async function createPublicBookingAction(data: {
       scheduled_at:     data.scheduledAt,
       flight_number:    data.flightNumber?.trim().slice(0, 20) || null,
       special_instructions: data.specialInstructions?.trim().slice(0, 1000) || null,
+      meet_and_greet:   Boolean(data.meetAndGreet),
       price_quote_id:   data.quoteId,
       base_amount:      quote.base_amount,
       total_amount:     quote.total_amount,

@@ -241,6 +241,16 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
           />
         </div>
 
+        <label className="flex items-center gap-3 cursor-pointer rounded-xl border border-sl-outline-variant px-4 py-3">
+          <input
+            type="checkbox"
+            name="meet_and_greet"
+            value="true"
+            className="w-4 h-4 rounded accent-bronze"
+          />
+          <span className="text-sm text-sl-on-surface">{t.meetAndGreet}</span>
+        </label>
+
         {error && (
           <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">
             {error}
