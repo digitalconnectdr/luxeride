@@ -486,15 +486,38 @@ explícito del usuario):
    aceptar/rechazar manual, un solo afiliado a la vez. Chat 1 y 2. Reporte
    básico de farm-in/farm-out. Liquidación manual. El interruptor de pago
    (super-admin + autoservicio) se construye en esta fase, no después.
-2. **Fase 2 — Portal de afiliado externo.** Link seguro (mismo patrón de
-   capability-URL que `/track/[id]`) para que un afiliado SIN cuenta de
-   LuxeRide pueda ver la solicitud, aceptar/rechazar, escribir
-   conductor/vehículo como texto libre (no tiene registros en `drivers`/
-   `vehicles`), y actualizar estado hasta completar. Liquidación con estos
-   afiliados es siempre manual (no tienen Whop conectado). Es el
-   diferenciador más fuerte según el propio documento — pero es la parte
-   con más superficie nueva de seguridad/privacidad, por eso va después del
-   MVP, no junto con él.
+2. **Fase 2 — Portal de afiliado externo (revisado 2026-07-08 según
+   feedback del usuario: sin texto libre, sin brecha sin Whop).** El diseño
+   original de esta fase permitía a un afiliado sin cuenta LuxeRide escribir
+   conductor/vehículo como texto libre y liquidar todo manualmente sin pasar
+   por Whop — el usuario lo rechazó explícitamente por dos razones: (a) no
+   quiere datos sin estructura para algo tan operativo como conductor/
+   vehículo, y (b) no quiere abrir una brecha de pago sin verificación por
+   Whop. Diseño corregido:
+   - El afiliado externo completa un **registro mínimo pero real**, no un
+     link anónimo de un solo uso: se le crea una fila normal en `companies`
+     (marcada `is_external_affiliate = true`, sin plan/suscripción de
+     LuxeRide) a través de un flujo de alta ligero. Esto es clave — al ser
+     una `company` real, su conductor y vehículo se registran en las MISMAS
+     tablas `drivers`/`vehicles` que ya existen (con validación, no texto
+     libre), reutilizando todo el modelo de datos en vez de inventar uno
+     paralelo.
+   - **Whop Connect es obligatorio antes de poder aceptar cualquier
+     solicitud paga** — no hay ruta de "aceptar sin Whop y liquidar a mano
+     después". Si el afiliado externo no completó el onboarding de Whop
+     Connect, puede ver la invitación y el directorio, pero el botón de
+     aceptar queda bloqueado hasta conectar Whop. Esto cierra por completo
+     la brecha de pago sin verificación que preocupaba al usuario.
+   - El acceso operativo del día a día (ver solicitudes entrantes, aceptar/
+     rechazar, asignar su conductor/vehículo ya registrado, actualizar
+     estado) puede seguir siendo un portal simplificado por link seguro
+     (mismo patrón de capability-URL que `/track/[id]`) — no necesita el
+     dashboard completo de un cliente LuxeRide pagante, pero los datos que
+     maneja ya no son texto libre ni están fuera del esquema.
+   - Sigue siendo el diferenciador más fuerte del documento original, y
+     sigue yendo DESPUÉS del MVP (fase separada) — la corrección de este
+     feedback no cambia el orden de fases, solo el diseño interno de esta
+     fase específica.
 3. **Fase 3 — Pools.** Enviar a un grupo de afiliados a la vez (por ciudad,
    aeropuerto, tipo de vehículo, rating) en vez de uno por uno; el primero
    que acepta gana, expiración automática de los demás.
