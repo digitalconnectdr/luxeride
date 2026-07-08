@@ -3,12 +3,20 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
+import { csvToRecords } from '@/lib/csv'
 import type { VehicleStatus, VehicleClass } from '@/lib/supabase/database.types'
 
 export type FleetActionResult = {
   success: boolean
   error?: string
   id?: string
+}
+
+export interface CsvImportResult {
+  success: boolean
+  error?: string
+  imported: number
+  skipped: { row: number; reason: string }[]
 }
 
 const MIME_EXT: Record<string, string> = {
@@ -261,6 +269,104 @@ export async function createVehicleAction(
   if (error) return { success: false, error: error.message }
   revalidatePath('/admin/fleet')
   return { success: true, id: data.id }
+}
+
+// Importación masiva por CSV (Sección H, item 1). Columnas esperadas:
+// make, model, year, color, plate_number, vin, mileage, vehicle_type
+// (vehicle_type es opcional — busca por nombre, case-insensitive, dentro de
+// los tipos ya creados por la empresa; si no coincide con ninguno, el
+// vehículo se crea sin tipo asignado en vez de fallar la fila entera).
+export async function importVehiclesCsvAction(
+  _prev: CsvImportResult | null,
+  formData: FormData,
+): Promise<CsvImportResult> {
+  const user = await requireRole('company_owner', 'company_admin')
+  if (!user.company_id) return { success: false, error: 'No company associated', imported: 0, skipped: [] }
+  const companyId = user.company_id
+
+  const file = formData.get('csv_file') as File | null
+  if (!file || file.size === 0) {
+    return { success: false, error: 'Selecciona un archivo CSV.', imported: 0, skipped: [] }
+  }
+  if (file.size > 1_000_000) {
+    return { success: false, error: 'El archivo no puede superar 1 MB.', imported: 0, skipped: [] }
+  }
+
+  const text = await file.text()
+  const records = csvToRecords(text)
+  if (records.length === 0) {
+    return { success: false, error: 'El CSV está vacío o no tiene encabezados válidos.', imported: 0, skipped: [] }
+  }
+  if (records.length > 500) {
+    return { success: false, error: 'Máximo 500 filas por importación.', imported: 0, skipped: [] }
+  }
+
+  const admin = createAdminClient()
+
+  const { data: types } = await admin
+    .from('vehicle_types')
+    .select('id, name')
+    .eq('company_id', companyId)
+  const typeByName = new Map((types ?? []).map((t) => [t.name.trim().toLowerCase(), t.id]))
+
+  const skipped: { row: number; reason: string }[] = []
+  const toInsert: {
+    company_id: string
+    vehicle_type_id: string | null
+    make: string
+    model: string
+    year: number
+    color: string | null
+    plate_number: string
+    vin: string | null
+    status: 'available'
+    mileage: number | null
+  }[] = []
+
+  records.forEach((rec, i) => {
+    const rowNum = i + 2 // +1 por índice base-0, +1 por la fila de encabezado
+    const make = rec.make?.trim()
+    const model = rec.model?.trim()
+    const year = parseInt(rec.year ?? '', 10)
+    const plate_number = rec.plate_number?.trim()
+
+    if (!make || !model || !plate_number || Number.isNaN(year)) {
+      skipped.push({ row: rowNum, reason: 'Faltan campos obligatorios (make, model, year, plate_number).' })
+      return
+    }
+
+    const typeName = rec.vehicle_type?.trim().toLowerCase()
+    const vehicle_type_id = typeName ? typeByName.get(typeName) ?? null : null
+
+    const mileageRaw = rec.mileage?.trim()
+    const mileage = mileageRaw ? parseInt(mileageRaw, 10) : null
+
+    toInsert.push({
+      company_id: companyId,
+      vehicle_type_id,
+      make,
+      model,
+      year,
+      color: rec.color?.trim() || null,
+      plate_number,
+      vin: rec.vin?.trim() || null,
+      status: 'available',
+      mileage: Number.isNaN(mileage as number) ? null : mileage,
+    })
+  })
+
+  if (toInsert.length === 0) {
+    return { success: false, error: 'Ninguna fila tiene los campos obligatorios completos.', imported: 0, skipped }
+  }
+
+  const { error, count } = await admin.from('vehicles').insert(toInsert, { count: 'exact' })
+  if (error) {
+    console.error('[importVehiclesCsvAction]', error)
+    return { success: false, error: `Error al importar: ${error.message}`, imported: 0, skipped }
+  }
+
+  revalidatePath('/admin/fleet')
+  return { success: true, imported: count ?? toInsert.length, skipped }
 }
 
 export async function updateVehicleStatus(

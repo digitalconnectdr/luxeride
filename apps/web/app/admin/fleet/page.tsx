@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { VehicleStatusSelect, DriverAssignSelect } from '@/components/admin/fleet-controls'
 import { VehicleTypeRow } from '@/components/admin/vehicle-type-row'
 import { AddVehicleTypeForm } from '@/components/admin/add-vehicle-type-form'
+import { ImportVehiclesCsv } from '@/components/admin/import-vehicles-csv'
 import { getDict } from '@/lib/i18n/server'
 import type { VehicleStatus } from '@/lib/supabase/database.types'
 
@@ -85,12 +86,15 @@ export default async function FleetPage({ searchParams }: PageProps) {
           </p>
         </div>
         {tab === 'vehicles' && (
-          <Link
-            href="/admin/fleet/new"
-            className="px-4 py-2 text-sm font-semibold bg-gold text-gray-900 rounded-xl hover:bg-gold/90 transition-colors"
-          >
-            {t.addVehicle}
-          </Link>
+          <div className="flex items-center gap-2">
+            <ImportVehiclesCsv labels={t.importCsv} />
+            <Link
+              href="/admin/fleet/new"
+              className="px-4 py-2 text-sm font-semibold bg-gold text-gray-900 rounded-xl hover:bg-gold/90 transition-colors"
+            >
+              {t.addVehicle}
+            </Link>
+          </div>
         )}
       </div>
 
