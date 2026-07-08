@@ -121,7 +121,6 @@ export function CompanyComplianceForm({ current, labels: t }: Props) {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
             <label className="flex items-center gap-2 text-xs text-sl-on-surface-muted pb-2.5">
-              <input type="hidden" name="operates_interstate" value="false" />
               <input
                 type="checkbox"
                 name="operates_interstate"
