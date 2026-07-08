@@ -429,6 +429,9 @@ export default async function SettingsPage({
               />
               <span className="text-sm text-sl-on-surface">{t.requireDeposit}</span>
             </label>
+            {booking.require_deposit && (
+              <p className="text-[11px] text-sl-on-surface-muted pl-7 -mt-1">{t.requireDepositGratuityNote}</p>
+            )}
           </div>
 
           {booking.require_deposit && (
@@ -733,6 +736,11 @@ export default async function SettingsPage({
       {/* ── Gratuity Settings ── */}
       <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
         <h2 className="text-sm font-semibold text-sl-on-surface mb-5">{t.gratuityTitle}</h2>
+        {booking.require_deposit && (
+          <p className="mb-4 text-xs text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+            ⚠ {t.gratuityDepositWarning}
+          </p>
+        )}
         <form action={gratuityAction} className="space-y-4">
           <label className="flex items-center gap-3 cursor-pointer">
             <input

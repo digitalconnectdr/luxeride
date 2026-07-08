@@ -1087,6 +1087,8 @@ export const en = {
       gratuityEnable: 'Enable gratuity options at checkout',
       gratuityDefault: 'Default Gratuity (%)',
       saveGratuity: 'Save Gratuity Settings',
+      gratuityDepositWarning: 'Gratuity is not offered to the passenger while "Require deposit at booking" is on (under Booking), even if enabled here below.',
+      requireDepositGratuityNote: 'Note: while this is on, gratuity is not shown to the passenger (see the Gratuity section).',
     },
     bookingStatuses: {
       quote: 'Quote', pending: 'Pending', assigned: 'Assigned',

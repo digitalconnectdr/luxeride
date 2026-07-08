@@ -1088,6 +1088,8 @@ export const pt: Dictionary = {
       gratuityEnable: 'Habilitar opções de gorjeta no checkout',
       gratuityDefault: 'Gorjeta padrão (%)',
       saveGratuity: 'Salvar configurações de gorjeta',
+      gratuityDepositWarning: 'A gorjeta não é oferecida ao passageiro enquanto "Exigir depósito ao reservar" estiver ativo (em Reservas), mesmo que esteja habilitada aqui embaixo.',
+      requireDepositGratuityNote: 'Nota: enquanto isso estiver ativo, a gorjeta não é exibida ao passageiro (veja a seção Gorjetas).',
     },
     bookingStatuses: {
       quote: 'Cotação', pending: 'Pendente', assigned: 'Atribuído',

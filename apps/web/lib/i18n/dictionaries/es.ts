@@ -1088,6 +1088,8 @@ export const es: Dictionary = {
       gratuityEnable: 'Habilitar opciones de propina en el checkout',
       gratuityDefault: 'Propina por defecto (%)',
       saveGratuity: 'Guardar configuración de propinas',
+      gratuityDepositWarning: 'La propina no se ofrece al pasajero mientras "Requerir depósito al reservar" esté activo (en Reservaciones), aunque esté habilitada aquí abajo.',
+      requireDepositGratuityNote: 'Nota: mientras esto esté activo, la propina no se muestra al pasajero (ver sección Propinas).',
     },
     bookingStatuses: {
       quote: 'Cotización', pending: 'Pendiente', assigned: 'Asignado',
