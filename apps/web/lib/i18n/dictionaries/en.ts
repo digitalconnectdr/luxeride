@@ -1776,7 +1776,7 @@ export const en = {
         },
         {
           heading: 'Contact us',
-          body: ['Questions about this policy, or requests regarding your personal information, can be sent to privacy@luxeride.app.'],
+          body: ['Questions about this policy, or requests regarding your personal information, can be sent to luxeride@digitalconnectdr.com.'],
         },
       ],
     },
@@ -1909,7 +1909,7 @@ export const en = {
         },
         {
           heading: 'Contact us',
-          body: ['Questions about these terms can be sent to legal@luxeride.app.'],
+          body: ['Questions about these terms can be sent to legalluxeride@digitalconnectdr.com.'],
         },
       ],
     },

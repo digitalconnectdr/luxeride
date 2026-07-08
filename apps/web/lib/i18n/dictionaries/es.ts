@@ -1777,7 +1777,7 @@ export const es: Dictionary = {
         },
         {
           heading: 'Contáctanos',
-          body: ['Preguntas sobre esta política, o solicitudes sobre tu información personal, pueden enviarse a privacy@luxeride.app.'],
+          body: ['Preguntas sobre esta política, o solicitudes sobre tu información personal, pueden enviarse a luxeride@digitalconnectdr.com.'],
         },
       ],
     },
@@ -1910,7 +1910,7 @@ export const es: Dictionary = {
         },
         {
           heading: 'Contáctanos',
-          body: ['Preguntas sobre estos términos pueden enviarse a legal@luxeride.app.'],
+          body: ['Preguntas sobre estos términos pueden enviarse a legalluxeride@digitalconnectdr.com.'],
         },
       ],
     },
