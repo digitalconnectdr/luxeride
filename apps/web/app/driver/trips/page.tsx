@@ -9,6 +9,8 @@ import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { AutoRefresh } from '@/app/track/[id]/auto-refresh'
 import { DriverTripActions } from '@/components/driver/trip-actions'
 import { DriverAddStop } from '@/components/driver/driver-add-stop'
+import { DriverAddCharge } from '@/components/driver/driver-add-charge'
+import { parseExtraFees } from '@/lib/policy/engine'
 import { TripChat } from '@/components/trip/trip-chat'
 import { PassengerContact } from '@/components/driver/passenger-contact'
 import { CopyButton } from '@/components/trip/copy-button'
@@ -87,7 +89,7 @@ export default async function DriverTripsPage() {
       .in('status', ['assigned', 'en_route', 'arrived', 'in_progress'])
       .order('scheduled_at'),
     user.company_id
-      ? admin.from('companies').select('name, slug, logo_url, primary_color, phone').eq('id', user.company_id).single()
+      ? admin.from('companies').select('name, slug, logo_url, primary_color, phone, currency, settings').eq('id', user.company_id).single()
       : Promise.resolve({ data: null }),
     admin
       .from('bookings')
@@ -122,7 +124,7 @@ export default async function DriverTripsPage() {
     }
   }
 
-  const co = company as { name: string; slug: string | null; logo_url: string | null; primary_color: string | null; phone: string | null } | null
+  const co = company as { name: string; slug: string | null; logo_url: string | null; primary_color: string | null; phone: string | null; currency: string | null; settings: unknown } | null
   const brandColor = co?.primary_color ?? '#c9a24b'
   const companyName = co?.name ?? brand.name
   const logoUrl = co?.logo_url ?? null
@@ -137,6 +139,10 @@ export default async function DriverTripsPage() {
   const vehiclesById = new Map((vehiclesData ?? []).map((v) => [v.id, v]))
 
   const addStopLabels = { ...dt.addStop, saving: dt.actions.saving }
+  const extraFees = parseExtraFees(co?.settings)
+  const chargeFees = { passenger: extraFees.extra_passenger_fee, luggage: extraFees.extra_luggage_fee }
+  const chargeCurrency = co?.currency ?? 'USD'
+  const addChargeLabels = { ...dt.addCharge, saving: dt.actions.saving }
   const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const mapsUrl = (addr: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`
   const wazeUrl = (addr: string) => `https://www.waze.com/ul?q=${encodeURIComponent(addr)}&navigate=yes`
@@ -354,9 +360,15 @@ export default async function DriverTripsPage() {
                           {Number(t.distance_miles).toFixed(1)} mi · {t.duration_minutes} min
                         </p>
                       )}
-                      {/* Agregar parada — dentro de la ruta */}
-                      <div className="pt-2 border-t border-[#f0ede5]">
+                      {/* Agregar parada / cargo extra — dentro de la ruta */}
+                      <div className="pt-2 border-t border-[#f0ede5] space-y-1">
                         <DriverAddStop bookingId={t.id} labels={addStopLabels} />
+                        <DriverAddCharge
+                          bookingId={t.id}
+                          fees={chargeFees}
+                          currency={chargeCurrency}
+                          labels={addChargeLabels}
+                        />
                       </div>
                     </div>
 

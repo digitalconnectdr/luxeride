@@ -20,6 +20,7 @@ export interface AddStopLabels {
   costUnknown: string
   costFree: string
   costExtra: string
+  needsSelect: string
 }
 
 export function DriverAddStop({ bookingId, labels }: { bookingId: string; labels: AddStopLabels }) {
@@ -83,6 +84,9 @@ export function DriverAddStop({ bookingId, labels }: { bookingId: string; labels
         />
       </MapsProvider>
       {costLine && <p className={`text-xs ${costLine.cls}`}>{costLine.text}</p>}
+      {place?.address && place.lat == null && (
+        <p className="text-xs text-amber-600">{labels.needsSelect}</p>
+      )}
       {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-2">
         <button
@@ -94,7 +98,7 @@ export function DriverAddStop({ bookingId, labels }: { bookingId: string; labels
         </button>
         <button
           onClick={confirm}
-          disabled={isPending || !place?.address}
+          disabled={isPending || !place?.address || place.lat == null || place.lng == null}
           className="flex-1 py-2 text-xs font-semibold bg-gold text-gray-900 rounded-lg hover:bg-gold/90 disabled:opacity-50 transition-colors"
         >
           {isPending ? labels.saving : labels.confirm}

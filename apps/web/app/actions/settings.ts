@@ -148,6 +148,57 @@ export async function updatePolicySettingsAction(
   return { success: true }
 }
 
+// ── Cargos extra en viaje (pasajero/equipaje adicional) ───────────────────────
+// El conductor los aplica desde su portal; aquí el operador define el monto
+// unitario. 0 = cargo desactivado (el botón no aparece al conductor).
+
+export async function updateExtraFeesAction(
+  formData: FormData,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('company_owner')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const clampAmount = (v: number) =>
+    Number.isNaN(v) || v < 0 ? 0 : Math.min(9999, Math.round(v * 100) / 100)
+
+  const extraPassengerFee = clampAmount(parseFloat(formData.get('extra_passenger_fee') as string ?? '0'))
+  const extraLuggageFee   = clampAmount(parseFloat(formData.get('extra_luggage_fee') as string ?? '0'))
+
+  const admin = createAdminClient()
+
+  const { data: company } = await admin
+    .from('companies')
+    .select('settings')
+    .eq('id', user.company_id)
+    .single()
+
+  if (!company) return { success: false, error: 'Empresa no encontrada' }
+
+  const currentSettings = (company.settings as Record<string, unknown>) ?? {}
+  const currentFees = (currentSettings.fees as Record<string, unknown>) ?? {}
+  const updatedSettings = {
+    ...currentSettings,
+    fees: {
+      ...currentFees,
+      extra_passenger_fee: extraPassengerFee,
+      extra_luggage_fee:   extraLuggageFee,
+    },
+  }
+
+  const { error } = await admin
+    .from('companies')
+    .update({ settings: updatedSettings })
+    .eq('id', user.company_id)
+
+  if (error) {
+    console.error('[updateExtraFeesAction]', error)
+    return { success: false, error: 'Error al actualizar los cargos extra' }
+  }
+
+  revalidatePath('/admin/settings')
+  return { success: true }
+}
+
 // ── White-label: logo + color de marca de la empresa ─────────────────────────
 
 export type BrandingResult = { success: boolean; error?: string; logoUrl?: string | null }

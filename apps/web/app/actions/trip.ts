@@ -7,7 +7,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
-import { parsePolicy, computeCancellationFee } from '@/lib/policy/engine'
+import { parsePolicy, computeCancellationFee, parseExtraFees } from '@/lib/policy/engine'
 import { calculateFare, bestRule, type PricingRuleFields } from '@/lib/pricing/engine'
 import { calculateRoute } from '@/lib/maps/routes'
 import { getStripe } from '@/lib/stripe/server'
@@ -340,6 +340,12 @@ export async function addTripStopAction(
 ): Promise<{ success: boolean; error?: string; extraAmount?: number | null; currency?: string; paymentUrl?: string }> {
   if (!UUID_RE.test(bookingId)) return { success: false, error: 'Reserva inválida' }
   if ((stop?.address ?? '').trim().length < 3) return { success: false, error: 'Escribe la dirección de la parada' }
+  // Sin coordenadas no se puede recalcular la ruta ni el precio — la parada
+  // quedaría "a confirmar" sin ningún flujo de cobro posterior. Se exige
+  // seleccionar una sugerencia del autocomplete (la UI ya lo bloquea).
+  if (typeof stop.lat !== 'number' || typeof stop.lng !== 'number') {
+    return { success: false, error: 'Selecciona la dirección desde las sugerencias para calcular el costo.' }
+  }
 
   const admin = createAdminClient()
   const res = await recomputeWithStop(admin, bookingId, stop)
@@ -367,6 +373,9 @@ export async function driverAddTripStopAction(
   stop: StopInput,
 ): Promise<{ success: boolean; error?: string; extraAmount?: number | null; currency?: string }> {
   if ((stop?.address ?? '').trim().length < 3) return { success: false, error: 'Escribe la dirección de la parada' }
+  if (typeof stop.lat !== 'number' || typeof stop.lng !== 'number') {
+    return { success: false, error: 'Selecciona la dirección desde las sugerencias para calcular el costo.' }
+  }
 
   const user = await requireRole('driver')
   const admin = createAdminClient()
@@ -383,6 +392,81 @@ export async function driverAddTripStopAction(
 
   revalidatePath('/driver/trips')
   return { success: true, extraAmount: extra, currency }
+}
+
+// ─── Cargos extra del conductor (pasajero/equipaje adicional) ─────────────────
+
+export type ExtraChargeType = 'extra_passenger' | 'extra_luggage'
+
+// El conductor agrega un cargo por pasajero o equipaje extra durante el viaje
+// (ej.: reservaron para 3 personas y llegaron 4). El monto unitario lo define
+// el operador en Configuración (settings.fees); si está en 0 el cargo está
+// desactivado. Se registra en booking_fees, suma al total y avisa por chat.
+export async function driverAddExtraChargeAction(
+  bookingId: string,
+  type: ExtraChargeType,
+  qty: number,
+): Promise<{ success: boolean; error?: string; amount?: number; currency?: string }> {
+  const user = await requireRole('driver')
+  if (!UUID_RE.test(bookingId)) return { success: false, error: 'Reserva inválida' }
+  if (type !== 'extra_passenger' && type !== 'extra_luggage') {
+    return { success: false, error: 'Tipo de cargo inválido' }
+  }
+  const quantity = Math.min(10, Math.max(1, Math.round(qty)))
+
+  const admin = createAdminClient()
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('id, company_id, driver_id, status, total_amount, currency, booking_number')
+    .eq('id', bookingId)
+    .single()
+  if (!booking || booking.driver_id !== user.id) {
+    return { success: false, error: 'Viaje no encontrado o no asignado a ti' }
+  }
+  if (!STOP_ALLOWED.includes(booking.status as BookingStatus)) {
+    return { success: false, error: 'Ya no es posible agregar cargos a este viaje.' }
+  }
+
+  const { data: company } = await admin
+    .from('companies')
+    .select('settings')
+    .eq('id', booking.company_id)
+    .single()
+  const fees = parseExtraFees(company?.settings)
+  const unit = type === 'extra_passenger' ? fees.extra_passenger_fee : fees.extra_luggage_fee
+  if (unit <= 0) {
+    return { success: false, error: 'El operador no tiene configurado este cargo.' }
+  }
+
+  const amount = Math.round(unit * quantity * 100) / 100
+  const newTotal = Math.round((Number(booking.total_amount ?? 0) + amount) * 100) / 100
+
+  const label = type === 'extra_passenger' ? 'Pasajero extra' : 'Equipaje extra'
+  const { error: feeErr } = await admin.from('booking_fees').insert({
+    booking_id: booking.id,
+    company_id: booking.company_id,
+    type: type === 'extra_passenger' ? 'extra_passenger_fee' : 'extra_luggage_fee',
+    description: `${label} × ${quantity}`,
+    amount,
+  })
+  if (feeErr) {
+    console.error('[driverAddExtraChargeAction]', feeErr)
+    return { success: false, error: 'No se pudo registrar el cargo. Intenta de nuevo.' }
+  }
+
+  await admin.from('bookings').update({ total_amount: newTotal }).eq('id', booking.id)
+
+  const currency = booking.currency ?? 'USD'
+  const icon = type === 'extra_passenger' ? '👤' : '🧳'
+  await admin.from('trip_messages').insert({
+    booking_id: booking.id,
+    company_id: booking.company_id,
+    sender: 'driver',
+    body: `${icon} ${label} × ${quantity}: +${amount.toFixed(2)} ${currency}`,
+  })
+
+  revalidatePath('/driver/trips')
+  return { success: true, amount, currency }
 }
 
 // Crea un Stripe Checkout SOLO por la diferencia, si el viaje ya tenía un pago

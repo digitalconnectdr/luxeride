@@ -32,6 +32,7 @@ interface Labels {
     action: string; title: string; desc: string
     placeholder: string; send: string; done: string
     costFree: string; costExtra: string; costUnknown: string; payNote: string
+    needsSelect: string
   }
 }
 
@@ -226,11 +227,14 @@ export function TrackActions({
               {stopCostLine.tone === 'fee' && <span className="block mt-1 text-white/40">{labels.addStop.payNote}</span>}
             </p>
           )}
+          {stopPlace?.address && stopPlace.lat == null && (
+            <p className="text-xs text-amber-300">{labels.addStop.needsSelect}</p>
+          )}
           {error && <p className="text-xs text-red-400">{error}</p>}
           <div className="flex gap-2">
             <button onClick={() => { setPanel('none'); setError(''); setStopPlace(null); setStopQuote(null) }} disabled={isPending}
               className="flex-1 py-2.5 text-sm font-medium border border-white/15 rounded-xl text-white/80 hover:bg-white/5 transition-colors">←</button>
-            <button onClick={doAddStop} disabled={isPending || !stopPlace?.address}
+            <button onClick={doAddStop} disabled={isPending || !stopPlace?.address || stopPlace.lat == null || stopPlace.lng == null}
               className="flex-1 py-2.5 text-sm font-semibold rounded-xl text-gray-900 disabled:opacity-50 transition-opacity"
               style={{ backgroundColor: brandColor }}>
               {labels.addStop.send}

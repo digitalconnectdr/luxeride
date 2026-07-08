@@ -5,8 +5,9 @@ import {
   updateBookingSettingsAction,
   updateGratuitySettingsAction,
   updatePolicySettingsAction,
+  updateExtraFeesAction,
 } from '@/app/actions/settings'
-import { parsePolicy } from '@/lib/policy/engine'
+import { parsePolicy, parseExtraFees } from '@/lib/policy/engine'
 import {
   createConnectOnboardingAction,
   refreshConnectStatusAction,
@@ -139,10 +140,12 @@ export default async function SettingsPage({
   const connectAction:  () => void = createConnectOnboardingAction
   const refreshAction:  () => void = refreshConnectStatusAction
   const policyAction:   (fd: FormData) => void = updatePolicySettingsAction
+  const extraFeesAction: (fd: FormData) => void = updateExtraFeesAction
   const whopConnectAction: () => void = createWhopConnectOnboardingAction
   const whopRefreshAction: () => void = refreshWhopConnectStatusAction
 
   const policy = parsePolicy(company.settings)
+  const extraFees = parseExtraFees(company.settings)
 
   const stripeReady = isStripeConfigured()
   const hasConnect  = Boolean(company.stripe_connect_account_id)
@@ -509,6 +512,48 @@ export default async function SettingsPage({
           <div className="flex justify-end pt-1">
             <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
               {t.savePolicy}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      {/* ── Cargos extra en viaje (pasajero/equipaje adicional) ── */}
+      <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+        <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.extraFeesTitle}</h2>
+        <p className="text-xs text-sl-on-surface-muted mb-5">
+          {t.extraFeesDesc}
+        </p>
+        <form action={extraFeesAction} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>{t.extraPassengerFee} ({company.currency ?? 'USD'})</label>
+              <input
+                name="extra_passenger_fee"
+                type="number"
+                min="0"
+                max="9999"
+                step="0.01"
+                defaultValue={extraFees.extra_passenger_fee}
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>{t.extraLuggageFee} ({company.currency ?? 'USD'})</label>
+              <input
+                name="extra_luggage_fee"
+                type="number"
+                min="0"
+                max="9999"
+                step="0.01"
+                defaultValue={extraFees.extra_luggage_fee}
+                className={inputCls}
+              />
+            </div>
+          </div>
+          <p className="text-[11px] text-sl-on-surface-muted">{t.extraFeesHint}</p>
+          <div className="flex justify-end pt-1">
+            <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
+              {t.saveExtraFees}
             </button>
           </div>
         </form>

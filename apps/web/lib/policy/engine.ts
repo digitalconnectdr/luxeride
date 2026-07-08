@@ -58,6 +58,34 @@ export function parsePolicy(settings: unknown): PolicySettings {
   }
 }
 
+// ─── Cargos extra en viaje (pasajero/equipaje adicional) ─────────────────────
+//
+//   settings.fees = {
+//     extra_passenger_fee: 15,  // monto por pasajero por encima de la capacidad (0 = desactivado)
+//     extra_luggage_fee:   10,  // monto por pieza de equipaje extra (0 = desactivado)
+//   }
+
+export interface ExtraFeesSettings {
+  extra_passenger_fee: number
+  extra_luggage_fee: number
+}
+
+export const DEFAULT_EXTRA_FEES: ExtraFeesSettings = {
+  extra_passenger_fee: 0,
+  extra_luggage_fee: 0,
+}
+
+/** Extrae los cargos extra del JSONB de settings, con defaults seguros (0 = desactivado). */
+export function parseExtraFees(settings: unknown): ExtraFeesSettings {
+  const raw = (settings as { fees?: Partial<ExtraFeesSettings> } | null)?.fees ?? {}
+  const clampAmount = (n: unknown) =>
+    typeof n === 'number' && !Number.isNaN(n) && n > 0 ? Math.min(9999, Math.round(n * 100) / 100) : 0
+  return {
+    extra_passenger_fee: clampAmount(raw.extra_passenger_fee),
+    extra_luggage_fee:   clampAmount(raw.extra_luggage_fee),
+  }
+}
+
 /** Extrae la ventana de reservación del JSONB de settings, con defaults seguros. */
 export function parseBookingWindow(settings: unknown): BookingWindowSettings {
   const raw = (settings as { booking?: Partial<BookingWindowSettings> } | null)?.booking ?? {}
