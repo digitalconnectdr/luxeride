@@ -112,10 +112,16 @@ Cada operador elige el diseño de su micrositio en Ajustes → Portada:
    sin las 3 env vars (`TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`/
    `TWILIO_FROM_NUMBER`) los SMS simplemente no salen.
 6. Probar /super-admin/subscriptions con el usuario super_admin.
-7. **Páginas de Privacy Policy y Terms of Service** — no existen todavía
-   (footer del landing no las enlaza porque no hay ruta). Pendiente crear
-   `/privacy` y `/terms` con contenido real antes de que importen para SEO
-   o confianza del comprador B2B.
+7. **Páginas de Privacy Policy y Terms of Service** — ✅ completado
+   2026-07-08: `/privacy` y `/terms`, contenido real en EN/ES/PT (no
+   placeholder), enlazadas desde el footer del landing y en el sitemap.
+   Incluye deslinde explícito de que el Compliance Center no certifica
+   cumplimiento regulatorio. En el camino se corrigió un bug real:
+   `middleware.ts` reescribía `/privacy`/`/terms` como link corto de
+   operador (`/<slug>` → `/book/<slug>`) al no estar en
+   `RESERVED_SEGMENTS` — ya agregado. Nota: contenido genérico de SaaS,
+   no es asesoría legal — recomendar revisión por un abogado antes de
+   considerarlo vinculante.
 
 ## ⬜ Funciones grandes pospuestas (decisión 2026-06-14: bugs primero)
 
