@@ -186,3 +186,82 @@ export function canModifyBooking(
 function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
+
+// ─── Horario de operación / fechas bloqueadas (Sección H, item 3) ────────────
+//
+//   settings.booking también acepta:
+//     operating_hours_start: '08:00'  // HH:mm, hora local de la empresa
+//     operating_hours_end:   '22:00'  // null/null = sin restricción de horario
+//     blackout_dates: ['2026-12-25', '2026-01-01']  // YYYY-MM-DD, hora local
+
+export interface OperatingHoursSettings {
+  start: string | null
+  end: string | null
+  blackoutDates: string[]
+}
+
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+/** Extrae horario de operación y fechas bloqueadas del JSONB de settings. */
+export function parseOperatingHours(settings: unknown): OperatingHoursSettings {
+  const b = (settings as {
+    booking?: { operating_hours_start?: string; operating_hours_end?: string; blackout_dates?: string[] }
+  } | null)?.booking ?? {}
+  const start = typeof b.operating_hours_start === 'string' && TIME_RE.test(b.operating_hours_start) ? b.operating_hours_start : null
+  const end   = typeof b.operating_hours_end === 'string' && TIME_RE.test(b.operating_hours_end) ? b.operating_hours_end : null
+  const blackoutDates = Array.isArray(b.blackout_dates)
+    ? b.blackout_dates.filter((d): d is string => typeof d === 'string' && DATE_RE.test(d))
+    : []
+  return { start, end, blackoutDates }
+}
+
+/** Fecha (YYYY-MM-DD) y minutos-del-día en la hora LOCAL de la empresa. */
+function localDateTimeParts(date: Date, timeZone: string | null | undefined): { dateStr: string; minutesOfDay: number } {
+  try {
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timeZone || 'UTC',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    })
+    const parts = fmt.formatToParts(date)
+    const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '00'
+    return {
+      dateStr: `${get('year')}-${get('month')}-${get('day')}`,
+      minutesOfDay: parseInt(get('hour'), 10) * 60 + parseInt(get('minute'), 10),
+    }
+  } catch {
+    return { dateStr: date.toISOString().slice(0, 10), minutesOfDay: date.getUTCHours() * 60 + date.getUTCMinutes() }
+  }
+}
+
+function toMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number)
+  return h * 60 + m
+}
+
+/** Valida horario de operación + fechas bloqueadas de la empresa (hora local). */
+export function validateOperatingHours(
+  hours: OperatingHoursSettings,
+  scheduledAt: Date,
+  timezone: string | null | undefined,
+): BookingTimeValidation {
+  const { dateStr, minutesOfDay } = localDateTimeParts(scheduledAt, timezone)
+
+  if (hours.blackoutDates.includes(dateStr)) {
+    return { valid: false, error: 'Esa fecha no está disponible para reservar.' }
+  }
+
+  if (hours.start && hours.end) {
+    const startM = toMinutes(hours.start)
+    const endM = toMinutes(hours.end)
+    const withinWindow = startM <= endM
+      ? minutesOfDay >= startM && minutesOfDay <= endM
+      : minutesOfDay >= startM || minutesOfDay <= endM // ventana que cruza medianoche
+    if (!withinWindow) {
+      return { valid: false, error: `Solo aceptamos reservas entre ${hours.start} y ${hours.end}.` }
+    }
+  }
+
+  return { valid: true }
+}

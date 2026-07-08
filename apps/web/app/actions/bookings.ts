@@ -10,8 +10,10 @@ import { calculateRoute } from '@/lib/maps/routes'
 import {
   parsePolicy,
   parseBookingWindow,
+  parseOperatingHours,
   computeCancellationFee,
   validateBookingTime,
+  validateOperatingHours,
 } from '@/lib/policy/engine'
 import { waitUntil } from '@vercel/functions'
 import { notifyBookingEventInBackground, notify } from '@/lib/notifications'
@@ -714,6 +716,11 @@ export async function getPublicVehicleQuotesAction(
   if (!windowCheck.valid) {
     return { success: false, error: windowCheck.error }
   }
+  // Sección H, item 3 — horario de operación + fechas bloqueadas
+  const hoursCheck = validateOperatingHours(parseOperatingHours(company.settings), scheduledAt, company.timezone)
+  if (!hoursCheck.valid) {
+    return { success: false, error: hoursCheck.error }
+  }
 
   // Tipos de vehículo activos
   const { data: vehicleTypes } = await admin
@@ -894,7 +901,7 @@ export async function createPublicBookingAction(data: {
 
   const { data: company } = await admin
     .from('companies')
-    .select('id, status, settings')
+    .select('id, status, settings, timezone')
     .eq('slug', data.slug)
     .single()
 
@@ -909,6 +916,11 @@ export async function createPublicBookingAction(data: {
   )
   if (!windowCheck.valid) {
     return { success: false, error: windowCheck.error }
+  }
+  // Sección H, item 3 — horario de operación + fechas bloqueadas
+  const hoursCheck = validateOperatingHours(parseOperatingHours(company.settings), new Date(data.scheduledAt), company.timezone)
+  if (!hoursCheck.valid) {
+    return { success: false, error: hoursCheck.error }
   }
 
   // Validar cotización — montos SIEMPRE del server

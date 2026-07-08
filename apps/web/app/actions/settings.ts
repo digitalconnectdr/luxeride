@@ -60,6 +60,19 @@ export async function updateBookingSettingsAction(
   const requireDeposit     = formData.get('require_deposit') === 'true'
   const depositPercentage  = parseFloat(formData.get('deposit_percentage') as string ?? '0') || 0
 
+  // Sección H, item 3 — horario de operación (HH:mm, o vacío = sin restricción)
+  // y fechas bloqueadas (una por línea, YYYY-MM-DD).
+  const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/
+  const startRaw = (formData.get('operating_hours_start') as string ?? '').trim()
+  const endRaw    = (formData.get('operating_hours_end') as string ?? '').trim()
+  const operatingHoursStart = timeRe.test(startRaw) ? startRaw : null
+  const operatingHoursEnd   = timeRe.test(endRaw) ? endRaw : null
+  const blackoutDates = (formData.get('blackout_dates') as string ?? '')
+    .split(/[\n,]/)
+    .map((d) => d.trim())
+    .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
+    .slice(0, 100)
+
   const admin = createAdminClient()
 
   // Fetch current settings to merge (JSONB merge)
@@ -80,6 +93,9 @@ export async function updateBookingSettingsAction(
       allow_instant_booking: allowInstant,
       require_deposit:       requireDeposit,
       deposit_percentage:    depositPercentage,
+      operating_hours_start: operatingHoursStart,
+      operating_hours_end:   operatingHoursEnd,
+      blackout_dates:        blackoutDates,
     },
   }
 

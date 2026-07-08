@@ -123,6 +123,9 @@ export default async function SettingsPage({
       allow_instant_booking?: boolean
       require_deposit?: boolean
       deposit_percentage?: number
+      operating_hours_start?: string | null
+      operating_hours_end?: string | null
+      blackout_dates?: string[]
     }
     gratuity?: {
       enabled?: boolean
@@ -448,6 +451,42 @@ export default async function SettingsPage({
               />
             </div>
           )}
+
+          <div className="pt-2 border-t border-sl-outline-variant space-y-1">
+            <p className="text-xs font-semibold text-sl-on-surface">{t.operatingHoursTitle}</p>
+            <p className="text-[11px] text-sl-on-surface-muted">{t.operatingHoursDesc}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>{t.operatingHoursStart}</label>
+              <input
+                name="operating_hours_start"
+                type="time"
+                defaultValue={booking.operating_hours_start ?? ''}
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>{t.operatingHoursEnd}</label>
+              <input
+                name="operating_hours_end"
+                type="time"
+                defaultValue={booking.operating_hours_end ?? ''}
+                className={inputCls}
+              />
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>{t.blackoutDates}</label>
+            <textarea
+              name="blackout_dates"
+              rows={3}
+              placeholder={'2026-12-25\n2026-01-01'}
+              defaultValue={(booking.blackout_dates ?? []).join('\n')}
+              className={`${inputCls} font-mono resize-none`}
+            />
+            <p className="text-[11px] text-sl-on-surface-muted mt-1">{t.blackoutDatesHint}</p>
+          </div>
 
           <div className="flex justify-end pt-1">
             <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
