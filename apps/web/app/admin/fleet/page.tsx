@@ -10,6 +10,16 @@ import type { VehicleStatus } from '@/lib/supabase/database.types'
 
 export const metadata: Metadata = { title: 'Fleet' }
 
+// Mantenimiento/seguro vencido o por vencer (14 días) — mismo umbral que el
+// warning visual ya usado en el detalle del vehículo (/admin/fleet/[id]).
+function maintenanceAlert(nextMaintenanceAt: string | null, insuranceExpiresAt: string | null): boolean {
+  const soon = Date.now() + 14 * 86_400_000
+  return (
+    (!!nextMaintenanceAt && new Date(nextMaintenanceAt).getTime() < soon) ||
+    (!!insuranceExpiresAt && new Date(insuranceExpiresAt).getTime() < soon)
+  )
+}
+
 const STATUS_BADGE: Record<VehicleStatus, string> = {
   available:   'bg-green-500/10 text-green-400 border-green-500/20',
   on_trip:     'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -32,7 +42,7 @@ export default async function FleetPage({ searchParams }: PageProps) {
   const [{ data: vehicles }, { data: vtypes }, { data: profiles }] = await Promise.all([
     admin
       .from('vehicles')
-      .select('id, make, model, year, plate_number, status, color, vehicle_type_id, current_driver_id, created_at')
+      .select('id, make, model, year, plate_number, status, color, vehicle_type_id, current_driver_id, created_at, next_maintenance_at, insurance_expires_at')
       .eq('company_id', companyId)
       .order('created_at', { ascending: false }),
     admin
@@ -135,8 +145,16 @@ export default async function FleetPage({ searchParams }: PageProps) {
                   return (
                     <tr key={v.id} className="hover:bg-sl-bg/40 transition-colors group">
                       <td className="px-5 py-4">
-                        <p className="font-medium text-sl-on-surface">
+                        <p className="font-medium text-sl-on-surface flex items-center gap-2">
                           {v.year} {v.make} {v.model}
+                          {maintenanceAlert(v.next_maintenance_at, v.insurance_expires_at) && (
+                            <span
+                              title={t.maintenanceDue}
+                              className="text-[10px] font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5"
+                            >
+                              ⚠ {t.maintenanceDue}
+                            </span>
+                          )}
                         </p>
                         <p className="text-xs text-sl-on-surface-muted mt-0.5">
                           {v.plate_number}{v.color ? ` · ${v.color}` : ''}
@@ -161,7 +179,7 @@ export default async function FleetPage({ searchParams }: PageProps) {
                       <td className="px-5 py-4 text-right">
                         <Link
                           href={`/admin/fleet/${v.id}`}
-                          className="text-xs text-bronze opacity-0 group-hover:opacity-100 hover:text-bronze/80 transition-all"
+                          className="text-xs font-medium text-bronze hover:text-bronze/80 hover:underline transition-colors"
                         >
                           Detalles →
                         </Link>

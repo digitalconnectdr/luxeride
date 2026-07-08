@@ -290,6 +290,56 @@ export async function updateVehicleStatus(
   return { success: true }
 }
 
+// Programador de mantenimiento (Sección H, item 2) — la empresa ya tenía los
+// campos en `vehicles` (mileage, last/next_maintenance_at,
+// insurance_expires_at) desde la creación, pero no había forma de editarlos
+// después. Este action los actualiza; si se marca un `last_maintenance_at`
+// nuevo, además deja un registro en `maintenance_records` (historial).
+export async function updateVehicleMaintenanceAction(
+  vehicleId: string,
+  formData: FormData,
+): Promise<FleetActionResult> {
+  const user = await requireRole('company_owner', 'company_admin')
+  if (!user.company_id) return { success: false, error: 'No company associated' }
+
+  const admin = createAdminClient()
+  const { data: vehicle } = await admin
+    .from('vehicles')
+    .select('company_id, last_maintenance_at, mileage')
+    .eq('id', vehicleId)
+    .single()
+  if (vehicle?.company_id !== user.company_id) return { success: false, error: 'Not found' }
+
+  const mileageRaw = formData.get('mileage') as string
+  const mileage = mileageRaw ? parseInt(mileageRaw, 10) : null
+  const last_maintenance_at = (formData.get('last_maintenance_at') as string) || null
+  const next_maintenance_at = (formData.get('next_maintenance_at') as string) || null
+  const insurance_expires_at = (formData.get('insurance_expires_at') as string) || null
+
+  const { error } = await admin
+    .from('vehicles')
+    .update({ mileage, last_maintenance_at, next_maintenance_at, insurance_expires_at })
+    .eq('id', vehicleId)
+
+  if (error) return { success: false, error: error.message }
+
+  // Si se registró un mantenimiento nuevo (cambió la fecha), deja huella en
+  // el historial — mismo patrón que usan otras tablas de bitácora del proyecto.
+  if (last_maintenance_at && last_maintenance_at !== vehicle.last_maintenance_at) {
+    await admin.from('maintenance_records').insert({
+      company_id: user.company_id,
+      vehicle_id: vehicleId,
+      type: 'general',
+      performed_at: last_maintenance_at,
+      mileage_at_service: mileage ?? vehicle.mileage,
+    })
+  }
+
+  revalidatePath('/admin/fleet')
+  revalidatePath(`/admin/fleet/${vehicleId}`)
+  return { success: true }
+}
+
 export async function assignDriverToVehicle(
   vehicleId: string,
   driverId: string | null

@@ -736,6 +736,7 @@ export const en = {
       tabTypes: 'Vehicle Types',
       tabVehiclesHelp: 'Real physical cars (plate, color) you assign to a driver for a trip.',
       tabTypesHelp: 'Categories you offer (price, amenities and photo). This is what the customer sees on your site and picks when booking — you can have a category even without a physical car of that type yet.',
+      maintenanceDue: 'Maintenance/insurance due',
       saving: 'Saving…',
       unassigned: 'Unassigned',
       statuses: {
@@ -1419,6 +1420,7 @@ export const en = {
       nextMaintenance: 'Next maintenance',
       insuranceExpires: 'Insurance expires',
       expired: '⚠ Expired',
+      saveMaintenance: 'Save',
       notes: 'Notes',
       registeredOn: 'Registered on {date}',
     },

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { VehicleStatusSelect, DriverAssignSelect } from '@/components/admin/fleet-controls'
+import { updateVehicleMaintenanceAction } from '@/app/actions/fleet'
 import type { VehicleStatus } from '@/lib/supabase/database.types'
 import { getDict, getLocale } from '@/lib/i18n/server'
 
@@ -67,6 +68,10 @@ export default async function VehicleDetailPage({ params }: PageProps) {
     if (!iso) return '—'
     return new Date(iso).toLocaleDateString(localeTag, { day: '2-digit', month: 'short', year: 'numeric' })
   }
+
+  // void cast — regla del proyecto para pasar server actions con args ya
+  // vinculados como `action` de un <form> (mismo patrón que /admin/settings).
+  const maintenanceAction: (fd: FormData) => void = updateVehicleMaintenanceAction.bind(null, vehicle.id)
 
   return (
     <div className="p-8 max-w-[1100px] mx-auto space-y-6">
@@ -155,21 +160,70 @@ export default async function VehicleDetailPage({ params }: PageProps) {
         <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-4">
           {t.maintenanceInsurance}
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            { label: t.lastMaintenance, value: formatDate(vehicle.last_maintenance_at), warn: false },
-            { label: t.nextMaintenance, value: formatDate(vehicle.next_maintenance_at),
-              warn: vehicle.next_maintenance_at ? new Date(vehicle.next_maintenance_at) < new Date() : false },
-            { label: t.insuranceExpires, value: formatDate(vehicle.insurance_expires_at),
-              warn: vehicle.insurance_expires_at ? new Date(vehicle.insurance_expires_at) < new Date() : false },
-          ].map(({ label, value, warn }) => (
-            <div key={label} className="space-y-1">
-              <p className="text-xs text-sl-on-surface-muted">{label}</p>
-              <p className={`text-sm font-medium ${warn ? 'text-red-400' : 'text-sl-on-surface'}`}>{value}</p>
-              {warn && <p className="text-[10px] text-red-400">{t.expired}</p>}
+        {isAccounting ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { label: t.lastMaintenance, value: formatDate(vehicle.last_maintenance_at), warn: false },
+              { label: t.nextMaintenance, value: formatDate(vehicle.next_maintenance_at),
+                warn: vehicle.next_maintenance_at ? new Date(vehicle.next_maintenance_at) < new Date() : false },
+              { label: t.insuranceExpires, value: formatDate(vehicle.insurance_expires_at),
+                warn: vehicle.insurance_expires_at ? new Date(vehicle.insurance_expires_at) < new Date() : false },
+            ].map(({ label, value, warn }) => (
+              <div key={label} className="space-y-1">
+                <p className="text-xs text-sl-on-surface-muted">{label}</p>
+                <p className={`text-sm font-medium ${warn ? 'text-red-400' : 'text-sl-on-surface'}`}>{value}</p>
+                {warn && <p className="text-[10px] text-red-400">{t.expired}</p>}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <form action={maintenanceAction} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs text-sl-on-surface-muted mb-1.5">{t.mileage}</label>
+                <input
+                  type="number"
+                  name="mileage"
+                  min="0"
+                  defaultValue={vehicle.mileage ?? ''}
+                  className="w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-sl-on-surface-muted mb-1.5">{t.lastMaintenance}</label>
+                <input
+                  type="date"
+                  name="last_maintenance_at"
+                  defaultValue={vehicle.last_maintenance_at?.slice(0, 10) ?? ''}
+                  className="w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-sl-on-surface-muted mb-1.5">{t.nextMaintenance}</label>
+                <input
+                  type="date"
+                  name="next_maintenance_at"
+                  defaultValue={vehicle.next_maintenance_at?.slice(0, 10) ?? ''}
+                  className="w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-sl-on-surface-muted mb-1.5">{t.insuranceExpires}</label>
+                <input
+                  type="date"
+                  name="insurance_expires_at"
+                  defaultValue={vehicle.insurance_expires_at?.slice(0, 10) ?? ''}
+                  className="w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
+                />
+              </div>
             </div>
-          ))}
-        </div>
+            <div className="flex justify-end">
+              <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
+                {t.saveMaintenance}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
 
       {/* ── Notes ── */}

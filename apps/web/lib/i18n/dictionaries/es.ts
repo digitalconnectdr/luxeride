@@ -737,6 +737,7 @@ export const es: Dictionary = {
       tabTypes: 'Tipos de vehículo',
       tabVehiclesHelp: 'Autos físicos reales (placa, color) que asignas a un conductor para un viaje.',
       tabTypesHelp: 'Categorías que ofreces (precio, amenidades y foto). Es lo que el cliente ve en tu sitio y elige al reservar — puedes tener una categoría aunque aún no tengas un auto físico de ese tipo.',
+      maintenanceDue: 'Mantenimiento/seguro por vencer',
       saving: 'Guardando…',
       unassigned: 'Sin asignar',
       statuses: {
@@ -1420,6 +1421,7 @@ export const es: Dictionary = {
       nextMaintenance: 'Próximo mantenimiento',
       insuranceExpires: 'Seguro vence',
       expired: '⚠ Vencido',
+      saveMaintenance: 'Guardar',
       notes: 'Notas',
       registeredOn: 'Registrado el {date}',
     },
