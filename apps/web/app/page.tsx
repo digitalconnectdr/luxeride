@@ -525,28 +525,74 @@ export default async function LandingPage() {
 
       {/* ── Footer ── */}
       <footer className="border-t border-white/[0.06]">
-        <div className="max-w-[1400px] mx-auto px-6 py-10">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
-            <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] flex items-center justify-center">
-                <span className="text-[#141313] font-playfair font-bold text-[10px] leading-none">{brand.name.charAt(0)}</span>
+        <div className="max-w-[1400px] mx-auto px-6 py-16">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-10">
+            <div className="col-span-2 sm:col-span-1 pr-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] flex items-center justify-center shrink-0">
+                  <span className="text-[#141313] font-playfair font-bold text-xs leading-none">{brand.name.charAt(0)}</span>
+                </div>
+                <span className="font-playfair text-base font-semibold">{brand.name}</span>
               </div>
-              <span className="font-playfair text-sm font-semibold">{brand.name}</span>
+              <p className="mt-3 text-xs text-white/40 leading-relaxed max-w-[220px]">{t.footerTagline}</p>
             </div>
-            <p className="text-[11px] uppercase tracking-[0.25em] text-[#e9c176]/70">
+
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-4">
+                {t.footerProductHeading}
+              </p>
+              <ul className="space-y-2.5">
+                <li>
+                  <a href="#features" className="text-[13px] text-white/60 hover:text-[#e9c176] transition-colors">
+                    {t.nav.platform}
+                  </a>
+                </li>
+                <li>
+                  <a href="#pricing" className="text-[13px] text-white/60 hover:text-[#e9c176] transition-colors">
+                    {t.nav.pricing}
+                  </a>
+                </li>
+                <li>
+                  <a href="#faq" className="text-[13px] text-white/60 hover:text-[#e9c176] transition-colors">
+                    {t.nav.faq}
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-4">
+                {t.footerLegalHeading}
+              </p>
+              <ul className="space-y-2.5">
+                <li>
+                  <Link href="/privacy" className="text-[13px] text-white/60 hover:text-[#e9c176] transition-colors">
+                    {t.footerPrivacy}
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="text-[13px] text-white/60 hover:text-[#e9c176] transition-colors">
+                    {t.footerTerms}
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-4">
+                {t.footerCompanyHeading}
+              </p>
+              <p className="text-[13px] text-white/60">{brand.poweredBy}</p>
+            </div>
+          </div>
+
+          <div className="mt-14 pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-[11px] text-white/30 order-2 sm:order-1">
+              © {new Date().getFullYear()} {brand.name}. {t.footerRights}
+            </p>
+            <p className="text-[10px] uppercase tracking-[0.25em] text-[#e9c176]/60 order-1 sm:order-2">
               {dict.common.poweredBy}
             </p>
-            <div className="flex items-center gap-4">
-              <Link href="/privacy" className="text-[11px] text-white/30 hover:text-[#e9c176] transition-colors">
-                {t.footerPrivacy}
-              </Link>
-              <Link href="/terms" className="text-[11px] text-white/30 hover:text-[#e9c176] transition-colors">
-                {t.footerTerms}
-              </Link>
-              <p className="text-[11px] text-white/30">
-                © {new Date().getFullYear()} {t.footerRights}
-              </p>
-            </div>
           </div>
         </div>
       </footer>

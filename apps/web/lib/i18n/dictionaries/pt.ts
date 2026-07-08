@@ -259,6 +259,10 @@ export const pt: Dictionary = {
     footerRights: 'Todos os direitos reservados.',
     footerPrivacy: 'Privacidade',
     footerTerms: 'Termos',
+    footerTagline: 'Software para operadores de transporte terrestre de luxo.',
+    footerProductHeading: 'Produto',
+    footerLegalHeading: 'Legal',
+    footerCompanyHeading: 'Empresa',
   },
 
   wizard: {
@@ -666,6 +670,12 @@ export const pt: Dictionary = {
 
   auth: {
     tagline: 'Plataforma de Transporte Premium',
+    panelHeadline: 'Dispatch, pagamentos e conformidade — tudo em um só lugar.',
+    panelPoints: [
+      'Dispatch em tempo real e atribuição de motoristas',
+      'Pagamentos com cartão e faturamento corporativo',
+      'Rastreamento ao vivo de cada viagem',
+    ],
   },
 
   adminNav: {

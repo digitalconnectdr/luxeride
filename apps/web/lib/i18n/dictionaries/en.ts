@@ -258,6 +258,10 @@ export const en = {
     footerRights: 'All rights reserved.',
     footerPrivacy: 'Privacy',
     footerTerms: 'Terms',
+    footerTagline: 'Software for luxury ground transportation operators.',
+    footerProductHeading: 'Product',
+    footerLegalHeading: 'Legal',
+    footerCompanyHeading: 'Company',
   },
 
   wizard: {
@@ -665,6 +669,12 @@ export const en = {
 
   auth: {
     tagline: 'Premium Transportation Platform',
+    panelHeadline: 'Dispatch, payments and compliance — all in one place.',
+    panelPoints: [
+      'Real-time dispatch & driver assignment',
+      'Card payments & corporate billing',
+      'Live tracking for every trip',
+    ],
   },
 
   adminNav: {
