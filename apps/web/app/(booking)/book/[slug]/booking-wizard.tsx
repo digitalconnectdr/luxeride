@@ -140,6 +140,10 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
   const [returningMatch, setReturningMatch] = useState<{ name: string; email?: string } | null>(null)
   const [returningDismissed, setReturningDismissed] = useState(false)
   const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Siempre lee los valores más recientes dentro del setTimeout debounced,
+  // sin importar cuál de los dos campos (teléfono/nombre) disparó el timer.
+  const latestPassenger = useRef(passengerData)
+  useEffect(() => { latestPassenger.current = passengerData }, [passengerData])
 
   useEffect(() => {
     try {
@@ -157,17 +161,30 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  function handlePhoneChange(value: string) {
-    setPassengerData((p) => ({ ...p, phone: value }))
+  // Requiere AMBOS factores (teléfono con dígitos suficientes + al menos 2
+  // letras del nombre) antes de siquiera intentar la búsqueda — reduce la
+  // superficie de enumeración por teléfono solo.
+  function scheduleReturningLookup() {
     setReturningDismissed(false)
     setReturningMatch(null)
     if (lookupTimer.current) clearTimeout(lookupTimer.current)
-    if (value.replace(/[^0-9]/g, '').length < 7) return
     lookupTimer.current = setTimeout(() => {
-      lookupReturningPassengerAction(company.slug, value).then((r) => {
+      const { phone, name } = latestPassenger.current
+      if (phone.replace(/[^0-9]/g, '').length < 7 || name.trim().length < 2) return
+      lookupReturningPassengerAction(company.slug, phone, name.trim()).then((r) => {
         if (r.found && r.name) setReturningMatch({ name: r.name, email: r.email })
       })
     }, 600)
+  }
+
+  function handlePhoneChange(value: string) {
+    setPassengerData((p) => ({ ...p, phone: value }))
+    scheduleReturningLookup()
+  }
+
+  function handleNameChange(value: string) {
+    setPassengerData((p) => ({ ...p, name: value }))
+    scheduleReturningLookup()
   }
 
   function acceptReturningMatch() {
@@ -702,7 +719,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               name="name"
               required
               value={passengerData.name}
-              onChange={(e) => setPassengerData((p) => ({ ...p, name: e.target.value }))}
+              onChange={(e) => handleNameChange(e.target.value)}
               placeholder="Juan Pérez"
               className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
             />

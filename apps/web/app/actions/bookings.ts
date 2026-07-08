@@ -816,31 +816,43 @@ export async function getPublicVehicleQuotesAction(
 }
 
 // ─── Público: reconocer pasajero recurrente por teléfono ──────────────────────
-// Viajero frecuente cross-device: al escribir el teléfono en el wizard,
+// Viajero frecuente cross-device: al escribir teléfono + nombre en el wizard,
 // buscamos su última reserva CON esa empresa (guest checkout, sin cuenta) y
-// ofrecemos autocompletar nombre/email — con un clic explícito, nunca
-// automático. Rate-limited porque es una consulta pública sin autenticación
-// (evita usarla para enumerar teléfonos). Solo empareja por texto exacto del
-// teléfono tal como el pasajero lo escribió antes (suficiente para el mismo
-// dispositivo/persona reutilizando el mismo formato).
+// ofrecemos autocompletar el resto de sus datos — con un clic explícito,
+// nunca automático.
+//
+// Mitigación de enumeración (consulta pública sin autenticación):
+// 1) Exige DOS factores, no solo el teléfono — también los primeros
+//    caracteres del nombre deben coincidir (`namePrefix`). Un atacante
+//    necesitaría adivinar teléfono Y nombre de la misma persona, no solo un
+//    número de teléfono.
+// 2) Rate limit estricto (5 intentos / 5 min por IP) — cubre con margen el
+//    uso legítimo (una persona typea su teléfono+nombre una vez por
+//    reserva) mientras hace impráctico probar muchos teléfonos/nombres.
 export async function lookupReturningPassengerAction(
   slug: string,
   phone: string,
+  namePrefix: string,
 ): Promise<{ found: boolean; name?: string; email?: string }> {
   const cleanPhone = (phone ?? '').trim()
-  if (cleanPhone.replace(/[^0-9]/g, '').length < 7) return { found: false }
+  const prefix = (namePrefix ?? '').trim()
+  if (cleanPhone.replace(/[^0-9]/g, '').length < 7 || prefix.length < 2) return { found: false }
 
-  if (!(await checkRateLimit('passenger_lookup', 15))) return { found: false }
+  if (!(await checkRateLimit('passenger_lookup', 5, 5 * 60_000))) return { found: false }
 
   const admin = createAdminClient()
   const { data: company } = await admin.from('companies').select('id').eq('slug', slug).single()
   if (!company) return { found: false }
+
+  // Escapa comodines de ILIKE para que el prefijo se trate como texto literal.
+  const escapedPrefix = prefix.replace(/[%_\\]/g, (m) => `\\${m}`)
 
   const { data: booking } = await admin
     .from('bookings')
     .select('passenger_name, passenger_email')
     .eq('company_id', company.id)
     .eq('passenger_phone', cleanPhone)
+    .ilike('passenger_name', `${escapedPrefix}%`)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
