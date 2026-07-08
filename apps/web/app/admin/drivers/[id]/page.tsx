@@ -5,6 +5,9 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { DriverAvailabilityToggle } from '@/components/admin/fleet-controls'
 import { UpdateDriverLicenseForm } from '@/components/admin/update-driver-license-form'
+import { DriverComplianceForm } from '@/components/admin/driver-compliance-form'
+import { COMPLIANCE_STATUS_CLS } from '@/lib/compliance/status-badge'
+import type { ComplianceStatus } from '@/lib/compliance/engine'
 import { getDict, getLocale } from '@/lib/i18n/server'
 
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-MX', pt: 'pt-BR' }
@@ -35,7 +38,10 @@ export default async function DriverDetailPage({ params }: PageProps) {
 
   const driverQuery = admin
     .from('drivers')
-    .select('id, license_number, license_expiry, license_state, current_vehicle_id, is_available, rating, total_trips, total_earnings')
+    .select(`
+      id, license_number, license_expiry, license_state, current_vehicle_id, is_available, rating, total_trips, total_earnings,
+      compliance, chauffeur_permit_expires_at, compliance_status, compliance_score, operational_block, block_reason
+    `)
     .eq('id', params.id)
     .eq('company_id', companyId)          // IDOR guard
     .single()
@@ -288,6 +294,44 @@ export default async function DriverDetailPage({ params }: PageProps) {
               />
             )}
           </div>
+
+          {/* Compliance (Sección J) */}
+          {dr && (
+            <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+                  {t.complianceTitle}
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${COMPLIANCE_STATUS_CLS[dr.compliance_status as ComplianceStatus]}`}>
+                    {getDict().admin.compliance.statuses[dr.compliance_status as ComplianceStatus]}
+                  </span>
+                  <span className="text-[10px] text-sl-on-surface-muted">{t.complianceScore} {dr.compliance_score}</span>
+                </div>
+              </div>
+
+              {dr.operational_block && (
+                <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-2.5">
+                  <p className="text-xs text-red-400 font-medium">{t.complianceBlocked}</p>
+                  {dr.block_reason && <p className="text-xs text-red-400/80 mt-0.5">{t.complianceBlockReason}: {dr.block_reason}</p>}
+                </div>
+              )}
+
+              {!isAccounting && user.role !== 'dispatcher' && (
+                <DriverComplianceForm
+                  driverId={profile.id}
+                  current={{
+                    chauffeur_permit_type: (dr.compliance as { chauffeur_permit_type?: string } | null)?.chauffeur_permit_type ?? '',
+                    chauffeur_permit_number: (dr.compliance as { chauffeur_permit_number?: string } | null)?.chauffeur_permit_number ?? '',
+                    chauffeur_permit_jurisdiction: (dr.compliance as { chauffeur_permit_jurisdiction?: string } | null)?.chauffeur_permit_jurisdiction ?? '',
+                    chauffeur_permit_expires_at: dr.chauffeur_permit_expires_at?.slice(0, 10) ?? '',
+                    license_class: (dr.compliance as { license_class?: string } | null)?.license_class ?? '',
+                  }}
+                  labels={t}
+                />
+              )}
+            </div>
+          )}
 
         </div>
       </div>

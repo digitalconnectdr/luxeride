@@ -336,6 +336,33 @@ export function sendSuperAdminEmailInBackground(subject: string, body: string): 
   }))
 }
 
+/**
+ * Envía un email directo al operador (companies.email) sin pasar por el
+ * sistema de templates — usado por alertas de Compliance Center donde el
+ * contenido varía por empresa (motivos de bloqueo/alerta) y no amerita un
+ * template editable. No lanza nunca; si la empresa no tiene email de
+ * contacto, no envía nada.
+ */
+export async function sendOperatorEmail(companyId: string, subject: string, body: string): Promise<{ sent: boolean }> {
+  try {
+    const admin = createAdminClient()
+    const { data: company } = await admin
+      .from('companies')
+      .select('email, name, logo_url, primary_color')
+      .eq('id', companyId)
+      .single()
+    if (!company?.email) return { sent: false }
+    const result = await sendEmail(company.email, subject, body, company.name, {
+      logoUrl: company.logo_url,
+      brandColor: company.primary_color,
+    })
+    return { sent: result.ok }
+  } catch (err) {
+    console.error('[sendOperatorEmail]', err)
+    return { sent: false }
+  }
+}
+
 // ─── Follow-up de cotizaciones (sin template; con dedup vía notifications) ─────
 // Envía un email branded de seguimiento a una cotización abierta. Solo envía una
 // vez por booking (chequea la tabla notifications por type 'quote_followup').

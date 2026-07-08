@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   Building2,
   UserCog,
+  ShieldCheck,
   Settings,
   LogOut,
   ChevronsLeft,
@@ -148,6 +149,7 @@ export function AdminSidebar({
       items: [
         { href: '/admin/corporate', label: nav.corporate, icon: Building2 },
         { href: '/admin/team', label: nav.team, icon: UserCog },
+        { href: '/admin/compliance', label: nav.compliance, icon: ShieldCheck },
         ...(flags.isOwner
           ? [{ href: '/admin/settings', label: nav.settings, icon: Settings }]
           : []),

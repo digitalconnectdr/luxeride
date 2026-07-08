@@ -581,6 +581,17 @@ export async function assignDriverAction(
     return { success: false, error: 'Solo reservaciones pendientes o asignadas pueden recibir conductor' }
   }
 
+  // Sección J — Compliance Center: la asignación manual respeta el mismo
+  // bloqueo operativo que la auto-asignación, mostrando el motivo.
+  const { data: driverCompliance } = await admin
+    .from('drivers')
+    .select('operational_block, block_reason')
+    .eq('id', driverId)
+    .single()
+  if (driverCompliance?.operational_block) {
+    return { success: false, error: `Conductor bloqueado por cumplimiento: ${driverCompliance.block_reason ?? 'ver Compliance Center'}` }
+  }
+
   // Reasignación = ya tenía OTRO conductor asignado. Se registra en
   // booking_events y se avisa por SMS al conductor que pierde el viaje —
   // no le llega vía la app (el viaje simplemente desaparece de su lista en
@@ -600,6 +611,17 @@ export async function assignDriverAction(
       .eq('id', driverId)
       .single()
     effectiveVehicleId = driverRow?.current_vehicle_id ?? undefined
+  }
+
+  if (effectiveVehicleId) {
+    const { data: vehicleCompliance } = await admin
+      .from('vehicles')
+      .select('operational_block, block_reason')
+      .eq('id', effectiveVehicleId)
+      .single()
+    if (vehicleCompliance?.operational_block) {
+      return { success: false, error: `Vehículo bloqueado por cumplimiento: ${vehicleCompliance.block_reason ?? 'ver Compliance Center'}` }
+    }
   }
 
   const updates: {

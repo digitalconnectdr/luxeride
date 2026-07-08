@@ -632,7 +632,57 @@ cuenta/login ni instalar nada, en 3 capas (orden por esfuerzo):
      Propietario y tiene los 3 permisos (más el set completo de Payments).
      Sin bloqueo técnico — listo para implementar cuando se priorice.
 
-### J. Compliance Center — datos regulatorios EE.UU. (diseño 2026-07-07)
+### J. Compliance Center — datos regulatorios EE.UU. ✅ completado 2026-07-08
+Implementado tal cual el plan de abajo, las 6 fases:
+1. Migración `20260708000034_compliance_center.sql` — columnas indexables
+   (fechas/estados que consulta el cron) + JSONB `compliance` en `companies`,
+   `drivers` y `vehicles`. Aditivo, sin tocar nada existente. Nota de diseño:
+   `manual_review_required` NO quedó como columna — se deriva de
+   `compliance_last_reviewed_at IS NULL` (misma idea, un campo menos que
+   mantener sincronizado, igual para las 3 entidades).
+2. `lib/compliance/engine.ts` — funciones puras `computeDriverCompliance`,
+   `computeVehicleCompliance`, `computeCompanyCompliance` (score 0-100,
+   deducciones por vencimiento/campo faltante, `blocked` + `blockReason`).
+   La empresa NUNCA se bloquea automáticamente, solo se alerta (`alert`).
+   13 tests con Vitest (`lib/compliance/engine.test.ts`), sin tocar la DB.
+   `lib/compliance/recompute.ts` hace el glue con Supabase (recalcula y
+   persiste `compliance_status/score/operational_block/block_reason` tras
+   cada edición, y en cascada recalcula la empresa cuando cambia un
+   conductor/vehículo de su flota).
+3. UI operador: `/admin/compliance` (identidad legal, licencia operativa
+   for-hire, USDOT/MC, seguro comercial de la empresa, notas internas) +
+   secciones nuevas en `/admin/drivers/[id]` (permiso chauffeur/for-hire,
+   clase de licencia) y `/admin/fleet/[id]` (permiso for-hire del vehículo,
+   inspección, aseguradora/póliza) — badge de estado + score + motivo de
+   bloqueo visible en los tres lugares. Link nuevo en el sidebar
+   ("Compliance", sección Management, owner/admin).
+4. `/super-admin/compliance` — Compliance Review Queue: empresas,
+   conductores y vehículos que no están `compliant` o nunca se revisaron,
+   con botón "Marcar revisada" (aprobación admin una sola vez, dispara el
+   recálculo). Link nuevo en el sidebar de super-admin.
+5. Cron diario `/api/cron/compliance-alerts` (mismo patrón que
+   `document-alerts`, protegido con CRON_SECRET): recalcula compliance de
+   todos los conductores/vehículos/empresas (captura vencimientos por el
+   paso del tiempo aunque nadie edite el registro) y avisa por email lo que
+   vence dentro de 30 días — al conductor (permiso chauffeur, reutilizando
+   el template `driver_document_expiring`) y al operador (permiso for-hire/
+   seguro del vehículo, licencia operativa/seguro de la empresa, vía el
+   helper nuevo `sendOperatorEmail` en `lib/notifications` — envío directo
+   sin pasar por el sistema de templates, ya que el contenido varía por
+   empresa). Agregado a `vercel.json`.
+6. Enforcement: `lib/dispatch/auto-assign.ts` excluye conductores
+   bloqueados (`operational_block`) y también a los conductores cuyo
+   vehículo actual esté bloqueado (antes de elegir candidato, no después).
+   `assignDriverAction` (asignación manual desde el Dispatch Board) hace la
+   misma validación y devuelve el motivo exacto del bloqueo como error.
+
+Typecheck, 77 tests (Vitest) y build de producción verificados. Migración
+pendiente de aplicar en Supabase (requiere confirmación del usuario antes
+de correr el SQL).
+
+<details>
+<summary>Diseño original (histórico)</summary>
+
 Fuente: documento del usuario "Estructura recomendada del LuxeRide
 Compliance Center" (Word, 2026-07-07). Objetivo: datos confiables de las
 empresas que adquieran LuxeRide y posicionamiento serio como competidor
@@ -699,6 +749,8 @@ aditivo):
    vencimiento, dispara alertas email, alimenta la cola.
 6. Enforcement: `lib/dispatch/auto-assign.ts` salta conductores/vehículos
    bloqueados; la asignación manual muestra el motivo del bloqueo.
+
+</details>
 
 ## Backlog de DESARROLLO (0–6 ✅ COMPLETO, ver resumen arriba — detalle histórico abajo)
 

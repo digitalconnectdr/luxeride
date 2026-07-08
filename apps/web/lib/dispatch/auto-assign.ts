@@ -68,14 +68,27 @@ export async function tryAutoAssignDriver(
     .single()
   if (company && company.auto_assign_enabled === false) return { assigned: false }
 
-  // Conductores en servicio de la empresa.
+  // Conductores en servicio de la empresa. Sección J: un conductor bloqueado
+  // por compliance (licencia/permiso vencido) nunca es candidato, ni siquiera
+  // si está marcado "disponible".
   const { data: availableDrivers } = await admin
     .from('drivers')
-    .select('id')
+    .select('id, current_vehicle_id')
     .eq('company_id', booking.company_id)
     .eq('is_available', true)
+    .eq('operational_block', false)
   const driverIds = (availableDrivers ?? []).map((d) => d.id)
   if (!driverIds.length) return { assigned: false }
+  const currentVehicleByDriver = new Map((availableDrivers ?? []).map((d) => [d.id, d.current_vehicle_id]))
+
+  // El vehículo que traen asignado tampoco puede estar bloqueado (seguro/
+  // permiso for-hire/inspección vencidos) — si lo está, ese conductor queda
+  // fuera hasta que se le reasigne un vehículo en regla.
+  const vehicleIdsInPlay = Array.from(new Set(Array.from(currentVehicleByDriver.values()).filter((v): v is string => !!v)))
+  const { data: vehicleBlockRows } = vehicleIdsInPlay.length
+    ? await admin.from('vehicles').select('id, operational_block').in('id', vehicleIdsInPlay)
+    : { data: [] as { id: string; operational_block: boolean }[] }
+  const blockedVehicleIds = new Set((vehicleBlockRows ?? []).filter((v) => v.operational_block).map((v) => v.id))
 
   // Solo cuentan como "activos" los perfiles de conductor que siguen activos.
   const { data: activeProfiles } = await admin
@@ -121,7 +134,11 @@ export async function tryAutoAssignDriver(
     todayCount.set(b.driver_id, (todayCount.get(b.driver_id) ?? 0) + 1)
   }
 
-  const candidates = Array.from(eligibleIds).filter((id) => !conflicted.has(id))
+  const candidates = Array.from(eligibleIds).filter((id) => {
+    if (conflicted.has(id)) return false
+    const vehicleId = currentVehicleByDriver.get(id)
+    return !(vehicleId && blockedVehicleIds.has(vehicleId))
+  })
   if (!candidates.length) return { assigned: false }
 
   // Menos viajes hoy primero; empate → orden estable (el primero encontrado).
@@ -130,12 +147,7 @@ export async function tryAutoAssignDriver(
 
   // Vehículo con el que el conductor está trabajando ahora mismo — así el
   // pasajero ve marca/placa en /track aunque la asignación haya sido automática.
-  const { data: driverRow } = await admin
-    .from('drivers')
-    .select('current_vehicle_id')
-    .eq('id', driverId)
-    .single()
-  const vehicleId = driverRow?.current_vehicle_id ?? null
+  const vehicleId = currentVehicleByDriver.get(driverId) ?? null
 
   const now = new Date().toISOString()
   const { error } = await admin

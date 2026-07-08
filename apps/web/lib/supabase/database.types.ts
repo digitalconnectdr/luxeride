@@ -112,6 +112,14 @@ export type Database = {
           active_payment_provider: string | null
           auto_assign_enabled: boolean
           settings: Json
+          compliance: Json
+          operating_license_expires_at: string | null
+          commercial_insurance_expires_at: string | null
+          compliance_status: string
+          compliance_score: number
+          compliance_alert: boolean
+          compliance_last_reviewed_at: string | null
+          compliance_reviewed_by: string | null
           trial_ends_at: string | null
           subscription_ends_at: string | null
           created_at: string
@@ -148,6 +156,14 @@ export type Database = {
           active_payment_provider?: string | null | undefined
           auto_assign_enabled?: boolean | undefined
           settings?: Json | undefined
+          compliance?: Json | undefined
+          operating_license_expires_at?: string | null | undefined
+          commercial_insurance_expires_at?: string | null | undefined
+          compliance_status?: string | undefined
+          compliance_score?: number | undefined
+          compliance_alert?: boolean | undefined
+          compliance_last_reviewed_at?: string | null | undefined
+          compliance_reviewed_by?: string | null | undefined
           trial_ends_at?: string | null | undefined
           subscription_ends_at?: string | null | undefined
           created_at?: string | undefined
@@ -184,6 +200,14 @@ export type Database = {
           active_payment_provider?: string | null | undefined
           auto_assign_enabled?: boolean | undefined
           settings?: Json | undefined
+          compliance?: Json | undefined
+          operating_license_expires_at?: string | null | undefined
+          commercial_insurance_expires_at?: string | null | undefined
+          compliance_status?: string | undefined
+          compliance_score?: number | undefined
+          compliance_alert?: boolean | undefined
+          compliance_last_reviewed_at?: string | null | undefined
+          compliance_reviewed_by?: string | null | undefined
           trial_ends_at?: string | null | undefined
           subscription_ends_at?: string | null | undefined
           created_at?: string | undefined
@@ -303,6 +327,15 @@ export type Database = {
           insurance_expires_at: string | null
           notes: string | null
           metadata: Json
+          compliance: Json
+          forhire_permit_expires_at: string | null
+          inspection_date: string | null
+          compliance_status: string
+          compliance_score: number
+          operational_block: boolean
+          block_reason: string | null
+          compliance_last_reviewed_at: string | null
+          compliance_reviewed_by: string | null
           created_at: string
           updated_at: string
         }
@@ -324,6 +357,15 @@ export type Database = {
           insurance_expires_at?: string | null | undefined
           notes?: string | null | undefined
           metadata?: Json | undefined
+          compliance?: Json | undefined
+          forhire_permit_expires_at?: string | null | undefined
+          inspection_date?: string | null | undefined
+          compliance_status?: string | undefined
+          compliance_score?: number | undefined
+          operational_block?: boolean | undefined
+          block_reason?: string | null | undefined
+          compliance_last_reviewed_at?: string | null | undefined
+          compliance_reviewed_by?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -345,6 +387,15 @@ export type Database = {
           insurance_expires_at?: string | null | undefined
           notes?: string | null | undefined
           metadata?: Json | undefined
+          compliance?: Json | undefined
+          forhire_permit_expires_at?: string | null | undefined
+          inspection_date?: string | null | undefined
+          compliance_status?: string | undefined
+          compliance_score?: number | undefined
+          operational_block?: boolean | undefined
+          block_reason?: string | null | undefined
+          compliance_last_reviewed_at?: string | null | undefined
+          compliance_reviewed_by?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -365,6 +416,14 @@ export type Database = {
           total_trips: number
           total_earnings: number
           notes: string | null
+          compliance: Json
+          chauffeur_permit_expires_at: string | null
+          compliance_status: string
+          compliance_score: number
+          operational_block: boolean
+          block_reason: string | null
+          compliance_last_reviewed_at: string | null
+          compliance_reviewed_by: string | null
           created_at: string
           updated_at: string
         }
@@ -380,6 +439,14 @@ export type Database = {
           total_trips?: number | undefined
           total_earnings?: number | undefined
           notes?: string | null | undefined
+          compliance?: Json | undefined
+          chauffeur_permit_expires_at?: string | null | undefined
+          compliance_status?: string | undefined
+          compliance_score?: number | undefined
+          operational_block?: boolean | undefined
+          block_reason?: string | null | undefined
+          compliance_last_reviewed_at?: string | null | undefined
+          compliance_reviewed_by?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -395,6 +462,14 @@ export type Database = {
           total_trips?: number | undefined
           total_earnings?: number | undefined
           notes?: string | null | undefined
+          compliance?: Json | undefined
+          chauffeur_permit_expires_at?: string | null | undefined
+          compliance_status?: string | undefined
+          compliance_score?: number | undefined
+          operational_block?: boolean | undefined
+          block_reason?: string | null | undefined
+          compliance_last_reviewed_at?: string | null | undefined
+          compliance_reviewed_by?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }

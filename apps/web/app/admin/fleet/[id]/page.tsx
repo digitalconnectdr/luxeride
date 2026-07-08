@@ -5,6 +5,9 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { VehicleStatusSelect, DriverAssignSelect } from '@/components/admin/fleet-controls'
 import { updateVehicleMaintenanceAction } from '@/app/actions/fleet'
+import { VehicleComplianceForm } from '@/components/admin/vehicle-compliance-form'
+import { COMPLIANCE_STATUS_CLS } from '@/lib/compliance/status-badge'
+import type { ComplianceStatus } from '@/lib/compliance/engine'
 import type { VehicleStatus } from '@/lib/supabase/database.types'
 import { getDict, getLocale } from '@/lib/i18n/server'
 
@@ -37,7 +40,9 @@ export default async function VehicleDetailPage({ params }: PageProps) {
       id, make, model, year, color, plate_number, vin, status,
       vehicle_type_id, current_driver_id, mileage,
       last_maintenance_at, next_maintenance_at, insurance_expires_at,
-      notes, created_at
+      notes, created_at,
+      compliance, forhire_permit_expires_at, inspection_date,
+      compliance_status, compliance_score, operational_block, block_reason
     `)
     .eq('id', params.id)
     .eq('company_id', companyId)       // IDOR guard
@@ -223,6 +228,44 @@ export default async function VehicleDetailPage({ params }: PageProps) {
               </button>
             </div>
           </form>
+        )}
+      </div>
+
+      {/* ── Compliance (Sección J) ── */}
+      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+            {t.complianceTitle}
+          </p>
+          <div className="flex items-center gap-2">
+            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${COMPLIANCE_STATUS_CLS[vehicle.compliance_status as ComplianceStatus]}`}>
+              {getDict().admin.compliance.statuses[vehicle.compliance_status as ComplianceStatus]}
+            </span>
+            <span className="text-[10px] text-sl-on-surface-muted">{t.complianceScore} {vehicle.compliance_score}</span>
+          </div>
+        </div>
+
+        {vehicle.operational_block && (
+          <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-2.5">
+            <p className="text-xs text-red-400 font-medium">{t.complianceBlocked}</p>
+            {vehicle.block_reason && <p className="text-xs text-red-400/80 mt-0.5">{t.complianceBlockReason}: {vehicle.block_reason}</p>}
+          </div>
+        )}
+
+        {!isAccounting && (
+          <VehicleComplianceForm
+            vehicleId={vehicle.id}
+            current={{
+              forhire_permit_number: (vehicle.compliance as { forhire_permit_number?: string } | null)?.forhire_permit_number ?? '',
+              forhire_permit_jurisdiction: (vehicle.compliance as { forhire_permit_jurisdiction?: string } | null)?.forhire_permit_jurisdiction ?? '',
+              forhire_permit_expires_at: vehicle.forhire_permit_expires_at?.slice(0, 10) ?? '',
+              inspection_date: vehicle.inspection_date?.slice(0, 10) ?? '',
+              inspection_status: (vehicle.compliance as { inspection_status?: string } | null)?.inspection_status ?? '',
+              insurance_carrier: (vehicle.compliance as { insurance_carrier?: string } | null)?.insurance_carrier ?? '',
+              insurance_policy_number: (vehicle.compliance as { insurance_policy_number?: string } | null)?.insurance_policy_number ?? '',
+            }}
+            labels={t}
+          />
         )}
       </div>
 
