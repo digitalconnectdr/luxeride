@@ -15,7 +15,12 @@ import {
   type VehicleQuote,
   type BookingResult,
 } from '@/app/actions/bookings'
-import { createPublicCheckoutAction } from '@/app/actions/payments'
+import {
+  createPublicCheckoutAction,
+  getSavedWhopCardAction,
+  chargeWithSavedWhopCardAction,
+  type SavedWhopCard,
+} from '@/app/actions/payments'
 import type { BookingType } from '@/lib/supabase/database.types'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 
@@ -382,6 +387,34 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
     })
   }
 
+  // ─── Tarjeta guardada de Whop (Sección I, capa 3) ─────────────────────────
+  // El bookingId ya creado es el capability token — misma lógica de seguridad
+  // que /track/[id]. Se ofrece solo si el pasajero pagó antes con Whop en esta
+  // misma empresa (por su teléfono).
+  const [savedCard, setSavedCard] = useState<SavedWhopCard | null>(null)
+  const [savedCardCharged, setSavedCardCharged] = useState(false)
+
+  useEffect(() => {
+    if (!confirmation || !onlinePaymentsEnabled) return
+    getSavedWhopCardAction(confirmation.bookingId).then((r) => {
+      if (r.found && r.card) setSavedCard(r.card)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [confirmation?.bookingId, onlinePaymentsEnabled])
+
+  function handlePaySavedCard() {
+    if (!confirmation) return
+    setError('')
+    startTransition(async () => {
+      const result = await chargeWithSavedWhopCardAction(confirmation.bookingId, gratuityPct || undefined)
+      if (!result.success) {
+        setError(result.error ?? 'No se pudo cobrar con la tarjeta guardada')
+        return
+      }
+      setSavedCardCharged(true)
+    })
+  }
+
   // ─── Pago online (post-confirmación) ─────────────────────────────────────
 
   function handlePayOnline() {
@@ -450,13 +483,43 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
                 </div>
               </div>
             )}
-            <button
-              onClick={handlePayOnline}
-              disabled={isPending}
-              className="px-8 py-3.5 bg-[var(--brand)] text-white font-semibold rounded-2xl hover:opacity-90 disabled:opacity-50 transition-colors text-sm"
-            >
-              {isPending ? dict.redirecting : dict.payOnline}
-            </button>
+            {savedCardCharged ? (
+              <p className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 max-w-sm mx-auto">
+                {dict.savedCardSuccess}
+              </p>
+            ) : savedCard ? (
+              <div className="space-y-2">
+                <button
+                  onClick={handlePaySavedCard}
+                  disabled={isPending}
+                  className="px-8 py-3.5 bg-[var(--brand)] text-white font-semibold rounded-2xl hover:opacity-90 disabled:opacity-50 transition-colors text-sm"
+                >
+                  {isPending
+                    ? dict.redirecting
+                    : dict.savedCardPay
+                        .replace('{brand}', savedCard.brand ?? '')
+                        .replace('{last4}', savedCard.last4 ?? '····')}
+                </button>
+                <p>
+                  <button
+                    type="button"
+                    onClick={() => setSavedCard(null)}
+                    disabled={isPending}
+                    className="text-xs text-gray-400 hover:text-gray-600 underline"
+                  >
+                    {dict.savedCardUseOther}
+                  </button>
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={handlePayOnline}
+                disabled={isPending}
+                className="px-8 py-3.5 bg-[var(--brand)] text-white font-semibold rounded-2xl hover:opacity-90 disabled:opacity-50 transition-colors text-sm"
+              >
+                {isPending ? dict.redirecting : dict.payOnline}
+              </button>
+            )}
             <p className="text-xs text-gray-400">{dict.securePayment}</p>
             {error && (
               <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 max-w-sm mx-auto">

@@ -14,6 +14,7 @@ import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
 import { getAppUrl } from '@/lib/app-url'
 
 const APP_URL = getAppUrl()
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 type ActionResult<T = undefined> = { success: boolean; error?: string; data?: T }
 
@@ -208,6 +209,46 @@ export async function createPublicCheckoutAction(
   return createCheckoutForBooking(company.id, booking, { gratuityPct })
 }
 
+// ─── Helper compartido: monto a cobrar (depósito + propina + fee) ─────────────
+// Usado por el checkout normal y por el cobro con tarjeta guardada (Sección I,
+// capa 3) — misma lógica de negocio, un solo lugar para no duplicarla.
+
+function computeChargeAmounts(
+  booking: { total_amount: number | null; currency: string | null; booking_number: string },
+  companySettings: unknown,
+  gratuityPct: number | undefined,
+): {
+  currency: string
+  mainCents: number
+  tipCents: number
+  amountCents: number
+  feeCents: number
+  mainLabel: string
+  isDeposit: boolean
+  depPct: number
+  gratPct: number
+} {
+  const currency = (booking.currency ?? 'USD').toLowerCase()
+  const totalCents = Math.round((booking.total_amount ?? 0) * 100)
+
+  const depPct = depositPct(companySettings)
+  const isDeposit = depPct > 0
+  const gratPct = isDeposit ? 0 : sanitizeGratuityPct(companySettings, gratuityPct)
+
+  const mainCents = isDeposit ? Math.round(totalCents * (depPct / 100)) : totalCents
+  const tipCents = gratPct > 0 ? Math.round(totalCents * (gratPct / 100)) : 0
+  const amountCents = mainCents + tipCents
+
+  const mainLabel = isDeposit
+    ? `Depósito ${depPct}% — Reservación ${booking.booking_number}`
+    : `Reservación ${booking.booking_number}`
+
+  const feePct = platformFeePct(companySettings)
+  const feeCents = Math.round(amountCents * (feePct / 100))
+
+  return { currency, mainCents, tipCents, amountCents, feeCents, mainLabel, isDeposit, depPct, gratPct }
+}
+
 // ─── Helper compartido: crear Checkout Session ────────────────────────────────
 
 async function createCheckoutForBooking(
@@ -252,22 +293,8 @@ async function createCheckoutForBooking(
     .eq('id', companyId)
     .single()
 
-  const currency = (booking.currency ?? 'USD').toLowerCase()
-  const totalCents = Math.round(booking.total_amount * 100)
-
-  // Depósito: si la empresa lo exige, se cobra solo el % (el balance se
-  // coordina al completar el viaje). La propina solo aplica en pago completo.
-  const depPct = depositPct(company?.settings)
-  const isDeposit = depPct > 0
-  const gratPct = isDeposit ? 0 : sanitizeGratuityPct(company?.settings, opts?.gratuityPct)
-
-  const mainCents = isDeposit ? Math.round(totalCents * (depPct / 100)) : totalCents
-  const tipCents = gratPct > 0 ? Math.round(totalCents * (gratPct / 100)) : 0
-  const amountCents = mainCents + tipCents
-
-  const mainLabel = isDeposit
-    ? `Depósito ${depPct}% — Reservación ${booking.booking_number}`
-    : `Reservación ${booking.booking_number}`
+  const { currency, mainCents, tipCents, amountCents, feeCents, mainLabel, isDeposit, depPct, gratPct } =
+    computeChargeAmounts(booking, company?.settings, opts?.gratuityPct)
 
   // Destination charge si la empresa completó Connect onboarding
   const useConnect = Boolean(
@@ -278,8 +305,6 @@ async function createCheckoutForBooking(
       company?.whop_connect_company_id &&
       company?.whop_connect_onboarded,
   )
-  const feePct = platformFeePct(company?.settings)
-  const feeCents = useConnect || useWhop ? Math.round(amountCents * (feePct / 100)) : 0
 
   // Registrar pago pendiente ANTES de crear la sesión (idempotencia vía metadata)
   const { data: payment, error: payErr } = await admin
@@ -570,4 +595,191 @@ export async function refundPaymentAction(
     console.error('[refundPaymentAction]', err)
     return { success: false, error: 'Error al procesar el reembolso' }
   }
+}
+
+// ─── Sección I, capa 3: tarjeta guardada vía Whop ──────────────────────────────
+// El bookingId (UUID no adivinable) es el capability token — el mismo patrón
+// de seguridad que ya usa /track/[id] en todo el proyecto. No se expone ningún
+// endpoint que acepte un teléfono libre para esto.
+
+export interface SavedWhopCard {
+  last4: string | null
+  brand: string | null
+}
+
+// ¿Este pasajero (por el teléfono de ESTA reserva) tiene una tarjeta guardada
+// de un pago anterior con la misma empresa vía Whop?
+export async function getSavedWhopCardAction(
+  bookingId: string,
+): Promise<{ found: boolean; card?: SavedWhopCard }> {
+  if (!UUID_RE.test(bookingId)) return { found: false }
+
+  const admin = createAdminClient()
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('company_id, passenger_phone')
+    .eq('id', bookingId)
+    .maybeSingle()
+  if (!booking?.passenger_phone) return { found: false }
+
+  const { data: member } = await admin
+    .from('passenger_whop_members')
+    .select('whop_member_id')
+    .eq('company_id', booking.company_id)
+    .eq('phone', booking.passenger_phone.trim())
+    .maybeSingle()
+  if (!member) return { found: false }
+
+  const { data: company } = await admin
+    .from('companies')
+    .select('whop_connect_company_id, active_payment_provider, whop_connect_onboarded')
+    .eq('id', booking.company_id)
+    .single()
+  if (
+    !company?.whop_connect_company_id ||
+    company.active_payment_provider !== 'whop' ||
+    !company.whop_connect_onboarded
+  ) {
+    return { found: false }
+  }
+
+  const client = getWhopClient()
+  if (!client) return { found: false }
+
+  try {
+    const page = await client.paymentMethods.list({
+      member_id: member.whop_member_id,
+      company_id: company.whop_connect_company_id,
+    })
+    const card = page.data.find(
+      (m): m is Extract<typeof m, { typename: 'CardPaymentMethod' }> => m.typename === 'CardPaymentMethod',
+    )
+    if (!card) return { found: false }
+    return { found: true, card: { last4: card.card.last4, brand: card.card.brand } }
+  } catch (err) {
+    console.error('[getSavedWhopCardAction]', err)
+    return { found: false }
+  }
+}
+
+// Cobra el viaje con la tarjeta guardada (sin redirigir a un checkout nuevo).
+// Reutiliza exactamente el mismo cálculo de monto y el mismo flujo de webhook
+// (payment.succeeded actualiza el registro `payments` por metadata.payment_id)
+// que el checkout normal — la única diferencia es el método de cobro.
+export async function chargeWithSavedWhopCardAction(
+  bookingId: string,
+  gratuityPct?: number,
+): Promise<ActionResult> {
+  if (!UUID_RE.test(bookingId)) return { success: false, error: 'Reserva inválida' }
+  if (!(await checkRateLimit('saved_card_charge', 5))) {
+    return { success: false, error: RATE_LIMIT_ERROR }
+  }
+
+  const admin = createAdminClient()
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('id, booking_number, status, total_amount, currency, passenger_phone, company_id')
+    .eq('id', bookingId)
+    .maybeSingle()
+  if (!booking) return { success: false, error: 'Reservación no encontrada' }
+  if (!booking.total_amount || booking.total_amount <= 0) {
+    return { success: false, error: 'La reservación no tiene monto a cobrar' }
+  }
+  if (['cancelled', 'no_show', 'failed'].includes(booking.status)) {
+    return { success: false, error: 'No se puede cobrar una reservación cancelada' }
+  }
+  if (!booking.passenger_phone) return { success: false, error: 'Sin teléfono en la reserva' }
+
+  const { data: existing } = await admin
+    .from('payments')
+    .select('id')
+    .eq('booking_id', booking.id)
+    .in('status', ['succeeded', 'processing'])
+    .limit(1)
+  if (existing?.length) return { success: false, error: 'Esta reservación ya tiene un pago registrado' }
+
+  const { data: member } = await admin
+    .from('passenger_whop_members')
+    .select('whop_member_id')
+    .eq('company_id', booking.company_id)
+    .eq('phone', booking.passenger_phone.trim())
+    .maybeSingle()
+  if (!member) return { success: false, error: 'No hay tarjeta guardada para este pasajero' }
+
+  const { data: company } = await admin
+    .from('companies')
+    .select('whop_connect_company_id, active_payment_provider, whop_connect_onboarded, settings')
+    .eq('id', booking.company_id)
+    .single()
+  if (
+    !company?.whop_connect_company_id ||
+    company.active_payment_provider !== 'whop' ||
+    !company.whop_connect_onboarded
+  ) {
+    return { success: false, error: 'Pagos con Whop no disponibles para esta empresa' }
+  }
+
+  const client = getWhopClient()
+  if (!client) return { success: false, error: 'Whop no está configurado' }
+
+  const page = await client.paymentMethods
+    .list({ member_id: member.whop_member_id, company_id: company.whop_connect_company_id })
+    .catch(() => null)
+  const card = page?.data.find((m) => m.typename === 'CardPaymentMethod')
+  if (!card) return { success: false, error: 'No se encontró la tarjeta guardada en Whop' }
+
+  const { currency, amountCents, feeCents, mainLabel, isDeposit, gratPct } =
+    computeChargeAmounts(booking, company.settings, gratuityPct)
+
+  const { data: payment, error: payErr } = await admin
+    .from('payments')
+    .insert({
+      company_id: booking.company_id,
+      booking_id: booking.id,
+      amount: amountCents / 100,
+      currency: currency.toUpperCase(),
+      platform_fee: feeCents / 100,
+      net_amount: (amountCents - feeCents) / 100,
+      status: 'pending',
+      payment_method: 'card',
+      description: `${mainLabel}${gratPct > 0 ? ` (incl. propina ${gratPct}%)` : ''} — tarjeta guardada`,
+    })
+    .select('id')
+    .single()
+  if (payErr || !payment) {
+    console.error('[chargeWithSavedWhopCardAction] payment insert', payErr)
+    return { success: false, error: 'Error al registrar el pago' }
+  }
+
+  try {
+    await client.payments.create({
+      company_id: company.whop_connect_company_id,
+      member_id: member.whop_member_id,
+      payment_method_id: card.id,
+      plan: {
+        currency: currency as never,
+        initial_price: amountCents / 100,
+        application_fee_amount: feeCents > 0 ? feeCents / 100 : undefined,
+        plan_type: 'one_time',
+        title: mainLabel,
+        product: {
+          external_identifier: `luxeride-booking-${booking.company_id}`,
+          title: 'Reservaciones LuxeRide',
+        },
+      },
+      metadata: {
+        payment_id: payment.id,
+        booking_id: booking.id,
+        company_id: booking.company_id,
+        kind: isDeposit ? 'deposit' : 'full',
+      },
+    })
+  } catch (err) {
+    console.error('[chargeWithSavedWhopCardAction]', err)
+    await admin.from('payments').update({ status: 'cancelled' }).eq('id', payment.id)
+    return { success: false, error: 'No se pudo procesar el cobro con la tarjeta guardada' }
+  }
+
+  revalidatePath(`/admin/bookings/${booking.id}`)
+  return { success: true }
 }

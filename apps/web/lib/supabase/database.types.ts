@@ -1292,6 +1292,34 @@ export type Database = {
         Relationships: []
       }
 
+      // ── passenger_whop_members ───────────────────────────────────────────────
+      // Vincula pasajero (por teléfono) ↔ member de Whop de esa empresa, para
+      // reusar su tarjeta guardada en la próxima reserva (Sección I, capa 3).
+      passenger_whop_members: {
+        Row: {
+          id: string
+          company_id: string
+          phone: string
+          whop_member_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          phone: string
+          whop_member_id: string
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          phone?: string | undefined
+          whop_member_id?: string | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── booking_extras ──────────────────────────────────────────────────────
       booking_extras: {
         Row: {

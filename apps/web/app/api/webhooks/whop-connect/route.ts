@@ -12,6 +12,14 @@
 // vez de punto — por eso se comprueban AMBAS variantes de forma defensiva.
 // Antes de depender de esto en producción: dispara un pago de prueba real y
 // revisa los logs de Vercel para confirmar el nombre exacto que llega.
+//
+// Sección I, capa 3 (tarjeta guardada): payment.succeeded ahora también
+// intenta guardar `data.member.id` en passenger_whop_members. El campo
+// `member` en el payload de webhook está documentado en el tipo compartido
+// `Payment` del SDK (shared.d.ts), pero — igual que el resto de este
+// archivo — no se ha confirmado contra un webhook real todavía. Si tras un
+// pago de prueba `passenger_whop_members` sigue vacío, revisa si el payload
+// realmente trae `member` con este nombre/forma.
 
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
@@ -29,6 +37,7 @@ interface WhopPaymentData {
   metadata: Record<string, unknown> | null
   checkout_configuration_id: string | null
   failure_message: string | null
+  member: { id: string; phone: string | null } | null
 }
 
 interface WhopRefundData {
@@ -80,6 +89,28 @@ export async function POST(request: Request) {
       } else if (data.checkout_configuration_id) {
         await query.eq('whop_checkout_id', data.checkout_configuration_id)
       }
+
+      // Sección I, capa 3: guarda el member de Whop del pasajero (por teléfono
+      // de la reserva) para poder reusar su tarjeta guardada en la próxima.
+      const companyId = (data.metadata?.company_id as string | undefined) ?? null
+      const bookingId = (data.metadata?.booking_id as string | undefined) ?? null
+      if (data.member?.id && companyId && bookingId) {
+        const { data: bk } = await admin
+          .from('bookings')
+          .select('passenger_phone')
+          .eq('id', bookingId)
+          .maybeSingle()
+        const phone = bk?.passenger_phone?.trim()
+        if (phone) {
+          await admin
+            .from('passenger_whop_members')
+            .upsert(
+              { company_id: companyId, phone, whop_member_id: data.member.id },
+              { onConflict: 'company_id,phone' },
+            )
+        }
+      }
+
       return NextResponse.json({ received: true })
     }
 
