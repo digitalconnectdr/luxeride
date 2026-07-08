@@ -520,9 +520,17 @@ export default async function LandingPage() {
             <p className="text-[11px] uppercase tracking-[0.25em] text-[#e9c176]/70">
               {dict.common.poweredBy}
             </p>
-            <p className="text-[11px] text-white/30">
-              © {new Date().getFullYear()} {t.footerRights}
-            </p>
+            <div className="flex items-center gap-4">
+              <Link href="/privacy" className="text-[11px] text-white/30 hover:text-[#e9c176] transition-colors">
+                {t.footerPrivacy}
+              </Link>
+              <Link href="/terms" className="text-[11px] text-white/30 hover:text-[#e9c176] transition-colors">
+                {t.footerTerms}
+              </Link>
+              <p className="text-[11px] text-white/30">
+                © {new Date().getFullYear()} {t.footerRights}
+              </p>
+            </div>
           </div>
         </div>
       </footer>

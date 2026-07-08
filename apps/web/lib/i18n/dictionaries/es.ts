@@ -145,7 +145,7 @@ export const es: Dictionary = {
       'Modelos de tarifa flexibles — por zona, distancia o ruta fija',
       'Tracking en vivo, chat y calificaciones',
       'Motor de políticas de cancelación y no-show',
-      'Centro de cumplimiento regulatorio',
+      'Seguimiento de vencimientos de licencias, permisos y seguros',
       'Integración con tu perfil de Google Business',
     ],
     pricingPopular: 'Más popular',
@@ -257,6 +257,8 @@ export const es: Dictionary = {
     ctaSubtitle: 'Crea tu cuenta y recibe tu primera reservación online esta misma semana.',
     ctaButton: 'Crear cuenta gratis →',
     footerRights: 'Todos los derechos reservados.',
+    footerPrivacy: 'Privacidad',
+    footerTerms: 'Términos',
   },
 
   wizard: {
@@ -1673,5 +1675,191 @@ export const es: Dictionary = {
   offline: {
     title: 'Estás sin conexión',
     body: 'No hay conexión a internet. Revisa tu red e inténtalo de nuevo.',
+  },
+
+  legal: {
+    backToHome: '← Volver al inicio',
+    privacy: {
+      title: 'Política de Privacidad',
+      lastUpdated: 'Última actualización: 8 de julio de 2026',
+      intro:
+        'Esta Política de Privacidad explica cómo LuxeRide ("LuxeRide", "nosotros"), operado por JPRS Digital Connect, recopila, usa y comparte información cuando las empresas de transporte ("operadores") y sus pasajeros y choferes usan nuestro software.',
+      sections: [
+        {
+          heading: 'Quiénes somos',
+          body: [
+            'LuxeRide es una plataforma de software que las empresas de transporte (limusinas, black car, chofer privado y traslados al aeropuerto) usan para gestionar reservas online, dispatch, pagos y comunicación con sus pasajeros y conductores.',
+            'LuxeRide es operado por JPRS Digital Connect. Cuando reservas un viaje a través de la página de un operador impulsada por LuxeRide, tu relación comercial directa es con ese operador — LuxeRide provee el software subyacente.',
+          ],
+        },
+        {
+          heading: 'Información que recopilamos',
+          body: [
+            'Información de cuenta: nombre, email, teléfono y rol, para el personal del operador, conductores y usuarios de cuentas corporativas.',
+            'Información de reserva: nombre del pasajero, teléfono, email, direcciones de pickup y dropoff, fecha/hora del viaje, número de vuelo e instrucciones especiales, provistas al hacer una reserva.',
+            'Información de ubicación: posición GPS del chofer mientras un viaje está activo, para que pasajeros y dispatch vean el progreso en vivo. Compartir ubicación se detiene al terminar el viaje.',
+            'Información de pago: los pagos con tarjeta los procesa Whop; LuxeRide no almacena números de tarjeta completos. Sí guardamos registros de transacciones (monto, fecha, estado) necesarios para recibos y contabilidad.',
+            'Información de uso: páginas visitadas, tipo de dispositivo y navegador, recopilada vía cookies y Google Analytics para entender cómo se usa el software y mejorarlo.',
+          ],
+        },
+        {
+          heading: 'Cómo usamos la información',
+          body: [
+            'Para operar las funciones de reserva, dispatch, pago y notificaciones de la plataforma.',
+            'Para enviar emails y SMS relacionados al viaje (confirmaciones, asignación de conductor, avisos de llegada) en nombre del operador.',
+            'Para monitorear, asegurar y mejorar la plataforma, y cumplir obligaciones legales.',
+          ],
+        },
+        {
+          heading: 'Con quién compartimos información',
+          body: [
+            'Con el operador con el que el pasajero reservó — lo necesita para realizar el viaje y gestionar su negocio.',
+            'Con Whop, nuestro procesador de pagos, para completar transacciones con tarjeta.',
+            'Con Google Analytics, de forma agregada/anonimizada, para entender el uso del producto.',
+            'Con autoridades o reguladores solo cuando lo exija la ley aplicable.',
+            'No vendemos información personal a terceros.',
+          ],
+        },
+        {
+          heading: 'Cookies y analítica',
+          body: [
+            'Usamos cookies para recordar tu idioma preferido y para Google Analytics, que nos ayuda a entender patrones agregados de tráfico. Puedes controlar las cookies desde la configuración de tu navegador.',
+          ],
+        },
+        {
+          heading: 'Retención de datos',
+          body: [
+            'Conservamos información de reservas y cuentas mientras la cuenta del operador relacionado esté activa, más un período razonable adicional por motivos legales, contables y de resolución de disputas.',
+          ],
+        },
+        {
+          heading: 'Tus derechos',
+          body: [
+            'Según tu ubicación, puedes tener derecho a solicitar acceso, corrección o eliminación de tu información personal. Para ejercer estos derechos, contacta directamente al operador con el que reservaste, o escríbenos al email de abajo.',
+          ],
+        },
+        {
+          heading: 'Seguridad de datos',
+          body: [
+            'Usamos medidas de seguridad estándar de la industria (conexiones cifradas, controles de acceso, permisos por rol) para proteger la información, pero ningún sistema es perfectamente seguro — no podemos garantizar seguridad absoluta.',
+          ],
+        },
+        {
+          heading: 'Privacidad de menores',
+          body: [
+            'LuxeRide no está dirigido a menores de 16 años, y no recopilamos a sabiendas información personal de ellos.',
+          ],
+        },
+        {
+          heading: 'Transferencias internacionales',
+          body: [
+            'La información puede procesarse en Estados Unidos y otros países donde operan nuestros proveedores de servicios, que pueden tener leyes de protección de datos distintas a las tuyas.',
+          ],
+        },
+        {
+          heading: 'Cambios a esta política',
+          body: [
+            'Podemos actualizar esta Política de Privacidad ocasionalmente. Los cambios importantes se reflejarán actualizando la fecha de "Última actualización" arriba.',
+          ],
+        },
+        {
+          heading: 'Contáctanos',
+          body: ['Preguntas sobre esta política pueden enviarse a privacy@luxeride.app.'],
+        },
+      ],
+    },
+    terms: {
+      title: 'Términos de Servicio',
+      lastUpdated: 'Última actualización: 8 de julio de 2026',
+      intro:
+        'Estos Términos de Servicio rigen tu acceso y uso de LuxeRide, operado por JPRS Digital Connect. Al crear una cuenta o usar la plataforma, aceptas estos términos.',
+      sections: [
+        {
+          heading: 'Descripción del servicio',
+          body: [
+            'LuxeRide es software como servicio que las empresas de transporte usan para operar reservas online, dispatch, pagos y comunicaciones para su propio negocio de transporte.',
+            'LuxeRide es un proveedor de software, no una empresa de transporte. El contrato de cualquier viaje es entre el pasajero y el operador, no con LuxeRide.',
+          ],
+        },
+        {
+          heading: 'Cuentas',
+          body: [
+            'Los operadores son responsables de la exactitud de la información de flota, conductores y precios que ingresan a la plataforma, y de mantener seguras sus credenciales de cuenta.',
+          ],
+        },
+        {
+          heading: 'Cumplimiento regulatorio — deslinde importante',
+          body: [
+            'LuxeRide incluye herramientas (el "Centro de Cumplimiento") que ayudan a los operadores a llevar el seguimiento de las fechas de vencimiento de licencias, permisos y pólizas de seguro que decidan ingresar al sistema.',
+            'Estas herramientas son solo ayudas organizativas. LuxeRide no verifica, certifica, garantiza ni avala que ningún operador, conductor o vehículo esté debidamente licenciado, permisado, asegurado o de otra forma en cumplimiento con las regulaciones de transporte aplicables. Cada operador es el único responsable de obtener y mantener todas las licencias, permisos, seguros y aprobaciones que exija la ley en las jurisdicciones donde opera.',
+          ],
+        },
+        {
+          heading: 'Planes de suscripción y fee de plataforma',
+          body: [
+            'El acceso a LuxeRide requiere un plan de suscripción activo, facturado a través de Whop de forma recurrente. Además del fee de suscripción, aplica un fee de plataforma (un porcentaje de cada viaje completado, que varía según el plan) sobre los pagos procesados a través de la plataforma.',
+            'Las comisiones de procesamiento de tarjeta que cobra Whop son independientes y adicionales a los fees de suscripción y plataforma de LuxeRide.',
+          ],
+        },
+        {
+          heading: 'Cancelación',
+          body: [
+            'Los operadores pueden cancelar su suscripción en cualquier momento desde la configuración de su cuenta o contactándonos; la cancelación toma efecto al final del período de facturación en curso.',
+          ],
+        },
+        {
+          heading: 'Uso aceptable',
+          body: [
+            'Aceptas no usar LuxeRide para ningún propósito ilícito, no interferir con la operación de la plataforma, ni intentar acceder a datos de otro operador sin autorización.',
+          ],
+        },
+        {
+          heading: 'Reservas y políticas del pasajero',
+          body: [
+            'Las ventanas de cancelación, fees por no-show, requisitos de depósito y opciones de propina las configura cada operador y aplican a las reservas hechas en la página de ese operador — LuxeRide no establece ni hace cumplir estas políticas en nombre del operador.',
+          ],
+        },
+        {
+          heading: 'Propiedad intelectual',
+          body: [
+            'LuxeRide y su software subyacente siguen siendo propiedad de JPRS Digital Connect. Los operadores conservan la propiedad de sus propios datos de negocio (flota, reservas, registros de clientes) ingresados a la plataforma.',
+          ],
+        },
+        {
+          heading: 'Deslindes',
+          body: [
+            'LuxeRide se provee "tal cual" y "según disponibilidad", sin garantías de ningún tipo, expresas o implícitas, incluyendo idoneidad para un propósito particular o disponibilidad ininterrumpida.',
+          ],
+        },
+        {
+          heading: 'Limitación de responsabilidad',
+          body: [
+            'En la máxima medida permitida por la ley, JPRS Digital Connect no será responsable por daños indirectos, incidentales o consecuentes derivados del uso de la plataforma, incluyendo disputas entre operadores y pasajeros.',
+          ],
+        },
+        {
+          heading: 'Terminación',
+          body: [
+            'Podemos suspender o terminar el acceso a cuentas que violen estos términos o la ley aplicable, con aviso cuando sea razonablemente posible.',
+          ],
+        },
+        {
+          heading: 'Ley aplicable',
+          body: [
+            'Estos términos se rigen por las leyes aplicables al lugar de negocios de JPRS Digital Connect, sin considerar principios de conflicto de leyes.',
+          ],
+        },
+        {
+          heading: 'Cambios a estos términos',
+          body: [
+            'Podemos actualizar estos términos ocasionalmente. El uso continuado de la plataforma después de una actualización constituye la aceptación de los términos revisados.',
+          ],
+        },
+        {
+          heading: 'Contáctanos',
+          body: ['Preguntas sobre estos términos pueden enviarse a legal@luxeride.app.'],
+        },
+      ],
+    },
   },
 }
