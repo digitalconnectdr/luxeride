@@ -367,72 +367,157 @@ onboarded (onlinePaymentsEnabled). No se piden datos de tarjeta en el formulario
 (va por la página segura de Stripe, por PCI). Antes el pago online solo aparecía
 en la pantalla de éxito; ahora es parte del paso de confirmación.
 
-### G. Farm-out entre operadores — red LuxeRide (investigado 2026-07-06)
-Pedido del usuario: explorar cómo resuelven esto Limo Anywhere (**LA Net**) y
-**GroundXchange**, cuál sería más fácil de construir, y qué se puede ofrecer
-que la industria hoy no tiene. Investigación + diseño ya hechos; falta
-construir.
-
-**Cómo lo resuelve la competencia:**
-- **LA Net**: directorio de +5,400 afiliados, TODOS con Limo Anywhere. Dos
-  operadores se buscan, uno manda solicitud, el otro acepta manualmente. Ya
-  afiliados, el viaje se transfiere a mano ("Farm Out") o por reglas de
-  región (Auto Farm, solo en el plan más caro). Comparten en tiempo real
-  (opcional): estado, GPS del chofer, foto/nombre/placa, monto final
-  facturado — como dato informativo, sin mover dinero.
-- **GroundXchange**: mismo concepto pero ENTRE softwares distintos (Limo
-  Anywhere, SantaCruz, Livery Coach). Requiere registro + aprobación +
-  **mapeo manual** de tipos de servicio/tarifas/métodos de pago/clases de
-  vehículo/códigos de estado entre los dos sistemas, porque cada uno tiene
-  su propio modelo de datos.
+### G. LuxeRide Affiliate Network — farm-out/farm-in entre operadores (rediseñado 2026-07-08)
+Pedido original: explorar cómo resuelven esto Limo Anywhere (**LA Net**) y
+**GroundXchange**. Diseño inicial (LA Net/GroundXchange) reemplazado por uno
+más completo, basado en un documento propio del usuario ("LuxeRide Affiliate
+Network") que describe el módulo con el nivel de detalle de un producto real,
+no solo una feature. Investigación + diseño hechos; falta construir.
 
 **Por qué LuxeRide parte con ventaja estructural:** todas las empresas de
 LuxeRide ya comparten el MISMO esquema (`vehicle_types`, `service_zones`,
-`bookings`, `drivers`) — no hace falta el paso de "mapeo" que sí necesita
-GroundXchange (e incluso LA Net entre afiliados del mismo software). Se
-puede construir sobre infraestructura que YA EXISTE:
-- `booking_events` (bitácora tipo/actor/motivo) → mismo mecanismo para
-  registrar "viaje transferido a Empresa X, motivo Y".
-- `trip_messages`/`driver_messages` en Supabase Realtime → coordinación
-  entre operadores sin tabla nueva de mensajería.
-- `lib/dispatch/auto-assign.ts` → extender la búsqueda de conductor
-  disponible más allá de la propia empresa cuando no hay match interno.
-- Whop Connect (`application_fee_amount`) → ya existe el mecanismo de
-  split de pagos, reutilizable para repartir el cobro entre dos empresas.
+`bookings`, `drivers`) — no hace falta el "mapeo" manual que sí necesita
+GroundXchange (o incluso LA Net entre afiliados de distinta instalación).
+Infraestructura ya existente y reutilizable: `booking_events` (bitácora),
+`trip_messages`/Realtime (chat), `lib/dispatch/auto-assign.ts` (fase
+auto-farm), Whop Connect `application_fee_amount` (split, fase avanzada —
+ver Liquidación abajo).
 
-**Alcance decidido: SOLO LuxeRide↔LuxeRide** (no cross-platform tipo
-GroundXchange — eso requeriría API pública + acuerdos con terceros,
-fuera de alcance por ahora, coherente con "dejalo asi" ya acordado sobre
-la API pública). Debe seguir siendo **estrictamente opt-in entre empresas
-que se aprueban mutuamente** — NUNCA un directorio público (coherente con
-la decisión de white-label puro del 2026-06-14, directorio ya eliminado
-del landing).
+**Alcance del MVP: SOLO LuxeRide↔LuxeRide**, estrictamente opt-in entre
+empresas que se aprueban mutuamente — nunca un directorio público (coherente
+con la decisión de white-label puro del 2026-06-14). El portal de afiliado
+externo sin cuenta (sección "Fase 2" más abajo) es una extensión posterior,
+no parte del MVP.
 
-**Plan de implementación (fases):**
-1. Tabla `company_affiliates` (company_id, affiliate_company_id, status
-   pending/accepted/rejected/revoked, created_at) — relación bidireccional
-   con aprobación manual, igual que LA Net.
-2. Acción "Transferir viaje" en el Dispatch Board: elegir empresa afiliada,
-   motivo, registra en `booking_events`; la reserva pasa a
-   `company_id`/`vehicle_id`/`driver_id` de la empresa receptora.
-   Notificación a ambas partes (email/chat).
-3. Auto-farm-out (fase 2, opcional): extender `auto-assign.ts` — si no hay
-   conductor propio disponible O la reserva cae fuera de `service_zones` de
-   la empresa, buscar automáticamente entre afiliados con cobertura y
-   tipo de vehículo compatible antes de dejarla `pending` sin asignar.
-4. Tracking transparente para el pasajero: el link `/track/[id]` sigue
-   funcionando igual aunque el viaje lo ejecute la empresa afiliada (mapa
-   en vivo real, no solo texto de estado como LA Net) — ninguna
-   competencia ofrece esto hoy.
-5. Reparto automático del cobro (diferenciador fuerte): al confirmarse la
-   transferencia, dividir el `application_fee_amount` de Whop Connect entre
-   empresa originadora y ejecutora según % acordado — sin facturación manual
-   entre operadores, que es justamente el punto débil de LA Net/GroundXchange
-   (ambos solo "informan" el monto final, el dinero se arregla por fuera).
-6. (Opcional, fase 3) Score de confiabilidad por empresa afiliada
-   (puntualidad/cancelaciones, mismo cálculo que ya existe por conductor en
-   `/admin/drivers/[id]`) para que el auto-farm-out priorice al afiliado con
-   mejor historial, no solo al más cercano.
+**Diferencia clave vs. el diseño anterior — el viaje afiliado es una
+entidad separada, no una reasignación.** El diseño viejo reasignaba
+`company_id`/`vehicle_id`/`driver_id` directamente en el booking original,
+lo cual le "quitaba" el viaje del panel a la empresa que lo originó — rompe
+la idea central de que la empresa principal mantiene la relación comercial
+con el pasajero. El diseño correcto: se crea una fila en una tabla nueva
+(`affiliate_trips`) que vincula el booking original con la empresa afiliada;
+ambas empresas ven el mismo viaje desde su propia perspectiva (una como
+"enviado", la otra como "recibido"), sin que nadie pierda visibilidad.
+
+**Flujo correcto: solicitud → aceptación, no transferencia directa.** El
+diseño anterior no tenía un paso real de consentimiento del afiliado. El
+correcto:
+1. Dispatcher entra a una reserva sin cobertura y pulsa **"Enviar a
+   afiliado"** (motivo: sin conductor, fuera de zona, sobrecapacidad, mejor
+   tarifa del afiliado, etc. — queda en `booking_events`).
+2. Define **precio a pagar al afiliado** y ve el margen calculado (precio ya
+   cobrado al pasajero − payout al afiliado − fee de plataforma, si aplica).
+3. Elige uno o varios afiliados (de su lista de `company_affiliates`
+   aprobados) y envía la solicitud — con **tiempo límite de respuesta**
+   (ej. 10 min si es hoy, 30 min si es mañana, 2h si es a futuro).
+4. **Antes de aceptar**, el afiliado solo ve: zona aproximada, fecha/hora,
+   tipo de vehículo, pasajeros, precio ofrecido, distancia/duración
+   estimadas — **nunca** nombre completo, teléfono ni dirección exacta del
+   pasajero (protege a la empresa principal de que el afiliado se quede con
+   el cliente).
+5. El afiliado acepta, rechaza, o contraoferta un precio distinto.
+6. Al aceptar: se revela el detalle completo (pickup/dropoff exactos,
+   nombre, teléfono si está permitido, notas, vuelo), se crea la fila en
+   `affiliate_trips`, y si se envió a varios afiliados a la vez, los demás
+   pasan automáticamente a "Closed / Awarded to another affiliate" (evitar
+   doble aceptación).
+7. El afiliado asigna su propio conductor/vehículo y actualiza estados
+   (en camino, llegó, en viaje, completado) — visibles para la empresa
+   principal en tiempo real.
+8. Al completar, se genera la liquidación pendiente (ver abajo).
+
+**Modos de marca frente al pasajero** (nuevo, no estaba en el diseño
+anterior) — reutiliza el sistema de branding blanco por empresa que
+LuxeRide ya tiene:
+- **White-label total**: el pasajero solo ve la marca de la empresa
+  principal ("Tu viaje con Revival está confirmado").
+- **Operated by**: se muestra "Operado por: [Empresa afiliada]" (por
+  transparencia/compliance, si el operador lo prefiere).
+- **Co-branded**: "Reservado por Revival. Operado por [Afiliado]."
+  La empresa principal elige el modo por defecto en Configuración.
+
+**Liquidación (Settlement) — manual primero, no automática.** El diseño
+anterior asumía que el split de pago por Whop Connect
+(`application_fee_amount`) resolvería esto automáticamente — poco realista,
+porque exige que AMBAS empresas estén en Whop con la estructura compatible.
+El MVP debe llevar su propio registro de liquidación dentro de LuxeRide:
+monto cobrado al pasajero, payout al afiliado, fee de plataforma (si
+aplica), estado (`pending`/`invoiced`/`paid`/`disputed`), método de pago,
+fecha. El split automático por Whop queda como mejora de fase avanzada,
+solo entre empresas que ya tengan Whop Connect activo mutuamente.
+
+**Tabla de perfil de afiliado — reutiliza compliance-lite de la sección J.**
+El documento propone un perfil de afiliado con cobertura (ciudades,
+aeropuertos, zonas), servicios, tipos de vehículo, términos de pago
+(Net 7/15/30, comisión fija o %), y compliance ligero (estado de seguro,
+licencia operativa, fecha de última verificación). Estos últimos campos son
+literalmente los mismos que ya se diseñaron en la sección J (Compliance
+Center) — no duplicar, reusar esa misma tabla/campos cuando se construya.
+
+**Canales de comunicación (4, no uno genérico):**
+1. Empresa principal ↔ empresa afiliada (términos comerciales, cambios).
+2. Dispatcher ↔ dispatcher (operativo: "¿conductor asignado?", "vuelo con
+   retraso").
+3. Conductor afiliado ↔ su propio dispatcher (interno de esa empresa).
+4. Pasajero ↔ conductor — solo si la empresa principal lo permite
+   explícitamente.
+Todos reusan `trip_messages`/Realtime, solo cambia el `sender`/scope.
+
+**Monetización — feature de pago, activable en dos niveles** (pedido
+explícito del usuario):
+- **Super-admin**: interruptor por empresa (`affiliate_network_enabled` +
+  fecha de activación) en `/super-admin/companies/[id]` — para dar acceso
+  manual, cortar por impago o abuso, o incluirlo gratis en cuentas
+  Enterprise negociadas.
+- **Autoservicio**: cada empresa puede activarlo y pagarlo ella misma desde
+  `/admin/settings` (nueva tarjeta "LuxeRide Affiliate Network"), mismo
+  patrón que ya existe para el checkout de Whop de los planes —
+  probablemente vía un plan/producto de Whop dedicado, no parte del plan
+  base.
+- Precio sugerido (según el documento): $99–$299/mes como add-on, o un
+  fee por viaje farm-out (ej. 1–3% o $0.50–$2 fijo) como alternativa/
+  complemento — decidir monto exacto más adelante, no bloquea el diseño.
+
+**Plan de implementación (fases, actualizado):**
+1. **Fase 1 — MVP privado.** Tabla `company_affiliates` (relación
+   bidireccional con aprobación manual) + tabla `affiliate_trips` (booking
+   original, empresa afiliada, precio cobrado, payout, margen, estado de
+   solicitud, estado de liquidación). Acción "Enviar a afiliado" con
+   aceptar/rechazar manual, un solo afiliado a la vez. Chat 1 y 2. Reporte
+   básico de farm-in/farm-out. Liquidación manual. El interruptor de pago
+   (super-admin + autoservicio) se construye en esta fase, no después.
+2. **Fase 2 — Portal de afiliado externo.** Link seguro (mismo patrón de
+   capability-URL que `/track/[id]`) para que un afiliado SIN cuenta de
+   LuxeRide pueda ver la solicitud, aceptar/rechazar, escribir
+   conductor/vehículo como texto libre (no tiene registros en `drivers`/
+   `vehicles`), y actualizar estado hasta completar. Liquidación con estos
+   afiliados es siempre manual (no tienen Whop conectado). Es el
+   diferenciador más fuerte según el propio documento — pero es la parte
+   con más superficie nueva de seguridad/privacidad, por eso va después del
+   MVP, no junto con él.
+3. **Fase 3 — Pools.** Enviar a un grupo de afiliados a la vez (por ciudad,
+   aeropuerto, tipo de vehículo, rating) en vez de uno por uno; el primero
+   que acepta gana, expiración automática de los demás.
+4. **Fase 4 — Bidding.** El afiliado puede contraofertar un precio distinto
+   al ofrecido; el dispatcher compara y elige.
+5. **Fase 5 — Auto-farm.** Extender `lib/dispatch/auto-assign.ts`: si no hay
+   conductor propio disponible o la reserva cae fuera de `service_zones`,
+   buscar automáticamente entre afiliados aprobados con cobertura y tipo de
+   vehículo compatible, por reglas (zona, rating, precio máximo, margen
+   mínimo) — antes de dejar la reserva sin asignar.
+6. **Score de confiabilidad por afiliado** (transversal, se puede sumar en
+   cualquier fase): puntualidad, cancelaciones, tiempo de respuesta —
+   mismo cálculo que ya existe por conductor en `/admin/drivers/[id]`, para
+   que Fase 5 priorice al afiliado con mejor historial.
+
+**Diferenciadores reales frente a LA Net/GroundXchange** (según el
+documento, validados): link externo sin cuenta para afiliados (punto 2),
+chat por viaje en vez de solo email, protección de datos del pasajero antes
+de aceptar, tracking en vivo compartido (mapa real, no solo texto de
+estado — ninguna competencia lo ofrece hoy), liquidación clara desde el
+inicio (cliente paga X / afiliado recibe Y / margen Z visible antes de
+enviar la solicitud, no reconciliado por fuera del sistema como hacen LA
+Net y GroundXchange).
 
 ### H. Gaps vs. Taxi Web Design (investigado 2026-07-06, ✅ completado 2026-07-08)
 Comparación directa contra Taxi Web Design (competidor con apps nativas,
