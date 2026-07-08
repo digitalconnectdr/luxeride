@@ -1710,13 +1710,20 @@ export const en = {
           ],
         },
         {
+          heading: 'Data processing roles',
+          body: [
+            'For passenger and booking information, the operator is the data controller (the business that decides why and how that information is used to serve its customers), and LuxeRide acts as a data processor / service provider that handles the data solely on the operator\'s instructions, to power the software.',
+            'This means requests about passenger data (access, correction, deletion) should generally be directed to the operator a passenger booked with, who is best positioned to respond, though LuxeRide will assist operators in fulfilling verified requests.',
+          ],
+        },
+        {
           heading: 'How we share information',
           body: [
             'With the operator a passenger booked with — they need it to fulfill the trip and manage their business.',
-            'With Whop, our payment processor, to complete card transactions.',
-            'With Google Analytics, in aggregated/anonymized form, to understand product usage.',
-            'With law enforcement or regulators only when required by applicable law.',
-            'We do not sell personal information to third parties.',
+            'With service providers who process information on our behalf under confidentiality obligations, including Whop (payments), Google (maps, places and analytics), and our email/SMS delivery and cloud-hosting providers.',
+            'With law enforcement, regulators or courts only when required by applicable law, or to protect the rights, property or safety of LuxeRide, our operators, or the public.',
+            'In connection with a merger, acquisition, financing or sale of assets, subject to confidentiality protections.',
+            'We do not sell or "share" (as defined under California law) personal information to third parties for cross-context behavioral advertising, and we do not rent personal information to third parties for their own marketing.',
           ],
         },
         {
@@ -1728,31 +1735,37 @@ export const en = {
         {
           heading: 'Data retention',
           body: [
-            'We retain booking and account information for as long as the related operator account is active, plus a reasonable period afterward for legal, accounting and dispute-resolution purposes.',
+            'We retain booking and account information for as long as the related operator account is active, plus a reasonable period afterward for legal, accounting, fraud-prevention and dispute-resolution purposes. Location information tied to a specific trip is retained only as long as reasonably necessary for trip support, safety and dispute-resolution purposes, and is not used for ongoing tracking after the trip concludes.',
           ],
         },
         {
           heading: 'Your rights',
           body: [
-            'Depending on where you are located, you may have the right to request access to, correction of, or deletion of your personal information. To exercise these rights, contact the operator you booked with directly, or reach us at the email below.',
+            'Depending on where you are located, you may have the right to request access to, correction of, deletion of, or portability of your personal information, and to object to certain processing. To exercise these rights, contact the operator you booked with directly, or reach us at the email below — we may need to verify your identity before acting on a request, and some requests may be limited where retention is required by law.',
+          ],
+        },
+        {
+          heading: 'California privacy rights',
+          body: [
+            'If you are a California resident, you have the right to know what personal information we collect, to request deletion or correction of it, to opt out of any sale or sharing (we do not sell or share personal information as described above), and to not be discriminated against for exercising these rights. You may submit a request using the contact details below; we may need to verify your identity first.',
           ],
         },
         {
           heading: 'Data security',
           body: [
-            'We use industry-standard safeguards (encrypted connections, access controls, role-based permissions) to protect information, but no system is perfectly secure — we cannot guarantee absolute security.',
+            'We use industry-standard safeguards (encrypted connections, access controls, role-based permissions) to protect information. No system is perfectly secure, and we cannot guarantee absolute security; to the maximum extent permitted by law, LuxeRide\'s liability for any unauthorized access to or disclosure of information is limited as described in the "Limitation of liability" section of our Terms of Service.',
           ],
         },
         {
           heading: "Children's privacy",
           body: [
-            'LuxeRide is not directed at children under 16, and we do not knowingly collect personal information from them.',
+            'LuxeRide is not directed at children under 16, and we do not knowingly collect personal information from them. If we learn we have collected information from a child under 16, we will delete it.',
           ],
         },
         {
           heading: 'International transfers',
           body: [
-            'Information may be processed in the United States and other countries where our service providers operate, which may have different data protection laws than your own.',
+            'Information may be processed in the United States and other countries where our service providers operate, which may have different data protection laws than your own. By using LuxeRide, you consent to this transfer and processing to the extent permitted by applicable law.',
           ],
         },
         {
@@ -1763,7 +1776,7 @@ export const en = {
         },
         {
           heading: 'Contact us',
-          body: ['Questions about this policy can be sent to privacy@luxeride.app.'],
+          body: ['Questions about this policy, or requests regarding your personal information, can be sent to privacy@luxeride.app.'],
         },
       ],
     },
@@ -1777,81 +1790,121 @@ export const en = {
           heading: 'Description of service',
           body: [
             'LuxeRide is software-as-a-service that transportation operators use to run online bookings, dispatch, payments and communications for their own transportation business.',
-            'LuxeRide is a software provider, not a transportation company. The contract for any ride is between the passenger and the operator, not with LuxeRide.',
+            'LuxeRide is a software provider, not a transportation company, carrier, broker, or motor carrier of any kind. The contract for any ride is between the passenger and the operator alone; LuxeRide is not a party to that contract and has no involvement in performing, supervising or guaranteeing any transportation service.',
           ],
         },
         {
-          heading: 'Accounts',
+          heading: 'Eligibility and accounts',
           body: [
-            'Operators are responsible for the accuracy of the fleet, driver and pricing information they enter into the platform, and for keeping their account credentials secure.',
+            'You must be at least 18 years old and have the legal authority to bind the business you represent to open an operator account. Operators are solely responsible for the accuracy of the fleet, driver, insurance and pricing information they enter into the platform, and for keeping their account credentials confidential and secure.',
+            'You are responsible for all activity that occurs under your account, whether or not authorized by you, except to the extent caused by LuxeRide\'s gross negligence.',
+          ],
+        },
+        {
+          heading: 'No transportation provider — assumption of risk',
+          body: [
+            'LuxeRide does not own, lease, or operate any vehicle; does not employ, contract with, dispatch, train, supervise or background-check any driver; and does not provide transportation services of any kind. All transportation services are provided exclusively by the operator and its drivers, who act as independent businesses with no agency, employment, joint-venture or partnership relationship with LuxeRide or JPRS Digital Connect.',
+            'LuxeRide has no control over, and assumes no responsibility for, the conduct of any operator, driver or passenger; the condition, safety or maintenance of any vehicle; traffic accidents, personal injury, death or property damage occurring during or in connection with any trip; or any criminal act committed by any operator, driver or passenger. By using LuxeRide-powered booking pages, riders and operators acknowledge and accept these risks as inherent to ground transportation and agree that LuxeRide and JPRS Digital Connect bear no liability for them.',
           ],
         },
         {
           heading: 'Regulatory compliance — important disclaimer',
           body: [
             'LuxeRide includes tools (the "Compliance Center") that help operators track the expiration dates of licenses, permits and insurance policies they choose to enter into the system.',
-            'These tools are organizational aids only. LuxeRide does not verify, certify, guarantee or warrant that any operator, driver or vehicle is properly licensed, permitted, insured or otherwise compliant with applicable transportation regulations. Each operator is solely responsible for obtaining and maintaining all licenses, permits, insurance and approvals required by law in the jurisdictions where they operate.',
+            'These tools are organizational aids only. LuxeRide does not verify, certify, guarantee or warrant that any operator, driver or vehicle is properly licensed, permitted, insured or otherwise compliant with applicable transportation regulations. Each operator is solely and entirely responsible for obtaining and maintaining all licenses, permits, insurance and approvals required by law in the jurisdictions where they operate, and for the accuracy of any dates or documents it enters into the Compliance Center.',
           ],
         },
         {
           heading: 'Subscription plans and platform fees',
           body: [
-            'Access to LuxeRide requires an active subscription plan, billed through Whop on a recurring basis. In addition to the subscription fee, a platform fee (a percentage of each completed trip, which varies by plan) applies to payments processed through the platform.',
-            'Card processing fees charged by Whop are separate from, and in addition to, LuxeRide\'s subscription and platform fees.',
+            'Access to LuxeRide requires an active subscription plan, billed through Whop on a recurring basis. In addition to the subscription fee, a platform fee (a percentage of each completed trip, which varies by plan) applies to payments processed through the platform. Fees are subject to change on prospective bookings with reasonable notice.',
+            'Card processing fees charged by Whop are separate from, and in addition to, LuxeRide\'s subscription and platform fees. LuxeRide is not responsible for Whop\'s fees, funds availability, chargebacks, payouts or compliance with card-network rules.',
           ],
         },
         {
           heading: 'Cancellation',
           body: [
-            'Operators may cancel their subscription at any time through their account settings or by contacting us; cancellation takes effect at the end of the then-current billing period.',
+            'Operators may cancel their subscription at any time through their account settings or by contacting us; cancellation takes effect at the end of the then-current billing period. Except where required by law, fees already paid are non-refundable.',
           ],
         },
         {
           heading: 'Acceptable use',
           body: [
-            'You agree not to use LuxeRide for any unlawful purpose, to interfere with the platform\'s operation, or to attempt to access data belonging to another operator without authorization.',
+            'You agree not to use LuxeRide for any unlawful purpose, to interfere with or disrupt the platform\'s operation or security, to reverse-engineer or scrape the software, to misrepresent your identity, or to attempt to access data belonging to another operator without authorization.',
           ],
         },
         {
           heading: 'Passenger bookings and policies',
           body: [
-            'Cancellation windows, no-show fees, deposit requirements and gratuity options are configured by each operator and apply to bookings made through that operator\'s page — LuxeRide does not set or enforce these policies on the operator\'s behalf.',
+            'Cancellation windows, no-show fees, deposit requirements and gratuity options are configured by each operator and apply to bookings made through that operator\'s page — LuxeRide does not set, endorse or enforce these policies on the operator\'s behalf, and is not a party to any dispute concerning them.',
+          ],
+        },
+        {
+          heading: 'Third-party services',
+          body: [
+            'LuxeRide integrates third-party services, including Whop (payments), Google (maps, places and analytics), and SMS/email delivery providers. These services operate under their own terms, and LuxeRide is not responsible for their availability, accuracy, security or acts or omissions.',
           ],
         },
         {
           heading: 'Intellectual property',
           body: [
-            'LuxeRide and its underlying software remain the property of JPRS Digital Connect. Operators retain ownership of their own business data (fleet, bookings, customer records) entered into the platform.',
+            'LuxeRide and its underlying software, design, trademarks and documentation remain the exclusive property of JPRS Digital Connect. Operators retain ownership of their own business data (fleet, bookings, customer records) entered into the platform, and grant LuxeRide a limited license to host, process and display that data solely to provide the service.',
+            'Nothing in these terms transfers any LuxeRide intellectual property to you, and you may not use LuxeRide\'s name, logo or branding without prior written consent, other than as embedded in the software itself for your own operator page.',
           ],
         },
         {
-          heading: 'Disclaimers',
+          heading: 'Disclaimer of warranties',
           body: [
-            'LuxeRide is provided "as is" and "as available", without warranties of any kind, express or implied, including fitness for a particular purpose or uninterrupted availability.',
+            'LuxeRide is provided "as is" and "as available", without warranties of any kind, express or implied, including any implied warranties of merchantability, fitness for a particular purpose, title, non-infringement, or that the service will be uninterrupted, timely, secure or error-free. No advice or information obtained from LuxeRide creates any warranty not expressly stated in these terms.',
           ],
         },
         {
           heading: 'Limitation of liability',
           body: [
-            'To the maximum extent permitted by law, JPRS Digital Connect will not be liable for indirect, incidental or consequential damages arising from use of the platform, including disputes between operators and passengers.',
+            'To the maximum extent permitted by law, LuxeRide and JPRS Digital Connect (including their officers, employees and affiliates) will not be liable for any indirect, incidental, special, consequential, exemplary or punitive damages, or any loss of profits, revenue, data or goodwill, arising from or related to use of the platform, transportation services booked through it, or any dispute between operators, drivers, corporate accounts or passengers — even if advised of the possibility of such damages.',
+            'To the maximum extent permitted by law, the total aggregate liability of LuxeRide and JPRS Digital Connect for any claim arising out of or relating to these terms or the service will not exceed the total subscription fees actually paid by the relevant operator to LuxeRide in the twelve (12) months preceding the event giving rise to the claim.',
+          ],
+        },
+        {
+          heading: 'Indemnification',
+          body: [
+            'You agree to defend, indemnify and hold harmless LuxeRide, JPRS Digital Connect and their officers, employees and affiliates from any claim, damage, liability, cost or expense (including reasonable attorneys\' fees) arising out of or related to: (a) your use of the platform; (b) the transportation services you or your drivers provide; (c) your violation of these terms or of any applicable law or regulation, including transportation licensing and insurance requirements; (d) any dispute between you and a passenger, driver, corporate account or third party; or (e) the accuracy of information you enter into the platform, including the Compliance Center.',
+          ],
+        },
+        {
+          heading: 'Dispute resolution and arbitration',
+          body: [
+            'Any dispute arising out of or relating to these terms or the service will first be addressed through good-faith negotiation between the parties. If not resolved within thirty (30) days, the dispute will be finally settled by binding individual arbitration, and each party waives the right to a jury trial and to participate in a class, collective or representative action, to the maximum extent permitted by law.',
           ],
         },
         {
           heading: 'Termination',
           body: [
-            'We may suspend or terminate access to accounts that violate these terms or applicable law, with notice where reasonably possible.',
+            'We may suspend or terminate access to any account that violates these terms, applicable law, or that we reasonably believe poses a risk to the platform, other users, or third parties, with notice where reasonably possible. Sections of these terms that by their nature should survive termination (including intellectual property, disclaimers, limitation of liability, indemnification and dispute resolution) will survive.',
           ],
         },
         {
-          heading: 'Governing law',
+          heading: 'Force majeure',
           body: [
-            'These terms are governed by the laws applicable to JPRS Digital Connect\'s place of business, without regard to conflict-of-law principles.',
+            'Neither party will be liable for any failure or delay in performance resulting from causes beyond its reasonable control, including natural disasters, acts of government, labor disputes, internet or utility failures, or failures of third-party service providers.',
+          ],
+        },
+        {
+          heading: 'Governing law and venue',
+          body: [
+            'These terms are governed by the laws applicable to JPRS Digital Connect\'s place of business, without regard to conflict-of-law principles. Subject to the arbitration provision above, the state and federal courts located in that jurisdiction will have exclusive venue over any dispute not subject to arbitration.',
+          ],
+        },
+        {
+          heading: 'General provisions',
+          body: [
+            'If any provision of these terms is found unenforceable, the remaining provisions remain in full force. These terms, together with the Privacy Policy, constitute the entire agreement between you and LuxeRide regarding the service. Our failure to enforce any provision is not a waiver of it. You may not assign these terms without our prior written consent; we may assign them freely in connection with a merger, acquisition or sale of assets.',
           ],
         },
         {
           heading: 'Changes to these terms',
           body: [
-            'We may update these terms from time to time. Continued use of the platform after an update constitutes acceptance of the revised terms.',
+            'We may update these terms from time to time. Material changes will be reflected by updating the "Last updated" date above; continued use of the platform after an update constitutes acceptance of the revised terms.',
           ],
         },
         {
