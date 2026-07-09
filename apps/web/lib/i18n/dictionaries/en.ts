@@ -114,6 +114,7 @@ export const en = {
         desc: 'Add your vehicles with photos, capacities and rates in minutes.',
       },
     },
+    statement: { line1: 'Your fleet is premium.', line2: 'Your software should be too.' },
     testimonialsTitle: 'Operators who made the switch',
     testimonials: [
       {

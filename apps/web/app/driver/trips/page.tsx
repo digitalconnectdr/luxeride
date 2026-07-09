@@ -14,9 +14,9 @@ import { parseExtraFees } from '@/lib/policy/engine'
 import { TripChat } from '@/components/trip/trip-chat'
 import { PassengerContact } from '@/components/driver/passenger-contact'
 import { CopyButton } from '@/components/trip/copy-button'
-import { StaticMap } from '@/components/trip/static-map'
-import { LiveTrackingMap } from '@/components/trip/live-tracking-map'
+import { InteractiveLiveMap } from '@/components/trip/interactive-live-map'
 import { LiveLocationReporter } from '@/components/driver/live-location-reporter'
+import { MapsProvider } from '@/components/maps/maps-provider'
 import { DriverRateForm } from '@/components/driver/driver-rate-form'
 import { buildTripStaticMapUrl, tripDirectionsHref } from '@/lib/tracking/static-map-url'
 import { DriverSelfAvailabilityToggle } from '@/components/driver/availability-toggle'
@@ -162,6 +162,7 @@ export default async function DriverTripsPage() {
   const wazeUrl = (addr: string) => `https://www.waze.com/ul?q=${encodeURIComponent(addr)}&navigate=yes`
 
   return (
+    <MapsProvider>
     <div className="min-h-screen bg-[#f6f4ef] text-[#1d1b18] antialiased">
       <ServiceWorkerRegister />
       {/* Auto-refresh mientras hay viajes activos (capta cambios del dispatcher) */}
@@ -318,22 +319,23 @@ export default async function DriverTripsPage() {
 
                   {/* ── DERECHA: mapa + ruta + pasajero + chat + soporte ── */}
                   <div className="space-y-5">
-                    {/* Mapa del viaje (pickup A → destino B) */}
+                    {/* Mapa del viaje (pickup A → destino B) — mapa interactivo real
+                        (pan/zoom, marcador del pasajero se desliza en vez de saltar). */}
                     {mp && isActive && (
-                      <LiveTrackingMap
+                      <InteractiveLiveMap
                         bookingId={t.id}
-                        initialSrc={mp.src}
+                        pickup={{ lat: pLoc!.lat!, lng: pLoc!.lng! }}
+                        dropoff={{ lat: dLoc!.lat!, lng: dLoc!.lng! }}
+                        routePolyline={t.route_polyline}
+                        brandColor={brandColor}
                         href={mp.href}
                         alt={dt.route}
                         openLabel={dt.openInMaps}
-                        brandColor={brandColor}
+                        fallbackSrc={mp.src}
                         light
                         showPausedBanner={false}
                         labels={dt.liveMap}
                       />
-                    )}
-                    {mp && !isActive && (
-                      <StaticMap src={mp.src} href={mp.href} alt={dt.route} openLabel={dt.openInMaps} light />
                     )}
                     {/* Ruta del viaje */}
                     <div className="rounded-2xl border border-[#e5e1d8] bg-white p-5 space-y-3 text-sm">
@@ -533,5 +535,6 @@ export default async function DriverTripsPage() {
         <p className="text-xs text-center text-[#a8a39a] pt-4">{dt.mobileSoon}</p>
       </main>
     </div>
+    </MapsProvider>
   )
 }

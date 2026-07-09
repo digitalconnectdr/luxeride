@@ -8,10 +8,11 @@ import { TrackActions } from '@/components/trip/track-actions'
 import { TripChat } from '@/components/trip/trip-chat'
 import { CopyButton } from '@/components/trip/copy-button'
 import { StaticMap } from '@/components/trip/static-map'
-import { LiveTrackingMap } from '@/components/trip/live-tracking-map'
+import { InteractiveLiveMap } from '@/components/trip/interactive-live-map'
 import { buildTripStaticMapUrl, tripDirectionsHref } from '@/lib/tracking/static-map-url'
 import { ShareButton } from '@/components/trip/share-button'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
+import { MapsProvider } from '@/components/maps/maps-provider'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = getDict(getLocale()).tracking
@@ -145,6 +146,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const goldRule = `linear-gradient(90deg, transparent, ${brandColor}, transparent)`
 
   return (
+    <MapsProvider>
     <div className="min-h-screen bg-[#08080a] text-white antialiased selection:bg-[var(--brand)]/30" style={{ ['--brand' as string]: brandColor }}>
       {shouldPoll && <AutoRefresh seconds={pollSeconds} />}
 
@@ -290,18 +292,25 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
         {/* ── 4. Ruta + mapa ── */}
         <section className="space-y-4">
           {mapSrc && !isTerminal && isActive && (
-            <LiveTrackingMap
+            <InteractiveLiveMap
               bookingId={booking.id}
-              initialSrc={mapSrc}
+              pickup={{ lat: pLoc!.lat!, lng: pLoc!.lng! }}
+              dropoff={{ lat: dLoc!.lat!, lng: dLoc!.lng! }}
+              routePolyline={booking.route_polyline}
+              brandColor={brandColor}
               href={dirHref}
               alt={t.mapAlt}
               openLabel={t.openInMaps}
-              brandColor={brandColor}
+              fallbackSrc={mapSrc}
               allowPassengerShare={booking.status !== 'in_progress'}
               labels={t.liveMap}
             />
           )}
-          {mapSrc && !isTerminal && !isActive && (
+          {/* Reserva aún sin conductor asignado: solo la vista previa de ruta,
+              sin polling — no hay nada "en vivo" que mostrar todavía. Una vez
+              el viaje termina (completado o cancelado) el mapa se retira por
+              completo, no queda una imagen congelada en la página. */}
+          {mapSrc && booking.status === 'pending' && (
             <StaticMap src={mapSrc} href={dirHref} alt={t.mapAlt} openLabel={t.openInMaps} />
           )}
           <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-3 text-sm">
@@ -468,5 +477,6 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
         </div>
       </div>
     </div>
+    </MapsProvider>
   )
 }

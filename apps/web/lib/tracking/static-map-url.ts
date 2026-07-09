@@ -1,7 +1,7 @@
 // ── Construcción de la URL de Google Static Maps para el tracking ─────────────
-// Compartido entre el pasajero (dark), el conductor (mapa embebido en tema
-// Ivory, pero el estilo del MAPA en sí sigue siendo oscuro) y el refresco en
-// vivo del lado cliente (LiveTrackingMap) — mismo estilo visual en los 3.
+// Usado como imagen de respaldo (reserva sin conductor asignado aún, o cuando
+// se agotó la cuota mensual de mapas en vivo del plan) — el mapa en vivo real
+// es interactivo, ver components/trip/interactive-live-map.tsx.
 
 export interface LatLng { lat: number; lng: number }
 

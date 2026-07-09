@@ -115,6 +115,7 @@ export const pt: Dictionary = {
         desc: 'Adicione seus veículos com fotos, capacidades e tarifas em minutos.',
       },
     },
+    statement: { line1: 'Sua frota é premium.', line2: 'Seu software também deveria ser.' },
     testimonialsTitle: 'Operadores que fizeram a troca',
     testimonials: [
       {

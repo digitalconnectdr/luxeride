@@ -7,7 +7,7 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
 import { consumeLiveTrackingQuota } from '@/lib/tracking/live-tracking-quota'
-import { buildTripStaticMapUrl, type LatLng } from '@/lib/tracking/static-map-url'
+import type { LatLng } from '@/lib/tracking/static-map-url'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 // Estados donde tiene sentido reportar/mostrar posición en vivo.
@@ -83,15 +83,16 @@ export async function reportPassengerLocationAction(
   return { success: true }
 }
 
-// ─── Refrescar el mapa en vivo (pasajero o conductor viendo el mismo viaje) ────
-// Único punto donde se consulta/consume la cuota mensual del plan — así el
-// costo de Google Maps queda topado sin importar cuánto crezca un operador.
+// ─── Posiciones en vivo (mapa interactivo) ─────────────────────────────────────
+// Lectura pura de Supabase — NO llama a ninguna API de Google, así que NO
+// consume la cuota mensual del plan. El mapa JS (InteractiveLiveMap) sondea
+// esto cada ~15s solo para reposicionar sus propios marcadores; el costo real
+// de Google (un "map load" de la API JS) ya se contabilizó una única vez al
+// activar la sesión — ver activateLiveMapSessionAction más abajo.
 
-export interface LiveMapRefresh {
-  url: string
+export interface LiveTripPositions {
   driverPos: LatLng | null
   passengerPos: LatLng | null
-  quotaExceeded: boolean
   // Hora del último ping de GPS del conductor — el cliente la usa para decidir
   // si mostrar el aviso de "vista en pausa" (independiente de si Realtime
   // entregó o no el evento: el pasajero navega sin sesión y las políticas de
@@ -100,48 +101,48 @@ export interface LiveMapRefresh {
   driverRecordedAt: string | null
 }
 
-export async function refreshLiveMapAction(bookingId: string): Promise<LiveMapRefresh | null> {
+export async function getLiveTripPositionsAction(bookingId: string): Promise<LiveTripPositions | null> {
   if (!UUID_RE.test(bookingId)) return null
 
   const admin = createAdminClient()
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, status, company_id, pickup_location, dropoff_location, route_polyline')
+    .select('id, status')
     .eq('id', bookingId)
     .single()
   if (!booking || !ACTIVE_TRIP_STATUSES.has(booking.status)) return null
 
-  const pLoc = booking.pickup_location as { lat?: number; lng?: number } | null
-  const dLoc = booking.dropoff_location as { lat?: number; lng?: number } | null
-  if (typeof pLoc?.lat !== 'number' || typeof pLoc?.lng !== 'number' || typeof dLoc?.lat !== 'number' || typeof dLoc?.lng !== 'number') {
-    return null
-  }
-
-  const [{ data: company }, { data: latestDriver }, { data: latestPassenger }] = await Promise.all([
-    admin.from('companies').select('primary_color').eq('id', booking.company_id).single(),
+  const [{ data: latestDriver }, { data: latestPassenger }] = await Promise.all([
     admin.from('trip_locations').select('latitude, longitude, recorded_at').eq('booking_id', bookingId).eq('reporter', 'driver').order('recorded_at', { ascending: false }).limit(1).maybeSingle(),
     admin.from('trip_locations').select('latitude, longitude').eq('booking_id', bookingId).eq('reporter', 'passenger').order('recorded_at', { ascending: false }).limit(1).maybeSingle(),
   ])
 
-  const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  const brandColor = (company?.primary_color as string | null) ?? '#c9a24b'
-  const driverPos: LatLng | null = latestDriver ? { lat: latestDriver.latitude, lng: latestDriver.longitude } : null
-  const passengerPos: LatLng | null = latestPassenger ? { lat: latestPassenger.latitude, lng: latestPassenger.longitude } : null
+  return {
+    driverPos: latestDriver ? { lat: latestDriver.latitude, lng: latestDriver.longitude } : null,
+    passengerPos: latestPassenger ? { lat: latestPassenger.latitude, lng: latestPassenger.longitude } : null,
+    driverRecordedAt: latestDriver?.recorded_at ?? null,
+  }
+}
 
-  if (!mapsKey) return null
+// ─── Activar sesión de mapa en vivo (consume 1 unidad de cuota) ───────────────
+// Se llama UNA sola vez, al montar el mapa interactivo en el navegador (no en
+// cada sondeo de posición) — un "map load" de la API JS de Google se cobra por
+// sesión de mapa, no por cada vez que se reposiciona un marcador. Si la cuota
+// mensual del plan ya se agotó, el llamador debe mostrar el mapa estático
+// congelado (última posición conocida, sin refresco) en su lugar — degradación
+// amable, nunca se bloquea la página.
+
+export async function activateLiveMapSessionAction(bookingId: string): Promise<{ allowed: boolean } | null> {
+  if (!UUID_RE.test(bookingId)) return null
+
+  const admin = createAdminClient()
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('id, status, company_id')
+    .eq('id', bookingId)
+    .single()
+  if (!booking || !ACTIVE_TRIP_STATUSES.has(booking.status)) return null
 
   const allowed = await consumeLiveTrackingQuota(booking.company_id, bookingId)
-  const url = buildTripStaticMapUrl({
-    pickup: { lat: pLoc.lat, lng: pLoc.lng },
-    dropoff: { lat: dLoc.lat, lng: dLoc.lng },
-    brandColor,
-    mapsKey,
-    routePolyline: booking.route_polyline,
-    // Sin cuota disponible: se sigue mostrando el mapa (ruta A→B), pero sin
-    // los marcadores en vivo — degradación amable, nunca se bloquea la página.
-    driverPos: allowed ? driverPos : null,
-    passengerPos: allowed ? passengerPos : null,
-  })
-
-  return { url, driverPos, passengerPos, quotaExceeded: !allowed, driverRecordedAt: latestDriver?.recorded_at ?? null }
+  return { allowed }
 }

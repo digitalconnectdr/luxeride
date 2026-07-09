@@ -306,6 +306,18 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* ── Statement ── */}
+      <section className="border-t border-white/[0.06]">
+        <div className="max-w-3xl mx-auto px-6 py-20 text-center">
+          <Reveal>
+            <p className="font-playfair text-3xl sm:text-4xl lg:text-[2.75rem] font-medium leading-tight tracking-[-0.01em] text-balance">
+              <span>{t.statement.line1}</span>{' '}
+              <span className="text-[#e9c176]">{t.statement.line2}</span>
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ── Testimonios ── */}
       <section className="border-t border-white/[0.06]">
         <div className="max-w-[1400px] mx-auto px-6 py-24">
