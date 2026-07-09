@@ -1,10 +1,43 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, ActivityIndicator, StyleSheet } from 'react-native'
+import { View, ActivityIndicator, StyleSheet, Text } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
+import { NavigationContainer } from '@react-navigation/native'
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
+import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { LoginScreen } from './screens/LoginScreen'
-import { TripScreen } from './screens/TripScreen'
+import { TripsListScreen } from './screens/TripsListScreen'
+import { TripDetailScreen } from './screens/TripDetailScreen'
+import { EarningsScreen } from './screens/EarningsScreen'
+import { DocumentsScreen } from './screens/DocumentsScreen'
+import { ProfileScreen } from './screens/ProfileScreen'
+import type { TripsStackParamList } from './lib/types'
+
+const Tab = createBottomTabNavigator()
+const TripsStack = createNativeStackNavigator<TripsStackParamList>()
+
+const darkHeader = {
+  headerStyle: { backgroundColor: '#1d1b18' },
+  headerTintColor: '#f5f2ec',
+  headerTitleStyle: { color: '#f5f2ec' },
+}
+
+function TripsStackScreen() {
+  return (
+    <TripsStack.Navigator screenOptions={darkHeader}>
+      <TripsStack.Screen name="TripsList" component={TripsListScreen} options={{ title: 'Hoy' }} />
+      <TripsStack.Screen name="TripDetail" component={TripDetailScreen} options={{ title: 'Viaje' }} />
+    </TripsStack.Navigator>
+  )
+}
+
+const TAB_ICON: Record<string, string> = {
+  Hoy: '🚗',
+  Ganancias: '💰',
+  Documentos: '📄',
+  Perfil: '👤',
+}
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -13,9 +46,9 @@ export default function App() {
 
   // Esta app es SOLO para conductores. La validación de rol pasa AQUÍ, antes
   // de que `session` se ponga en un valor no nulo — así nunca llegamos a
-  // mostrar (ni remontar) TripScreen para una cuenta que no sea driver, y el
-  // mensaje de error queda visible en el login en vez de desaparecer junto
-  // con la pantalla que lo mostraba.
+  // mostrar la navegación para una cuenta que no sea driver, y el mensaje de
+  // error queda visible en el login en vez de desaparecer junto con la
+  // pantalla que lo mostraba.
   const validateDriverSession = useCallback(async (candidate: Session | null) => {
     if (!candidate) {
       setSession(null)
@@ -59,11 +92,34 @@ export default function App() {
     )
   }
 
+  if (!session) {
+    return (
+      <>
+        <StatusBar style="light" />
+        <LoginScreen roleError={roleError} />
+      </>
+    )
+  }
+
   return (
-    <>
+    <NavigationContainer>
       <StatusBar style="light" />
-      {session ? <TripScreen /> : <LoginScreen roleError={roleError} />}
-    </>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          headerShown: route.name !== 'Hoy',
+          ...darkHeader,
+          tabBarStyle: { backgroundColor: '#2a2723', borderTopColor: '#3a352e' },
+          tabBarActiveTintColor: '#e9c176',
+          tabBarInactiveTintColor: '#75716a',
+          tabBarIcon: () => <Text style={{ fontSize: 18 }}>{TAB_ICON[route.name]}</Text>,
+        })}
+      >
+        <Tab.Screen name="Hoy" component={TripsStackScreen} />
+        <Tab.Screen name="Ganancias" component={EarningsScreen} />
+        <Tab.Screen name="Documentos" component={DocumentsScreen} />
+        <Tab.Screen name="Perfil" component={ProfileScreen} />
+      </Tab.Navigator>
+    </NavigationContainer>
   )
 }
 

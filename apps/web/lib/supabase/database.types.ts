@@ -419,6 +419,8 @@ export type Database = {
           license_number: string | null
           license_expiry: string | null
           license_state: string | null
+          license_photo_url: string | null
+          insurance_photo_url: string | null
           current_vehicle_id: string | null
           is_available: boolean
           rating: number | null
@@ -442,6 +444,8 @@ export type Database = {
           license_number?: string | null | undefined
           license_expiry?: string | null | undefined
           license_state?: string | null | undefined
+          license_photo_url?: string | null | undefined
+          insurance_photo_url?: string | null | undefined
           current_vehicle_id?: string | null | undefined
           is_available?: boolean | undefined
           rating?: number | null | undefined
@@ -465,6 +469,8 @@ export type Database = {
           license_number?: string | null | undefined
           license_expiry?: string | null | undefined
           license_state?: string | null | undefined
+          license_photo_url?: string | null | undefined
+          insurance_photo_url?: string | null | undefined
           current_vehicle_id?: string | null | undefined
           is_available?: boolean | undefined
           rating?: number | null | undefined
@@ -1468,6 +1474,7 @@ export type Database = {
           actual_distance_miles: number | null
           actual_duration_minutes: number | null
           route_polyline: string | null
+          passenger_signature_path: string | null
           price_quote_id: string | null
           base_amount: number | null
           total_amount: number | null
@@ -1525,6 +1532,7 @@ export type Database = {
           actual_distance_miles?: number | null | undefined
           actual_duration_minutes?: number | null | undefined
           route_polyline?: string | null | undefined
+          passenger_signature_path?: string | null | undefined
           price_quote_id?: string | null | undefined
           base_amount?: number | null | undefined
           total_amount?: number | null | undefined
@@ -1582,6 +1590,7 @@ export type Database = {
           actual_distance_miles?: number | null | undefined
           actual_duration_minutes?: number | null | undefined
           route_polyline?: string | null | undefined
+          passenger_signature_path?: string | null | undefined
           price_quote_id?: string | null | undefined
           base_amount?: number | null | undefined
           total_amount?: number | null | undefined

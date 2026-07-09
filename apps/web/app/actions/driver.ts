@@ -15,10 +15,10 @@ import type { BookingStatus } from '@/lib/supabase/database.types'
 // solo el admin podía tocar drivers.is_available (toggleDriverAvailability en
 // fleet.ts) — la vista del conductor solo mostraba una etiqueta fija.
 
-export async function driverSetAvailabilityAction(
+export async function setDriverAvailability(
+  user: SessionUser,
   isAvailable: boolean,
 ): Promise<{ success: boolean; error?: string }> {
-  const user = await requireRole('driver')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
   const admin = createAdminClient()
@@ -30,13 +30,20 @@ export async function driverSetAvailabilityAction(
     .upsert({ id: user.id, company_id: user.company_id, is_available: isAvailable }, { onConflict: 'id' })
 
   if (error) {
-    console.error('[driverSetAvailabilityAction]', error)
+    console.error('[setDriverAvailability]', error)
     return { success: false, error: 'Error al actualizar disponibilidad' }
   }
 
   revalidatePath('/driver/trips')
   revalidatePath('/dispatcher/dashboard')
   return { success: true }
+}
+
+export async function driverSetAvailabilityAction(
+  isAvailable: boolean,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('driver')
+  return setDriverAvailability(user, isAvailable)
 }
 
 // Transiciones permitidas al conductor (subset de la máquina de estados)
@@ -134,6 +141,72 @@ export async function driverAdvanceTripAction(
   bookingId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const user = await requireRole('driver')
+  return advanceDriverTrip(user, bookingId)
+}
+
+// ─── Completar viaje desde la app móvil: pago en efectivo + firma ─────────────
+// El conductor NO tiene permiso para registrar pagos por la ruta normal
+// (recordManualPaymentAction exige rol de staff) — este es un permiso nuevo,
+// más angosto: solo efectivo, y solo en SU PROPIO viaje. La firma es una
+// imagen ya subida por la app al bucket "documents" (mismas policies de
+// auto-upload por carpeta propia que ya existen) — aquí solo se persiste la
+// ruta del archivo. Ambos son opcionales; siempre termina llamando a
+// advanceDriverTrip para el cambio de estado real.
+export async function completeDriverTripWithExtras(
+  user: SessionUser,
+  bookingId: string,
+  extras: { cashAmount?: number; signaturePath?: string },
+): Promise<{ success: boolean; error?: string }> {
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const admin = createAdminClient()
+
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('id, status, booking_number, currency')
+    .eq('id', bookingId)
+    .eq('company_id', user.company_id)
+    .eq('driver_id', user.id)
+    .single()
+
+  if (!booking) return { success: false, error: 'Viaje no encontrado o no asignado a ti' }
+  if (booking.status !== 'in_progress') {
+    return { success: false, error: 'Solo puedes completar un viaje que está en curso' }
+  }
+
+  if (extras.cashAmount != null) {
+    const amount = Math.round(Number(extras.cashAmount) * 100) / 100
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return { success: false, error: 'Monto en efectivo inválido' }
+    }
+    const { error: paymentError } = await admin.from('payments').insert({
+      company_id: user.company_id,
+      booking_id: booking.id,
+      amount,
+      currency: booking.currency ?? 'USD',
+      status: 'succeeded',
+      payment_method: 'cash',
+      description: `Efectivo — Booking ${booking.booking_number} — registrado por el conductor desde la app`,
+      captured_at: new Date().toISOString(),
+      metadata: { manual: true, method: 'cash', recorded_by: user.id, source: 'driver_mobile_app' },
+    })
+    if (paymentError) {
+      console.error('[completeDriverTripWithExtras] payment', paymentError)
+      return { success: false, error: 'Error al registrar el pago en efectivo' }
+    }
+  }
+
+  if (extras.signaturePath) {
+    const { error: signatureError } = await admin
+      .from('bookings')
+      .update({ passenger_signature_path: extras.signaturePath })
+      .eq('id', bookingId)
+    if (signatureError) {
+      console.error('[completeDriverTripWithExtras] signature', signatureError)
+      return { success: false, error: 'Error al guardar la firma' }
+    }
+  }
+
   return advanceDriverTrip(user, bookingId)
 }
 
