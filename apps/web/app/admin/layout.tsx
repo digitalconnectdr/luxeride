@@ -24,12 +24,13 @@ export default async function AdminLayout({
   let companyName = 'Dashboard'
   let logoUrl: string | null = null
   let subscriptionDaysLeft: number | null = null
+  let affiliateNetworkEnabled = false
   if (user.company_id) {
     try {
       const admin = createAdminClient()
       const { data, error } = await admin
         .from('companies')
-        .select('name, logo_url, status, subscription_ends_at')
+        .select('name, logo_url, status, subscription_ends_at, affiliate_network_enabled')
         .eq('id', user.company_id)
         .single()
       if (error) {
@@ -37,6 +38,7 @@ export default async function AdminLayout({
       } else if (data) {
         if (data.name) companyName = data.name
         logoUrl = (data as { logo_url?: string | null }).logo_url ?? null
+        affiliateNetworkEnabled = data.affiliate_network_enabled
         if (data.subscription_ends_at) {
           const msLeft = new Date(data.subscription_ends_at).getTime() - Date.now()
           subscriptionDaysLeft = Math.floor(msLeft / 86_400_000)
@@ -70,7 +72,7 @@ export default async function AdminLayout({
         userEmail={user.email}
         locale={locale}
         nav={nav}
-        flags={{ isOwner, isOwnerOrAdmin, isDispatcher, isAccounting }}
+        flags={{ isOwner, isOwnerOrAdmin, isDispatcher, isAccounting, affiliateNetworkEnabled }}
       />
 
       {/* ── Main — envuelto en MapsProvider para toda la sección admin ── */}

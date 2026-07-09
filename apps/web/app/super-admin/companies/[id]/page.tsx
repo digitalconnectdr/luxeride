@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/server'
 import { StatusSelect, PlanSelect } from '@/components/super-admin/status-forms'
 import { CommissionInput } from '@/components/super-admin/commission-input'
+import { AffiliateNetworkToggle } from '@/components/super-admin/affiliate-network-toggle'
 import { currentYearMonth } from '@/lib/tracking/live-tracking-quota'
 import { InfoTip } from '@/components/ui/info-tip'
 import type { CompanyStatus } from '@/lib/supabase/database.types'
@@ -158,6 +159,20 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             % retained by LuxeRide from this company&apos;s passenger charges (Stripe/Whop Connect). 0% = no commission.
           </p>
           <CommissionInput companyId={company.id} current={currentCommissionPct} />
+        </div>
+
+        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6 space-y-3 sm:col-span-3">
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+            Affiliate Network
+          </h2>
+          <p className="text-xs text-sl-on-surface-muted">
+            Included free on Elite/Enterprise; grant manually to other plans, or cut off for abuse/non-payment.
+          </p>
+          <AffiliateNetworkToggle
+            companyId={company.id}
+            enabled={company.affiliate_network_enabled}
+            enabledAt={company.affiliate_network_enabled_at}
+          />
         </div>
       </div>
 

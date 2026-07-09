@@ -17,6 +17,7 @@ import { CopyButton } from '@/components/trip/copy-button'
 import { InteractiveLiveMap } from '@/components/trip/interactive-live-map'
 import { LiveLocationReporter } from '@/components/driver/live-location-reporter'
 import { MapsProvider } from '@/components/maps/maps-provider'
+import { AffiliateTripCard, type AffiliateTripForDriver } from '@/components/driver/affiliate-trip-card'
 import { DriverRateForm } from '@/components/driver/driver-rate-form'
 import { buildTripStaticMapUrl, tripDirectionsHref } from '@/lib/tracking/static-map-url'
 import { DriverSelfAvailabilityToggle } from '@/components/driver/availability-toggle'
@@ -81,7 +82,7 @@ export default async function DriverTripsPage() {
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString()
 
-  const [{ data: trips }, { data: company }, { data: unratedTrips }, { data: driverRow }, { data: recentCompleted }] = await Promise.all([
+  const [{ data: trips }, { data: company }, { data: unratedTrips }, { data: driverRow }, { data: recentCompleted }, { data: affiliateTripsRaw }] = await Promise.all([
     admin
       .from('bookings')
       .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id, route_polyline, meet_and_greet')
@@ -112,8 +113,46 @@ export default async function DriverTripsPage() {
       .gte('completed_at', sevenDaysAgo)
       .order('completed_at', { ascending: false })
       .limit(50),
+    // Sección G — viajes de otras empresas (afiliadas) asignados a este conductor.
+    // Nunca se tocan bookings.driver_id/status para estos — viven aparte en
+    // affiliate_trips (ver docs/PENDING.md sección G).
+    admin
+      .from('affiliate_trips')
+      .select('id, booking_id, owner_company_id, status')
+      .eq('driver_id', user.id)
+      .in('status', ['accepted', 'en_route', 'arrived', 'in_progress'])
+      .order('created_at'),
   ])
   const isAvailable = driverRow?.is_available ?? false
+
+  // Detalle completo del booking original + nombre de la empresa dueña, solo
+  // para los viajes afiliados que este conductor ya tiene asignados.
+  const affiliateBookingIds = Array.from(new Set((affiliateTripsRaw ?? []).map((t) => t.booking_id)))
+  const affiliateOwnerIds = Array.from(new Set((affiliateTripsRaw ?? []).map((t) => t.owner_company_id)))
+  const [{ data: affiliateBookings }, { data: affiliateOwners }] = await Promise.all([
+    affiliateBookingIds.length
+      ? admin.from('bookings').select('id, pickup_location, dropoff_location, scheduled_at').in('id', affiliateBookingIds)
+      : Promise.resolve({ data: [] as { id: string; pickup_location: unknown; dropoff_location: unknown; scheduled_at: string }[] }),
+    affiliateOwnerIds.length
+      ? admin.from('companies').select('id, name').in('id', affiliateOwnerIds)
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+  ])
+  const bookingById = new Map((affiliateBookings ?? []).map((b) => [b.id, b]))
+  const ownerNameById = new Map((affiliateOwners ?? []).map((c) => [c.id, c.name]))
+  const affiliateTrips: AffiliateTripForDriver[] = (affiliateTripsRaw ?? []).map((t) => {
+    const b = bookingById.get(t.booking_id)
+    const pLoc = b?.pickup_location as { address?: string } | null
+    const dLoc = b?.dropoff_location as { address?: string } | null
+    return {
+      id: t.id,
+      status: t.status,
+      ownerCompanyName: ownerNameById.get(t.owner_company_id) ?? '—',
+      pickupAddress: pLoc?.address ?? '—',
+      dropoffAddress: dLoc?.address ?? '—',
+      scheduledAt: b?.scheduled_at ?? new Date().toISOString(),
+    }
+  })
+  const affiliatesDict = getDict(locale).affiliates
 
   // Vehículo con el que dispatch tiene registrado al conductor AHORA MISMO
   // (drivers.current_vehicle_id) — se muestra siempre en el header, no solo
@@ -237,6 +276,16 @@ export default async function DriverTripsPage() {
             clearConfirm: dt.dispatchChat.clearConfirm,
           }}
         />
+
+        {/* Sección G — viajes de empresas afiliadas asignados a este conductor */}
+        {affiliateTrips.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#75716a]">{affiliatesDict.requests.title}</p>
+            {affiliateTrips.map((t) => (
+              <AffiliateTripCard key={t.id} trip={t} localeTag={localeTag} t={affiliatesDict} />
+            ))}
+          </div>
+        )}
 
         {!trips?.length ? (
           <div className={`${card} p-12 text-center`}>

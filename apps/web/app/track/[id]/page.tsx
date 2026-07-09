@@ -65,8 +65,48 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const logoUrl = company?.logo_url ?? null
   const companyName = company?.name ?? brand.name
   const initial = companyName.trim().charAt(0).toUpperCase() || 'L'
-  const driver = driverRes.data as { first_name: string } | null
-  const vehicle = vehicleRes.data as { make: string; model: string; color: string | null; plate_number: string } | null
+  let driver = driverRes.data as { first_name: string } | null
+  let vehicle = vehicleRes.data as { make: string; model: string; color: string | null; plate_number: string } | null
+
+  // ── Sección G — si este viaje fue enviado a un afiliado, el progreso real
+  // (conductor, vehículo, estado) vive en affiliate_trips — bookings.driver_id/
+  // status NUNCA se tocan por ese flujo (ver docs/PENDING.md sección G). Se
+  // sobreescribe SOLO la vista del pasajero, nunca el registro original.
+  const { data: affiliateTrip } = await admin
+    .from('affiliate_trips')
+    .select('status, driver_id, vehicle_id, branding_mode, affiliate_company_id, en_route_at, arrived_at, started_at, completed_at')
+    .eq('booking_id', booking.id)
+    .in('status', ['accepted', 'en_route', 'arrived', 'in_progress', 'completed'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  let displayStatus: string = booking.status
+  let operatedByLine: string | null = null
+  const affiliateStamps: Record<string, string | null> = {}
+
+  if (affiliateTrip) {
+    displayStatus = affiliateTrip.status === 'accepted' ? 'assigned' : affiliateTrip.status
+    affiliateStamps.en_route = affiliateTrip.en_route_at
+    affiliateStamps.arrived = affiliateTrip.arrived_at
+    affiliateStamps.in_progress = affiliateTrip.started_at
+    affiliateStamps.completed = affiliateTrip.completed_at
+
+    const [{ data: affDriver }, { data: affVehicle }, { data: affCompany }] = await Promise.all([
+      affiliateTrip.driver_id
+        ? admin.from('user_profiles').select('first_name').eq('id', affiliateTrip.driver_id).single()
+        : Promise.resolve({ data: null }),
+      affiliateTrip.vehicle_id
+        ? admin.from('vehicles').select('make, model, color, plate_number').eq('id', affiliateTrip.vehicle_id).single()
+        : Promise.resolve({ data: null }),
+      admin.from('companies').select('name').eq('id', affiliateTrip.affiliate_company_id).single(),
+    ])
+    if (affDriver) driver = affDriver
+    if (affVehicle) vehicle = affVehicle
+    const affiliateName = affCompany?.name ?? '—'
+    if (affiliateTrip.branding_mode === 'operated_by') operatedByLine = affiliateName
+    else if (affiliateTrip.branding_mode === 'co_branded') operatedByLine = `${companyName} · ${affiliateName}`
+  }
 
   const pLoc = booking.pickup_location as { address?: string; lat?: number; lng?: number } | null
   const dLoc = booking.dropoff_location as { address?: string; lat?: number; lng?: number } | null
@@ -92,9 +132,9 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
     dirHref = tripDirectionsHref({ lat: pLoc!.lat!, lng: pLoc!.lng! }, { lat: dLoc!.lat!, lng: dLoc!.lng! })
   }
 
-  const isTerminal = booking.status in t.terminal
-  const isCompleted = booking.status === 'completed'
-  const currentIdx = STATUS_KEYS.findIndex((k) => k === booking.status)
+  const isTerminal = displayStatus in t.terminal
+  const isCompleted = displayStatus === 'completed'
+  const currentIdx = STATUS_KEYS.findIndex((k) => k === displayStatus)
   const isActive = ACTIVE.has(booking.status)
   // Auto-refresh ESCALONADO por cercanía al viaje, para no saturar el sistema con
   // reservas hechas con días de antelación:
@@ -111,27 +151,27 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const shouldPoll = pollSeconds > 0
 
   const stampByStatus: Record<string, string | null> = {
-    assigned: booking.dispatched_at,
-    en_route: booking.en_route_at,
-    arrived: booking.arrived_at,
-    in_progress: booking.started_at,
-    completed: booking.completed_at,
+    assigned: affiliateTrip ? null : booking.dispatched_at,
+    en_route: affiliateTrip ? affiliateStamps.en_route : booking.en_route_at,
+    arrived: affiliateTrip ? affiliateStamps.arrived : booking.arrived_at,
+    in_progress: affiliateTrip ? affiliateStamps.in_progress : booking.started_at,
+    completed: affiliateTrip ? affiliateStamps.completed : booking.completed_at,
   }
   const fmtTime = (iso: string) =>
     new Date(iso).toLocaleTimeString(localeTag, { hour: '2-digit', minute: '2-digit' })
 
   const currentLabel = isTerminal
-    ? t.terminal[booking.status as keyof typeof t.terminal]
-    : t.statuses[booking.status as keyof typeof t.statuses]
+    ? t.terminal[displayStatus as keyof typeof t.terminal]
+    : t.statuses[displayStatus as keyof typeof t.statuses]
 
   // Frase contextual ("Tu chofer te espera…") + progreso ("Paso X de 6")
-  const headlineText = (t.headline as Record<string, string>)[booking.status]
+  const headlineText = (t.headline as Record<string, string>)[displayStatus]
     ?.replace('{driver}', driver?.first_name ?? '')
     .trim()
   const progressText = t.progressLabel
     .replace('{n}', String(currentIdx + 1))
     .replace('{total}', String(STATUS_KEYS.length))
-  const lastUpdateStamp = stampByStatus[booking.status]
+  const lastUpdateStamp = stampByStatus[displayStatus]
   const scheduledFull = new Date(booking.scheduled_at).toLocaleString(localeTag, {
     weekday: 'long', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
   })
@@ -213,6 +253,9 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
           <p className={`font-playfair text-2xl font-medium tracking-[-0.01em] ${isTerminal ? 'text-red-400' : isCompleted ? 'text-green-400' : 'text-white'}`}>
             {isCompleted ? '✓ ' : ''}{currentLabel}
           </p>
+          {operatedByLine && (
+            <p className="text-[11px] text-white/40 mt-1.5">{getDict(locale).affiliates.operatedByLabel}: {operatedByLine}</p>
+          )}
           {!isTerminal && headlineText && (
             <p className="text-sm text-white/60 mt-2.5 max-w-xs mx-auto leading-relaxed">{headlineText}</p>
           )}

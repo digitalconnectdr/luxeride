@@ -5,6 +5,7 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { BookingStatusBadge } from '@/components/bookings/booking-status-badge'
 import { BookingActions } from './booking-actions'
+import { SendToAffiliateCard, type AffiliateOption, type ActiveAffiliateTrip } from './send-to-affiliate-card'
 import { BookingPayments } from '@/components/admin/booking-payments'
 import { CopyButton } from '@/components/trip/copy-button'
 import { getAppUrl } from '@/lib/app-url'
@@ -113,6 +114,53 @@ export default async function BookingDetailPage({
   const pickup  = parseLocation(booking.pickup_location)
   const dropoff = parseLocation(booking.dropoff_location)
   const isStaff = user.role !== 'accounting'
+
+  // ── Sección G — Red de afiliados ──────────────────────────────────────────
+  const affiliatesDict = getDict().affiliates
+  const [{ data: companyRow }, { data: relations }, { data: existingTrip }] = await Promise.all([
+    admin.from('companies').select('affiliate_network_enabled').eq('id', companyId).single(),
+    admin
+      .from('company_affiliates')
+      .select('id, requester_company_id, affiliate_company_id')
+      .eq('status', 'approved')
+      .or(`requester_company_id.eq.${companyId},affiliate_company_id.eq.${companyId}`),
+    admin
+      .from('affiliate_trips')
+      .select('id, company_affiliate_id, status, offered_price, countered_price, agreed_price, margin_amount, affiliate_company_id')
+      .eq('booking_id', booking.id)
+      .in('status', ['requested', 'accepted', 'rejected', 'countered', 'expired', 'cancelled', 'en_route', 'arrived', 'in_progress', 'completed'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
+
+  const affiliateNetworkEnabled = companyRow?.affiliate_network_enabled ?? false
+  const otherCompanyIds = Array.from(new Set((relations ?? []).map((r) =>
+    r.requester_company_id === companyId ? r.affiliate_company_id : r.requester_company_id,
+  )))
+  const { data: otherCompanies } = otherCompanyIds.length
+    ? await admin.from('companies').select('id, name').in('id', otherCompanyIds)
+    : { data: [] as { id: string; name: string }[] }
+  const nameByCompanyId = new Map((otherCompanies ?? []).map((c) => [c.id, c.name]))
+
+  const affiliateOptions: AffiliateOption[] = (relations ?? []).map((r) => {
+    const otherId = r.requester_company_id === companyId ? r.affiliate_company_id : r.requester_company_id
+    return { companyAffiliateId: r.id, name: nameByCompanyId.get(otherId) ?? '—' }
+  })
+
+  const activeAffiliateTrip: ActiveAffiliateTrip | null = existingTrip
+    ? {
+        id: existingTrip.id,
+        companyAffiliateId: existingTrip.company_affiliate_id,
+        status: existingTrip.status,
+        affiliateName: nameByCompanyId.get(existingTrip.affiliate_company_id) ?? '—',
+        offeredPrice: Number(existingTrip.offered_price),
+        counteredPrice: existingTrip.countered_price != null ? Number(existingTrip.countered_price) : null,
+        agreedPrice: existingTrip.agreed_price != null ? Number(existingTrip.agreed_price) : null,
+        marginAmount: existingTrip.margin_amount != null ? Number(existingTrip.margin_amount) : null,
+        currency: booking.currency ?? 'USD',
+      }
+    : null
 
   return (
     <div className="p-8 max-w-[1100px] mx-auto space-y-6">
@@ -307,6 +355,18 @@ export default async function BookingDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Sección G — Red de afiliados */}
+      {isStaff && (
+        <SendToAffiliateCard
+          bookingId={booking.id}
+          enabled={affiliateNetworkEnabled}
+          affiliates={affiliateOptions}
+          activeTrip={activeAffiliateTrip}
+          myCompanyId={companyId}
+          t={affiliatesDict}
+        />
+      )}
 
       {/* Fees */}
       {fees && fees.length > 0 && (

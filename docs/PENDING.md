@@ -384,12 +384,64 @@ onboarded (onlinePaymentsEnabled). No se piden datos de tarjeta en el formulario
 (va por la página segura de Stripe, por PCI). Antes el pago online solo aparecía
 en la pantalla de éxito; ahora es parte del paso de confirmación.
 
-### G. LuxeRide Affiliate Network — farm-out/farm-in entre operadores (rediseñado 2026-07-08)
+### G. LuxeRide Affiliate Network — farm-out/farm-in entre operadores (Fase 1 ✅ implementada 2026-07-09)
+
+**Implementado (Fase 1 — MVP privado):**
+1. Migración `20260709000039_affiliate_network.sql`: `companies.affiliate_network_enabled`
+   (+ `_at`, backfill TRUE para elite/enterprise existentes), `company_affiliates`
+   (relación bidireccional con aprobación manual), `affiliate_trips` (solicitud/
+   viaje — booking, precio ofrecido/contraofertado/acordado, margen, vista
+   previa limitada antes de aceptar, liquidación), `affiliate_messages` (chat
+   comercial + operativo), `affiliate_network_leads` (autoservicio, mismo
+   patrón que `enterprise_leads`).
+2. `lib/affiliates/engine.ts` (17 tests): tiempo límite de respuesta (10min/
+   30min/2h según cercanía del viaje), cálculo de margen, transiciones de
+   estado operativo, texto de marca según `branding_mode`.
+3. `app/actions/affiliates.ts`: relación (invitar por slug/aprobar/rechazar/
+   revocar/editar términos), enviar viaje a afiliado, responder (aceptar/
+   rechazar/contraofertar), resolver contraoferta, asignar conductor/vehículo
+   propio del afiliado, avanzar estado operativo, liquidación manual,
+   mensajería, interruptor de monetización (super-admin) + lead de
+   autoservicio.
+4. UI: `/admin/affiliates` (gestionar relaciones + upsell si no está
+   habilitado), `/admin/affiliates/requests` (bandeja de solicitudes
+   entrantes — responder, asignar, operar, liquidar, chat), tarjeta "Enviar a
+   afiliado" en `/admin/bookings/[id]`, interruptor en
+   `/super-admin/companies/[id]`, `/super-admin/affiliate-leads`.
+5. **Invariante respetada:** `bookings.company_id/driver_id/vehicle_id/status`
+   nunca se tocan — el viaje afiliado vive enteramente en `affiliate_trips`.
+   `/track/[id]` sobreescribe SOLO la vista del pasajero (estado, conductor,
+   vehículo, línea "Operado por") cuando hay un `affiliate_trip` activo,
+   leyendo de `affiliate_trips`, sin mutar el booking original. `/driver/trips`
+   muestra los viajes afiliados asignados a ese conductor en una sección
+   aparte (no se mezclan con `bookings`, evita conflictos de RLS/company_id
+   entre las acciones existentes del conductor y una empresa afiliada
+   distinta).
+
+**Fuera de esta ronda (recortes de alcance conscientes, no bloquean lo anterior):**
+- **Sin tracking GPS en vivo compartido para viajes afiliados** — el mapa
+  interactivo (ver sección de tracking en vivo) sigue atado al conductor
+  propio de la empresa dueña; un viaje farmed-out no expone mapa en vivo
+  todavía, solo el estado por pasos. Diferenciador real del documento
+  original, pendiente para un fast-follow.
+- **Sin notificaciones por email/SMS** de eventos de afiliados (nueva
+  solicitud, aceptada, rechazada) — visibilidad hoy es 100% in-app
+  (bandeja + Realtime). Requeriría nuevas plantillas en
+  `notification_templates`.
+- **Autoservicio sin checkout real de Whop todavía** — el botón "Solicitar
+  acceso" en Starter/Professional genera un lead (mismo patrón que
+  Enterprise), no cobra automáticamente; falta crear el producto dedicado en
+  Whop y conectar el webhook cuando el usuario decida el precio final.
+- Fase 2 (portal de afiliado externo sin cuenta), Fase 3 (pools), Fase 4
+  (bidding) y Fase 5 (auto-farm) siguen sin construir — ver diseño completo
+  abajo.
+
 Pedido original: explorar cómo resuelven esto Limo Anywhere (**LA Net**) y
 **GroundXchange**. Diseño inicial (LA Net/GroundXchange) reemplazado por uno
 más completo, basado en un documento propio del usuario ("LuxeRide Affiliate
 Network") que describe el módulo con el nivel de detalle de un producto real,
-no solo una feature. Investigación + diseño hechos; falta construir.
+no solo una feature. Investigación + diseño hechos; Fase 1 (MVP privado) ya
+construida — ver el resumen arriba; Fases 2-5 siguen sin construir.
 
 **Por qué LuxeRide parte con ventaja estructural:** todas las empresas de
 LuxeRide ya comparten el MISMO esquema (`vehicle_types`, `service_zones`,

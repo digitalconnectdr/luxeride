@@ -120,6 +120,8 @@ export type Database = {
           compliance_alert: boolean
           compliance_last_reviewed_at: string | null
           compliance_reviewed_by: string | null
+          affiliate_network_enabled: boolean
+          affiliate_network_enabled_at: string | null
           trial_ends_at: string | null
           subscription_ends_at: string | null
           created_at: string
@@ -164,6 +166,8 @@ export type Database = {
           compliance_alert?: boolean | undefined
           compliance_last_reviewed_at?: string | null | undefined
           compliance_reviewed_by?: string | null | undefined
+          affiliate_network_enabled?: boolean | undefined
+          affiliate_network_enabled_at?: string | null | undefined
           trial_ends_at?: string | null | undefined
           subscription_ends_at?: string | null | undefined
           created_at?: string | undefined
@@ -208,6 +212,8 @@ export type Database = {
           compliance_alert?: boolean | undefined
           compliance_last_reviewed_at?: string | null | undefined
           compliance_reviewed_by?: string | null | undefined
+          affiliate_network_enabled?: boolean | undefined
+          affiliate_network_enabled_at?: string | null | undefined
           trial_ends_at?: string | null | undefined
           subscription_ends_at?: string | null | undefined
           created_at?: string | undefined
@@ -756,6 +762,251 @@ export type Database = {
           body?: string | undefined
           read_at?: string | null | undefined
           created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── company_affiliates (Sección G — relación de afiliación entre empresas) ─
+      company_affiliates: {
+        Row: {
+          id: string
+          requester_company_id: string
+          affiliate_company_id: string
+          status: 'pending' | 'approved' | 'rejected' | 'revoked'
+          coverage_notes: string | null
+          payment_terms: 'due_on_receipt' | 'net_7' | 'net_15' | 'net_30'
+          requested_by: string | null
+          responded_by: string | null
+          responded_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          requester_company_id: string
+          affiliate_company_id: string
+          status?: 'pending' | 'approved' | 'rejected' | 'revoked' | undefined
+          coverage_notes?: string | null | undefined
+          payment_terms?: 'due_on_receipt' | 'net_7' | 'net_15' | 'net_30' | undefined
+          requested_by?: string | null | undefined
+          responded_by?: string | null | undefined
+          responded_at?: string | null | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          requester_company_id?: string | undefined
+          affiliate_company_id?: string | undefined
+          status?: 'pending' | 'approved' | 'rejected' | 'revoked' | undefined
+          coverage_notes?: string | null | undefined
+          payment_terms?: 'due_on_receipt' | 'net_7' | 'net_15' | 'net_30' | undefined
+          requested_by?: string | null | undefined
+          responded_by?: string | null | undefined
+          responded_at?: string | null | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── affiliate_trips (Sección G — viaje enviado a un afiliado) ─────────────
+      affiliate_trips: {
+        Row: {
+          id: string
+          booking_id: string
+          company_affiliate_id: string
+          owner_company_id: string
+          affiliate_company_id: string
+          status: 'requested' | 'accepted' | 'rejected' | 'countered' | 'expired' | 'cancelled' | 'en_route' | 'arrived' | 'in_progress' | 'completed'
+          reason: 'no_driver' | 'out_of_zone' | 'overcapacity' | 'better_affiliate_rate' | 'other'
+          branding_mode: 'white_label' | 'operated_by' | 'co_branded'
+          preview_zone: string | null
+          preview_scheduled_at: string
+          preview_vehicle_type: string | null
+          preview_passenger_count: number
+          preview_distance_miles: number | null
+          preview_duration_minutes: number | null
+          offered_price: number
+          countered_price: number | null
+          agreed_price: number | null
+          passenger_charged_amount: number | null
+          margin_amount: number | null
+          driver_id: string | null
+          vehicle_id: string | null
+          expires_at: string
+          responded_at: string | null
+          dispatched_at: string | null
+          en_route_at: string | null
+          arrived_at: string | null
+          started_at: string | null
+          completed_at: string | null
+          cancellation_reason: string | null
+          settlement_status: 'pending' | 'invoiced' | 'paid' | 'disputed'
+          settlement_method: string | null
+          settlement_notes: string | null
+          settled_at: string | null
+          settled_by: string | null
+          requested_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          booking_id: string
+          company_affiliate_id: string
+          owner_company_id: string
+          affiliate_company_id: string
+          status?: 'requested' | 'accepted' | 'rejected' | 'countered' | 'expired' | 'cancelled' | 'en_route' | 'arrived' | 'in_progress' | 'completed' | undefined
+          reason?: 'no_driver' | 'out_of_zone' | 'overcapacity' | 'better_affiliate_rate' | 'other' | undefined
+          branding_mode?: 'white_label' | 'operated_by' | 'co_branded' | undefined
+          preview_zone?: string | null | undefined
+          preview_scheduled_at: string
+          preview_vehicle_type?: string | null | undefined
+          preview_passenger_count?: number | undefined
+          preview_distance_miles?: number | null | undefined
+          preview_duration_minutes?: number | null | undefined
+          offered_price: number
+          countered_price?: number | null | undefined
+          agreed_price?: number | null | undefined
+          passenger_charged_amount?: number | null | undefined
+          margin_amount?: number | null | undefined
+          driver_id?: string | null | undefined
+          vehicle_id?: string | null | undefined
+          expires_at: string
+          responded_at?: string | null | undefined
+          dispatched_at?: string | null | undefined
+          en_route_at?: string | null | undefined
+          arrived_at?: string | null | undefined
+          started_at?: string | null | undefined
+          completed_at?: string | null | undefined
+          cancellation_reason?: string | null | undefined
+          settlement_status?: 'pending' | 'invoiced' | 'paid' | 'disputed' | undefined
+          settlement_method?: string | null | undefined
+          settlement_notes?: string | null | undefined
+          settled_at?: string | null | undefined
+          settled_by?: string | null | undefined
+          requested_by?: string | null | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          booking_id?: string | undefined
+          company_affiliate_id?: string | undefined
+          owner_company_id?: string | undefined
+          affiliate_company_id?: string | undefined
+          status?: 'requested' | 'accepted' | 'rejected' | 'countered' | 'expired' | 'cancelled' | 'en_route' | 'arrived' | 'in_progress' | 'completed' | undefined
+          reason?: 'no_driver' | 'out_of_zone' | 'overcapacity' | 'better_affiliate_rate' | 'other' | undefined
+          branding_mode?: 'white_label' | 'operated_by' | 'co_branded' | undefined
+          preview_zone?: string | null | undefined
+          preview_scheduled_at?: string | undefined
+          preview_vehicle_type?: string | null | undefined
+          preview_passenger_count?: number | undefined
+          preview_distance_miles?: number | null | undefined
+          preview_duration_minutes?: number | null | undefined
+          offered_price?: number | undefined
+          countered_price?: number | null | undefined
+          agreed_price?: number | null | undefined
+          passenger_charged_amount?: number | null | undefined
+          margin_amount?: number | null | undefined
+          driver_id?: string | null | undefined
+          vehicle_id?: string | null | undefined
+          expires_at?: string | undefined
+          responded_at?: string | null | undefined
+          dispatched_at?: string | null | undefined
+          en_route_at?: string | null | undefined
+          arrived_at?: string | null | undefined
+          started_at?: string | null | undefined
+          completed_at?: string | null | undefined
+          cancellation_reason?: string | null | undefined
+          settlement_status?: 'pending' | 'invoiced' | 'paid' | 'disputed' | undefined
+          settlement_method?: string | null | undefined
+          settlement_notes?: string | null | undefined
+          settled_at?: string | null | undefined
+          settled_by?: string | null | undefined
+          requested_by?: string | null | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── affiliate_messages (Sección G — chat empresa↔empresa) ─────────────────
+      affiliate_messages: {
+        Row: {
+          id: string
+          company_affiliate_id: string
+          affiliate_trip_id: string | null
+          sender_company_id: string
+          sender_user_id: string | null
+          body: string
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_affiliate_id: string
+          affiliate_trip_id?: string | null | undefined
+          sender_company_id: string
+          sender_user_id?: string | null | undefined
+          body: string
+          read_at?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_affiliate_id?: string | undefined
+          affiliate_trip_id?: string | null | undefined
+          sender_company_id?: string | undefined
+          sender_user_id?: string | null | undefined
+          body?: string | undefined
+          read_at?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── affiliate_network_leads (Sección G — autoservicio Starter/Professional) ─
+      affiliate_network_leads: {
+        Row: {
+          id: string
+          company_id: string | null
+          requested_by: string | null
+          company_name: string
+          contact_name: string
+          email: string
+          phone: string | null
+          message: string | null
+          status: 'new' | 'contacted' | 'converted' | 'rejected'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id?: string | null | undefined
+          requested_by?: string | null | undefined
+          company_name: string
+          contact_name: string
+          email: string
+          phone?: string | null | undefined
+          message?: string | null | undefined
+          status?: 'new' | 'contacted' | 'converted' | 'rejected' | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | null | undefined
+          requested_by?: string | null | undefined
+          company_name?: string | undefined
+          contact_name?: string | undefined
+          email?: string | undefined
+          phone?: string | null | undefined
+          message?: string | null | undefined
+          status?: 'new' | 'contacted' | 'converted' | 'rejected' | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
         }
         Relationships: []
       }

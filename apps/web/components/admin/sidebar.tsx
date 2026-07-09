@@ -23,6 +23,7 @@ import {
   Building2,
   UserCog,
   ShieldCheck,
+  Handshake,
   Settings,
   LogOut,
   ChevronsLeft,
@@ -62,6 +63,7 @@ interface Props {
     isOwnerOrAdmin: boolean
     isDispatcher: boolean
     isAccounting: boolean
+    affiliateNetworkEnabled: boolean
   }
 }
 
@@ -110,6 +112,7 @@ export function AdminSidebar({
         { href: '/dispatcher/dashboard', label: nav.dispatch, icon: RadioTower },
         { href: '/admin/fleet', label: nav.fleet, icon: Car },
         { href: '/admin/drivers', label: nav.drivers, icon: Users },
+        { href: '/admin/affiliates', label: nav.affiliates, icon: Handshake },
       ],
     },
     {
