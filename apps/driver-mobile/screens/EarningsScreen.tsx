@@ -1,13 +1,18 @@
 import { useCallback, useState } from 'react'
-import { View, Text, StyleSheet, ActivityIndicator, RefreshControl, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, RefreshControl, ScrollView } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
+import { LinearGradient } from 'expo-linear-gradient'
+import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
+import { Card, EmptyState, ScreenLoader, SectionLabel } from '../components/ui'
+import { color, font, radius, space } from '../lib/theme'
 import type { DriverBooking } from '../lib/types'
 
 interface CompletedTrip extends Pick<DriverBooking, 'id' | 'booking_number' | 'passenger_name' | 'total_amount' | 'currency' | 'completed_at'> {}
 
 export function EarningsScreen() {
   const [totalEarnings, setTotalEarnings] = useState<number | null>(null)
+  const [totalTrips, setTotalTrips] = useState(0)
   const [trips, setTrips] = useState<CompletedTrip[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -18,7 +23,7 @@ export function EarningsScreen() {
     if (!user) return
 
     const [{ data: driverRow }, { data: tripRows }] = await Promise.all([
-      supabase.from('drivers').select('total_earnings').eq('id', user.id).maybeSingle(),
+      supabase.from('drivers').select('total_earnings, total_trips').eq('id', user.id).maybeSingle(),
       supabase
         .from('bookings')
         .select('id, booking_number, passenger_name, total_amount, currency, completed_at')
@@ -29,6 +34,7 @@ export function EarningsScreen() {
     ])
 
     setTotalEarnings(driverRow?.total_earnings ?? 0)
+    setTotalTrips(driverRow?.total_trips ?? 0)
     setTrips((tripRows as CompletedTrip[] | null) ?? [])
     setLoading(false)
   }, [])
@@ -39,72 +45,79 @@ export function EarningsScreen() {
     }, [load]),
   )
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#e9c176" />
-      </View>
-    )
-  }
+  if (loading) return <ScreenLoader />
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor="#e9c176" />}
+      refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={color.gold} />}
     >
-      <View style={styles.totalCard}>
-        <Text style={styles.totalLabel}>Ganancias totales</Text>
-        <Text style={styles.totalValue}>${Number(totalEarnings ?? 0).toFixed(2)}</Text>
-      </View>
+      <Text style={styles.headerTitle}>Ganancias</Text>
 
-      <Text style={styles.sectionTitle}>Últimos viajes completados</Text>
+      <LinearGradient colors={[color.surfaceRaised, color.surface]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroCard}>
+        <Text style={styles.heroLabel}>GANANCIAS TOTALES</Text>
+        <Text style={styles.heroValue}>${Number(totalEarnings ?? 0).toFixed(2)}</Text>
+        <View style={styles.heroFooter}>
+          <Ionicons name="car-sport" size={13} color={color.inkFaint} />
+          <Text style={styles.heroFooterText}>{totalTrips} viaje{totalTrips === 1 ? '' : 's'} completado{totalTrips === 1 ? '' : 's'}</Text>
+        </View>
+      </LinearGradient>
+
+      <SectionLabel>Últimos viajes completados</SectionLabel>
 
       {trips.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>Aún no tienes viajes completados.</Text>
-        </View>
+        <EmptyState icon="wallet-outline" title="Aún no tienes viajes completados" subtitle="Tus ganancias aparecerán aquí a medida que completes viajes." />
       ) : (
-        trips.map((t) => (
-          <View key={t.id} style={styles.tripRow}>
-            <View style={styles.tripInfo}>
-              <Text style={styles.tripNumber}>{t.booking_number}</Text>
-              <Text style={styles.tripPassenger}>{t.passenger_name ?? 'Sin nombre'}</Text>
-              <Text style={styles.tripDate}>
-                {t.completed_at ? new Date(t.completed_at).toLocaleDateString('es-DO', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
-              </Text>
+        <Card style={styles.listCard}>
+          {trips.map((t, i) => (
+            <View key={t.id} style={[styles.tripRow, i > 0 && styles.tripRowDivider]}>
+              <View style={styles.tripIconWrap}>
+                <Ionicons name="checkmark" size={14} color={color.success} />
+              </View>
+              <View style={styles.tripInfo}>
+                <Text style={styles.tripPassenger}>{t.passenger_name ?? 'Sin nombre'}</Text>
+                <Text style={styles.tripMeta}>
+                  {t.booking_number} · {t.completed_at ? new Date(t.completed_at).toLocaleDateString('es-DO', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                </Text>
+              </View>
+              <Text style={styles.tripAmount}>{t.total_amount != null ? `$${Number(t.total_amount).toFixed(2)}` : '—'}</Text>
             </View>
-            <Text style={styles.tripAmount}>
-              {t.total_amount != null ? `$${Number(t.total_amount).toFixed(2)}` : '—'}
-            </Text>
-          </View>
-        ))
+          ))}
+        </Card>
       )}
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1d1b18' },
-  content: { padding: 20, paddingTop: 12, gap: 12, flexGrow: 1 },
-  center: { flex: 1, backgroundColor: '#1d1b18', justifyContent: 'center', alignItems: 'center' },
-  totalCard: { backgroundColor: '#2a2723', borderRadius: 16, padding: 24, alignItems: 'center' },
-  totalLabel: { color: '#a8a39a', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
-  totalValue: { color: '#e9c176', fontSize: 34, fontWeight: '700' },
-  sectionTitle: { color: '#f5f2ec', fontSize: 15, fontWeight: '700', marginTop: 8, marginBottom: 4 },
-  emptyCard: { backgroundColor: '#2a2723', borderRadius: 16, padding: 24, alignItems: 'center' },
-  emptyText: { color: '#a8a39a', fontSize: 14, textAlign: 'center' },
-  tripRow: {
-    backgroundColor: '#2a2723',
-    borderRadius: 14,
-    padding: 14,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  container: { flex: 1, backgroundColor: color.bg },
+  content: { padding: space.xl, paddingTop: space.lg, gap: space.lg, flexGrow: 1 },
+  headerTitle: { color: color.ink, fontFamily: font.display, fontSize: 28, marginBottom: -space.xs },
+  heroCard: {
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: color.border,
+    padding: space.xxl,
     alignItems: 'center',
   },
+  heroLabel: { color: color.inkFaint, fontFamily: font.bodySemi, fontSize: 11, letterSpacing: 1.5 },
+  heroValue: { color: color.gold, fontFamily: font.display, fontSize: 44, marginTop: space.sm },
+  heroFooter: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: space.md },
+  heroFooterText: { color: color.inkFaint, fontFamily: font.body, fontSize: 12 },
+  listCard: { padding: 0, overflow: 'hidden' },
+  tripRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },
+  tripRowDivider: { borderTopWidth: 1, borderTopColor: color.border },
+  tripIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: radius.pill,
+    backgroundColor: color.successSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   tripInfo: { flex: 1 },
-  tripNumber: { color: '#8a6520', fontSize: 11, fontWeight: '600' },
-  tripPassenger: { color: '#f5f2ec', fontSize: 14, marginTop: 2 },
-  tripDate: { color: '#75716a', fontSize: 11, marginTop: 2 },
-  tripAmount: { color: '#f5f2ec', fontSize: 15, fontWeight: '700' },
+  tripPassenger: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 14 },
+  tripMeta: { color: color.inkFaint, fontFamily: font.body, fontSize: 11, marginTop: 2 },
+  tripAmount: { color: color.ink, fontFamily: font.bodyBold, fontSize: 15 },
 })

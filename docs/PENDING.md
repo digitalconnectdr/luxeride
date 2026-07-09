@@ -940,12 +940,15 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
    original de esperar la validación de la PWA, superada a pedido del
    usuario). Driver app primero, distribución inicial por sideload (APK
    directo, sin Google Play) para evitar la fricción de la tienda mientras
-   se afina; migrar a Play Store más adelante. Esqueleto + slice vertical ya
-   construidos (`apps/driver-mobile/`: login + pantalla de viaje activo +
-   ruta `/api/mobile/driver/advance-trip`) — falta que el usuario genere el
-   primer APK real con `eas build` (requiere su propia cuenta de
-   expo.dev) y lo pruebe en un Android físico. Detalle completo en
-   docs/PHASE-2-MOBILE.md → "Progreso (2026-07-09)".
+   se afina; migrar a Play Store más adelante. Ya construido
+   (`apps/driver-mobile/`): las 6 pantallas completas (Hoy, detalle de
+   viaje, completar con efectivo+firma, Ganancias, Documentos con cámara,
+   Perfil), migración 42 (fotos de documentos + firma) ya aplicada en
+   producción, y rediseño visual premium (tipografía de marca, iconos
+   reales, haptics, motion) — falta que el usuario genere el primer APK
+   real con `eas build` (su propia cuenta de expo.dev) y lo pruebe en un
+   Android físico. Detalle completo en docs/PHASE-2-MOBILE.md → "Progreso
+   (2026-07-09)".
 8. **Gaps mayores**: QuickBooks, e-signatures, promo codes, detección de
    conflictos de vehículo, nómina de conductores, WhatsApp Business.
    Pospuesto a propósito. (farm-in/farm-out ya tiene diseño concreto, ver

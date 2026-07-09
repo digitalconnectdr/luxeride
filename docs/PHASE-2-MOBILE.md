@@ -65,14 +65,16 @@ Las apps NO necesitan un backend nuevo. Reutilizan lo ya construido:
 
 # Fase 2B — Apps nativas
 
-## Progreso (2026-07-09) — esqueleto + slice vertical del conductor
+## Progreso (2026-07-09) — esqueleto + slice vertical + pantallas completas + rediseño premium
 
 Construido para probar el pipeline completo (build → APK → instalar en un
 Android real) antes de invertir en todas las pantallas de golpe:
 
-- **`apps/driver-mobile/`** — proyecto Expo (SDK 57) + TypeScript nuevo en el
-  monorepo (`@plataforma/driver-mobile`, workspace ya cubierto por
-  `apps/*` en el `package.json` raíz).
+- **`apps/driver-mobile/`** — proyecto Expo (SDK **54**, bajado desde el 57
+  con el que arrancó `create-expo-app@latest` porque el Expo Go de Play
+  Store solo soporta SDK 54) + TypeScript nuevo en el monorepo
+  (`@plataforma/driver-mobile`, workspace ya cubierto por `apps/*` en el
+  `package.json` raíz).
 - **Login**: contra Supabase Auth directo (`supabase.auth.signInWithPassword`)
   — mismas cuentas que ya usan los conductores en `/driver/trips` de la web,
   sin backend nuevo para esto.
@@ -92,17 +94,48 @@ Android real) antes de invertir en todas las pantallas de golpe:
   sin duplicar transición de estados + notificación al pasajero).
 - **Guardarraíl de rol**: si alguien que no es `driver` inicia sesión en esta
   app, se cierra la sesión con un aviso — la app es solo para conductores.
+- **Pantallas completas (Sprint 1-2 adelantado)**: navegación por tabs (Hoy /
+  Ganancias / Documentos / Perfil) con un stack nativo dentro de "Hoy"
+  (lista de viajes → detalle). Completar viaje incluye cobro en efectivo
+  (`payments` con `payment_method: 'cash'`) y firma del pasajero
+  (`react-native-signature-canvas`, subida a Storage bucket `documents` ya
+  existente). Documentos permite tomar foto de licencia/seguro con la
+  cámara (`expo-image-picker`) y sube a Storage bajo la carpeta propia del
+  conductor (RLS `drivers_upload_own_documents`, migración 12). Perfil
+  controla disponibilidad (`is_available`) reusando la misma ruta API del
+  toggle web.
+- **Migración 42** (`20260709000042_driver_mobile_app.sql`) — columnas
+  `drivers.license_photo_url`, `drivers.insurance_photo_url` y
+  `bookings.passenger_signature_path`. **Aplicada en producción** por el
+  usuario vía Supabase SQL Editor.
+- **Rediseño premium** (mismo día, a pedido explícito del usuario: "quiero
+  que esté a la altura de las mejores aplicaciones del mercado"): sistema de
+  diseño compartido en `lib/theme.ts` (paleta bronce/dorado sobre fondo casi
+  negro, escalas de espacio/radio), tipografía de marca (Playfair Display
+  para titulares/cifras grandes + Inter para todo lo demás, vía
+  `@expo-google-fonts/*`), iconos reales de `@expo/vector-icons` (Ionicons)
+  en vez de emojis, componentes compartidos (`components/ui.tsx`: Card,
+  Button, StatusBadge, EmptyState) para que las 6 pantallas no diverjan,
+  feedback táctil (`expo-haptics` + escala animada en cada botón vía
+  `components/PressableScale.tsx`), y toques de motion (fade-in escalonado
+  de las tarjetas de viajes, shake de error en login, degradado sutil en la
+  tarjeta de ganancias con `expo-linear-gradient`). Ningún cambio tocó la
+  lógica de datos (`lib/api.ts`, `lib/upload.ts`, `lib/supabase.ts`) ni el
+  backend — pase puramente visual.
 - **`eas.json`**: perfil `apk` listo (`buildType: apk`, `distribution:
   internal`) para generar un `.apk` instalable por sideload; perfil
   `production` (`app-bundle`) ya preparado para cuando se suba a Google Play.
 - **Verificado**: `tsc --noEmit` limpio y `npx expo export --platform
-  android` compila el bundle completo (650 módulos) sin errores — confirma
-  que el código es sano antes de gastar un build real en EAS.
+  android` compila el bundle completo sin errores — confirma que el código
+  es sano antes de gastar un build real en EAS.
 - **Pendiente del usuario** (requiere su propia cuenta, no algo que se pueda
-  automatizar desde aquí): crear cuenta gratis en expo.dev, `eas login`,
+  automatizar desde aquí): con la cuenta de expo.dev ya creada, correr
   `eas build --platform android --profile apk` desde `apps/driver-mobile`,
   descargar el `.apk` resultante y colgarlo en el sitio para que los
   conductores lo instalen.
+- **Pendiente de decisión**: la app quedó 100% en español (divergiendo del
+  resto de la plataforma, que es EN/ES/PT estricto) — flagged al usuario,
+  sin decidir todavía si se le agrega i18n completo.
 
 ## Sprint 0 — Fundaciones (1 semana)
 

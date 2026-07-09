@@ -1,8 +1,11 @@
 import { useCallback, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, Switch } from 'react-native'
+import { View, Text, StyleSheet, ActivityIndicator, Switch } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
+import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
 import { callDriverApi } from '../lib/api'
+import { Button, Card, ScreenLoader } from '../components/ui'
+import { color, font, radius, space } from '../lib/theme'
 
 export function ProfileScreen() {
   const [email, setEmail] = useState('')
@@ -35,23 +38,32 @@ export function ProfileScreen() {
     if (!result.success) setIsAvailable(!value) // revertir si falla
   }
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#e9c176" />
-      </View>
-    )
-  }
+  if (loading) return <ScreenLoader />
+
+  const initial = email.trim().charAt(0).toUpperCase() || '?'
 
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.email}>{email}</Text>
-        <Text style={styles.role}>Conductor</Text>
-      </View>
+      <Text style={styles.headerTitle}>Perfil</Text>
 
-      <View style={styles.card}>
+      <Card style={styles.identityCard}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarLetter}>{initial}</Text>
+        </View>
+        <View style={styles.identityText}>
+          <Text style={styles.email}>{email}</Text>
+          <View style={styles.roleChip}>
+            <Ionicons name="car-sport" size={11} color={color.gold} />
+            <Text style={styles.role}>Conductor</Text>
+          </View>
+        </View>
+      </Card>
+
+      <Card>
         <View style={styles.row}>
+          <View style={[styles.rowIconWrap, isAvailable && styles.rowIconWrapActive]}>
+            <Ionicons name={isAvailable ? 'radio-button-on' : 'radio-button-off'} size={18} color={isAvailable ? color.success : color.inkFaint} />
+          </View>
           <View style={styles.rowText}>
             <Text style={styles.rowTitle}>En servicio</Text>
             <Text style={styles.rowSubtitle}>
@@ -59,35 +71,63 @@ export function ProfileScreen() {
             </Text>
           </View>
           {saving ? (
-            <ActivityIndicator color="#e9c176" />
+            <ActivityIndicator color={color.gold} />
           ) : (
             <Switch
               value={isAvailable}
               onValueChange={toggleAvailability}
-              trackColor={{ false: '#3a352e', true: '#8a6520' }}
-              thumbColor={isAvailable ? '#e9c176' : '#75716a'}
+              trackColor={{ false: color.borderStrong, true: color.bronze }}
+              thumbColor={isAvailable ? color.gold : color.inkFaint}
             />
           )}
         </View>
-      </View>
+      </Card>
 
-      <Pressable style={styles.signOut} onPress={() => supabase.auth.signOut()}>
-        <Text style={styles.signOutText}>Cerrar sesión</Text>
-      </Pressable>
+      <View style={styles.spacer} />
+
+      <Button
+        label="Cerrar sesión"
+        icon="log-out-outline"
+        variant="danger"
+        onPress={() => supabase.auth.signOut()}
+        haptic="medium"
+      />
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1d1b18', padding: 20, paddingTop: 12, gap: 14 },
-  center: { flex: 1, backgroundColor: '#1d1b18', justifyContent: 'center', alignItems: 'center' },
-  card: { backgroundColor: '#2a2723', borderRadius: 16, padding: 18 },
-  email: { color: '#f5f2ec', fontSize: 16, fontWeight: '700' },
-  role: { color: '#8a6520', fontSize: 12, marginTop: 4, letterSpacing: 0.5 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  rowText: { flex: 1, marginRight: 12 },
-  rowTitle: { color: '#f5f2ec', fontSize: 15, fontWeight: '600' },
-  rowSubtitle: { color: '#a8a39a', fontSize: 12, marginTop: 2 },
-  signOut: { marginTop: 'auto', alignItems: 'center', paddingVertical: 14 },
-  signOutText: { color: '#75716a', fontSize: 14 },
+  container: { flex: 1, backgroundColor: color.bg, padding: space.xl, paddingTop: space.lg, gap: space.md },
+  headerTitle: { color: color.ink, fontFamily: font.display, fontSize: 28, marginBottom: -space.xs },
+  identityCard: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.pill,
+    backgroundColor: `${color.gold}18`,
+    borderWidth: 1,
+    borderColor: `${color.gold}55`,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarLetter: { color: color.gold, fontFamily: font.display, fontSize: 20 },
+  identityText: { flex: 1 },
+  email: { color: color.ink, fontFamily: font.bodySemi, fontSize: 15 },
+  roleChip: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  role: { color: color.gold, fontFamily: font.bodyMedium, fontSize: 12 },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  rowIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    backgroundColor: color.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: space.md,
+  },
+  rowIconWrapActive: { backgroundColor: color.successSoft },
+  rowText: { flex: 1, marginRight: space.md },
+  rowTitle: { color: color.ink, fontFamily: font.bodySemi, fontSize: 14 },
+  rowSubtitle: { color: color.inkFaint, fontFamily: font.body, fontSize: 12, marginTop: 2 },
+  spacer: { flex: 1 },
 })

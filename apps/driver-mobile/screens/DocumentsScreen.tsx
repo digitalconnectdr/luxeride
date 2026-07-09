@@ -1,9 +1,12 @@
 import { useCallback, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, ScrollView, Alert } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import * as ImagePicker from 'expo-image-picker'
+import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
 import { uploadDriverDocumentPhoto } from '../lib/upload'
+import { Button, Card, ScreenLoader, SectionLabel } from '../components/ui'
+import { color, font, radius, space } from '../lib/theme'
 import type { DriverRow } from '../lib/types'
 
 const DAY_MS = 86_400_000
@@ -33,6 +36,59 @@ async function pickAndUpload(userId: string, kind: 'license' | 'insurance'): Pro
     return null
   }
   return path ?? null
+}
+
+function DocumentCard({
+  icon,
+  title,
+  number,
+  expiry,
+  hasPhoto,
+  uploading,
+  onUpload,
+}: {
+  icon: keyof typeof Ionicons.glyphMap
+  title: string
+  number?: string | null
+  expiry: { label: string; alert: boolean } | null
+  hasPhoto: boolean
+  uploading: boolean
+  onUpload: () => void
+}) {
+  return (
+    <Card>
+      <View style={styles.cardHeader}>
+        <View style={[styles.iconWrap, expiry?.alert && styles.iconWrapAlert]}>
+          <Ionicons name={icon} size={18} color={expiry?.alert ? color.warning : color.gold} />
+        </View>
+        <View style={styles.cardHeaderText}>
+          <Text style={styles.cardTitle}>{title}</Text>
+          {number && <Text style={styles.detail}>N° {number}</Text>}
+        </View>
+        {hasPhoto && (
+          <View style={styles.statusPill}>
+            <Ionicons name="checkmark-circle" size={13} color={color.success} />
+          </View>
+        )}
+      </View>
+
+      {expiry && (
+        <View style={styles.expiryRow}>
+          <Ionicons name={expiry.alert ? 'warning' : 'time-outline'} size={13} color={expiry.alert ? color.warning : color.inkFaint} />
+          <Text style={[styles.expiryText, expiry.alert && styles.expiryTextAlert]}>{expiry.label}</Text>
+        </View>
+      )}
+
+      <Button
+        label={hasPhoto ? 'Actualizar foto' : 'Tomar foto'}
+        icon="camera-outline"
+        variant="secondary"
+        loading={uploading}
+        onPress={onUpload}
+        style={styles.uploadButton}
+      />
+    </Card>
+  )
 }
 
 export function DocumentsScreen() {
@@ -75,61 +131,73 @@ export function DocumentsScreen() {
     setUploading(null)
   }
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#e9c176" />
-      </View>
-    )
-  }
+  if (loading) return <ScreenLoader />
 
   const licenseExpiry = expiryInfo(driver?.license_expiry ?? null)
   const permitExpiry = expiryInfo(driver?.chauffeur_permit_expires_at ?? null)
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Licencia de conducir</Text>
-        {driver?.license_number && <Text style={styles.detail}>N° {driver.license_number}</Text>}
-        {licenseExpiry && (
-          <Text style={[styles.detail, licenseExpiry.alert && styles.alertText]}>{licenseExpiry.label}</Text>
-        )}
-        <Text style={styles.detail}>{driver?.license_photo_url ? '✓ Foto subida' : 'Sin foto subida'}</Text>
-        <Pressable style={styles.button} onPress={() => handleUpload('license')} disabled={uploading === 'license'}>
-          {uploading === 'license' ? (
-            <ActivityIndicator color="#1d1b18" />
-          ) : (
-            <Text style={styles.buttonText}>📷 {driver?.license_photo_url ? 'Actualizar foto' : 'Tomar foto'}</Text>
-          )}
-        </Pressable>
-      </View>
+      <Text style={styles.headerTitle}>Documentos</Text>
+      <SectionLabel>Mantenlos vigentes para seguir recibiendo viajes</SectionLabel>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Seguro / permiso de chofer</Text>
-        {permitExpiry && (
-          <Text style={[styles.detail, permitExpiry.alert && styles.alertText]}>{permitExpiry.label}</Text>
-        )}
-        <Text style={styles.detail}>{driver?.insurance_photo_url ? '✓ Foto subida' : 'Sin foto subida'}</Text>
-        <Pressable style={styles.button} onPress={() => handleUpload('insurance')} disabled={uploading === 'insurance'}>
-          {uploading === 'insurance' ? (
-            <ActivityIndicator color="#1d1b18" />
-          ) : (
-            <Text style={styles.buttonText}>📷 {driver?.insurance_photo_url ? 'Actualizar foto' : 'Tomar foto'}</Text>
-          )}
-        </Pressable>
-      </View>
+      <DocumentCard
+        icon="card-outline"
+        title="Licencia de conducir"
+        number={driver?.license_number}
+        expiry={licenseExpiry}
+        hasPhoto={!!driver?.license_photo_url}
+        uploading={uploading === 'license'}
+        onUpload={() => handleUpload('license')}
+      />
+
+      <DocumentCard
+        icon="shield-checkmark-outline"
+        title="Seguro / permiso de chofer"
+        expiry={permitExpiry}
+        hasPhoto={!!driver?.insurance_photo_url}
+        uploading={uploading === 'insurance'}
+        onUpload={() => handleUpload('insurance')}
+      />
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1d1b18' },
-  content: { padding: 20, paddingTop: 12, gap: 14, flexGrow: 1 },
-  center: { flex: 1, backgroundColor: '#1d1b18', justifyContent: 'center', alignItems: 'center' },
-  card: { backgroundColor: '#2a2723', borderRadius: 16, padding: 18, gap: 6 },
-  cardTitle: { color: '#f5f2ec', fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  detail: { color: '#a8a39a', fontSize: 13 },
-  alertText: { color: '#e9a154', fontWeight: '600' },
-  button: { backgroundColor: '#e9c176', borderRadius: 12, paddingVertical: 12, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: '#1d1b18', fontWeight: '700', fontSize: 14 },
+  container: { flex: 1, backgroundColor: color.bg },
+  content: { padding: space.xl, paddingTop: space.lg, gap: space.md, flexGrow: 1 },
+  headerTitle: { color: color.ink, fontFamily: font.display, fontSize: 28, marginBottom: -space.xs },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    backgroundColor: `${color.gold}18`,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrapAlert: { backgroundColor: color.warningSoft },
+  cardHeaderText: { flex: 1 },
+  cardTitle: { color: color.ink, fontFamily: font.bodySemi, fontSize: 15 },
+  detail: { color: color.inkFaint, fontFamily: font.body, fontSize: 12, marginTop: 2 },
+  statusPill: {
+    width: 24,
+    height: 24,
+    borderRadius: radius.pill,
+    backgroundColor: color.successSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  expiryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: space.lg,
+    paddingTop: space.md,
+    borderTopWidth: 1,
+    borderTopColor: color.border,
+  },
+  expiryText: { color: color.inkFaint, fontFamily: font.body, fontSize: 12 },
+  expiryTextAlert: { color: color.warning, fontFamily: font.bodyMedium },
+  uploadButton: { marginTop: space.lg, paddingVertical: 12 },
 })

@@ -1,11 +1,21 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, ActivityIndicator, StyleSheet, Text } from 'react-native'
+import { View, StyleSheet, Text } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { NavigationContainer } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { Ionicons } from '@expo/vector-icons'
+import { useFonts as useInterFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
+import {
+  useFonts as usePlayfairFonts,
+  PlayfairDisplay_600SemiBold,
+  PlayfairDisplay_700Bold,
+  PlayfairDisplay_600SemiBold_Italic,
+} from '@expo-google-fonts/playfair-display'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
+import { color, font } from './lib/theme'
+import { ScreenLoader } from './components/ui'
 import { LoginScreen } from './screens/LoginScreen'
 import { TripsListScreen } from './screens/TripsListScreen'
 import { TripDetailScreen } from './screens/TripDetailScreen'
@@ -18,9 +28,10 @@ const Tab = createBottomTabNavigator()
 const TripsStack = createNativeStackNavigator<TripsStackParamList>()
 
 const darkHeader = {
-  headerStyle: { backgroundColor: '#1d1b18' },
-  headerTintColor: '#f5f2ec',
-  headerTitleStyle: { color: '#f5f2ec' },
+  headerStyle: { backgroundColor: color.bg },
+  headerShadowVisible: false,
+  headerTintColor: color.ink,
+  headerTitleStyle: { color: color.ink, fontFamily: font.bodySemi, fontSize: 16 },
 }
 
 function TripsStackScreen() {
@@ -32,17 +43,31 @@ function TripsStackScreen() {
   )
 }
 
-const TAB_ICON: Record<string, string> = {
-  Hoy: '🚗',
-  Ganancias: '💰',
-  Documentos: '📄',
-  Perfil: '👤',
+type TabIcon = { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }
+const TAB_ICON: Record<string, TabIcon> = {
+  Hoy: { active: 'car-sport', inactive: 'car-sport-outline' },
+  Ganancias: { active: 'wallet', inactive: 'wallet-outline' },
+  Documentos: { active: 'document-text', inactive: 'document-text-outline' },
+  Perfil: { active: 'person-circle', inactive: 'person-circle-outline' },
+}
+
+function TabIconView({ routeName, focused }: { routeName: string; focused: boolean }) {
+  const icons = TAB_ICON[routeName]
+  return (
+    <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
+      <Ionicons name={focused ? icons.active : icons.inactive} size={22} color={focused ? color.gold : color.inkFaint} />
+    </View>
+  )
 }
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [checkingSession, setCheckingSession] = useState(true)
   const [roleError, setRoleError] = useState('')
+
+  const [interLoaded] = useInterFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold })
+  const [playfairLoaded] = usePlayfairFonts({ PlayfairDisplay_600SemiBold, PlayfairDisplay_700Bold, PlayfairDisplay_600SemiBold_Italic })
+  const fontsReady = interLoaded && playfairLoaded
 
   // Esta app es SOLO para conductores. La validación de rol pasa AQUÍ, antes
   // de que `session` se ponga en un valor no nulo — así nunca llegamos a
@@ -84,10 +109,11 @@ export default function App() {
     return () => subscription.subscription.unsubscribe()
   }, [validateDriverSession])
 
-  if (checkingSession) {
+  if (checkingSession || !fontsReady) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color="#e9c176" />
+        <Text style={styles.loadingMark}>LuxeRide</Text>
+        <ScreenLoader />
       </View>
     )
   }
@@ -108,10 +134,12 @@ export default function App() {
         screenOptions={({ route }) => ({
           headerShown: route.name !== 'Hoy',
           ...darkHeader,
-          tabBarStyle: { backgroundColor: '#2a2723', borderTopColor: '#3a352e' },
-          tabBarActiveTintColor: '#e9c176',
-          tabBarInactiveTintColor: '#75716a',
-          tabBarIcon: () => <Text style={{ fontSize: 18 }}>{TAB_ICON[route.name]}</Text>,
+          tabBarShowLabel: true,
+          tabBarStyle: styles.tabBar,
+          tabBarActiveTintColor: color.gold,
+          tabBarInactiveTintColor: color.inkFaint,
+          tabBarLabelStyle: styles.tabLabel,
+          tabBarIcon: ({ focused }) => <TabIconView routeName={route.name} focused={focused} />,
         })}
       >
         <Tab.Screen name="Hoy" component={TripsStackScreen} />
@@ -124,5 +152,22 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, backgroundColor: '#1d1b18', justifyContent: 'center', alignItems: 'center' },
+  loading: { flex: 1, backgroundColor: color.bg, justifyContent: 'center', alignItems: 'center', gap: 24 },
+  loadingMark: { color: color.gold, fontSize: 22, letterSpacing: 1, fontWeight: '600' },
+  tabBar: {
+    backgroundColor: color.bgElevated,
+    borderTopColor: color.border,
+    borderTopWidth: 1,
+    height: 84,
+    paddingTop: 10,
+  },
+  tabLabel: { fontFamily: font.bodyMedium, fontSize: 11, marginTop: 2 },
+  tabIconWrap: {
+    width: 40,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabIconWrapActive: { backgroundColor: `${color.gold}1c` },
 })

@@ -1,50 +1,74 @@
 import { useRef } from 'react'
-import { View, Text, Pressable, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import SignatureScreen, { type SignatureViewRef } from 'react-native-signature-canvas'
+import { Ionicons } from '@expo/vector-icons'
+import { PressableScale } from './PressableScale'
+import { SectionLabel } from './ui'
+import { color, font, radius, space } from '../lib/theme'
 
 export function SignaturePad({ onSave, onSkip }: { onSave: (base64: string) => void; onSkip: () => void }) {
   const ref = useRef<SignatureViewRef>(null)
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Firma del pasajero (opcional)</Text>
+      <SectionLabel>Firma del pasajero (opcional)</SectionLabel>
       <View style={styles.canvasWrap}>
         <SignatureScreen
           ref={ref}
           onOK={onSave}
-          webStyle="body,html{background:#f5f2ec;margin:0;padding:0;} .m-signature-pad--footer{display:none;}"
-          backgroundColor="#f5f2ec"
+          webStyle="body,html{background:#f6f2ea;margin:0;padding:0;} .m-signature-pad--footer{display:none;}"
+          backgroundColor="#f6f2ea"
         />
       </View>
       <View style={styles.actions}>
-        <Pressable style={styles.secondaryButton} onPress={() => ref.current?.clearSignature()}>
+        <PressableScale style={styles.secondaryButton} onPress={() => ref.current?.clearSignature()}>
+          <Ionicons name="refresh" size={14} color={color.inkMuted} />
           <Text style={styles.secondaryButtonText}>Borrar</Text>
-        </Pressable>
-        <Pressable style={styles.secondaryButton} onPress={onSkip}>
+        </PressableScale>
+        <PressableScale style={styles.secondaryButton} onPress={onSkip}>
           <Text style={styles.secondaryButtonText}>Omitir</Text>
-        </Pressable>
-        <Pressable style={styles.primaryButton} onPress={() => ref.current?.readSignature()}>
+        </PressableScale>
+        <PressableScale style={styles.primaryButton} onPress={() => ref.current?.readSignature()} haptic="medium">
+          <Ionicons name="checkmark" size={14} color={color.bg} />
           <Text style={styles.primaryButtonText}>Guardar firma</Text>
-        </Pressable>
+        </PressableScale>
       </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 10 },
-  label: { color: '#a8a39a', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
-  canvasWrap: { height: 220, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: '#3a352e' },
-  actions: { flexDirection: 'row', gap: 8 },
+  container: { gap: space.sm, marginTop: space.sm },
+  canvasWrap: {
+    height: 200,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: color.borderStrong,
+    marginTop: space.xs,
+  },
+  actions: { flexDirection: 'row', gap: space.sm },
   secondaryButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 12,
+    borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: '#3a352e',
+    borderColor: color.borderStrong,
   },
-  secondaryButtonText: { color: '#a8a39a', fontSize: 13, fontWeight: '600' },
-  primaryButton: { flex: 2, paddingVertical: 12, borderRadius: 12, alignItems: 'center', backgroundColor: '#e9c176' },
-  primaryButtonText: { color: '#1d1b18', fontSize: 13, fontWeight: '700' },
+  secondaryButtonText: { color: color.inkMuted, fontFamily: font.bodySemi, fontSize: 13 },
+  primaryButton: {
+    flex: 1.4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 12,
+    borderRadius: radius.sm,
+    backgroundColor: color.gold,
+  },
+  primaryButtonText: { color: color.bg, fontFamily: font.bodyBold, fontSize: 13 },
 })

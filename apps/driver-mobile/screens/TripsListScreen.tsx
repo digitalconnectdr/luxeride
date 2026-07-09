@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl, ScrollView } from 'react-native'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { View, Text, StyleSheet, RefreshControl, ScrollView, Animated } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
-import { ACTIVE_STATUSES, STATUS_LABEL, type DriverBooking, type TripsStackParamList } from '../lib/types'
+import { PressableScale } from '../components/PressableScale'
+import { Card, EmptyState, ScreenLoader, StatusBadge } from '../components/ui'
+import { color, font, radius, space } from '../lib/theme'
+import { ACTIVE_STATUSES, type DriverBooking, type TripsStackParamList } from '../lib/types'
 
 type Props = NativeStackScreenProps<TripsStackParamList, 'TripsList'>
 
@@ -20,13 +24,76 @@ function countdownLabel(scheduledAt: string): string {
   return `En ${hours}h ${rest}min`
 }
 
-function flightChip(trip: DriverBooking): string | null {
+function flightChip(trip: DriverBooking): { label: string; alert: boolean } | null {
   if (!trip.flight_number) return null
-  if (trip.flight_status === 'cancelled') return `✈ ${trip.flight_number} · Cancelado`
-  if ((trip.flight_delay_minutes ?? 0) >= 15) return `✈ ${trip.flight_number} · +${trip.flight_delay_minutes} min`
-  if (trip.flight_status === 'arrived') return `✈ ${trip.flight_number} · Aterrizó`
-  if (trip.flight_status === 'enroute') return `✈ ${trip.flight_number} · En vuelo`
-  return `✈ ${trip.flight_number}`
+  if (trip.flight_status === 'cancelled') return { label: `${trip.flight_number} · Cancelado`, alert: true }
+  if ((trip.flight_delay_minutes ?? 0) >= 15) return { label: `${trip.flight_number} · +${trip.flight_delay_minutes} min`, alert: true }
+  if (trip.flight_status === 'arrived') return { label: `${trip.flight_number} · Aterrizó`, alert: false }
+  if (trip.flight_status === 'enroute') return { label: `${trip.flight_number} · En vuelo`, alert: false }
+  return { label: trip.flight_number, alert: false }
+}
+
+function TripCard({ trip, isNext, index, onPress }: { trip: DriverBooking; isNext: boolean; index: number; onPress: () => void }) {
+  const anim = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    Animated.timing(anim, { toValue: 1, duration: 320, delay: index * 70, useNativeDriver: true }).start()
+  }, [anim, index])
+
+  const chip = flightChip(trip)
+
+  return (
+    <Animated.View
+      style={{
+        opacity: anim,
+        transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }],
+      }}
+    >
+      <PressableScale onPress={onPress} haptic="light">
+        <Card style={isNext ? styles.cardNext : undefined}>
+          <View style={styles.cardTopRow}>
+            <Text style={styles.bookingNumber}>{trip.booking_number}</Text>
+            <Ionicons name="chevron-forward" size={18} color={color.inkFaint} />
+          </View>
+
+          {isNext && (
+            <View style={styles.nextChip}>
+              <Ionicons name="time" size={12} color={color.gold} />
+              <Text style={styles.nextChipText}>PRÓXIMO · {countdownLabel(trip.scheduled_at)}</Text>
+            </View>
+          )}
+
+          <View style={styles.statusRow}>
+            <StatusBadge status={trip.status} />
+          </View>
+
+          <View style={styles.passengerRow}>
+            <Ionicons name="person-circle-outline" size={16} color={color.inkMuted} />
+            <Text style={styles.passenger}>{trip.passenger_name ?? 'Sin nombre'}</Text>
+          </View>
+
+          <View style={styles.addressBlock}>
+            <View style={styles.addressRow}>
+              <Ionicons name="radio-button-on" size={14} color={color.gold} />
+              <Text style={styles.address} numberOfLines={1}>{trip.pickup_location?.address ?? 'Sin dirección'}</Text>
+            </View>
+            <View style={styles.addressConnector} />
+            <View style={styles.addressRow}>
+              <Ionicons name="location" size={14} color={color.inkMuted} />
+              <Text style={styles.address} numberOfLines={1}>{trip.dropoff_location?.address ?? 'Sin dirección'}</Text>
+            </View>
+          </View>
+
+          {chip && (
+            <View style={styles.flightChip}>
+              <Ionicons name="airplane" size={12} color={chip.alert ? color.warning : color.inkFaint} />
+              <Text style={[styles.flightChipText, chip.alert && styles.flightChipTextAlert]}>{chip.label}</Text>
+            </View>
+          )}
+        </Card>
+      </PressableScale>
+    </Animated.View>
+  )
 }
 
 export function TripsListScreen({ navigation }: Props) {
@@ -63,77 +130,75 @@ export function TripsListScreen({ navigation }: Props) {
     return () => clearInterval(id)
   }, [])
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#e9c176" />
-      </View>
-    )
-  }
+  if (loading) return <ScreenLoader />
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={false} onRefresh={loadTrips} tintColor="#e9c176" />}
+      refreshControl={<RefreshControl refreshing={false} onRefresh={loadTrips} tintColor={color.gold} />}
     >
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Hoy</Text>
+        <Text style={styles.headerSubtitle}>
+          {trips.length === 0 ? 'Sin viajes activos' : `${trips.length} viaje${trips.length === 1 ? '' : 's'} activo${trips.length === 1 ? '' : 's'}`}
+        </Text>
+      </View>
+
       {trips.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>No tienes viajes activos ahora mismo.</Text>
-        </View>
+        <EmptyState
+          icon="car-sport-outline"
+          title="No tienes viajes activos"
+          subtitle="Cuando te asignen un viaje, aparecerá aquí al instante."
+        />
       ) : (
-        trips.map((trip, i) => {
-          const chip = flightChip(trip)
-          return (
-            <Pressable
-              key={trip.id}
-              style={[styles.card, i === 0 && styles.cardNext]}
-              onPress={() => navigation.navigate('TripDetail', { tripId: trip.id })}
-            >
-              <View style={styles.cardHeader}>
-                <Text style={styles.bookingNumber}>{trip.booking_number}</Text>
-                {i === 0 && <Text style={styles.nextBadge}>PRÓXIMO · {countdownLabel(trip.scheduled_at)}</Text>}
-              </View>
-              <Text style={styles.statusLabel}>{STATUS_LABEL[trip.status] ?? trip.status}</Text>
-              <Text style={styles.passenger}>{trip.passenger_name ?? 'Sin nombre'}</Text>
-              <Text style={styles.address} numberOfLines={1}>
-                ▲ {trip.pickup_location?.address ?? '—'}
-              </Text>
-              <Text style={styles.address} numberOfLines={1}>
-                ▼ {trip.dropoff_location?.address ?? '—'}
-              </Text>
-              {chip && (
-                <Text
-                  style={[
-                    styles.flightChip,
-                    (trip.flight_status === 'cancelled' || (trip.flight_delay_minutes ?? 0) >= 15) && styles.flightChipAlert,
-                  ]}
-                >
-                  {chip}
-                </Text>
-              )}
-            </Pressable>
-          )
-        })
+        trips.map((trip, i) => (
+          <TripCard
+            key={trip.id}
+            trip={trip}
+            isNext={i === 0}
+            index={i}
+            onPress={() => navigation.navigate('TripDetail', { tripId: trip.id })}
+          />
+        ))
       )}
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1d1b18' },
-  content: { padding: 20, paddingTop: 12, flexGrow: 1, gap: 12 },
-  center: { flex: 1, backgroundColor: '#1d1b18', justifyContent: 'center', alignItems: 'center' },
-  emptyCard: { backgroundColor: '#2a2723', borderRadius: 16, padding: 24, alignItems: 'center', marginTop: 40 },
-  emptyText: { color: '#a8a39a', fontSize: 15, textAlign: 'center' },
-  card: { backgroundColor: '#2a2723', borderRadius: 16, padding: 16 },
-  cardNext: { borderWidth: 1, borderColor: '#e9c176' },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  bookingNumber: { color: '#8a6520', fontSize: 12, fontWeight: '600', letterSpacing: 0.5 },
-  nextBadge: { color: '#e9c176', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
-  statusLabel: { color: '#f5f2ec', fontSize: 17, fontWeight: '700', marginBottom: 6 },
-  passenger: { color: '#f5f2ec', fontSize: 14, marginBottom: 4 },
-  address: { color: '#a8a39a', fontSize: 12, marginBottom: 2 },
-  flightChip: { color: '#a8a39a', fontSize: 12, marginTop: 6 },
-  flightChipAlert: { color: '#e9a154', fontWeight: '600' },
+  container: { flex: 1, backgroundColor: color.bg },
+  content: { padding: space.xl, paddingTop: space.lg, flexGrow: 1, gap: space.md },
+  header: { marginBottom: space.xs },
+  headerTitle: { color: color.ink, fontFamily: font.display, fontSize: 28 },
+  headerSubtitle: { color: color.inkFaint, fontFamily: font.body, fontSize: 13, marginTop: 2 },
+  cardNext: { borderColor: `${color.gold}66` },
+  cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  bookingNumber: { color: color.inkFaint, fontFamily: font.bodySemi, fontSize: 11, letterSpacing: 1 },
+  nextChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    marginTop: space.sm,
+  },
+  nextChipText: { color: color.gold, fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 0.5 },
+  statusRow: { marginTop: space.md, marginBottom: space.md },
+  passengerRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, marginBottom: space.md },
+  passenger: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 15 },
+  addressBlock: { gap: 2 },
+  addressRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  addressConnector: { width: 1, height: 10, backgroundColor: color.border, marginLeft: 6.5 },
+  address: { color: color.inkMuted, fontFamily: font.body, fontSize: 13, flexShrink: 1 },
+  flightChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: space.md,
+    paddingTop: space.md,
+    borderTopWidth: 1,
+    borderTopColor: color.border,
+  },
+  flightChipText: { color: color.inkFaint, fontFamily: font.bodyMedium, fontSize: 12 },
+  flightChipTextAlert: { color: color.warning },
 })
