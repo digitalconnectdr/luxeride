@@ -1949,6 +1949,8 @@ export const en = {
     requestAccessSent: 'Thanks — our team will reach out shortly.',
     subscribeButton: 'Subscribe now →',
     subscribeNote: 'Activates automatically once payment completes.',
+    subscribeEmailHint: 'Important: use exactly this email when paying on Whop so it activates automatically: {email}',
+    subscribeEmailMissing: 'Add an email to your company in Settings before subscribing, so the payment can be linked to your account automatically.',
     orRequestAccess: 'Or request access and we’ll help you activate it.',
     leadForm: {
       companyName: 'Company name',
@@ -1957,6 +1959,7 @@ export const en = {
       phone: 'Phone (optional)',
       message: 'Anything else we should know? (optional)',
       submit: 'Send request',
+      required: 'Please fill in contact name and email.',
     },
     reasons: {
       no_driver: 'No driver available',

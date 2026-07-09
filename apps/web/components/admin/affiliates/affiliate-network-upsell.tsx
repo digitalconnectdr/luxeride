@@ -7,7 +7,7 @@ import type { Dictionary } from '@/lib/i18n/server'
 
 type T = Dictionary['affiliates']
 
-export function AffiliateNetworkUpsell({ companyName, t, checkoutUrl }: { companyName: string; t: T; checkoutUrl?: string }) {
+export function AffiliateNetworkUpsell({ companyName, companyEmail, t, checkoutUrl }: { companyName: string; companyEmail?: string | null; t: T; checkoutUrl?: string }) {
   const [isPending, startTransition] = useTransition()
   const [showForm, setShowForm] = useState(false)
   const [sent, setSent] = useState(false)
@@ -18,7 +18,7 @@ export function AffiliateNetworkUpsell({ companyName, t, checkoutUrl }: { compan
   const [message, setMessage] = useState('')
 
   function submit() {
-    if (!contactName.trim() || !email.trim()) { setError('—'); return }
+    if (!contactName.trim() || !email.trim()) { setError(t.leadForm.required); return }
     setError('')
     startTransition(async () => {
       const result = await submitAffiliateNetworkLeadAction({
@@ -58,6 +58,15 @@ export function AffiliateNetworkUpsell({ companyName, t, checkoutUrl }: { compan
               {t.subscribeButton}
             </a>
             <p className="text-xs text-sl-on-surface-muted">{t.subscribeNote}</p>
+            {companyEmail ? (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                {t.subscribeEmailHint.replace('{email}', companyEmail)}
+              </p>
+            ) : (
+              <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                {t.subscribeEmailMissing}
+              </p>
+            )}
             <button onClick={() => setShowForm(true)} className="block text-xs text-sl-on-surface-muted hover:underline pt-1">
               {t.orRequestAccess}
             </button>

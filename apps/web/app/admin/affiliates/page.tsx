@@ -19,7 +19,7 @@ export default async function AffiliatesPage() {
 
   const admin = createAdminClient()
   const [{ data: company }, { data: relations }] = await Promise.all([
-    admin.from('companies').select('name, affiliate_network_enabled').eq('id', companyId).single(),
+    admin.from('companies').select('name, email, affiliate_network_enabled').eq('id', companyId).single(),
     admin
       .from('company_affiliates')
       .select('id, requester_company_id, affiliate_company_id, status, coverage_notes, payment_terms')
@@ -58,7 +58,7 @@ export default async function AffiliatesPage() {
       </div>
 
       {!enabled ? (
-        <AffiliateNetworkUpsell companyName={company?.name ?? ''} t={t} checkoutUrl={process.env.WHOP_CHECKOUT_URL_AFFILIATE_ADDON} />
+        <AffiliateNetworkUpsell companyName={company?.name ?? ''} companyEmail={company?.email} t={t} checkoutUrl={process.env.WHOP_CHECKOUT_URL_AFFILIATE_ADDON} />
       ) : (
         <>
           <InviteAffiliateForm t={t.relationships} />

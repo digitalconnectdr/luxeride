@@ -1950,6 +1950,8 @@ export const es: Dictionary = {
     requestAccessSent: 'Gracias — nuestro equipo te contactará pronto.',
     subscribeButton: 'Suscribirse ahora →',
     subscribeNote: 'Se activa automáticamente al completar el pago.',
+    subscribeEmailHint: 'Importante: al pagar en Whop, usa exactamente este email para que se active sola: {email}',
+    subscribeEmailMissing: 'Agrega un email a tu empresa en Configuración antes de suscribirte, para que el pago se pueda vincular a tu cuenta automáticamente.',
     orRequestAccess: 'O si prefieres, solicita acceso y te ayudamos a activarlo.',
     leadForm: {
       companyName: 'Nombre de la empresa',
@@ -1958,6 +1960,7 @@ export const es: Dictionary = {
       phone: 'Teléfono (opcional)',
       message: '¿Algo más que debamos saber? (opcional)',
       submit: 'Enviar solicitud',
+      required: 'Completa nombre de contacto y correo.',
     },
     reasons: {
       no_driver: 'Sin conductor disponible',
