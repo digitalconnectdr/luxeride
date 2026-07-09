@@ -1140,6 +1140,7 @@ export const pt: Dictionary = {
       subscriptionPopupExpiringSoon: 'Sua assinatura vence em {days} dias.',
       subscriptionPopupExpiringToday: 'Sua assinatura vence hoje.',
       subscriptionPopupExpired: 'Sua assinatura venceu. Ative-a para não perder o acesso.',
+      subscriptionPopupSuspended: 'Sua conta está suspensa. Renove sua assinatura para reativá-la.',
       subscriptionPopupCta: 'Ver planos →',
       subscriptionPopupClose: 'Fechar',
       enterprisePlanName: 'Enterprise',

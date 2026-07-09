@@ -1139,6 +1139,7 @@ export const en = {
       subscriptionPopupExpiringSoon: 'Your subscription expires in {days} days.',
       subscriptionPopupExpiringToday: 'Your subscription expires today.',
       subscriptionPopupExpired: 'Your subscription expired. Activate it to avoid losing access.',
+      subscriptionPopupSuspended: 'Your account is suspended. Renew your subscription to reactivate it.',
       subscriptionPopupCta: 'View plans →',
       subscriptionPopupClose: 'Close',
       enterprisePlanName: 'Enterprise',

@@ -6,7 +6,7 @@ import { getLocale, getDict } from '@/lib/i18n/server'
 import { AdminSidebar } from '@/components/admin/sidebar'
 import { SubscriptionExpiryPopup } from '@/components/admin/subscription-expiry-popup'
 
-const SUBSCRIPTION_WARNING_DAYS = 10
+const SUBSCRIPTION_WARNING_DAYS = 5
 
 // PWA branded del back-office: el dueño/staff puede "instalar" su propio
 // panel admin con el logo y color de SU empresa (mismo patrón que el
@@ -46,6 +46,7 @@ export default async function AdminLayout({
   let companyName = 'Dashboard'
   let logoUrl: string | null = null
   let subscriptionDaysLeft: number | null = null
+  let companyStatus: string | null = null
   let affiliateNetworkEnabled = false
   let primaryColor: string | null = null
   if (user.company_id) {
@@ -63,6 +64,7 @@ export default async function AdminLayout({
         logoUrl = (data as { logo_url?: string | null }).logo_url ?? null
         affiliateNetworkEnabled = data.affiliate_network_enabled
         primaryColor = data.primary_color
+        companyStatus = data.status
         if (data.subscription_ends_at) {
           const msLeft = new Date(data.subscription_ends_at).getTime() - Date.now()
           subscriptionDaysLeft = Math.floor(msLeft / 86_400_000)
@@ -82,8 +84,10 @@ export default async function AdminLayout({
   const dict = getDict(locale)
   const nav = dict.adminNav
   const settingsDict = dict.admin.settings
+  const isSuspended = companyStatus === 'suspended'
   const showSubscriptionPopup =
-    isOwner && subscriptionDaysLeft !== null && subscriptionDaysLeft <= SUBSCRIPTION_WARNING_DAYS
+    isOwner &&
+    (isSuspended || (subscriptionDaysLeft !== null && subscriptionDaysLeft <= SUBSCRIPTION_WARNING_DAYS))
 
   return (
     <div
@@ -110,11 +114,13 @@ export default async function AdminLayout({
       {showSubscriptionPopup && user.company_id && (
         <SubscriptionExpiryPopup
           companyId={user.company_id}
-          daysLeft={subscriptionDaysLeft!}
+          daysLeft={subscriptionDaysLeft}
+          suspended={isSuspended}
           labels={{
             expiringSoon: settingsDict.subscriptionPopupExpiringSoon,
             expiringToday: settingsDict.subscriptionPopupExpiringToday,
             expired: settingsDict.subscriptionPopupExpired,
+            suspended: settingsDict.subscriptionPopupSuspended,
             cta: settingsDict.subscriptionPopupCta,
             close: settingsDict.subscriptionPopupClose,
           }}

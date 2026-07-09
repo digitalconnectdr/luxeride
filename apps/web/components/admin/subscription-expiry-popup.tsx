@@ -1,17 +1,23 @@
 'use client'
-// ── Popup de suscripción por vencer ────────────────────────────────────────────
+// ── Popup de estado de suscripción ─────────────────────────────────────────────
 // Aparece UNA vez por sesión de navegador (sessionStorage, no en cada
-// navegación dentro del panel) cuando al dueño le quedan ≤10 días de
-// subscription_ends_at (o ya venció). Se auto-cierra a los 15s.
+// navegación dentro del panel). Dos disparadores independientes:
+// (a) la cuenta está suspendida AHORA MISMO (company.status === 'suspended'),
+//     sin importar la fecha de subscription_ends_at — puede estar suspendida
+//     con una fecha de renovación futura si el pago falló o fue desactivada
+//     manualmente; o
+// (b) al dueño le quedan ≤5 días de subscription_ends_at (o ya venció).
+// Se auto-cierra a los 15s.
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Clock } from 'lucide-react'
+import { Clock, AlertTriangle } from 'lucide-react'
 
 export interface SubscriptionExpiryPopupLabels {
   expiringSoon: string // con placeholder {days}
   expiringToday: string
   expired: string
+  suspended: string
   cta: string
   close: string
 }
@@ -21,10 +27,12 @@ const EXIT_MS = 200
 export function SubscriptionExpiryPopup({
   companyId,
   daysLeft,
+  suspended,
   labels,
 }: {
   companyId: string
-  daysLeft: number
+  daysLeft: number | null
+  suspended: boolean
   labels: SubscriptionExpiryPopupLabels
 }) {
   const [visible, setVisible] = useState(false)
@@ -59,8 +67,14 @@ export function SubscriptionExpiryPopup({
 
   if (!visible) return null
 
-  const isExpired = daysLeft < 0
-  const message = isExpired
+  // La suspensión manda sobre cualquier lectura de fecha — una cuenta puede
+  // estar suspendida (pago fallido, bloqueo manual) con una fecha de
+  // renovación todavía futura.
+  const isExpired = !suspended && daysLeft !== null && daysLeft < 0
+  const isUrgent = suspended || isExpired
+  const message = suspended
+    ? labels.suspended
+    : isExpired
     ? labels.expired
     : daysLeft === 0
     ? labels.expiringToday
@@ -76,15 +90,19 @@ export function SubscriptionExpiryPopup({
       <div className="flex items-start gap-3">
         <span
           className={`grid place-items-center w-8 h-8 shrink-0 rounded-full ${
-            isExpired ? 'bg-red-500/15 text-red-400' : 'bg-[#e9c176]/15 text-[#e9c176]'
+            isUrgent ? 'bg-red-500/15 text-red-400' : 'bg-[#e9c176]/15 text-[#e9c176]'
           }`}
         >
-          <Clock className="w-4 h-4" strokeWidth={2} />
+          {isUrgent ? (
+            <AlertTriangle className="w-4 h-4" strokeWidth={2} />
+          ) : (
+            <Clock className="w-4 h-4" strokeWidth={2} />
+          )}
         </span>
         <div className="min-w-0 flex-1 pt-0.5">
           <p className="text-sm leading-snug">{message}</p>
           <Link
-            href="/admin/settings"
+            href="/admin/settings#subscription"
             onClick={dismiss}
             className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#e9c176] hover:text-[#e9c176]/80 transition-colors"
           >
