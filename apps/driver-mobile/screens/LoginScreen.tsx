@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from 'react-native'
 import { supabase } from '../lib/supabase'
 
-export function LoginScreen() {
+export function LoginScreen({ roleError }: { roleError?: string }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -15,6 +15,8 @@ export function LoginScreen() {
     setLoading(false)
     if (signInError) setError(signInError.message)
   }
+
+  const displayError = error || roleError
 
   return (
     <View style={styles.container}>
@@ -39,7 +41,7 @@ export function LoginScreen() {
         onChangeText={setPassword}
       />
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {displayError ? <Text style={styles.error}>{displayError}</Text> : null}
 
       <Pressable style={styles.button} onPress={signIn} disabled={loading}>
         {loading ? <ActivityIndicator color="#1d1b18" /> : <Text style={styles.buttonText}>Iniciar sesión</Text>}

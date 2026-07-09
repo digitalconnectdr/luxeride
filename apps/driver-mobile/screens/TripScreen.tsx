@@ -14,23 +14,14 @@ export function TripScreen() {
 
   // Lectura directa a Supabase — RLS (drivers_select_assigned_bookings) ya
   // restringe esto a los viajes de ESTE conductor, no hace falta pasar por
-  // una ruta API propia para leer.
+  // una ruta API propia para leer. El rol ya se validó en App.tsx antes de
+  // montar esta pantalla — no se repite aquí.
   const loadTrip = useCallback(async () => {
     setError('')
     const {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) return
-
-    // Esta app es SOLO para conductores — si alguien más entra con sus
-    // credenciales (ej. un owner probando), no debe ver nada de otros roles.
-    const { data: profile } = await supabase.from('user_profiles').select('role').eq('id', user.id).single()
-    if (profile?.role !== 'driver') {
-      setError('Esta app es solo para conductores.')
-      setLoading(false)
-      await supabase.auth.signOut()
-      return
-    }
 
     const { data, error: queryError } = await supabase
       .from('bookings')
