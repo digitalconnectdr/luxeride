@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "LuxeRide Conductor",
+    "slug": "luxeride-driver",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#1d1b18",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jprsdigitalconnect.luxeride.driver"
+    },
+    "android": {
+      "package": "com.jprsdigitalconnect.luxeride.driver",
+      "adaptiveIcon": {
+        "backgroundColor": "#1d1b18",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

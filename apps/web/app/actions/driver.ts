@@ -5,6 +5,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
+import type { SessionUser } from '@/lib/auth/session'
 import { notifyBookingEventInBackground } from '@/lib/notifications'
 import { getAppUrl } from '@/lib/app-url'
 import type { BookingStatus } from '@/lib/supabase/database.types'
@@ -52,10 +53,14 @@ const NOTIFY_BY_STATUS: Partial<Record<BookingStatus, string>> = {
   completed: 'trip_completed',
 }
 
-export async function driverAdvanceTripAction(
+// Núcleo compartido: recibe el usuario ya resuelto en vez de leerlo de las
+// cookies de Next.js, para que tanto el server action (web) como la ruta API
+// de la app móvil (autenticada por bearer token, sin cookies) puedan llamarlo
+// sin duplicar la lógica de transición/notificación.
+export async function advanceDriverTrip(
+  user: SessionUser,
   bookingId: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const user = await requireRole('driver')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
   const admin = createAdminClient()
@@ -123,6 +128,13 @@ export async function driverAdvanceTripAction(
 
   revalidatePath('/driver/trips')
   return { success: true }
+}
+
+export async function driverAdvanceTripAction(
+  bookingId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('driver')
+  return advanceDriverTrip(user, bookingId)
 }
 
 // ─── No-show: el pasajero no se presentó ──────────────────────────────────────

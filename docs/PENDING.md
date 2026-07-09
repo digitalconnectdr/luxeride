@@ -936,8 +936,16 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
 
 ## ⬜ Pendiente — Fase 2 (sin fecha, requiere validación o infra nueva)
 
-7. **Fase 2B móvil nativo** (driver app primero, SOLO si la PWA valida bien)
-   — plan en docs/PHASE-2-MOBILE.md. Pospuesto a propósito.
+7. **🔶 Fase 2B móvil nativo — EN PROGRESO desde 2026-07-09** (decisión
+   original de esperar la validación de la PWA, superada a pedido del
+   usuario). Driver app primero, distribución inicial por sideload (APK
+   directo, sin Google Play) para evitar la fricción de la tienda mientras
+   se afina; migrar a Play Store más adelante. Esqueleto + slice vertical ya
+   construidos (`apps/driver-mobile/`: login + pantalla de viaje activo +
+   ruta `/api/mobile/driver/advance-trip`) — falta que el usuario genere el
+   primer APK real con `eas build` (requiere su propia cuenta de
+   expo.dev) y lo pruebe en un Android físico. Detalle completo en
+   docs/PHASE-2-MOBILE.md → "Progreso (2026-07-09)".
 8. **Gaps mayores**: QuickBooks, e-signatures, promo codes, detección de
    conflictos de vehículo, nómina de conductores, WhatsApp Business.
    Pospuesto a propósito. (farm-in/farm-out ya tiene diseño concreto, ver

@@ -9,6 +9,15 @@
 > con usuarios reales, recién entonces se ejecuta el plan nativo de abajo
 > (Fase 2B). Ventaja: 90% del valor con ~15% del esfuerzo, sin app stores.
 
+> **DECISIÓN SUPERADA 2026-07-09 — el usuario pidió arrancar la app nativa
+> Android del conductor ya, sin esperar validación de la PWA.** Distribución
+> inicial planeada por sideload (APK directo desde el sitio, sin Google
+> Play) para evitar fricción de tienda mientras se afina; migrar a Play
+> Store más adelante cuando esté lista (evita el aviso de "apps de orígenes
+> desconocidos"). iOS queda fuera de este alcance por ahora (Apple no
+> permite sideload sin el programa Enterprise de $299/año). Ver estado en
+> "Progreso Fase 2B" más abajo.
+
 ## Fase 2A — PWA (va primero)
 
 1. **Manifest + íconos**: app/manifest.ts (name, short_name, theme_color
@@ -54,7 +63,46 @@ Las apps NO necesitan un backend nuevo. Reutilizan lo ya construido:
 
 ---
 
-# Fase 2B — Apps nativas (solo si la PWA valida bien)
+# Fase 2B — Apps nativas
+
+## Progreso (2026-07-09) — esqueleto + slice vertical del conductor
+
+Construido para probar el pipeline completo (build → APK → instalar en un
+Android real) antes de invertir en todas las pantallas de golpe:
+
+- **`apps/driver-mobile/`** — proyecto Expo (SDK 57) + TypeScript nuevo en el
+  monorepo (`@plataforma/driver-mobile`, workspace ya cubierto por
+  `apps/*` en el `package.json` raíz).
+- **Login**: contra Supabase Auth directo (`supabase.auth.signInWithPassword`)
+  — mismas cuentas que ya usan los conductores en `/driver/trips` de la web,
+  sin backend nuevo para esto.
+- **Pantalla de viaje activo**: lee el viaje del conductor DIRECTO de
+  Supabase (`bookings`, filtrado por `driver_id` + estados activos) — la
+  policy RLS `drivers_select_assigned_bookings` ya lo permite, no hace falta
+  ruta API para leer.
+- **Avanzar el viaje (escritura)**: SÍ necesitó una ruta API nueva
+  (`POST /api/mobile/driver/advance-trip` en `apps/web`), porque no existe
+  ninguna policy RLS de `UPDATE` para el rol `driver` sobre `bookings` (solo
+  staff puede hacer UPDATE directo — el conductor en la web también pasa por
+  service-role vía Server Action). La ruta valida el bearer token
+  (`lib/auth/mobile.ts` → `getUserFromBearerToken`, nuevo) y llama
+  `advanceDriverTrip()` — el mismo núcleo de lógica que ya usaba
+  `driverAdvanceTripAction` en `app/actions/driver.ts` (se extrajo para
+  compartirse entre el Server Action de la web y la ruta API de la app,
+  sin duplicar transición de estados + notificación al pasajero).
+- **Guardarraíl de rol**: si alguien que no es `driver` inicia sesión en esta
+  app, se cierra la sesión con un aviso — la app es solo para conductores.
+- **`eas.json`**: perfil `apk` listo (`buildType: apk`, `distribution:
+  internal`) para generar un `.apk` instalable por sideload; perfil
+  `production` (`app-bundle`) ya preparado para cuando se suba a Google Play.
+- **Verificado**: `tsc --noEmit` limpio y `npx expo export --platform
+  android` compila el bundle completo (650 módulos) sin errores — confirma
+  que el código es sano antes de gastar un build real en EAS.
+- **Pendiente del usuario** (requiere su propia cuenta, no algo que se pueda
+  automatizar desde aquí): crear cuenta gratis en expo.dev, `eas login`,
+  `eas build --platform android --profile apk` desde `apps/driver-mobile`,
+  descargar el `.apk` resultante y colgarlo en el sitio para que los
+  conductores lo instalen.
 
 ## Sprint 0 — Fundaciones (1 semana)
 
