@@ -170,7 +170,7 @@ export const pt: Dictionary = {
     pricingPopular: 'Mais popular',
     pricingCta: 'Comece grátis',
     pricingContact: 'Falar com vendas',
-    pricingFooterNote: 'Hospedagem, atualizações do sistema e manutenção da plataforma estão incluídas em todos os planos — sem custos ocultos de infraestrutura.',
+    pricingFooterNote: 'Hospedagem, atualizações do sistema e manutenção da plataforma estão incluídas em todos os planos, sem custos ocultos de infraestrutura.',
     plans: [
       {
         name: 'Starter',

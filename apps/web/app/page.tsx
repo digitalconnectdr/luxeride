@@ -454,7 +454,7 @@ export default async function LandingPage() {
               )
             })}
           </RevealStagger>
-          <p className="text-center text-xs text-white/35 mt-10 max-w-2xl mx-auto">{t.pricingFooterNote}</p>
+          <p className="text-center text-sm text-white/55 mt-10 max-w-2xl mx-auto">{t.pricingFooterNote}</p>
         </div>
       </section>
 

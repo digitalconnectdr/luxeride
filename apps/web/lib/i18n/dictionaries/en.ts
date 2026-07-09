@@ -169,7 +169,7 @@ export const en = {
     pricingPopular: 'Most popular',
     pricingCta: 'Start free',
     pricingContact: 'Talk to sales',
-    pricingFooterNote: 'Hosting, system updates and platform maintenance are included in every plan — no hidden infrastructure costs.',
+    pricingFooterNote: 'Hosting, system updates and platform maintenance are included in every plan, with no hidden infrastructure costs.',
     plans: [
       {
         name: 'Starter',
