@@ -543,9 +543,16 @@ explícito del usuario):
   patrón que ya existe para el checkout de Whop de los planes —
   probablemente vía un plan/producto de Whop dedicado, no parte del plan
   base.
-- Precio sugerido (según el documento): $99–$299/mes como add-on, o un
-  fee por viaje farm-out (ej. 1–3% o $0.50–$2 fijo) como alternativa/
-  complemento — decidir monto exacto más adelante, no bloquea el diseño.
+- **Precio decidido (2026-07-09): $29/mes**, plano para Starter y
+  Professional (Elite/Enterprise lo incluyen sin costo). Precio deliberadamente
+  bajo — la prioridad es maximizar adopción/volumen de viajes farm-out/farm-in,
+  no maximizar el ARPU del add-on en sí: cada viaje que pasa por la red de
+  afiliados paga la comisión normal de plataforma, así que más empresas
+  activadas y más viajes moviéndose entre operadores vale más que cobrar caro
+  por el acceso. Checkout real vía Whop implementado (ver Sección G más abajo /
+  `lib/billing/whop.ts` → `isAffiliateAddonPlan`, `affiliate_network_whop_membership_id`);
+  falta que el usuario cree el producto en Whop con este precio y pase el plan ID
+  + checkout URL para activarlo end-to-end.
 
 **Plan de implementación (fases, actualizado):**
 1. **Fase 1 — MVP privado.** Tabla `company_affiliates` (relación
