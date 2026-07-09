@@ -5,9 +5,9 @@ import { NavigationContainer } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
-import { useFonts as useInterFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
+import { useFonts } from 'expo-font'
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
 import {
-  useFonts as usePlayfairFonts,
   PlayfairDisplay_600SemiBold,
   PlayfairDisplay_700Bold,
   PlayfairDisplay_600SemiBold_Italic,
@@ -65,9 +65,19 @@ export default function App() {
   const [checkingSession, setCheckingSession] = useState(true)
   const [roleError, setRoleError] = useState('')
 
-  const [interLoaded] = useInterFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold })
-  const [playfairLoaded] = usePlayfairFonts({ PlayfairDisplay_600SemiBold, PlayfairDisplay_700Bold, PlayfairDisplay_600SemiBold_Italic })
-  const fontsReady = interLoaded && playfairLoaded
+  // Un solo useFonts (importado directo de expo-font, NO del re-export de
+  // @expo-google-fonts/*) — esos paquetes quedan hoisteados en la raíz del
+  // monorepo y su propio hook interno termina resolviendo una copia de React
+  // distinta a la que usa esta app, lo que rompía los hooks en el teléfono.
+  const [fontsReady] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    PlayfairDisplay_600SemiBold,
+    PlayfairDisplay_700Bold,
+    PlayfairDisplay_600SemiBold_Italic,
+  })
 
   // Esta app es SOLO para conductores. La validación de rol pasa AQUÍ, antes
   // de que `session` se ponga en un valor no nulo — así nunca llegamos a
