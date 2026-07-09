@@ -91,6 +91,7 @@ export const es: Dictionary = {
         bullets: [
           'Board en vivo actualizado en tiempo real',
           'Asignación de conductor en un toque',
+          'Tracking automático de vuelos para recogidas en aeropuerto',
           'Los conductores avanzan sus viajes desde el teléfono',
           'Pasajeros notificados en cada paso automáticamente',
         ],

@@ -90,6 +90,7 @@ export const en = {
         bullets: [
           'Live board updated in real time',
           'One-tap chauffeur assignment',
+          'Automatic flight tracking for airport pickups',
           'Chauffeurs advance trips from their phone',
           'Passengers notified at every step automatically',
         ],

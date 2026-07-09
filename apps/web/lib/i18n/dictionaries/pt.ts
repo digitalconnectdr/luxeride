@@ -91,6 +91,7 @@ export const pt: Dictionary = {
         bullets: [
           'Painel ao vivo atualizado em tempo real',
           'Designação de motorista em um toque',
+          'Rastreamento automático de voos para coletas no aeroporto',
           'Motoristas avançam as viagens pelo celular',
           'Passageiros notificados em cada etapa automaticamente',
         ],
