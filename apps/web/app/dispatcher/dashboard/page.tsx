@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { refreshFlightsForBookings } from '@/lib/flights/refresh'
+import { getLocale, getDict } from '@/lib/i18n/server'
 import { DispatchBoard } from '@/components/dispatcher/dispatch-board'
 
 export const metadata: Metadata = { title: 'Dispatch' }
@@ -9,6 +10,8 @@ export const dynamic = 'force-dynamic'
 
 export default async function DispatcherDashboardPage() {
   const user = await requireRole('dispatcher', 'company_owner', 'company_admin', 'super_admin')
+  const locale = getLocale()
+  const dict = getDict(locale)
 
   if (!user.company_id) {
     return <p className="p-8 text-sl-on-surface-muted">Sin empresa asignada.</p>
@@ -131,6 +134,9 @@ export default async function DispatcherDashboardPage() {
       drivers={drivers ?? []}
       driverStatuses={driverStatuses}
       autoAssignEnabled={companyRow?.auto_assign_enabled ?? true}
+      locale={locale}
+      t={dict.dispatch}
+      flightT={dict.common.flightStatus}
     />
   )
 }

@@ -10,6 +10,12 @@ export const pt: Dictionary = {
     signUp: 'Criar conta',
     signOut: 'Sair',
     language: 'Idioma',
+    flightStatus: {
+      cancelled: 'Cancelado',
+      delay: '+{minutes} min de atraso',
+      arrived: 'Pousou',
+      enroute: 'Em voo',
+    },
   },
 
   landing: {
@@ -607,6 +613,73 @@ export const pt: Dictionary = {
       close: 'Fechar',
       errorRating: 'Selecione uma avaliação',
       errorGeneric: 'Não foi possível salvar. Tente novamente.',
+    },
+  },
+
+  dispatch: {
+    title: 'Dispatch Board',
+    liveUpdate: 'Atualização em tempo real',
+    lastChange: '· última mudança {time}',
+    saving: 'Salvando…',
+    liveMap: {
+      title: 'Mapa em tempo real da frota',
+      empty: 'Nenhum motorista em viagem ou coleta pendente com localização agora.',
+      legendDriver: 'em viagem',
+      legendPending: 'pendentes',
+    },
+    columns: {
+      pending: 'Pendentes',
+      assigned: 'Atribuídos',
+      active: 'Em andamento',
+      done: 'Finalizados',
+    },
+    status: {
+      pending: 'Pendente', assigned: 'Atribuído', en_route: 'A caminho',
+      arrived: 'Chegou', in_progress: 'Em viagem', completed: 'Concluído',
+      cancelled: 'Cancelado', no_show: 'No show',
+    },
+    nextAction: {
+      assigned: '→ A caminho',
+      en_route: '→ Chegou',
+      arrived: '→ Iniciar viagem',
+      in_progress: '✓ Concluir',
+    },
+    noName: 'Sem nome',
+    stop: 'parada',
+    stops: 'paradas',
+    recentEventsTitle: 'Recusas/incidentes recentes',
+    reassignDriver: 'Reatribuir motorista',
+    assignDriver: 'Atribuir motorista',
+    arrivedAtPickup: 'Chegou ao pickup {time}',
+    late: '· atrasado',
+    errors: {
+      update: 'Erro ao atualizar',
+      cancel: 'Erro ao cancelar',
+      assign: 'Erro ao atribuir',
+    },
+    prompts: {
+      cancelReason: 'Motivo do cancelamento:',
+      reassignReason: 'Motivo da reatribuição (opcional):',
+    },
+    autoAssign: {
+      label: 'Atribuição automática',
+      automatic: 'Automático',
+      manual: 'Manual',
+      infoTip: 'Automático: cada nova reserva é atribuída sozinha ao motorista em serviço com menos viagens CONCLUÍDAS hoje (distribuição justa) e sem conflito de horário — se ninguém se qualificar, fica pendente mesmo assim. Manual: desligue isso e todas as reservas ficam em Pendentes para você escolher o motorista neste painel. Pode ser alterado a qualquer momento.',
+    },
+    activeDrivers: {
+      title: 'Motoristas ativos agora',
+      onDuty: '{count} em serviço',
+      tripsToday: '{count} hoje',
+      chat: {
+        titlePrefix: 'Chat com',
+        placeholder: 'Digite uma mensagem…',
+        send: 'Enviar',
+        empty: 'Nenhuma mensagem ainda.',
+        you: 'Você',
+        clear: 'Limpar conversa',
+        clearConfirm: 'Excluir todas as mensagens com {name}? Isso não pode ser desfeito.',
+      },
     },
   },
 

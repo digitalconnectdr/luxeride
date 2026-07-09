@@ -9,6 +9,12 @@ export const en = {
     signUp: 'Create account',
     signOut: 'Sign out',
     language: 'Language',
+    flightStatus: {
+      cancelled: 'Cancelled',
+      delay: '+{minutes} min delay',
+      arrived: 'Landed',
+      enroute: 'En route',
+    },
   },
 
   landing: {
@@ -606,6 +612,73 @@ export const en = {
       close: 'Close',
       errorRating: 'Select a rating',
       errorGeneric: 'Could not save. Please try again.',
+    },
+  },
+
+  dispatch: {
+    title: 'Dispatch Board',
+    liveUpdate: 'Live updates',
+    lastChange: '· last change {time}',
+    saving: 'Saving…',
+    liveMap: {
+      title: 'Live fleet map',
+      empty: 'No drivers en route or pending pickups with a location right now.',
+      legendDriver: 'en route',
+      legendPending: 'pending',
+    },
+    columns: {
+      pending: 'Pending',
+      assigned: 'Assigned',
+      active: 'Active',
+      done: 'Completed',
+    },
+    status: {
+      pending: 'Pending', assigned: 'Assigned', en_route: 'En route',
+      arrived: 'Arrived', in_progress: 'In trip', completed: 'Completed',
+      cancelled: 'Cancelled', no_show: 'No show',
+    },
+    nextAction: {
+      assigned: '→ En route',
+      en_route: '→ Arrived',
+      arrived: '→ Start trip',
+      in_progress: '✓ Complete',
+    },
+    noName: 'No name',
+    stop: 'stop',
+    stops: 'stops',
+    recentEventsTitle: 'Recent rejections/incidents',
+    reassignDriver: 'Reassign driver',
+    assignDriver: 'Assign driver',
+    arrivedAtPickup: 'Arrived at pickup {time}',
+    late: '· late',
+    errors: {
+      update: 'Error updating',
+      cancel: 'Error cancelling',
+      assign: 'Error assigning',
+    },
+    prompts: {
+      cancelReason: 'Cancellation reason:',
+      reassignReason: 'Reassignment reason (optional):',
+    },
+    autoAssign: {
+      label: 'Auto-assign',
+      automatic: 'Automatic',
+      manual: 'Manual',
+      infoTip: 'Automatic: every new booking is assigned on its own to the on-duty driver with the fewest trips COMPLETED today (fair rotation), with no schedule conflict — if nobody qualifies, it just stays pending. Manual: turn this off and every booking stays in Pending for you to pick the driver from this board. You can change this anytime.',
+    },
+    activeDrivers: {
+      title: 'Active drivers right now',
+      onDuty: '{count} on duty',
+      tripsToday: '{count} today',
+      chat: {
+        titlePrefix: 'Chat with',
+        placeholder: 'Type a message…',
+        send: 'Send',
+        empty: 'No messages yet.',
+        you: 'You',
+        clear: 'Clear conversation',
+        clearConfirm: 'Delete all messages with {name}? This can\'t be undone.',
+      },
     },
   },
 

@@ -7,6 +7,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getUnreadDriverMessageCountsAction } from '@/app/actions/driver-messages'
 import { DriverChannelChat } from '@/components/shared/driver-channel-chat'
+import type { Dictionary } from '@/lib/i18n/server'
 
 export interface DriverStatusRow {
   id: string
@@ -18,7 +19,13 @@ export interface DriverStatusRow {
 
 const POLL_MS = 15_000
 
-export function ActiveDriversPanel({ drivers }: { drivers: DriverStatusRow[] }) {
+export function ActiveDriversPanel({
+  drivers,
+  labels,
+}: {
+  drivers: DriverStatusRow[]
+  labels: Dictionary['dispatch']['activeDrivers']
+}) {
   const [unread, setUnread] = useState<Record<string, number>>({})
   const [openId, setOpenId] = useState<string | null>(null)
 
@@ -41,9 +48,9 @@ export function ActiveDriversPanel({ drivers }: { drivers: DriverStatusRow[] }) 
     <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
       <div className="px-4 py-3 border-b border-sl-outline-variant flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-          Conductores activos ahora mismo
+          {labels.title}
         </p>
-        <span className="text-[11px] text-sl-on-surface-muted">{onDuty} en servicio</span>
+        <span className="text-[11px] text-sl-on-surface-muted">{labels.onDuty.replace('{count}', String(onDuty))}</span>
       </div>
       <div className="divide-y divide-sl-outline-variant max-h-80 overflow-y-auto">
         {drivers.map((d) => (
@@ -57,7 +64,7 @@ export function ActiveDriversPanel({ drivers }: { drivers: DriverStatusRow[] }) 
                 )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[11px] text-sl-on-surface-muted">{d.tripsCompletedToday} hoy</span>
+                <span className="text-[11px] text-sl-on-surface-muted">{labels.tripsToday.replace('{count}', String(d.tripsCompletedToday))}</span>
                 <button
                   onClick={() => setOpenId(openId === d.id ? null : d.id)}
                   className="relative text-[11px] font-medium rounded-full border border-sl-outline-variant px-2.5 py-1 hover:bg-sl-bg transition-colors"
@@ -77,14 +84,14 @@ export function ActiveDriversPanel({ drivers }: { drivers: DriverStatusRow[] }) 
                   variant="dispatch"
                   driverId={d.id}
                   labels={{
-                    title: `Chat con ${d.name}`,
-                    placeholder: 'Escribe un mensaje…',
-                    send: 'Enviar',
-                    empty: 'Sin mensajes todavía.',
-                    you: 'Tú',
+                    title: `${labels.chat.titlePrefix} ${d.name}`,
+                    placeholder: labels.chat.placeholder,
+                    send: labels.chat.send,
+                    empty: labels.chat.empty,
+                    you: labels.chat.you,
                     them: d.name,
-                    clear: 'Vaciar conversación',
-                    clearConfirm: `¿Borrar todos los mensajes con ${d.name}? No se puede deshacer.`,
+                    clear: labels.chat.clear,
+                    clearConfirm: labels.chat.clearConfirm.replace('{name}', d.name),
                   }}
                 />
               </div>

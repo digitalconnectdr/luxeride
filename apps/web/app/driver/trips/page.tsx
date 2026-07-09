@@ -78,6 +78,7 @@ export default async function DriverTripsPage() {
   const admin = createAdminClient()
   const locale = getLocale()
   const dt = getDict(locale).driver
+  const flightT = getDict(locale).common.flightStatus
   const localeTag = LOCALE_TAGS[locale] ?? 'es-DO'
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString()
@@ -85,7 +86,7 @@ export default async function DriverTripsPage() {
   const [{ data: trips }, { data: company }, { data: unratedTrips }, { data: driverRow }, { data: recentCompleted }, { data: affiliateTripsRaw }] = await Promise.all([
     admin
       .from('bookings')
-      .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id, route_polyline, meet_and_greet')
+      .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id, route_polyline, meet_and_greet, flight_number, flight_status, flight_delay_minutes')
       .eq('driver_id', user.id)
       .in('status', ['assigned', 'en_route', 'arrived', 'in_progress'])
       .order('scheduled_at'),
@@ -323,6 +324,28 @@ export default async function DriverTripsPage() {
                       {t.meet_and_greet && (
                         <p className="inline-flex mt-2 text-xs font-medium text-[#8a6520] bg-[#8a6520]/10 border border-[#8a6520]/20 rounded-lg px-2.5 py-1">
                           {dt.meetAndGreet}
+                        </p>
+                      )}
+                      {t.flight_number && (
+                        <p
+                          className={`inline-flex mt-2 ml-2 text-xs font-medium rounded-lg px-2.5 py-1 border ${
+                            t.flight_status === 'cancelled'
+                              ? 'text-red-600 bg-red-50 border-red-200'
+                              : (t.flight_delay_minutes ?? 0) >= 15
+                                ? 'text-orange-600 bg-orange-50 border-orange-200'
+                                : 'text-[#75716a] bg-[#faf8f3] border-[#e5e1d8]'
+                          }`}
+                        >
+                          ✈ {t.flight_number}
+                          {t.flight_status === 'cancelled'
+                            ? ` · ${flightT.cancelled}`
+                            : (t.flight_delay_minutes ?? 0) >= 15
+                              ? ` · ${flightT.delay.replace('{minutes}', String(t.flight_delay_minutes))}`
+                              : t.flight_status === 'arrived'
+                                ? ` · ${flightT.arrived}`
+                                : t.flight_status === 'enroute'
+                                  ? ` · ${flightT.enroute}`
+                                  : ''}
                         </p>
                       )}
                       <p className="text-[11px] text-[#75716a] mt-3 pt-3 border-t border-[#e5e1d8]">

@@ -7,8 +7,15 @@
 import { useState, useTransition } from 'react'
 import { updateAutoAssignSettingAction } from '@/app/actions/dispatch-settings'
 import { InfoTip } from '@/components/ui/info-tip'
+import type { Dictionary } from '@/lib/i18n/server'
 
-export function AutoAssignToggle({ initialEnabled }: { initialEnabled: boolean }) {
+export function AutoAssignToggle({
+  initialEnabled,
+  labels,
+}: {
+  initialEnabled: boolean
+  labels: Dictionary['dispatch']['autoAssign']
+}) {
   const [enabled, setEnabled] = useState(initialEnabled)
   const [isPending, startTransition] = useTransition()
 
@@ -34,9 +41,9 @@ export function AutoAssignToggle({ initialEnabled }: { initialEnabled: boolean }
         }`}
       >
         <span className={`h-1.5 w-1.5 rounded-full ${enabled ? 'bg-green-500' : 'bg-sl-on-surface-muted'}`} />
-        Auto-asignación: {isPending ? '…' : enabled ? 'Automático' : 'Manual'}
+        {labels.label}: {isPending ? '…' : enabled ? labels.automatic : labels.manual}
       </button>
-      <InfoTip text="Automático: cada reserva nueva se asigna sola al conductor en servicio con menos viajes COMPLETADOS hoy (reparto justo) y sin choque de horario — si nadie califica, queda pendiente igual. Manual: apaga esto y todas las reservas quedan en Pendientes para que tú elijas el conductor desde este tablero. Se puede cambiar en cualquier momento." />
+      <InfoTip text={labels.infoTip} />
     </div>
   )
 }

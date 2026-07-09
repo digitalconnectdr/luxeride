@@ -10,6 +10,12 @@ export const es: Dictionary = {
     signUp: 'Crear cuenta',
     signOut: 'Cerrar sesión',
     language: 'Idioma',
+    flightStatus: {
+      cancelled: 'Cancelado',
+      delay: '+{minutes} min de retraso',
+      arrived: 'Aterrizó',
+      enroute: 'En vuelo',
+    },
   },
 
   landing: {
@@ -607,6 +613,73 @@ export const es: Dictionary = {
       close: 'Cerrar',
       errorRating: 'Selecciona una calificación',
       errorGeneric: 'No se pudo guardar. Intenta de nuevo.',
+    },
+  },
+
+  dispatch: {
+    title: 'Dispatch Board',
+    liveUpdate: 'Actualización en tiempo real',
+    lastChange: '· último cambio {time}',
+    saving: 'Guardando…',
+    liveMap: {
+      title: 'Mapa en vivo de la flota',
+      empty: 'Sin conductores en viaje ni recogidas pendientes con ubicación ahora mismo.',
+      legendDriver: 'en viaje',
+      legendPending: 'pendientes',
+    },
+    columns: {
+      pending: 'Pendientes',
+      assigned: 'Asignados',
+      active: 'En curso',
+      done: 'Finalizados',
+    },
+    status: {
+      pending: 'Pendiente', assigned: 'Asignado', en_route: 'En ruta',
+      arrived: 'Llegó', in_progress: 'En viaje', completed: 'Completado',
+      cancelled: 'Cancelado', no_show: 'No show',
+    },
+    nextAction: {
+      assigned: '→ En ruta',
+      en_route: '→ Llegó',
+      arrived: '→ Iniciar viaje',
+      in_progress: '✓ Completar',
+    },
+    noName: 'Sin nombre',
+    stop: 'parada',
+    stops: 'paradas',
+    recentEventsTitle: 'Rechazos/incidentes recientes',
+    reassignDriver: 'Reasignar conductor',
+    assignDriver: 'Asignar conductor',
+    arrivedAtPickup: 'Llegó al pickup {time}',
+    late: '· tarde',
+    errors: {
+      update: 'Error al actualizar',
+      cancel: 'Error al cancelar',
+      assign: 'Error al asignar',
+    },
+    prompts: {
+      cancelReason: 'Razón de cancelación:',
+      reassignReason: 'Motivo de la reasignación (opcional):',
+    },
+    autoAssign: {
+      label: 'Auto-asignación',
+      automatic: 'Automático',
+      manual: 'Manual',
+      infoTip: 'Automático: cada reserva nueva se asigna sola al conductor en servicio con menos viajes COMPLETADOS hoy (reparto justo) y sin choque de horario — si nadie califica, queda pendiente igual. Manual: apaga esto y todas las reservas quedan en Pendientes para que tú elijas el conductor desde este tablero. Se puede cambiar en cualquier momento.',
+    },
+    activeDrivers: {
+      title: 'Conductores activos ahora mismo',
+      onDuty: '{count} en servicio',
+      tripsToday: '{count} hoy',
+      chat: {
+        titlePrefix: 'Chat con',
+        placeholder: 'Escribe un mensaje…',
+        send: 'Enviar',
+        empty: 'Sin mensajes todavía.',
+        you: 'Tú',
+        clear: 'Vaciar conversación',
+        clearConfirm: '¿Borrar todos los mensajes con {name}? No se puede deshacer.',
+      },
     },
   },
 
