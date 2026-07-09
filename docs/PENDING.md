@@ -178,12 +178,19 @@ del cliente. Plan por niveles (de menor a mayor esfuerzo):
    (host header) y resuelva la empresa. Es el estándar SaaS.
 3. **Dominio propio del cliente** `reservas.suempresa.com`: Vercel custom
    domains por empresa (límite en plan Hobby; requiere upgrade).
-4. **PWA branded por empresa** (se cruza con Fase 2A PWA): manifest dinámico
-   por empresa (nombre, iconos = logo del cliente, theme_color = primary_color)
-   servido según slug/subdominio, para que "instalar app" muestre la marca del
-   cliente. La app del conductor (Fase 2B) hereda el mismo branding.
-Branding en dashboard: ✅ logo en el sidebar (2026-06-14). Falta (opcional)
-aplicar primary_color a los acentos del panel admin.
+4. ✅ **PWA branded por empresa** (HECHO 2026-07-09): manifest dinámico por
+   empresa ya existía para pasajero (`/manifest/[slug]`) y conductor
+   (`/manifest/driver/[slug]`); se agregó el que faltaba para el panel admin
+   (`/manifest/admin/[slug]`, enlazado vía `generateMetadata` en
+   `app/admin/layout.tsx`) — nombre, iconos = logo del cliente, theme_color =
+   primary_color, en los 3 portales.
+Branding en dashboard: ✅ logo en el sidebar (2026-06-14). ✅ primary_color
+aplicado a los acentos del panel admin (HECHO 2026-07-09): variable CSS
+`--color-bronze` inyectada en `app/admin/layout.tsx` + `tailwind.config.ts`
+(`bronze.DEFAULT: var(--color-bronze, #8a6520)`) — los ~52 archivos que ya
+usaban clases `bronze`/`gold` se re-temáticos automáticamente por operador,
+sin tocarlos uno por uno. Scoped solo a `/admin/*` (super-admin/auth/
+dispatcher mantienen la marca propia de LuxeRide).
 
 ### D. Microsite / portada branded por operador (✅ HECHO 2026-06-14)
 IMPLEMENTADO: el link corto /<slug> muestra una micropágina del operador con
