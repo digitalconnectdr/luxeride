@@ -16,10 +16,10 @@ export const pt: Dictionary = {
     nav: { platform: 'Plataforma', pricing: 'Preços', faq: 'FAQ', book: 'Reservar' },
     hero: {
       badge: 'Software de transporte privado',
-      title: 'Opere sua empresa de transporte privado',
-      titleAccent: 'da reserva à viagem concluída.',
+      title: 'Software de transporte privado para operadores',
+      titleAccent: 'que gerenciam viagens premium, não só reservas.',
       subtitle:
-        '{brand} ajuda empresas de limusines, transfers de aeroporto e motoristas executivos a receber reservas online, designar motoristas, cobrar pagamentos e manter os passageiros informados — com a sua marca, sem depender de ligações, planilhas ou ferramentas dispersas.',
+        '{brand} ajuda empresas de limusines, transfers de aeroporto e motoristas executivos a gerenciar reservas, dispatch, motoristas, veículos, pagamentos e rastreamento de passageiros a partir de uma única plataforma com sua marca — feito para operadores que querem menos etapas manuais e uma forma mais profissional de operar cada viagem.',
       ctaPrimary: 'Comece grátis →',
       ctaSecondary: 'Veja como funciona',
       note: 'Sem taxas de instalação · Sem contratos · No ar em dias, não semanas',
@@ -51,7 +51,7 @@ export const pt: Dictionary = {
       },
       {
         title: 'Pagamentos online',
-        desc: 'Cobre com cartão via Whop: links de pagamento, depósitos, gorjetas e reembolsos. Registre também dinheiro, Zelle e transferências. O dinheiro vai direto para sua conta.',
+        desc: 'Aceite pagamentos seguros com cartão online, depósitos, gorjetas e reembolsos. Você também pode registrar manualmente dinheiro, Zelle e transferências para conciliar.',
       },
       {
         title: 'Frota e motoristas',
@@ -69,17 +69,19 @@ export const pt: Dictionary = {
     showcase: [
       {
         kicker: 'Para seus clientes',
-        title: 'Uma experiência de reserva à altura da sua marca',
+        title: 'Reservas online à altura de um passageiro premium',
+        desc: 'Dê aos seus passageiros uma forma elegante de solicitar ou reservar o serviço, receber confirmações, pagar online e acompanhar a viagem sem instalar nenhum app.',
         bullets: [
           'Cotação instantânea por classe de veículo',
-          'Apple Pay, Google Pay e cartões no checkout',
-          'Confirmação por email e SMS em segundos',
+          'Checkout com cartão, Apple Pay e Google Pay',
+          'Confirmação por email e SMS',
           'Rastreamento da viagem ao vivo — sem instalar apps',
         ],
       },
       {
         kicker: 'Para sua equipe',
-        title: 'Um dispatch que se gerencia sozinho',
+        title: 'Dispatch com visibilidade em tempo real',
+        desc: 'Dê à sua equipe um só lugar para revisar as próximas viagens, designar motoristas, atualizar status e manter os passageiros informados do início ao fim.',
         bullets: [
           'Painel ao vivo atualizado em tempo real',
           'Designação de motorista em um toque',
@@ -89,12 +91,13 @@ export const pt: Dictionary = {
       },
       {
         kicker: 'Para seu negócio',
-        title: 'Receba mais rápido, sem cobrar ninguém',
+        title: 'Pagamentos e faturamento conectados a cada viagem',
+        desc: 'Mantenha depósitos, gorjetas, reembolsos, taxas de cancelamento e faturamento corporativo conectados ao registro da viagem, para que sua operação continue organizada conforme você cresce.',
         bullets: [
           'Links de pagamento, depósitos e gorjetas',
           'Faturamento corporativo mensal automático',
           'Taxas de cancelamento e no-show pela sua política',
-          'Cada dólar conciliado nos seus relatórios',
+          'Relatórios, exportação CSV e conciliação completa',
         ],
       },
     ],
@@ -131,6 +134,19 @@ export const pt: Dictionary = {
         text: 'O faturamento corporativo que antes tomava dois dias por mês agora acontece sozinho, nos prazos de pagamento de cada cliente.',
       },
     ],
+    trust: {
+      kicker: 'Feito para operar seu negócio',
+      title: 'Feito para operadores que valorizam controle, visibilidade e a confiança dos clientes.',
+      desc: '{brand} dá suporte à operação diária das empresas de transporte privado, desde a entrada da reserva até a viagem concluída. Sua equipe gerencia reservas, motoristas, veículos, pagamentos, comunicação com o passageiro e registros do negócio em um só lugar, com papéis claros, histórico de atividade e visibilidade operacional.',
+      points: [
+        'Papéis de equipe e níveis de permissão',
+        'Registro de auditoria de cada ação crítica',
+        'Acompanhamento de vencimentos de licenças, alvarás e seguros',
+        'Conciliação de pagamentos e viagens',
+        'Páginas de rastreamento para o passageiro',
+        'Acesso pelo navegador — sem instalações',
+      ],
+    },
     pricingTitle: 'Planos de acordo com sua frota, sua equipe e suas reservas',
     pricingSubtitle: 'A taxa por viagem cai conforme você cresce. Cancele quando quiser.',
     pricingNoSetupBadge: 'Sem taxa de instalação — nunca',
@@ -146,6 +162,7 @@ export const pt: Dictionary = {
     pricingPopular: 'Mais popular',
     pricingCta: 'Comece grátis',
     pricingContact: 'Falar com vendas',
+    pricingFooterNote: 'Hospedagem, atualizações do sistema e manutenção da plataforma estão incluídas em todos os planos — sem custos ocultos de infraestrutura.',
     plans: [
       {
         name: 'Starter',
@@ -158,7 +175,7 @@ export const pt: Dictionary = {
           'Até 6 veículos e 6 motoristas',
           'Até 150 reservas/mês',
           '2 membros de equipe',
-          'Pagamentos com cartão online via Whop',
+          'Pagamentos seguros com cartão online',
           'Taxa de plataforma: 3% por viagem concluída',
           'Suporte padrão',
         ],
@@ -199,7 +216,7 @@ export const pt: Dictionary = {
         name: 'Enterprise',
         price: 'Sob medida',
         period: '',
-        desc: 'Várias marcas, necessidades custom, white glove.',
+        desc: 'Para operadores multi-marca, fluxos complexos e integrações sob medida.',
         features: [
           'Tudo do Elite',
           'Múltiplas empresas / DBAs',
@@ -227,15 +244,15 @@ export const pt: Dictionary = {
       },
       {
         q: 'Vocês cobram por viagem?',
-        a: 'Uma pequena % de cada viagem concluída, além do seu plano mensal — e cai conforme você sobe de plano (3% Starter, 1.5% Professional, 0.5% Elite). As taxas de cartão (via Whop) se aplicam separadamente quando seus clientes pagam online.',
+        a: 'Uma pequena % de cada viagem concluída, além do seu plano mensal — e cai conforme você sobe de plano (3% Starter, 1.5% Professional, 0.5% Elite). As taxas de processamento de cartão são gerenciadas separadamente pelo nosso provedor de pagamentos.',
       },
       {
         q: 'Meus clientes podem pagar em dinheiro ou Zelle?',
-        a: 'Sim. Além do cartão online (via Whop), sua equipe registra pagamentos em dinheiro, Zelle e transferências para que cada viagem fique conciliada, cobrada online ou não.',
+        a: 'Sim. Além do cartão online através do nosso provedor de pagamentos, sua equipe registra pagamentos em dinheiro, Zelle e transferências para que cada viagem fique conciliada, cobrada online ou não.',
       },
       {
         q: 'Funciona no meu idioma?',
-        a: '{brand} fala inglês, espanhol e português — seus clientes reservam no deles.',
+        a: '{brand} tem suporte a inglês, espanhol e português, para que seus clientes reservem no idioma que preferirem.',
       },
       {
         q: 'Preciso instalar algo?',
@@ -249,7 +266,7 @@ export const pt: Dictionary = {
     directoryBook: 'Reservar online →',
     ctaTitle: 'Dê aos seus clientes a experiência que eles esperam.',
     ctaAccent: 'Dê à sua equipe o controle que ela precisa.',
-    ctaSubtitle: 'Crie sua conta e receba sua primeira reserva online esta semana.',
+    ctaSubtitle: 'Crie sua página de reservas com sua marca, configure o dispatch e comece a aceitar reservas online esta semana.',
     ctaButton: 'Criar conta grátis →',
     footerRights: 'Todos os direitos reservados.',
     footerPrivacy: 'Privacidade',

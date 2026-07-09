@@ -235,9 +235,10 @@ export default async function LandingPage() {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[#e9c176] mb-4">
                   {row.kicker}
                 </p>
-                <h3 className="font-playfair text-2xl sm:text-3xl font-semibold leading-snug mb-7">
+                <h3 className="font-playfair text-2xl sm:text-3xl font-semibold leading-snug mb-3">
                   {row.title}
                 </h3>
+                <p className="text-sm text-white/50 leading-relaxed mb-6 max-w-md">{row.desc}</p>
                 <ul className="space-y-4">
                   {row.bullets.map((b) => (
                     <li key={b} className="flex items-start gap-3">
@@ -342,6 +343,33 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* ── Confianza operativa ── */}
+      <section className="border-t border-white/[0.06]">
+        <div className="max-w-4xl mx-auto px-6 py-24">
+          <Reveal className="text-center mb-10">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[#e9c176] mb-4">
+              {t.trust.kicker}
+            </p>
+            <h2 className="font-playfair text-3xl sm:text-4xl font-semibold leading-snug text-balance">
+              {t.trust.title}
+            </h2>
+            <p className="text-white/50 mt-4 text-sm max-w-2xl mx-auto leading-relaxed">
+              {withBrand(t.trust.desc)}
+            </p>
+          </Reveal>
+          <Reveal className="rounded-2xl border border-white/[0.08] bg-white/[0.02] px-6 py-8 sm:px-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-4">
+              {t.trust.points.map((item) => (
+                <div key={item} className="flex items-start gap-2.5">
+                  <span className="text-[#e9c176] text-base mt-0.5 shrink-0">✓</span>
+                  <span className="text-[15px] text-white/80 leading-snug">{item}</span>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ── Pricing ── */}
       <section id="pricing" className="border-t border-white/[0.06] bg-[#0a0908] relative overflow-hidden">
         <div
@@ -426,6 +454,7 @@ export default async function LandingPage() {
               )
             })}
           </RevealStagger>
+          <p className="text-center text-xs text-white/35 mt-10 max-w-2xl mx-auto">{t.pricingFooterNote}</p>
         </div>
       </section>
 

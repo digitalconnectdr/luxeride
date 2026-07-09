@@ -15,10 +15,10 @@ export const en = {
     nav: { platform: 'Platform', pricing: 'Pricing', faq: 'FAQ', book: 'Book a ride' },
     hero: {
       badge: 'Private transportation software',
-      title: 'Run your private transportation company',
-      titleAccent: 'from booking to completed ride.',
+      title: 'Private transportation software for operators',
+      titleAccent: 'who manage premium rides, not just bookings.',
       subtitle:
-        '{brand} helps black car, limousine, airport transfer and executive chauffeur companies accept online bookings, assign drivers, collect payments and keep passengers informed — under your own brand, without relying on calls, spreadsheets or scattered tools.',
+        '{brand} helps black car, limousine, airport transfer and executive chauffeur companies manage reservations, dispatch, chauffeurs, vehicles, payments and passenger tracking from one branded platform — built for operators who want fewer manual steps and a more professional way to run every ride.',
       ctaPrimary: 'Start free →',
       ctaSecondary: 'Watch how it works',
       note: 'No setup fees · No contracts · Live in days, not weeks',
@@ -50,7 +50,7 @@ export const en = {
       },
       {
         title: 'Online payments',
-        desc: 'Charge cards via Whop: payment links, deposits, gratuities and refunds. Cash, Zelle and bank transfers recorded too. Money flows straight to your account.',
+        desc: 'Accept secure online card payments, deposits, gratuities and refunds. Cash, Zelle and bank transfers can be recorded manually for reconciliation.',
       },
       {
         title: 'Fleet & chauffeurs',
@@ -68,17 +68,19 @@ export const en = {
     showcase: [
       {
         kicker: 'For your clients',
-        title: 'A booking experience worthy of your brand',
+        title: 'Online booking designed for premium passenger expectations',
+        desc: 'Give passengers a polished way to request or book service, receive confirmations, pay online and follow trip updates without downloading an app.',
         bullets: [
-          'Instant quotes for every vehicle class',
-          'Apple Pay, Google Pay and cards at checkout',
-          'Confirmation by email and SMS in seconds',
+          'Instant quotes by vehicle class',
+          'Card, Apple Pay and Google Pay checkout',
+          'Email and SMS confirmations',
           'Live trip tracking — no app required',
         ],
       },
       {
         kicker: 'For your team',
-        title: 'Dispatch that runs itself',
+        title: 'Dispatch with real-time visibility',
+        desc: 'Give your team one place to review upcoming trips, assign chauffeurs, update statuses and keep passengers informed from reservation to completion.',
         bullets: [
           'Live board updated in real time',
           'One-tap chauffeur assignment',
@@ -88,12 +90,13 @@ export const en = {
       },
       {
         kicker: 'For your business',
-        title: 'Get paid faster, with zero chasing',
+        title: 'Payments and billing tied to every ride',
+        desc: 'Keep deposits, gratuities, refunds, cancellation fees and corporate invoices connected to the trip record, so your operation stays cleaner as volume grows.',
         bullets: [
           'Payment links, deposits and gratuities',
           'Automatic monthly corporate invoicing',
           'Cancellation and no-show fees enforced by policy',
-          'Every dollar reconciled in your reports',
+          'Revenue reports, CSV exports & full reconciliation',
         ],
       },
     ],
@@ -130,6 +133,19 @@ export const en = {
         text: 'Corporate invoicing that used to take two days a month now runs on its own, on each client’s payment terms.',
       },
     ],
+    trust: {
+      kicker: 'Built to run your business',
+      title: 'Built for operators who care about control, visibility and client trust.',
+      desc: '{brand} supports the daily workflow of private transportation companies, from booking intake to completed ride. Your team manages reservations, chauffeurs, vehicles, payments, passenger communication and business records from one place, with clear roles, activity history and operational visibility.',
+      points: [
+        'Team roles and permission levels',
+        'Audit trail for every critical action',
+        'License, permit and insurance expiration tracking',
+        'Payment and trip reconciliation',
+        'Passenger-facing tracking pages',
+        'Browser-based access — no installs required',
+      ],
+    },
     pricingTitle: 'Plans built around your fleet, your team and your bookings',
     pricingSubtitle: 'The per-trip fee drops as you grow. Cancel anytime.',
     pricingNoSetupBadge: 'No setup fee — ever',
@@ -145,6 +161,7 @@ export const en = {
     pricingPopular: 'Most popular',
     pricingCta: 'Start free',
     pricingContact: 'Talk to sales',
+    pricingFooterNote: 'Hosting, system updates and platform maintenance are included in every plan — no hidden infrastructure costs.',
     plans: [
       {
         name: 'Starter',
@@ -157,7 +174,7 @@ export const en = {
           'Up to 6 vehicles and 6 chauffeurs',
           'Up to 150 bookings/month',
           '2 team members',
-          'Card payments online via Whop',
+          'Secure online card payments',
           'Platform fee: 3% per completed trip',
           'Standard support',
         ],
@@ -198,7 +215,7 @@ export const en = {
         name: 'Enterprise',
         price: 'Custom',
         period: '',
-        desc: 'Multiple brands, custom needs, white glove.',
+        desc: 'For multi-brand operators, complex workflows and custom integrations.',
         features: [
           'Everything in Elite',
           'Multiple companies / DBAs',
@@ -226,15 +243,15 @@ export const en = {
       },
       {
         q: 'Do you charge per trip?',
-        a: 'A small % of each completed trip, on top of your monthly plan — and it drops as you upgrade (3% Starter, 1.5% Professional, 0.5% Elite). Card processing fees (via Whop) apply separately when your clients pay online.',
+        a: 'A small % of each completed trip, on top of your monthly plan — and it drops as you upgrade (3% Starter, 1.5% Professional, 0.5% Elite). Online card processing fees are handled separately by our payment provider.',
       },
       {
         q: 'Can my clients pay cash or Zelle?',
-        a: 'Yes. Besides card payments online (via Whop), your team can record cash, Zelle and bank transfer payments so every trip is reconciled, whether paid online or not.',
+        a: 'Yes. Besides online card payments through our payment provider, your team can record cash, Zelle and bank transfer payments so every trip is reconciled, whether paid online or not.',
       },
       {
         q: 'Does it work in my language?',
-        a: '{brand} speaks English, Spanish and Portuguese — your clients book in theirs.',
+        a: '{brand} supports English, Spanish and Portuguese, so clients can book in their preferred language.',
       },
       {
         q: 'Do I need to install anything?',
@@ -248,7 +265,7 @@ export const en = {
     directoryBook: 'Book online →',
     ctaTitle: 'Give your clients the experience they expect.',
     ctaAccent: 'Give your team the control they need.',
-    ctaSubtitle: 'Create your account and take your first online booking this week.',
+    ctaSubtitle: 'Create your branded booking page, set up dispatch, and start accepting online reservations this week.',
     ctaButton: 'Create free account →',
     footerRights: 'All rights reserved.',
     footerPrivacy: 'Privacy',
