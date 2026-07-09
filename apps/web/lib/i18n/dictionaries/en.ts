@@ -93,6 +93,7 @@ export const en = {
           'Automatic flight tracking for airport pickups',
           'Chauffeurs advance trips from their phone',
           'Passengers notified at every step automatically',
+          'Your own branded app for your team, installing right on their phone with no app store needed',
         ],
       },
       {

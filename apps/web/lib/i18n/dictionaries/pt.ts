@@ -94,6 +94,7 @@ export const pt: Dictionary = {
           'Rastreamento automático de voos para coletas no aeroporto',
           'Motoristas avançam as viagens pelo celular',
           'Passageiros notificados em cada etapa automaticamente',
+          'Seu próprio app com sua marca para sua equipe, instalado direto no celular sem precisar de app store',
         ],
       },
       {

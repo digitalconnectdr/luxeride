@@ -94,6 +94,7 @@ export const es: Dictionary = {
           'Tracking automático de vuelos para recogidas en aeropuerto',
           'Los conductores avanzan sus viajes desde el teléfono',
           'Pasajeros notificados en cada paso automáticamente',
+          'Tu propia app con tu marca para tu equipo, instalada directo en el teléfono sin necesitar app store',
         ],
       },
       {
