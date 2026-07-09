@@ -1946,6 +1946,9 @@ export const es: Dictionary = {
     notEnabledBody: 'Envía viajes que no puedes cubrir a empresas afiliadas y recibe viajes de ellas — incluido en Elite y Enterprise, disponible como add-on en otros planes.',
     requestAccessButton: 'Solicitar acceso',
     requestAccessSent: 'Gracias — nuestro equipo te contactará pronto.',
+    subscribeButton: 'Suscribirse ahora →',
+    subscribeNote: 'Se activa automáticamente al completar el pago.',
+    orRequestAccess: 'O si prefieres, solicita acceso y te ayudamos a activarlo.',
     leadForm: {
       companyName: 'Nombre de la empresa',
       contactName: 'Nombre de contacto',

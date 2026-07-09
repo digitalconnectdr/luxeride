@@ -7,7 +7,7 @@ import type { Dictionary } from '@/lib/i18n/server'
 
 type T = Dictionary['affiliates']
 
-export function AffiliateNetworkUpsell({ companyName, t }: { companyName: string; t: T }) {
+export function AffiliateNetworkUpsell({ companyName, t, checkoutUrl }: { companyName: string; t: T; checkoutUrl?: string }) {
   const [isPending, startTransition] = useTransition()
   const [showForm, setShowForm] = useState(false)
   const [sent, setSent] = useState(false)
@@ -47,9 +47,26 @@ export function AffiliateNetworkUpsell({ companyName, t }: { companyName: string
       <p className="text-sm text-sl-on-surface-muted">{t.notEnabledBody}</p>
 
       {!showForm ? (
-        <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-[#0071e3] text-white text-sm font-medium rounded-xl hover:bg-[#0077ed]">
-          {t.requestAccessButton}
-        </button>
+        checkoutUrl ? (
+          <div className="space-y-2">
+            <a
+              href={checkoutUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex px-4 py-2 bg-bronze text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
+            >
+              {t.subscribeButton}
+            </a>
+            <p className="text-xs text-sl-on-surface-muted">{t.subscribeNote}</p>
+            <button onClick={() => setShowForm(true)} className="block text-xs text-sl-on-surface-muted hover:underline pt-1">
+              {t.orRequestAccess}
+            </button>
+          </div>
+        ) : (
+          <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-[#0071e3] text-white text-sm font-medium rounded-xl hover:bg-[#0077ed]">
+            {t.requestAccessButton}
+          </button>
+        )
       ) : (
         <div className="space-y-3 pt-2 max-w-md">
           <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder={t.leadForm.contactName} className="w-full rounded-xl border border-sl-outline-variant bg-white px-3 py-2 text-sm" />

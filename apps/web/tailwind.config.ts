@@ -65,8 +65,12 @@ const config: Config = {
 
         // Bronce — versión del dorado LEGIBLE sobre superficies claras.
         // text/border de acento en Ivory; bg-gold sigue champagne en botones.
+        // DEFAULT lee de --color-bronze (fallback = dorado de LuxeRide) para
+        // que /admin pueda re-temizar el acento con el primary_color de cada
+        // operador sin tocar los ~50 archivos que ya usan text-bronze/
+        // border-bronze/ring-bronze — ver app/admin/layout.tsx.
         bronze: {
-          DEFAULT: '#8a6520',
+          DEFAULT: 'var(--color-bronze, #8a6520)',
           dark: '#6e4f17',
           light: '#a87f33',
         },

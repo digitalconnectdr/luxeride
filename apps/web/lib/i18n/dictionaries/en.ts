@@ -1945,6 +1945,9 @@ export const en = {
     notEnabledBody: 'Route overflow trips to partner companies and receive trips from them — included on Elite and Enterprise, available as an add-on on other plans.',
     requestAccessButton: 'Request access',
     requestAccessSent: 'Thanks — our team will reach out shortly.',
+    subscribeButton: 'Subscribe now →',
+    subscribeNote: 'Activates automatically once payment completes.',
+    orRequestAccess: 'Or request access and we’ll help you activate it.',
     leadForm: {
       companyName: 'Company name',
       contactName: 'Contact name',

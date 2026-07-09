@@ -193,7 +193,7 @@ export default async function SettingsPage({
       </div>
 
       {/* ── Suscripción a la plataforma (Whop) ── */}
-      <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+      <section id="subscription" className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6 scroll-mt-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold text-sl-on-surface">{t.subscriptionTitle}</h2>

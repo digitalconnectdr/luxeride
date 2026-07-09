@@ -40,6 +40,15 @@ export function mapWhopPlanId(whopPlanId: string | null): CompanyPlan | undefine
   return undefined
 }
 
+// ── Sección G — add-on de Affiliate Network (Starter/Professional) ───────────
+// Producto de Whop SEPARADO de los 4 planes principales — su propio ciclo de
+// cobro, su propia membresía. Mientras WHOP_PLAN_ID_AFFILIATE_ADDON no esté
+// configurado, esto nunca hace match (sigue siendo un lead manual en
+// /admin/settings, no un no-op roto).
+export function isAffiliateAddonPlan(whopPlanId: string | null): boolean {
+  return !!whopPlanId && !!process.env.WHOP_PLAN_ID_AFFILIATE_ADDON && whopPlanId === process.env.WHOP_PLAN_ID_AFFILIATE_ADDON
+}
+
 export interface WhopParsedEvent {
   type: string
   /** ID de esta ENTREGA del webhook — para idempotencia de reintentos. */

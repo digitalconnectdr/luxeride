@@ -122,6 +122,7 @@ export type Database = {
           compliance_reviewed_by: string | null
           affiliate_network_enabled: boolean
           affiliate_network_enabled_at: string | null
+          affiliate_network_whop_membership_id: string | null
           trial_ends_at: string | null
           subscription_ends_at: string | null
           created_at: string
@@ -168,6 +169,7 @@ export type Database = {
           compliance_reviewed_by?: string | null | undefined
           affiliate_network_enabled?: boolean | undefined
           affiliate_network_enabled_at?: string | null | undefined
+          affiliate_network_whop_membership_id?: string | null | undefined
           trial_ends_at?: string | null | undefined
           subscription_ends_at?: string | null | undefined
           created_at?: string | undefined
@@ -214,6 +216,7 @@ export type Database = {
           compliance_reviewed_by?: string | null | undefined
           affiliate_network_enabled?: boolean | undefined
           affiliate_network_enabled_at?: string | null | undefined
+          affiliate_network_whop_membership_id?: string | null | undefined
           trial_ends_at?: string | null | undefined
           subscription_ends_at?: string | null | undefined
           created_at?: string | undefined

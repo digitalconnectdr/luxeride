@@ -58,7 +58,7 @@ export default async function AffiliatesPage() {
       </div>
 
       {!enabled ? (
-        <AffiliateNetworkUpsell companyName={company?.name ?? ''} t={t} />
+        <AffiliateNetworkUpsell companyName={company?.name ?? ''} t={t} checkoutUrl={process.env.WHOP_CHECKOUT_URL_AFFILIATE_ADDON} />
       ) : (
         <>
           <InviteAffiliateForm t={t.relationships} />

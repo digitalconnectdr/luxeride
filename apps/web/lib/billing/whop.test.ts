@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createHmac } from 'crypto'
-import { verifyWhopSignature, mapWhopPlanId, parseWhopEvent, isWhopSuccessEvent, isWhopDeactivationEvent } from './whop'
+import { verifyWhopSignature, mapWhopPlanId, parseWhopEvent, isWhopSuccessEvent, isWhopDeactivationEvent, isAffiliateAddonPlan } from './whop'
 
 const SECRET = 'test-secret'
 
@@ -112,5 +112,28 @@ describe('isWhopDeactivationEvent', () => {
   it('ignora eventos no relacionados', () => {
     expect(isWhopDeactivationEvent('membership_activated')).toBe(false)
     expect(isWhopDeactivationEvent('unknown')).toBe(false)
+  })
+})
+
+describe('isAffiliateAddonPlan', () => {
+  beforeAll(() => {
+    process.env.WHOP_PLAN_ID_AFFILIATE_ADDON = 'plan_affiliate_addon'
+  })
+
+  it('reconoce el plan del add-on cuando está configurado', () => {
+    expect(isAffiliateAddonPlan('plan_affiliate_addon')).toBe(true)
+  })
+
+  it('no confunde el add-on con un plan principal', () => {
+    expect(isAffiliateAddonPlan('plan_starter')).toBe(false)
+  })
+
+  it('devuelve false si no se pasa planId', () => {
+    expect(isAffiliateAddonPlan(null)).toBe(false)
+  })
+
+  it('devuelve false si la env var no está configurada', () => {
+    delete process.env.WHOP_PLAN_ID_AFFILIATE_ADDON
+    expect(isAffiliateAddonPlan('plan_affiliate_addon')).toBe(false)
   })
 })

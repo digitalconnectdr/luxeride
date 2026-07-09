@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { importVehiclesCsvAction } from '@/app/actions/fleet'
+import { ActionErrorBanner } from '@/components/admin/action-error-banner'
 
 export interface ImportVehiclesCsvLabels {
   trigger: string
@@ -87,11 +88,7 @@ export function ImportVehiclesCsv({ labels: t }: { labels: ImportVehiclesCsvLabe
           />
         </div>
 
-        {state && !state.success && state.error && (
-          <p className="text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-            {state.error}
-          </p>
-        )}
+        {state && !state.success && state.error && <ActionErrorBanner error={state.error} />}
         {state?.success && (
           <div className="text-sm text-green-600 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2 space-y-1">
             <p>{t.imported.replace('{n}', String(state.imported))}</p>

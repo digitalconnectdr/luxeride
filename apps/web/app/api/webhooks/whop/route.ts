@@ -20,6 +20,7 @@ import {
   isWhopSuccessEvent,
   isWhopDeactivationEvent,
   mapWhopPlanId,
+  isAffiliateAddonPlan,
 } from '@/lib/billing/whop'
 
 export const runtime = 'nodejs'
@@ -60,6 +61,26 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true, warning: 'no membership id in payload' })
       }
 
+      // Sección G: ¿es la membresía del ADD-ON de Affiliate Network? Se apaga
+      // SOLO esa bandera — nunca se suspende la cuenta por cancelar un add-on.
+      const { data: addonCompany } = await admin
+        .from('companies')
+        .select('id')
+        .eq('affiliate_network_whop_membership_id', event.membershipId)
+        .maybeSingle()
+
+      if (addonCompany) {
+        const { error } = await admin
+          .from('companies')
+          .update({ affiliate_network_enabled: false, affiliate_network_whop_membership_id: null })
+          .eq('id', addonCompany.id)
+        if (error) {
+          console.error('[whop/webhook] affiliate add-on deactivation failed', error)
+          return NextResponse.json({ error: error.message }, { status: 500 })
+        }
+        return NextResponse.json({ received: true, affiliateAddonDisabled: addonCompany.id })
+      }
+
       const { data: company } = await admin
         .from('companies')
         .select('id')
@@ -93,13 +114,37 @@ export async function POST(request: Request) {
 
     const { data: company } = await admin
       .from('companies')
-      .select('id, whop_membership_id, whop_plan_id, whop_last_event_id')
+      .select('id, whop_membership_id, whop_plan_id, whop_last_event_id, affiliate_network_whop_membership_id')
       .ilike('email', event.email)
       .maybeSingle()
 
     if (!company) {
       console.error(`[whop/webhook] no company found for email ${event.email}`)
       return NextResponse.json({ received: true, warning: 'no matching company' })
+    }
+
+    // Sección G: activación del add-on de Affiliate Network — ciclo de cobro
+    // propio, independiente del plan principal. No pasa por
+    // activateCompanySubscription (eso es solo para los 4 planes base) ni por
+    // el chequeo de idempotencia de whop_last_event_id (ese campo es del plan
+    // principal, no del add-on).
+    if (isAffiliateAddonPlan(event.planId)) {
+      if (company.affiliate_network_whop_membership_id === event.membershipId) {
+        return NextResponse.json({ received: true, skipped: 'affiliate add-on already active' })
+      }
+      const { error } = await admin
+        .from('companies')
+        .update({
+          affiliate_network_enabled: true,
+          affiliate_network_enabled_at: new Date().toISOString(),
+          affiliate_network_whop_membership_id: event.membershipId,
+        })
+        .eq('id', company.id)
+      if (error) {
+        console.error('[whop/webhook] affiliate add-on activation failed', error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+      return NextResponse.json({ received: true, affiliateAddonEnabled: company.id })
     }
 
     // Idempotencia: solo se ignora si es la MISMA entrega del webhook

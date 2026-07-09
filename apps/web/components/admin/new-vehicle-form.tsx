@@ -4,6 +4,7 @@ import { useFormState } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { createVehicleAction } from '@/app/actions/fleet'
+import { ActionErrorBanner } from '@/components/admin/action-error-banner'
 import type { Dictionary } from '@/lib/i18n/server'
 
 type Labels = Dictionary['admin']['vehicleNew']
@@ -30,11 +31,7 @@ export function NewVehicleForm({ types, labels: t }: Props) {
   return (
     <form action={action} className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6 space-y-6">
 
-      {state && !state.success && (
-        <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3">
-          <p className="text-sm text-red-400">{state.error}</p>
-        </div>
-      )}
+      {state && !state.success && state.error && <ActionErrorBanner error={state.error} />}
 
       {/* Identification */}
       <section className="space-y-4">

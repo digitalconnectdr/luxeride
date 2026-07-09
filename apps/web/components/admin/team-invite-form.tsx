@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { inviteTeamMemberAction } from '@/app/actions/team'
+import { ActionErrorBanner } from '@/components/admin/action-error-banner'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 
 type TeamDict = Dictionary['admin']['team']
@@ -59,9 +60,7 @@ export function TeamInviteForm({ t, isOwner }: { t: TeamDict; isOwner: boolean }
       {open && (
       <>
       {state && !state.success && state.error && (
-        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
-          <p className="text-sm text-red-600">{state.error}</p>
-        </div>
+        <div className="mb-4"><ActionErrorBanner error={state.error} /></div>
       )}
 
       {state?.success && state.tempPassword && (

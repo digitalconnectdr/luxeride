@@ -1946,6 +1946,9 @@ export const pt: Dictionary = {
     notEnabledBody: 'Envie viagens que você não pode cobrir para empresas afiliadas e receba viagens delas — incluído no Elite e Enterprise, disponível como add-on nos outros planos.',
     requestAccessButton: 'Solicitar acesso',
     requestAccessSent: 'Obrigado — nossa equipe vai entrar em contato em breve.',
+    subscribeButton: 'Assinar agora →',
+    subscribeNote: 'Ativa automaticamente após a conclusão do pagamento.',
+    orRequestAccess: 'Ou solicite acesso e nós ajudamos a ativar.',
     leadForm: {
       companyName: 'Nome da empresa',
       contactName: 'Nome do contato',

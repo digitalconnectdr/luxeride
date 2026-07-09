@@ -7,6 +7,7 @@ import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { AddressInput } from '@/components/maps/address-input'
 import { calculateQuoteAction, createBookingAction } from '@/app/actions/bookings'
+import { ActionErrorBanner } from '@/components/admin/action-error-banner'
 import type { QuoteResult } from '@/app/actions/bookings'
 import type { Dictionary } from '@/lib/i18n/server'
 
@@ -251,11 +252,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
           <span className="text-sm text-sl-on-surface">{t.meetAndGreet}</span>
         </label>
 
-        {error && (
-          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">
-            {error}
-          </p>
-        )}
+        {error && <ActionErrorBanner error={error} />}
 
         <button
           type="submit"
@@ -416,11 +413,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
           />
         </div>
 
-        {error && (
-          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">
-            {error}
-          </p>
-        )}
+        {error && <ActionErrorBanner error={error} />}
 
         <div className="flex flex-wrap gap-3">
           <button
