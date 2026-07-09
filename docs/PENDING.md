@@ -102,10 +102,10 @@ Cada operador elige el diseño de su micrositio en Ajustes → Portada:
    RESEND_FROM_EMAIL (key ya existe, dominio por verificar en resend.com —
    sin esto, `lib/notifications/index.ts` deja las notificaciones en status
    `pending` sin enviar, no falla), CRON_SECRET (facturación corporativa +
-   alertas de documentos), UPSTASH_REDIS_REST_URL/TOKEN (rate limit
-   distribuido — sin esto, `lib/security/rate-limit.ts` cae a un límite en
-   memoria por instancia, más débil bajo carga distribuida real en
-   serverless pero no deja de proteger nada).
+   alertas de documentos). ✅ **UPSTASH_REDIS_REST_URL/TOKEN configurado
+   (2026-07-09)** — rate limit ya corre distribuido sobre Redis en
+   producción (verificado: contador de Commands en el dashboard de Upstash
+   sube al probar login), en vez del fallback en memoria por instancia.
 4. **Stripe real** cuando haya clientes: keys + webhook
    (/api/stripe/webhook) + habilitar Connect en dashboard.stripe.com.
 5. **Twilio** (SMS) cuando se quiera activar — mismo patrón placeholder-safe,
