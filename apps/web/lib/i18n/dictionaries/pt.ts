@@ -15,11 +15,11 @@ export const pt: Dictionary = {
   landing: {
     nav: { platform: 'Plataforma', pricing: 'Preços', faq: 'FAQ', book: 'Reservar' },
     hero: {
-      badge: 'Software para transporte premium',
-      title: 'A experiência de luxo que seus clientes esperam,',
-      titleAccent: 'com sua operação no piloto automático.',
+      badge: 'Software de transporte privado',
+      title: 'Opere sua empresa de transporte privado',
+      titleAccent: 'da reserva à viagem concluída.',
       subtitle:
-        '{brand} é a plataforma tudo-em-um para empresas de limusines, transfers de aeroporto e motoristas executivos: reservas online, dispatch ao vivo, pagamentos com cartão e contas corporativas — com a sua marca.',
+        '{brand} ajuda empresas de limusines, transfers de aeroporto e motoristas executivos a receber reservas online, designar motoristas, cobrar pagamentos e manter os passageiros informados — com a sua marca, sem depender de ligações, planilhas ou ferramentas dispersas.',
       ctaPrimary: 'Comece grátis →',
       ctaSecondary: 'Veja como funciona',
       note: 'Sem taxas de instalação · Sem contratos · No ar em dias, não semanas',
@@ -38,7 +38,7 @@ export const pt: Dictionary = {
       paid: 'Pagamento recebido',
       smsPreview: 'Seu motorista Carlos está chegando — acompanhe ao vivo:',
     },
-    featuresTitle: 'Tudo o que sua operação precisa',
+    featuresTitle: 'As ferramentas que sua equipe usa todos os dias',
     featuresSubtitle: 'Feito para black car, transfers de aeroporto e frotas executivas.',
     features: [
       {
@@ -116,28 +116,22 @@ export const pt: Dictionary = {
       },
     },
     statement: { line1: 'Sua frota é premium.', line2: 'Seu software também deveria ser.' },
-    testimonialsTitle: 'Operadores que fizeram a troca',
-    testimonials: [
+    scenariosTitle: 'Cenários de operação',
+    scenarios: [
       {
-        quote:
-          'Substituímos ligações e planilhas por reservas online em uma semana. Nossos clientes notam a diferença.',
-        name: 'Gerente de Operações',
-        company: 'Empresa de transfers — Miami, FL',
+        tag: 'Empresa de transfers de aeroporto',
+        text: 'Sai das reservas só por telefone para reservas online — cada viagem fica confirmada e rastreada automaticamente.',
       },
       {
-        quote:
-          'O painel de dispatch ao vivo mudou nossa forma de trabalhar. Designo um motorista em dois cliques e o passageiro recebe o SMS na hora.',
-        name: 'Proprietário',
-        company: 'Serviço black car — New Jersey',
+        tag: 'Serviço black car',
+        text: 'O dispatch designa um motorista em dois cliques, e o passageiro recebe o link de rastreamento por SMS assim que o motorista é definido.',
       },
       {
-        quote:
-          'O faturamento corporativo me tomava dois dias por mês. Agora acontece sozinho, nos meus prazos.',
-        name: 'Fundador',
-        company: 'Motoristas executivos — Santo Domingo',
+        tag: 'Motoristas executivos e contas corporativas',
+        text: 'O faturamento corporativo que antes tomava dois dias por mês agora acontece sozinho, nos prazos de pagamento de cada cliente.',
       },
     ],
-    pricingTitle: 'Preços simples que crescem com você',
+    pricingTitle: 'Planos de acordo com sua frota, sua equipe e suas reservas',
     pricingSubtitle: 'A taxa por viagem cai conforme você cresce. Cancele quando quiser.',
     pricingNoSetupBadge: 'Sem taxa de instalação — nunca',
     pricingIncludedTitle: 'Incluído em todos os planos',
@@ -253,14 +247,14 @@ export const pt: Dictionary = {
       'Estas empresas operam com {brand}. Reserve online com preços instantâneos e confirmação imediata.',
     directoryEmpty: 'Em breve haverá empresas disponíveis para reserva online.',
     directoryBook: 'Reservar online →',
-    ctaTitle: 'Eleve sua operação',
-    ctaAccent: 'ao nível do seu serviço.',
+    ctaTitle: 'Dê aos seus clientes a experiência que eles esperam.',
+    ctaAccent: 'Dê à sua equipe o controle que ela precisa.',
     ctaSubtitle: 'Crie sua conta e receba sua primeira reserva online esta semana.',
     ctaButton: 'Criar conta grátis →',
     footerRights: 'Todos os direitos reservados.',
     footerPrivacy: 'Privacidade',
     footerTerms: 'Termos',
-    footerTagline: 'Software para operadores de transporte terrestre de luxo.',
+    footerTagline: 'Software de transporte privado para black car, limusines e transfers de aeroporto.',
     footerProductHeading: 'Produto',
     footerLegalHeading: 'Legal',
     footerCompanyHeading: 'Empresa',

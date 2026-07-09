@@ -14,11 +14,11 @@ export const en = {
   landing: {
     nav: { platform: 'Platform', pricing: 'Pricing', faq: 'FAQ', book: 'Book a ride' },
     hero: {
-      badge: 'Premium transportation software',
-      title: 'The luxury experience your clients expect,',
-      titleAccent: 'with your operation on autopilot.',
+      badge: 'Private transportation software',
+      title: 'Run your private transportation company',
+      titleAccent: 'from booking to completed ride.',
       subtitle:
-        '{brand} is the all-in-one platform for limousine, airport transfer and executive chauffeur companies: online reservations, live dispatch, card payments and corporate accounts — under your own brand.',
+        '{brand} helps black car, limousine, airport transfer and executive chauffeur companies accept online bookings, assign drivers, collect payments and keep passengers informed — under your own brand, without relying on calls, spreadsheets or scattered tools.',
       ctaPrimary: 'Start free →',
       ctaSecondary: 'Watch how it works',
       note: 'No setup fees · No contracts · Live in days, not weeks',
@@ -37,7 +37,7 @@ export const en = {
       paid: 'Payment received',
       smsPreview: 'Your chauffeur Carlos is arriving — track live:',
     },
-    featuresTitle: 'Everything your operation needs',
+    featuresTitle: 'The tools operators use every day',
     featuresSubtitle: 'Built for black car, airport transfer and executive fleets.',
     features: [
       {
@@ -115,28 +115,22 @@ export const en = {
       },
     },
     statement: { line1: 'Your fleet is premium.', line2: 'Your software should be too.' },
-    testimonialsTitle: 'Operators who made the switch',
-    testimonials: [
+    scenariosTitle: 'Operator scenarios',
+    scenarios: [
       {
-        quote:
-          'We replaced phone calls and spreadsheets with online bookings in one week. Our clients notice the difference.',
-        name: 'Operations Manager',
-        company: 'Airport transfer company — Miami, FL',
+        tag: 'Airport transfer operator',
+        text: 'Moves from phone-only bookings to online reservations — every trip confirmed and tracked automatically.',
       },
       {
-        quote:
-          'The live dispatch board changed how we work. I assign a chauffeur in two clicks and the passenger gets the SMS instantly.',
-        name: 'Owner',
-        company: 'Black car service — New Jersey',
+        tag: 'Black car service',
+        text: 'Dispatch assigns a chauffeur in two clicks, and the passenger gets a live tracking link by SMS the moment a driver is set.',
       },
       {
-        quote:
-          'Corporate invoicing used to take me two days a month. Now it happens by itself, in my payment terms.',
-        name: 'Founder',
-        company: 'Executive chauffeur service — Santo Domingo',
+        tag: 'Executive chauffeur & corporate accounts',
+        text: 'Corporate invoicing that used to take two days a month now runs on its own, on each client’s payment terms.',
       },
     ],
-    pricingTitle: 'Simple pricing that grows with you',
+    pricingTitle: 'Plans built around your fleet, your team and your bookings',
     pricingSubtitle: 'The per-trip fee drops as you grow. Cancel anytime.',
     pricingNoSetupBadge: 'No setup fee — ever',
     pricingIncludedTitle: 'Included in every plan',
@@ -252,14 +246,14 @@ export const en = {
       'These companies run on {brand}. Book online with instant pricing and immediate confirmation.',
     directoryEmpty: 'Companies available for online booking are coming soon.',
     directoryBook: 'Book online →',
-    ctaTitle: 'Elevate your operation',
-    ctaAccent: 'to the level of your service.',
+    ctaTitle: 'Give your clients the experience they expect.',
+    ctaAccent: 'Give your team the control they need.',
     ctaSubtitle: 'Create your account and take your first online booking this week.',
     ctaButton: 'Create free account →',
     footerRights: 'All rights reserved.',
     footerPrivacy: 'Privacy',
     footerTerms: 'Terms',
-    footerTagline: 'Software for luxury ground transportation operators.',
+    footerTagline: 'Private transportation software for black car, limousine and airport transfer operators.',
     footerProductHeading: 'Product',
     footerLegalHeading: 'Legal',
     footerCompanyHeading: 'Company',

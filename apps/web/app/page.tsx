@@ -11,10 +11,10 @@ import { getAppUrl } from '@/lib/app-url'
 import { buildLandingStructuredData } from '@/lib/seo/structured-data'
 
 const DESCRIPTION =
-  'All-in-one platform for limousine, airport transfer and executive chauffeur companies: online reservations, live dispatch, card payments and corporate accounts.'
+  'Private transportation software for limousine, airport transfer and executive chauffeur companies: online bookings, dispatch, driver assignment, payments and passenger tracking.'
 
 export const metadata: Metadata = {
-  title: { absolute: `${brand.name} — Premium Transportation Software | by ${brand.poweredBy}` },
+  title: { absolute: `${brand.name} — Private Transportation Software | by ${brand.poweredBy}` },
   description: DESCRIPTION,
 }
 
@@ -318,28 +318,24 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── Testimonios ── */}
+      {/* ── Escenarios de operación ── */}
       <section className="border-t border-white/[0.06]">
         <div className="max-w-[1400px] mx-auto px-6 py-24">
           <Reveal className="text-center mb-14">
             <h2 className="font-playfair text-3xl sm:text-4xl font-semibold">
-              {t.testimonialsTitle}
+              {t.scenariosTitle}
             </h2>
           </Reveal>
           <RevealStagger className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {t.testimonials.map((tm) => (
+            {t.scenarios.map((sc) => (
               <RevealItem
-                key={tm.company}
+                key={sc.tag}
                 className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-8 flex flex-col"
               >
-                <span className="font-playfair text-4xl text-[#e9c176]/50 leading-none mb-4">
-                  &ldquo;
-                </span>
-                <p className="text-sm text-white/70 leading-relaxed italic flex-1">{tm.quote}</p>
-                <div className="mt-6 pt-5 border-t border-white/[0.07]">
-                  <p className="text-sm font-semibold">{tm.name}</p>
-                  <p className="text-xs text-white/40 mt-1">{tm.company}</p>
-                </div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#e9c176] mb-4">
+                  {sc.tag}
+                </p>
+                <p className="text-sm text-white/70 leading-relaxed flex-1">{sc.text}</p>
               </RevealItem>
             ))}
           </RevealStagger>
