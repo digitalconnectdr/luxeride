@@ -1,19 +1,17 @@
--- ─────────────────────────────────────────────────────────────────────────────
--- Migration 45: Sección G, Fase 2 — Portal de afiliado externo.
--- Ver docs/PENDING.md sección G ("Fase 2 — Portal de afiliado externo") para
--- el diseño completo. Resumen:
+-- Migration 45: Seccion G, Fase 2 - Portal de afiliado externo.
+-- Ver docs/PENDING.md seccion G ("Fase 2 - Portal de afiliado externo") para
+-- el diseno completo. Resumen:
 --
 -- - Una empresa FUERA de LuxeRide se une a la Red de Afiliados de quien la
---   invita a través de un link de invitación de un solo uso (capability-URL,
---   mismo patrón que bookings.id en /track/[id]) — no un directorio público.
--- - Al aceptar la invitación se crea una fila REAL en `companies` (marcada
---   is_external_affiliate = true, sin plan/suscripción de LuxeRide), para que
---   su conductor/vehículo se registren en las MISMAS tablas drivers/vehicles
---   que ya existen — nada de texto libre ni un esquema paralelo.
--- - Whop Connect (ya construido, migración 32) sigue siendo obligatorio antes
---   de poder aceptar cualquier solicitud paga — se aplica en código
---   (respondToAffiliateTripAction), no aquí.
--- ─────────────────────────────────────────────────────────────────────────────
+--   invita a traves de un link de invitacion de un solo uso (capability-URL,
+--   mismo patron que bookings.id en /track/[id]) - no un directorio publico.
+-- - Al aceptar la invitacion se crea una fila REAL en companies (marcada
+--   is_external_affiliate = true, sin plan/suscripcion de LuxeRide), para que
+--   su conductor/vehiculo se registren en las MISMAS tablas drivers/vehicles
+--   que ya existen - nada de texto libre ni un esquema paralelo.
+-- - Whop Connect (ya construido, migracion 32) sigue siendo obligatorio antes
+--   de poder aceptar cualquier solicitud paga - se aplica en codigo
+--   (respondToAffiliateTripAction), no aqui.
 
 ALTER TABLE public.companies
   ADD COLUMN is_external_affiliate BOOLEAN NOT NULL DEFAULT FALSE;
@@ -32,7 +30,7 @@ CREATE TABLE public.affiliate_invite_tokens (
 
 CREATE INDEX idx_affiliate_invite_tokens_inviting ON public.affiliate_invite_tokens(inviting_company_id);
 
--- RLS habilitada por convención del proyecto; sin políticas — esta tabla solo
--- se toca vía service-role (server actions + la página pública de alta, que
--- sigue el mismo patrón capability-URL que /track/[id]).
+-- RLS habilitada por convencion del proyecto; sin politicas - esta tabla solo
+-- se toca via service-role (server actions + la pagina publica de alta, que
+-- sigue el mismo patron capability-URL que /track/[id]).
 ALTER TABLE public.affiliate_invite_tokens ENABLE ROW LEVEL SECURITY;
