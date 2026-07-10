@@ -936,39 +936,43 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
 
 ## ⬜ Pendiente — Fase 2 (sin fecha, requiere validación o infra nueva)
 
-7. **🔶 Fase 2B móvil nativo — EN PROGRESO desde 2026-07-09** (decisión
-   original de esperar la validación de la PWA, superada a pedido del
-   usuario). Driver app primero, distribución inicial por sideload (APK
-   directo, sin Google Play) para evitar la fricción de la tienda mientras
-   se afina; migrar a Play Store más adelante. Ya construido
-   (`apps/driver-mobile/`): las 6 pantallas completas (Hoy, detalle de
-   viaje, completar con efectivo+firma, Ganancias, Documentos con cámara,
-   Perfil), migración 42 (fotos de documentos + firma) ya aplicada en
-   producción, y rediseño visual premium (tipografía de marca, iconos
-   reales, haptics, motion) — falta que el usuario genere el primer APK
-   real con `eas build` (su propia cuenta de expo.dev) y lo pruebe en un
-   Android físico. También ya reporta GPS en vivo del conductor (mismo
-   patrón que la web) para no romper el mapa en vivo del pasajero, y ya
-   reporta presencia "en servicio" (migración 43, tabla `driver_presence`)
-   para que el Dispatch Board vea TODA la flota disponible, no solo
-   viajes activos — **ambos con la app en primer plano solamente**;
-   reportar en segundo plano/pantalla bloqueada queda pendiente, requiere
-   build nativo custom (no funciona en Expo Go). También agregada: foto de
-   perfil del conductor (visible al pasajero en `/track/[id]`), rechazar
-   viaje asignado, reportar incidente en viaje activo, y calificar al
-   pasajero al completar (las tres reusan la misma lógica ya construida en
-   la web). También agregado: **notificaciones push** (Expo, con sonido
-   incluso con la app abierta) para viaje nuevo asignado / mensaje de chat /
-   viaje de afiliado asignado (migración 44, `device_tokens`) — requiere que
-   el usuario corra su primer `eas build` para que el registro del token
-   funcione; **chat con el pasajero** dentro de la app (lee/escribe directo
-   por RLS, Realtime); y **viajes de la Red de Afiliados visibles** en la
-   app (sección aparte, detalle vía ruta nueva con service-role). Pendiente
-   detectado de paso y NO arreglado (flaggeado aparte): algunas acciones de
-   `app/actions/affiliates.ts` no validan rol/pertenencia antes de mutar.
-   Lo que sigue faltando (mapa embebido, multi-stop, cola offline) queda
-   listado como backlog explícito en docs/PHASE-2-MOBILE.md → "Progreso
-   (2026-07-09)".
+7. **🔶 Fase 2B móvil nativo — EN PROGRESO desde 2026-07-09, pausado
+   2026-07-10 para retomar después** (decisión original de esperar la
+   validación de la PWA, superada a pedido del usuario). Driver app
+   primero, distribución inicial por sideload (APK directo, sin Google
+   Play) para evitar la fricción de la tienda mientras se afina; migrar a
+   Play Store más adelante. Ya construido (`apps/driver-mobile/`): las 6
+   pantallas completas (Hoy/Reservas con historial ordenado por fecha,
+   detalle de viaje con completar por efectivo+firma en modal dedicado,
+   Ganancias con rangos 7/15/30 días y conteo de viajes, Documentos con
+   cámara, Perfil), migraciones 42-44 aplicadas en producción, y rediseño
+   visual premium (tipografía de marca, iconos reales, haptics, motion) +
+   una segunda pasada de pulido de UX sobre uso real (contacto
+   chat-primero, estado en una sola línea, mapa del pasajero sin
+   placeholder-que-parece-error, firma en modal a pantalla completa). GPS
+   en vivo del conductor y presencia "en servicio" (migración 43,
+   `driver_presence`) ya reportan a la web — **ambos con la app en primer
+   plano solamente**, segundo plano/pantalla bloqueada requiere build
+   nativo custom (no funciona en Expo Go). También agregado: foto de
+   perfil, rechazar viaje, reportar incidente, calificar al pasajero,
+   **push con sonido** (Expo, migración 44 `device_tokens`), **chat con
+   el pasajero**, y **viajes de la Red de Afiliados visibles**. Se creó
+   además `.claude/agents/mobile-ux-reviewer.md`: agente de revisión
+   estática que corre tras cada tanda de cambios de UX (no hay
+   simulador/emulador en este entorno) para dejar de depender de que el
+   usuario reporte cada detalle a mano — su primera corrida encontró y
+   corrigió 4 problemas reales. **Falta para retomar:** (a) que el
+   usuario genere el primer `eas build --profile development` (bloqueado
+   en él, no en código) para validar push real con sonido en pantalla
+   bloqueada — imposible de probar en Expo Go; (b) confirmar si el mapa
+   estático del pasajero carga en el dispositivo real (posible
+   restricción de referrer en la Google Maps key); (c) backlog explícito
+   sin empezar: mapa embebido con posición propia (`react-native-maps`),
+   multi-stop, cola offline, i18n de la app (deferida a propósito). Hueco
+   de seguridad detectado y NO arreglado (flaggeado aparte): algunas
+   acciones de `app/actions/affiliates.ts` no validan rol/pertenencia
+   antes de mutar. Detalle completo y punto exacto para retomar en
+   `docs/PHASE-2-MOBILE.md` → "Estado al pausar (2026-07-10)".
 8. **Gaps mayores**: QuickBooks, e-signatures, promo codes, detección de
    conflictos de vehículo, nómina de conductores, WhatsApp Business.
    Pospuesto a propósito. (farm-in/farm-out ya tiene diseño concreto, ver

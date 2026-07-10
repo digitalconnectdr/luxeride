@@ -429,3 +429,50 @@ hardcodeado en `SignatureModal.tsx` que duplicaba `color.ink` de
 `lib/theme.ts`. Confirmó también que el fix de `PressableScale`, las
 nuevas rutas API móviles (auth + ownership) y el patrón mapa-sin-placeholder
 quedaron correctos.
+
+## Estado al pausar (2026-07-10) — para retomar después
+
+Todo lo de abajo está deployado en `main` (commit `b58ad16`), typecheck
+limpio. Nada bloqueado por decisiones pendientes del usuario salvo lo
+marcado explícitamente.
+
+**Hecho y verificado en producción:**
+- 6 pantallas base + GPS en vivo (foreground) + presencia de flota +
+  foto de perfil + rechazar/incidente/calificar.
+- Push con sonido (Expo Push, migración 44) + chat con el pasajero +
+  viajes de afiliados visibles.
+- Rediseño completo de contacto/estado/mapa/firma tras prueba real del
+  usuario (Rondas 4-5) + fix de fondo de `PressableScale`.
+- Tabs Hoy/Reservas en la lista de viajes + rangos 7/15/30 días en
+  Ganancias con conteo de viajes.
+- Agente `mobile-ux-reviewer` (Ronda 6) corriendo y con su primera
+  tanda de hallazgos ya corregida.
+
+**Bloqueado en el usuario (acción suya, no de código):**
+- Generar el primer `eas build --profile development` (o el APK de
+  producción) para validar push real con sonido en pantalla bloqueada —
+  **imposible de probar en Expo Go bajo ninguna circunstancia** (SDK 53+
+  quitó push remoto ahí). Sin este build, no se puede confirmar que el
+  registro de `device_tokens` y el push con teléfono bloqueado funcionan
+  de verdad fuera de la app abierta.
+- Confirmar si el mapa estático del pasajero (ruta `/trip-map`, reusa
+  `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`) realmente carga en el dispositivo
+  físico — sigue sin confirmar si la key tiene restricción de referrer
+  HTTP que bloquee pedidos desde la app nativa (se degrada bien si falla,
+  pero no se ha visto el caso real).
+
+**Backlog explícito, sin empezar (ver lista completa arriba, "Funciones
+avanzadas que la web tiene y la app nativa todavía NO"):**
+- Mapa embebido con posición en vivo propia (`react-native-maps`) en vez
+  de solo botones a Waze/Maps.
+- Multi-stop (paradas adicionales) + mostrar vehículo asignado.
+- Cola offline para zonas sin señal.
+- i18n de la app (deferido a propósito por decisión explícita del
+  usuario: "primero terminar/probar la app, traducir después" — no
+  arrancar esto sin que él lo pida).
+
+**Hallazgo de seguridad sin arreglar (flaggeado, no bloqueante):**
+algunas funciones en `apps/web/app/actions/affiliates.ts`
+(`advanceAffiliateTripAction`, partes de `assignAffiliateDriverAction`)
+no llaman `requireRole()` ni validan pertenencia antes de mutar — task
+spawneada aparte para seguimiento independiente.
