@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { getAffiliateInvitePreviewAction } from '@/app/actions/affiliates'
 import { JoinExternalAffiliateForm } from '@/components/affiliate/join-external-affiliate-form'
+import { getAppUrl } from '@/lib/app-url'
+import { brand } from '@/lib/brand'
 
 // ── Sección G, Fase 2 — Alta de afiliado externo ───────────────────────────────
 // Página PÚBLICA (sin sesión): el token de la URL es la única autorización,
@@ -23,7 +25,8 @@ export default async function AffiliateJoinPage({ params }: { params: { token: s
           <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface mb-2">{t.pageTitle}</h1>
           {preview?.valid && (
             <p className="text-sl-on-surface-muted text-sm">
-              <span className="font-medium text-bronze">{preview.invitingCompanyName}</span> {t.invitedBy}
+              <span className="font-medium text-bronze">{preview.invitingCompanyName}</span> {t.invitedBy}{' '}
+              <a href={getAppUrl()} className="font-medium text-bronze hover:underline">{brand.name}</a>
             </p>
           )}
         </div>

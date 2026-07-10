@@ -2168,7 +2168,7 @@ export const en = {
     },
     join: {
       pageTitle: 'Join the Affiliate Network',
-      invitedBy: 'invited you to join their affiliate network on LuxeRide',
+      invitedBy: 'invited you to join their affiliate network on',
       invalidTitle: 'Invalid or expired link',
       invalidBody: 'Ask whoever invited you for a new link.',
       companySection: 'Your company',

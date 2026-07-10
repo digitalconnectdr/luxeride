@@ -2169,7 +2169,7 @@ export const pt: Dictionary = {
     },
     join: {
       pageTitle: 'Junte-se à Rede de Afiliados',
-      invitedBy: 'convidou você para se juntar à rede de afiliados dele na LuxeRide',
+      invitedBy: 'convidou você para se juntar à rede de afiliados dele na',
       invalidTitle: 'Link inválido ou expirado',
       invalidBody: 'Peça a quem convidou você para compartilhar um novo link.',
       companySection: 'Sua empresa',
