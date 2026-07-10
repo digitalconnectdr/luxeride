@@ -471,6 +471,21 @@ avanzadas que la web tiene y la app nativa todavía NO"):**
   usuario: "primero terminar/probar la app, traducir después" — no
   arrancar esto sin que él lo pida).
 
+**Hallazgo de seguridad — ✅ corregido 2026-07-10 (commit `fe4bf37`):**
+`advanceAffiliateTripAction` no llamaba `requireRole()`/`getCurrentUser()`
+en absoluto — cualquier sesión (o directamente sin sesión, vía RPC directo
+a la Server Action) podía avanzar el estado de un viaje de afiliado ajeno
+solo con su UUID. Se separó en core `advanceAffiliateTrip(user, affiliateTripId)`
+(valida que sea el conductor asignado — `trip.driver_id === user.id` — o
+staff de la empresa afiliada — rol en `MANAGER_ROLES` + `trip.affiliate_company_id === user.company_id`)
+más un wrapper web que resuelve el usuario por cookie. La ruta móvil
+(`/api/mobile/driver/advance-affiliate-trip`) ahora llama al core directo
+con el usuario ya resuelto por bearer token, en vez de la Server Action
+dependiente de cookie (que le habría devuelto "No autorizado" a un
+conductor legítimo). `assignAffiliateDriverAction` se revisó de nuevo y
+ya tenía `requireRole` + validación de pertenencia correctos — el hallazgo
+original sobre esa función era una falsa alarma.
+
 **Hallazgo de seguridad sin arreglar (flaggeado, no bloqueante):**
 algunas funciones en `apps/web/app/actions/affiliates.ts`
 (`advanceAffiliateTripAction`, partes de `assignAffiliateDriverAction`)

@@ -968,10 +968,15 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
    estático del pasajero carga en el dispositivo real (posible
    restricción de referrer en la Google Maps key); (c) backlog explícito
    sin empezar: mapa embebido con posición propia (`react-native-maps`),
-   multi-stop, cola offline, i18n de la app (deferida a propósito). Hueco
-   de seguridad detectado y NO arreglado (flaggeado aparte): algunas
-   acciones de `app/actions/affiliates.ts` no validan rol/pertenencia
-   antes de mutar. Detalle completo y punto exacto para retomar en
+   multi-stop, cola offline, i18n de la app (deferida a propósito).
+   ✅ **Hueco de seguridad ya corregido (2026-07-10)**: `advanceAffiliateTripAction`
+   no validaba rol/pertenencia en absoluto — se separó en un core
+   (`advanceAffiliateTrip(user, affiliateTripId)`, valida que sea el
+   conductor asignado o staff de la empresa afiliada) + wrapper web
+   (resuelve el usuario por cookie); la ruta móvil ahora llama al core
+   directo con el usuario ya resuelto por bearer token. `assignAffiliateDriverAction`
+   se revisó de nuevo y ya tenía `requireRole` + ownership correctos, no
+   necesitó cambios. Detalle completo y punto exacto para retomar en
    `docs/PHASE-2-MOBILE.md` → "Estado al pausar (2026-07-10)".
 8. **Gaps mayores**: QuickBooks, e-signatures, promo codes, detección de
    conflictos de vehículo, nómina de conductores, WhatsApp Business.
