@@ -628,6 +628,7 @@ export const pt: Dictionary = {
       empty: 'Nenhum motorista em viagem ou coleta pendente com localização agora.',
       legendDriver: 'em viagem',
       legendPending: 'pendentes',
+      legendIdle: 'em serviço',
     },
     columns: {
       pending: 'Pendentes',

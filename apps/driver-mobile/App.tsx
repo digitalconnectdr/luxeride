@@ -14,6 +14,7 @@ import {
 } from '@expo-google-fonts/playfair-display'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
+import { useDriverPresenceReporter } from './lib/presenceReporter'
 import { color, font } from './lib/theme'
 import { ScreenLoader } from './components/ui'
 import { LoginScreen } from './screens/LoginScreen'
@@ -136,6 +137,15 @@ export default function App() {
       </>
     )
   }
+
+  return <DriverApp />
+}
+
+// Aparte para que useDriverPresenceReporter (que arranca su propio watch de
+// GPS) solo se monte cuando ya hay sesión válida de conductor — nunca en la
+// pantalla de login.
+function DriverApp() {
+  useDriverPresenceReporter()
 
   return (
     <NavigationContainer>

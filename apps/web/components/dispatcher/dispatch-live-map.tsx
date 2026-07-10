@@ -19,11 +19,18 @@ export interface DispatchLiveMapLabels {
   empty: string
   legendDriver: string
   legendPending: string
+  legendIdle: string
 }
 
 function markerIcon(color: string) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"><circle cx="11" cy="11" r="9" fill="${color}" stroke="#ffffff" stroke-width="2"/></svg>`
   return { url: `data:image/svg+xml;utf-8,${encodeURIComponent(svg)}` }
+}
+
+const MARKER_COLOR: Record<DispatchMapPoint['kind'], string> = {
+  driver: '#22c55e',
+  pending: '#f59e0b',
+  idle: '#3b82f6',
 }
 
 /** Encuadra el mapa según los puntos disponibles — con un solo punto, fitBounds
@@ -66,6 +73,7 @@ export function DispatchLiveMap({ labels }: { labels: DispatchLiveMapLabels }) {
 
   const driverCount = points.filter((p) => p.kind === 'driver').length
   const pendingCount = points.filter((p) => p.kind === 'pending').length
+  const idleCount = points.filter((p) => p.kind === 'idle').length
 
   if (!loaded) return null
 
@@ -77,6 +85,7 @@ export function DispatchLiveMap({ labels }: { labels: DispatchLiveMapLabels }) {
           <div className="flex items-center gap-3 text-[11px] text-sl-on-surface-muted">
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> {driverCount} {labels.legendDriver}</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> {pendingCount} {labels.legendPending}</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" /> {idleCount} {labels.legendIdle}</span>
           </div>
         )}
       </div>
@@ -96,10 +105,10 @@ export function DispatchLiveMap({ labels }: { labels: DispatchLiveMapLabels }) {
             <FitToPoints points={points} />
             {points.map((p) => (
               <Marker
-                key={p.bookingId}
+                key={p.id}
                 position={{ lat: p.lat, lng: p.lng }}
-                icon={markerIcon(p.kind === 'driver' ? '#22c55e' : '#f59e0b')}
-                title={p.bookingNumber}
+                icon={markerIcon(MARKER_COLOR[p.kind])}
+                title={p.label || undefined}
               />
             ))}
           </Map>

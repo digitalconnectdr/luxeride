@@ -156,6 +156,44 @@ Android real) antes de invertir en todas las pantallas de golpe:
   en Expo Go, exige un dev client custom + permisos adicionales de
   Android/iOS. Se deja para una fase posterior si hace falta.
 
+### Ronda 2 (2026-07-09, mismo día) — foto de perfil + presencia de flota + acciones portadas de la web
+
+A pedido del usuario ("no quiero que se vea de aficionados"):
+
+- **Foto de perfil del conductor**: `drivers.photo_url` (migración 43),
+  bucket público `avatars` ya existente (migración 12, RLS por carpeta
+  propia) — se sube desde `ProfileScreen` (`expo-image-picker`, galería) vía
+  `lib/upload.ts` → `uploadDriverAvatar`. Se muestra al pasajero en
+  `/track/[id]` (reemplaza el círculo con la inicial cuando hay foto),
+  incluyendo el caso de viaje farmed-in a un afiliado.
+- **Presencia "en servicio" para el Dispatch Board**: tabla nueva
+  `driver_presence` (migración 43, RLS: el conductor solo puede escribir su
+  propia fila) — independiente de `trip_locations` (que es por-reserva).
+  `lib/presenceReporter.ts` (`useDriverPresenceReporter`, montado en
+  `App.tsx` solo tras login) reporta la posición cada ~20s SIEMPRE que
+  `drivers.is_available = true`, tenga o no un viaje asignado. El Dispatch
+  Board (`refreshDispatchMapAction` en `app/actions/dispatch-map.ts`) ahora
+  pinta 3 tipos de punto: conductor en viaje (verde), recogida pendiente
+  (ámbar), conductor en servicio sin viaje activo (azul, `kind: 'idle'`) —
+  con leyenda i18n EN/ES/PT (`legendIdle`). Misma limitación de
+  primer-plano que el reporte por-viaje.
+- **Rechazar viaje asignado** y **reportar incidente en viaje activo**:
+  `driverRejectTripAction`/`reportDriverIncidentAction` en
+  `app/actions/driver.ts` refactorizadas al patrón núcleo+wrapper
+  (`driverRejectTrip`/`reportDriverIncident`), rutas nuevas
+  `/api/mobile/driver/reject-trip` y `/report-incident`. UI en
+  `TripDetailScreen`: botones secundarios (rechazar solo si `assigned`,
+  incidente solo en estados activos) que abren un formulario inline
+  (motivo / categoría + descripción).
+- **Calificar al pasajero**: `submitDriverRatingAction` refactorizada igual
+  (`submitDriverRating`), ruta `/api/mobile/driver/rate-passenger`. UI en
+  `EarningsScreen`: cada viaje completado sin calificar muestra "Calificar
+  pasajero" → 5 estrellas + comentario opcional.
+- **Fix de diseño pendiente encontrado en el camino**: `NEXT_ACTION_LABEL`
+  (`lib/types.ts`) todavía tenía emojis incrustados en el texto de los
+  botones, duplicando el ícono real ya agregado en el rediseño premium —
+  limpiado.
+
 ### Funciones avanzadas que la web tiene y la app nativa todavía NO (candidatas para seguir, sin construir)
 
 Comparadas contra `/driver/trips` en la web, que ya tiene años de iteración:
@@ -163,26 +201,21 @@ Comparadas contra `/driver/trips` en la web, que ya tiene años de iteración:
 1. **Chat con el pasajero dentro de la app** (`trip_messages` + Realtime) —
    hoy la app solo tiene Llamar/WhatsApp (salen de la app); la web tiene un
    chat completo con acuses de leído.
-2. **Rechazar un viaje asignado** y **reportar un incidente en viaje
-   activo** — ambos existen como server action + UI en la web
-   (`app/actions/driver.ts`), no portados a la app.
-3. **Calificar al pasajero** al completar el viaje (`submitDriverRatingAction`)
-   — existe en la web, no en la app.
-4. **Notificaciones push** cuando se le asigna un viaje nuevo — hoy el
+2. **Notificaciones push** cuando se le asigna un viaje nuevo — hoy el
    conductor tiene que abrir la app para enterarse; requiere tabla
    `device_tokens` + Expo push (ya estaba en el plan original de Sprint 0 de
    este documento).
-5. **Mapa embebido con posición en vivo propia** dentro de la app (en vez de
+3. **Mapa embebido con posición en vivo propia** dentro de la app (en vez de
    solo botones a Waze/Google Maps) — usaría `react-native-maps`.
-6. **Paradas adicionales (multi-stop)** y **vehículo asignado** — la web
+4. **Paradas adicionales (multi-stop)** y **vehículo asignado** — la web
    los muestra/soporta, la app no.
-7. **Viajes de la Red de Afiliados (Sección G, Fase 1 ya construida)**: los
+5. **Viajes de la Red de Afiliados (Sección G, Fase 1 ya construida)**: los
    viajes farmed-in NO aparecen en la app — la web los muestra en una
    sección aparte porque viven en `affiliate_trips`, no en `bookings`
    (la consulta actual de la app solo lee `bookings`). Si un conductor
    recibe viajes de afiliados, hoy tendría que seguir usando la web para
    verlos.
-8. **Cola offline** para zonas sin señal (aeropuertos) — estaba en el plan
+6. **Cola offline** para zonas sin señal (aeropuertos) — estaba en el plan
    original de Fase 2A, no construida aún ni en web ni en app.
 
 Ninguna de estas está construida todavía — quedan como backlog explícito

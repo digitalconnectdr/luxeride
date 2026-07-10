@@ -948,14 +948,19 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
    reales, haptics, motion) — falta que el usuario genere el primer APK
    real con `eas build` (su propia cuenta de expo.dev) y lo pruebe en un
    Android físico. También ya reporta GPS en vivo del conductor (mismo
-   patrón que la web) para no romper el mapa en vivo del pasajero — **con
-   la app en primer plano solamente**; reportar en segundo plano/pantalla
-   bloqueada queda pendiente, requiere build nativo custom (no funciona en
-   Expo Go). Funciones que la web tiene y la app aún no (chat con
-   pasajero, rechazar viaje/reportar incidente, calificar pasajero, push
-   de nuevo viaje asignado, mapa embebido, multi-stop, viajes de la Red de
-   Afiliados) quedan listadas como backlog explícito en
-   docs/PHASE-2-MOBILE.md → "Progreso (2026-07-09)".
+   patrón que la web) para no romper el mapa en vivo del pasajero, y ya
+   reporta presencia "en servicio" (migración 43, tabla `driver_presence`)
+   para que el Dispatch Board vea TODA la flota disponible, no solo
+   viajes activos — **ambos con la app en primer plano solamente**;
+   reportar en segundo plano/pantalla bloqueada queda pendiente, requiere
+   build nativo custom (no funciona en Expo Go). También agregada: foto de
+   perfil del conductor (visible al pasajero en `/track/[id]`), rechazar
+   viaje asignado, reportar incidente en viaje activo, y calificar al
+   pasajero al completar (las tres reusan la misma lógica ya construida en
+   la web). Funciones que la web tiene y la app aún no (chat con
+   pasajero, push de nuevo viaje asignado, mapa embebido, multi-stop,
+   viajes de la Red de Afiliados, cola offline) quedan listadas como
+   backlog explícito en docs/PHASE-2-MOBILE.md → "Progreso (2026-07-09)".
 8. **Gaps mayores**: QuickBooks, e-signatures, promo codes, detección de
    conflictos de vehículo, nómina de conductores, WhatsApp Business.
    Pospuesto a propósito. (farm-in/farm-out ya tiene diseño concreto, ver

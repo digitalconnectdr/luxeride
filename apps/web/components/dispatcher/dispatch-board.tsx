@@ -200,6 +200,7 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
           empty: t.liveMap.empty,
           legendDriver: t.liveMap.legendDriver,
           legendPending: t.liveMap.legendPending,
+          legendIdle: t.liveMap.legendIdle,
         }}
       />
 

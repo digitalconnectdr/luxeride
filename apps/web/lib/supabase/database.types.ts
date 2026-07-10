@@ -421,6 +421,7 @@ export type Database = {
           license_state: string | null
           license_photo_url: string | null
           insurance_photo_url: string | null
+          photo_url: string | null
           current_vehicle_id: string | null
           is_available: boolean
           rating: number | null
@@ -446,6 +447,7 @@ export type Database = {
           license_state?: string | null | undefined
           license_photo_url?: string | null | undefined
           insurance_photo_url?: string | null | undefined
+          photo_url?: string | null | undefined
           current_vehicle_id?: string | null | undefined
           is_available?: boolean | undefined
           rating?: number | null | undefined
@@ -471,6 +473,7 @@ export type Database = {
           license_state?: string | null | undefined
           license_photo_url?: string | null | undefined
           insurance_photo_url?: string | null | undefined
+          photo_url?: string | null | undefined
           current_vehicle_id?: string | null | undefined
           is_available?: boolean | undefined
           rating?: number | null | undefined
@@ -1048,6 +1051,33 @@ export type Database = {
           latitude?: number | undefined
           longitude?: number | undefined
           recorded_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── driver_presence (última posición del conductor mientras está "en
+      // servicio", independiente de tener un viaje activo — Dispatch Board) ──
+      driver_presence: {
+        Row: {
+          driver_id: string
+          company_id: string
+          latitude: number
+          longitude: number
+          updated_at: string
+        }
+        Insert: {
+          driver_id: string
+          company_id: string
+          latitude: number
+          longitude: number
+          updated_at?: string | undefined
+        }
+        Update: {
+          driver_id?: string | undefined
+          company_id?: string | undefined
+          latitude?: number | undefined
+          longitude?: number | undefined
+          updated_at?: string | undefined
         }
         Relationships: []
       }

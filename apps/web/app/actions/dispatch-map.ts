@@ -15,9 +15,9 @@ import type { BookingStatus } from '@/lib/supabase/database.types'
 const ACTIVE_STATUSES: BookingStatus[] = ['en_route', 'arrived', 'in_progress']
 
 export interface DispatchMapPoint {
-  bookingId: string
-  bookingNumber: string
-  kind: 'driver' | 'pending'
+  id: string
+  label: string
+  kind: 'driver' | 'pending' | 'idle'
   lat: number
   lng: number
 }
@@ -48,6 +48,7 @@ export async function refreshDispatchMapAction(): Promise<DispatchMapRefresh | n
   ])
 
   const activeBookingIds = (activeBookings ?? []).map((b) => b.id)
+  const driverIdsOnActiveTrip = new Set((activeBookings ?? []).map((b) => b.driver_id).filter(Boolean) as string[])
   const driverPosByBooking = new Map<string, { lat: number; lng: number }>()
   if (activeBookingIds.length) {
     const { data: locs } = await admin
@@ -67,12 +68,36 @@ export async function refreshDispatchMapAction(): Promise<DispatchMapRefresh | n
 
   for (const b of activeBookings ?? []) {
     const pos = driverPosByBooking.get(b.id)
-    if (pos) points.push({ bookingId: b.id, bookingNumber: b.booking_number, kind: 'driver', ...pos })
+    if (pos) points.push({ id: b.id, label: b.booking_number, kind: 'driver', ...pos })
   }
   for (const b of pendingBookings ?? []) {
     const loc = b.pickup_location as { lat?: number; lng?: number } | null
     if (typeof loc?.lat === 'number' && typeof loc?.lng === 'number') {
-      points.push({ bookingId: b.id, bookingNumber: b.booking_number, kind: 'pending', lat: loc.lat, lng: loc.lng })
+      points.push({ id: b.id, label: b.booking_number, kind: 'pending', lat: loc.lat, lng: loc.lng })
+    }
+  }
+
+  // Conductores "en servicio" (is_available=true) sin viaje activo — para que
+  // el dispatcher vea TODA la flota disponible, no solo los que están en
+  // ruta. Viene de driver_presence (reportado por la app/web mientras el
+  // conductor está disponible), no de trip_locations (que es por-reserva).
+  const { data: presenceRows } = await admin
+    .from('driver_presence')
+    .select('driver_id, latitude, longitude')
+    .eq('company_id', companyId)
+
+  if (presenceRows?.length) {
+    const { data: availableDrivers } = await admin
+      .from('drivers')
+      .select('id')
+      .in('id', presenceRows.map((p) => p.driver_id))
+      .eq('is_available', true)
+    const availableIds = new Set((availableDrivers ?? []).map((d) => d.id))
+
+    for (const p of presenceRows) {
+      if (!availableIds.has(p.driver_id)) continue
+      if (driverIdsOnActiveTrip.has(p.driver_id)) continue // ya representado como "driver"
+      points.push({ id: p.driver_id, label: '', kind: 'idle', lat: p.latitude, lng: p.longitude })
     }
   }
 

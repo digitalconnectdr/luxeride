@@ -1,14 +1,89 @@
 import { useCallback, useState } from 'react'
-import { View, Text, StyleSheet, RefreshControl, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, RefreshControl, ScrollView, TextInput } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
-import { Card, EmptyState, ScreenLoader, SectionLabel } from '../components/ui'
+import { callDriverApi } from '../lib/api'
+import { PressableScale } from '../components/PressableScale'
+import { Button, Card, EmptyState, ScreenLoader, SectionLabel } from '../components/ui'
 import { color, font, radius, space } from '../lib/theme'
 import type { DriverBooking } from '../lib/types'
 
-interface CompletedTrip extends Pick<DriverBooking, 'id' | 'booking_number' | 'passenger_name' | 'total_amount' | 'currency' | 'completed_at'> {}
+interface CompletedTrip
+  extends Pick<DriverBooking, 'id' | 'booking_number' | 'passenger_name' | 'total_amount' | 'currency' | 'completed_at'> {
+  driver_rated_at: string | null
+}
+
+function TripRow({ trip, isFirst, onRated }: { trip: CompletedTrip; isFirst: boolean; onRated: (id: string) => void }) {
+  const [expanded, setExpanded] = useState(false)
+  const [stars, setStars] = useState(0)
+  const [comment, setComment] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function submitRating() {
+    if (stars < 1) return
+    setSubmitting(true)
+    const result = await callDriverApi('rate-passenger', { bookingId: trip.id, rating: stars, comment })
+    setSubmitting(false)
+    if (result.success) {
+      setExpanded(false)
+      onRated(trip.id)
+    }
+  }
+
+  return (
+    <View style={[styles.tripRow, !isFirst && styles.tripRowDivider]}>
+      <View style={styles.tripRowMain}>
+        <View style={styles.tripIconWrap}>
+          <Ionicons name="checkmark" size={14} color={color.success} />
+        </View>
+        <View style={styles.tripInfo}>
+          <Text style={styles.tripPassenger}>{trip.passenger_name ?? 'Sin nombre'}</Text>
+          <Text style={styles.tripMeta}>
+            {trip.booking_number} ·{' '}
+            {trip.completed_at
+              ? new Date(trip.completed_at).toLocaleDateString('es-DO', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+              : '—'}
+          </Text>
+        </View>
+        <Text style={styles.tripAmount}>{trip.total_amount != null ? `$${Number(trip.total_amount).toFixed(2)}` : '—'}</Text>
+      </View>
+
+      {trip.driver_rated_at ? (
+        <View style={styles.ratedRow}>
+          <Ionicons name="star" size={12} color={color.gold} />
+          <Text style={styles.ratedText}>Pasajero calificado</Text>
+        </View>
+      ) : (
+        <PressableScale style={styles.rateButton} onPress={() => setExpanded((v) => !v)}>
+          <Ionicons name="star-outline" size={13} color={color.gold} />
+          <Text style={styles.rateButtonText}>Calificar pasajero</Text>
+        </PressableScale>
+      )}
+
+      {expanded && (
+        <View style={styles.ratingPanel}>
+          <View style={styles.starsRow}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <PressableScale key={n} onPress={() => setStars(n)} haptic="light">
+                <Ionicons name={n <= stars ? 'star' : 'star-outline'} size={26} color={color.gold} />
+              </PressableScale>
+            ))}
+          </View>
+          <TextInput
+            style={styles.commentInput}
+            placeholder="Comentario (opcional)"
+            placeholderTextColor={color.inkFaint}
+            value={comment}
+            onChangeText={setComment}
+          />
+          <Button label="Guardar calificación" icon="checkmark" onPress={submitRating} loading={submitting} disabled={stars < 1} />
+        </View>
+      )}
+    </View>
+  )
+}
 
 export function EarningsScreen() {
   const [totalEarnings, setTotalEarnings] = useState<number | null>(null)
@@ -26,7 +101,7 @@ export function EarningsScreen() {
       supabase.from('drivers').select('total_earnings, total_trips').eq('id', user.id).maybeSingle(),
       supabase
         .from('bookings')
-        .select('id, booking_number, passenger_name, total_amount, currency, completed_at')
+        .select('id, booking_number, passenger_name, total_amount, currency, completed_at, driver_rated_at')
         .eq('driver_id', user.id)
         .eq('status', 'completed')
         .order('completed_at', { ascending: false })
@@ -44,6 +119,10 @@ export function EarningsScreen() {
       load()
     }, [load]),
   )
+
+  function markRated(id: string) {
+    setTrips((prev) => prev.map((t) => (t.id === id ? { ...t, driver_rated_at: new Date().toISOString() } : t)))
+  }
 
   if (loading) return <ScreenLoader />
 
@@ -71,18 +150,7 @@ export function EarningsScreen() {
       ) : (
         <Card style={styles.listCard}>
           {trips.map((t, i) => (
-            <View key={t.id} style={[styles.tripRow, i > 0 && styles.tripRowDivider]}>
-              <View style={styles.tripIconWrap}>
-                <Ionicons name="checkmark" size={14} color={color.success} />
-              </View>
-              <View style={styles.tripInfo}>
-                <Text style={styles.tripPassenger}>{t.passenger_name ?? 'Sin nombre'}</Text>
-                <Text style={styles.tripMeta}>
-                  {t.booking_number} · {t.completed_at ? new Date(t.completed_at).toLocaleDateString('es-DO', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
-                </Text>
-              </View>
-              <Text style={styles.tripAmount}>{t.total_amount != null ? `$${Number(t.total_amount).toFixed(2)}` : '—'}</Text>
-            </View>
+            <TripRow key={t.id} trip={t} isFirst={i === 0} onRated={markRated} />
           ))}
         </Card>
       )}
@@ -106,8 +174,9 @@ const styles = StyleSheet.create({
   heroFooter: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: space.md },
   heroFooterText: { color: color.inkFaint, fontFamily: font.body, fontSize: 12 },
   listCard: { padding: 0, overflow: 'hidden' },
-  tripRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },
+  tripRow: { padding: space.lg },
   tripRowDivider: { borderTopWidth: 1, borderTopColor: color.border },
+  tripRowMain: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   tripIconWrap: {
     width: 30,
     height: 30,
@@ -120,4 +189,21 @@ const styles = StyleSheet.create({
   tripPassenger: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 14 },
   tripMeta: { color: color.inkFaint, fontFamily: font.body, fontSize: 11, marginTop: 2 },
   tripAmount: { color: color.ink, fontFamily: font.bodyBold, fontSize: 15 },
+  ratedRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: space.sm, marginLeft: 42 },
+  ratedText: { color: color.inkFaint, fontFamily: font.body, fontSize: 11 },
+  rateButton: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: space.sm, marginLeft: 42 },
+  rateButtonText: { color: color.gold, fontFamily: font.bodySemi, fontSize: 12 },
+  ratingPanel: { marginTop: space.md, marginLeft: 42, gap: space.sm },
+  starsRow: { flexDirection: 'row', gap: space.sm },
+  commentInput: {
+    backgroundColor: color.bg,
+    color: color.ink,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: color.border,
+    paddingHorizontal: space.md,
+    paddingVertical: 10,
+    fontFamily: font.body,
+    fontSize: 13,
+  },
 })

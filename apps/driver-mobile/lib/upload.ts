@@ -38,3 +38,22 @@ export async function uploadPassengerSignature(
   const raw = signatureBase64.includes(',') ? signatureBase64.split(',')[1] : signatureBase64
   return uploadBase64(`${userId}/signatures/${bookingId}.png`, raw, 'image/png')
 }
+
+// ── Foto de perfil (bucket "avatars", público) ──────────────────────────────
+// Bucket ya existente (migración 12), con policy que permite a cada usuario
+// subir/actualizar SOLO su propia carpeta. Al ser público, se devuelve la URL
+// pública directamente (el pasajero la ve en /track/[id] sin necesitar sesión).
+
+export async function uploadDriverAvatar(userId: string, localUri: string): Promise<{ url?: string; error?: string }> {
+  const base64 = await FileSystem.readAsStringAsync(localUri, { encoding: FileSystem.EncodingType.Base64 })
+  const path = `${userId}/avatar.jpg`
+  const { error } = await supabase.storage.from('avatars').upload(path, decode(base64), {
+    contentType: 'image/jpeg',
+    upsert: true,
+  })
+  if (error) return { error: error.message }
+  const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+  // Cache-bust: el bucket es público y el path no cambia entre fotos, así que
+  // sin esto la imagen vieja quedaría cacheada en el cliente del pasajero.
+  return { url: `${data.publicUrl}?t=${Date.now()}` }
+}

@@ -34,14 +34,15 @@ export interface DriverRow {
   license_expiry: string | null
   license_photo_url: string | null
   insurance_photo_url: string | null
+  photo_url: string | null
   chauffeur_permit_expires_at: string | null
 }
 
 export const NEXT_ACTION_LABEL: Partial<Record<BookingStatus, string>> = {
-  assigned: '🚗 Ir al punto de recogida',
-  en_route: '📍 Marcar como llegué',
-  arrived: '▶️ Iniciar viaje',
-  in_progress: '✓ Completar viaje',
+  assigned: 'Ir al punto de recogida',
+  en_route: 'Marcar como llegué',
+  arrived: 'Iniciar viaje',
+  in_progress: 'Completar viaje',
 }
 
 export const STATUS_LABEL: Partial<Record<BookingStatus, string>> = {

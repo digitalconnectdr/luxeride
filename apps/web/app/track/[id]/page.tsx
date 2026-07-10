@@ -50,13 +50,16 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
 
   if (!booking) return notFound()
 
-  const [companyRes, driverRes, vehicleRes] = await Promise.all([
+  const [companyRes, driverRes, vehicleRes, driverPhotoRes] = await Promise.all([
     admin.from('companies').select('name, phone, primary_color, logo_url').eq('id', booking.company_id).single(),
     booking.driver_id
       ? admin.from('user_profiles').select('first_name').eq('id', booking.driver_id).single()
       : Promise.resolve({ data: null }),
     booking.vehicle_id
       ? admin.from('vehicles').select('make, model, color, plate_number').eq('id', booking.vehicle_id).single()
+      : Promise.resolve({ data: null }),
+    booking.driver_id
+      ? admin.from('drivers').select('photo_url').eq('id', booking.driver_id).maybeSingle()
       : Promise.resolve({ data: null }),
   ])
 
@@ -67,6 +70,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const initial = companyName.trim().charAt(0).toUpperCase() || 'L'
   let driver = driverRes.data as { first_name: string } | null
   let vehicle = vehicleRes.data as { make: string; model: string; color: string | null; plate_number: string } | null
+  let driverPhotoUrl = (driverPhotoRes.data as { photo_url: string | null } | null)?.photo_url ?? null
 
   // ── Sección G — si este viaje fue enviado a un afiliado, el progreso real
   // (conductor, vehículo, estado) vive en affiliate_trips — bookings.driver_id/
@@ -92,7 +96,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
     affiliateStamps.in_progress = affiliateTrip.started_at
     affiliateStamps.completed = affiliateTrip.completed_at
 
-    const [{ data: affDriver }, { data: affVehicle }, { data: affCompany }] = await Promise.all([
+    const [{ data: affDriver }, { data: affVehicle }, { data: affCompany }, { data: affDriverPhoto }] = await Promise.all([
       affiliateTrip.driver_id
         ? admin.from('user_profiles').select('first_name').eq('id', affiliateTrip.driver_id).single()
         : Promise.resolve({ data: null }),
@@ -100,9 +104,13 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
         ? admin.from('vehicles').select('make, model, color, plate_number').eq('id', affiliateTrip.vehicle_id).single()
         : Promise.resolve({ data: null }),
       admin.from('companies').select('name').eq('id', affiliateTrip.affiliate_company_id).single(),
+      affiliateTrip.driver_id
+        ? admin.from('drivers').select('photo_url').eq('id', affiliateTrip.driver_id).maybeSingle()
+        : Promise.resolve({ data: null }),
     ])
     if (affDriver) driver = affDriver
     if (affVehicle) vehicle = affVehicle
+    driverPhotoUrl = affDriverPhoto?.photo_url ?? null
     const affiliateName = affCompany?.name ?? '—'
     if (affiliateTrip.branding_mode === 'operated_by') operatedByLine = affiliateName
     else if (affiliateTrip.branding_mode === 'co_branded') operatedByLine = `${companyName} · ${affiliateName}`
@@ -436,9 +444,17 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
           <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40 mb-4">{t.yourDriver}</p>
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-[#08080a] font-bold ring-2 ring-white/10" style={{ backgroundColor: brandColor }}>
-                {driver.first_name.trim().charAt(0).toUpperCase()}
-              </div>
+              {driverPhotoUrl ? (
+                <img
+                  src={driverPhotoUrl}
+                  alt={driver.first_name}
+                  className="w-12 h-12 rounded-full object-cover shrink-0 ring-2 ring-white/10"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-[#08080a] font-bold ring-2 ring-white/10" style={{ backgroundColor: brandColor }}>
+                  {driver.first_name.trim().charAt(0).toUpperCase()}
+                </div>
+              )}
               <div className="min-w-0">
                 <p className="font-medium truncate">{driver.first_name}</p>
                 <p className="text-[11px] text-white/40">{t.driverRole}</p>

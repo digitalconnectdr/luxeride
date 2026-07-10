@@ -33,6 +33,16 @@ const ACTION_ICON: Partial<Record<BookingStatus, keyof typeof Ionicons.glyphMap>
   in_progress: 'checkmark-done',
 }
 
+const ACTIVE_INCIDENT_STATUSES = new Set<BookingStatus>(['en_route', 'arrived', 'in_progress'])
+
+const INCIDENT_CATEGORIES: { value: string; label: string }[] = [
+  { value: 'accident', label: 'Accidente' },
+  { value: 'breakdown', label: 'Avería del vehículo' },
+  { value: 'safety', label: 'Seguridad' },
+  { value: 'unable_to_reach_passenger', label: 'No localizo al pasajero' },
+  { value: 'other', label: 'Otro' },
+]
+
 type Props = NativeStackScreenProps<TripsStackParamList, 'TripDetail'>
 
 export function TripDetailScreen({ route, navigation }: Props) {
@@ -44,6 +54,14 @@ export function TripDetailScreen({ route, navigation }: Props) {
   const [showComplete, setShowComplete] = useState(false)
   const [cashAmount, setCashAmount] = useState('')
   const [signatureBase64, setSignatureBase64] = useState<string | null>(null)
+  const [showReject, setShowReject] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
+  const [rejecting, setRejecting] = useState(false)
+  const [showIncident, setShowIncident] = useState(false)
+  const [incidentCategory, setIncidentCategory] = useState<string | null>(null)
+  const [incidentReason, setIncidentReason] = useState('')
+  const [reportingIncident, setReportingIncident] = useState(false)
+  const [incidentSent, setIncidentSent] = useState(false)
 
   const { pauseNotice, dismissPauseNotice } = useDriverLocationReporter(trip?.id ?? '', trip?.status ?? 'pending')
 
@@ -109,6 +127,36 @@ export function TripDetailScreen({ route, navigation }: Props) {
     } else {
       setShowComplete(false)
       navigation.goBack()
+    }
+  }
+
+  async function rejectTrip() {
+    if (!trip) return
+    setRejecting(true)
+    setError('')
+    const result = await callDriverApi('reject-trip', { bookingId: trip.id, reason: rejectReason })
+    setRejecting(false)
+    if (!result.success) setError(result.error ?? 'No se pudo rechazar el viaje')
+    else navigation.goBack()
+  }
+
+  async function submitIncident() {
+    if (!trip || !incidentCategory) return
+    setReportingIncident(true)
+    setError('')
+    const result = await callDriverApi('report-incident', {
+      bookingId: trip.id,
+      category: incidentCategory,
+      reason: incidentReason,
+    })
+    setReportingIncident(false)
+    if (!result.success) {
+      setError(result.error ?? 'No se pudo registrar el incidente')
+    } else {
+      setShowIncident(false)
+      setIncidentCategory(null)
+      setIncidentReason('')
+      setIncidentSent(true)
     }
   }
 
@@ -233,6 +281,112 @@ export function TripDetailScreen({ route, navigation }: Props) {
         />
       )}
 
+      {!showComplete && !showReject && !showIncident && (trip.status === 'assigned' || ACTIVE_INCIDENT_STATUSES.has(trip.status)) && (
+        <View style={styles.secondaryActionsRow}>
+          {trip.status === 'assigned' && (
+            <PressableScale style={styles.secondaryAction} onPress={() => setShowReject(true)}>
+              <Ionicons name="close-circle-outline" size={15} color={color.danger} />
+              <Text style={styles.secondaryActionTextDanger}>Rechazar viaje</Text>
+            </PressableScale>
+          )}
+          {ACTIVE_INCIDENT_STATUSES.has(trip.status) && !incidentSent && (
+            <PressableScale style={styles.secondaryAction} onPress={() => setShowIncident(true)}>
+              <Ionicons name="warning-outline" size={15} color={color.warning} />
+              <Text style={styles.secondaryActionText}>Reportar incidente</Text>
+            </PressableScale>
+          )}
+        </View>
+      )}
+
+      {incidentSent && (
+        <View style={styles.incidentSentRow}>
+          <Ionicons name="checkmark-circle" size={14} color={color.success} />
+          <Text style={styles.incidentSentText}>Incidente reportado al equipo de operaciones</Text>
+        </View>
+      )}
+
+      {showReject && (
+        <Card>
+          <Text style={styles.sectionTitle}>Rechazar viaje</Text>
+          <SectionLabel>Motivo (opcional)</SectionLabel>
+          <TextInput
+            style={styles.reasonInput}
+            placeholder="Ej. muy lejos de mi ubicación actual"
+            placeholderTextColor={color.inkFaint}
+            value={rejectReason}
+            onChangeText={setRejectReason}
+            multiline
+          />
+          <View style={styles.formActionsRow}>
+            <Button
+              label="Cancelar"
+              variant="secondary"
+              onPress={() => setShowReject(false)}
+              disabled={rejecting}
+              style={styles.formActionButton}
+            />
+            <Button
+              label="Confirmar rechazo"
+              icon="close-circle"
+              variant="danger"
+              onPress={rejectTrip}
+              loading={rejecting}
+              haptic="medium"
+              style={styles.formActionButton}
+            />
+          </View>
+        </Card>
+      )}
+
+      {showIncident && (
+        <Card>
+          <Text style={styles.sectionTitle}>Reportar incidente</Text>
+          <SectionLabel>Categoría</SectionLabel>
+          <View style={styles.categoryChips}>
+            {INCIDENT_CATEGORIES.map((c) => (
+              <PressableScale
+                key={c.value}
+                style={[styles.categoryChip, incidentCategory === c.value && styles.categoryChipActive]}
+                onPress={() => setIncidentCategory(c.value)}
+              >
+                <Text style={[styles.categoryChipText, incidentCategory === c.value && styles.categoryChipTextActive]}>
+                  {c.label}
+                </Text>
+              </PressableScale>
+            ))}
+          </View>
+
+          <SectionLabel>Describe brevemente lo ocurrido</SectionLabel>
+          <TextInput
+            style={styles.reasonInput}
+            placeholder="¿Qué pasó?"
+            placeholderTextColor={color.inkFaint}
+            value={incidentReason}
+            onChangeText={setIncidentReason}
+            multiline
+          />
+
+          <View style={styles.formActionsRow}>
+            <Button
+              label="Cancelar"
+              variant="secondary"
+              onPress={() => setShowIncident(false)}
+              disabled={reportingIncident}
+              style={styles.formActionButton}
+            />
+            <Button
+              label="Enviar reporte"
+              icon="send"
+              onPress={submitIncident}
+              loading={reportingIncident}
+              disabled={!incidentCategory || !incidentReason.trim()}
+              haptic="medium"
+              style={styles.formActionButton}
+            />
+          </View>
+        </Card>
+      )}
+
       {showComplete && (
         <Card>
           <Text style={styles.sectionTitle}>Completar viaje</Text>
@@ -338,4 +492,38 @@ const styles = StyleSheet.create({
   signatureSavedRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: space.sm },
   signatureSaved: { color: color.success, fontFamily: font.bodyMedium, fontSize: 12 },
   completeButton: { marginTop: space.lg },
+  secondaryActionsRow: { flexDirection: 'row', justifyContent: 'center', gap: space.xl },
+  secondaryAction: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: space.sm },
+  secondaryActionText: { color: color.inkMuted, fontFamily: font.bodyMedium, fontSize: 13 },
+  secondaryActionTextDanger: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 13 },
+  incidentSentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  incidentSentText: { color: color.success, fontFamily: font.bodyMedium, fontSize: 12 },
+  reasonInput: {
+    backgroundColor: color.bg,
+    color: color.ink,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: color.border,
+    padding: space.md,
+    fontFamily: font.body,
+    fontSize: 14,
+    minHeight: 70,
+    textAlignVertical: 'top',
+    marginTop: space.sm,
+    marginBottom: space.lg,
+  },
+  formActionsRow: { flexDirection: 'row', gap: space.sm },
+  formActionButton: { flex: 1 },
+  categoryChips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.sm, marginBottom: space.lg },
+  categoryChip: {
+    paddingHorizontal: space.md,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.borderStrong,
+    backgroundColor: color.surfaceRaised,
+  },
+  categoryChipActive: { backgroundColor: `${color.warning}22`, borderColor: color.warning },
+  categoryChipText: { color: color.inkMuted, fontFamily: font.bodyMedium, fontSize: 12 },
+  categoryChipTextActive: { color: color.warning },
 })

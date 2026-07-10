@@ -628,6 +628,7 @@ export const es: Dictionary = {
       empty: 'Sin conductores en viaje ni recogidas pendientes con ubicación ahora mismo.',
       legendDriver: 'en viaje',
       legendPending: 'pendientes',
+      legendIdle: 'en servicio',
     },
     columns: {
       pending: 'Pendientes',

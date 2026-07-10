@@ -627,6 +627,7 @@ export const en = {
       empty: 'No drivers en route or pending pickups with a location right now.',
       legendDriver: 'en route',
       legendPending: 'pending',
+      legendIdle: 'on duty',
     },
     columns: {
       pending: 'Pending',

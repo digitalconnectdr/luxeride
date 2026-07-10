@@ -252,7 +252,8 @@ export async function driverNoShowAction(
 // Espejo de submitReviewAction (pasajero→conductor). Solo el conductor asignado,
 // solo viajes completados, solo una vez. Nunca se muestra al pasajero.
 
-export async function submitDriverRatingAction(
+export async function submitDriverRating(
+  user: SessionUser,
   bookingId: string,
   rating: number,
   comment: string,
@@ -262,7 +263,6 @@ export async function submitDriverRatingAction(
     return { success: false, error: 'Calificación inválida' }
   }
 
-  const user = await requireRole('driver')
   const admin = createAdminClient()
 
   const { data: booking } = await admin
@@ -295,6 +295,15 @@ export async function submitDriverRatingAction(
 
   revalidatePath('/driver/trips')
   return { success: true }
+}
+
+export async function submitDriverRatingAction(
+  bookingId: string,
+  rating: number,
+  comment: string,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('driver')
+  return submitDriverRating(user, bookingId, rating, comment)
 }
 
 // ─── Revelar número del pasajero (bajo demanda, con auditoría) ─────────────────
@@ -346,11 +355,11 @@ export async function revealPassengerPhoneAction(
 // el viaje de vuelta a 'pending' para que el dispatcher lo reasigne, y deja
 // registro del motivo en booking_events (bitácora, no cambia el enum de status).
 
-export async function driverRejectTripAction(
+export async function driverRejectTrip(
+  user: SessionUser,
   bookingId: string,
   reason: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const user = await requireRole('driver')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
   const admin = createAdminClient()
@@ -392,6 +401,14 @@ export async function driverRejectTripAction(
   return { success: true }
 }
 
+export async function driverRejectTripAction(
+  bookingId: string,
+  reason: string,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('driver')
+  return driverRejectTrip(user, bookingId, reason)
+}
+
 // ─── Reportar un incidente durante un viaje activo ─────────────────────────────
 // No cambia el estado del viaje (es una alerta, no una transición) — el
 // operador decide qué hacer (reasignar, cancelar, dejar continuar) desde el
@@ -399,7 +416,8 @@ export async function driverRejectTripAction(
 
 const INCIDENT_CATEGORIES = ['accident', 'breakdown', 'safety', 'unable_to_reach_passenger', 'other']
 
-export async function reportDriverIncidentAction(
+export async function reportDriverIncident(
+  user: SessionUser,
   bookingId: string,
   category: string,
   reason: string,
@@ -408,7 +426,6 @@ export async function reportDriverIncidentAction(
   const cleanReason = reason.trim()
   if (!cleanReason) return { success: false, error: 'Describe brevemente el incidente' }
 
-  const user = await requireRole('driver')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
   const admin = createAdminClient()
@@ -467,4 +484,13 @@ export async function reportDriverIncidentAction(
   revalidatePath('/driver/trips')
   revalidatePath('/dispatcher/dashboard')
   return { success: true }
+}
+
+export async function reportDriverIncidentAction(
+  bookingId: string,
+  category: string,
+  reason: string,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('driver')
+  return reportDriverIncident(user, bookingId, category, reason)
 }
