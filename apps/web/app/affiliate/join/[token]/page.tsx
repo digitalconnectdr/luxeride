@@ -17,8 +17,8 @@ export default async function AffiliateJoinPage({ params }: { params: { token: s
   const preview = await getAffiliateInvitePreviewAction(params.token)
 
   return (
-    <div className="min-h-screen bg-sl-bg flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-sl-bg flex items-center justify-center p-4 py-10">
+      <div className={`w-full ${preview?.valid ? 'max-w-2xl' : 'max-w-md'}`}>
         <div className="mb-8 text-center">
           <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface mb-2">{t.pageTitle}</h1>
           {preview?.valid && (

@@ -662,6 +662,18 @@ export async function createAffiliateInviteAction(
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
   const admin = createAdminClient()
+  // La UI ya oculta este botón si la Red de Afiliados no está habilitada,
+  // pero eso es solo cosmético — se valida también acá para que no sea
+  // posible generar invitaciones llamando la acción directo sin el addon.
+  const { data: company } = await admin
+    .from('companies')
+    .select('affiliate_network_enabled')
+    .eq('id', user.company_id)
+    .single()
+  if (!company?.affiliate_network_enabled) {
+    return { success: false, error: 'La red de afiliados no está activa para tu empresa' }
+  }
+
   const token = crypto.randomUUID()
   const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * 86_400_000)
 
