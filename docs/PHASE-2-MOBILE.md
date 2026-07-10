@@ -403,3 +403,29 @@ Pantallas:
   donde haga falta (pagos).
 - **Driver app primero**: es la que vende a los operadores (su dolor diario);
   la passenger app es el diferenciador de pricing vs Moovs/LA.
+
+## Ronda 6 — Agente de revisión automática
+
+Sin emulador/simulador disponible en este entorno, cada ronda de UX
+dependía de que el usuario probara en su teléfono físico y reportara cada
+detalle manualmente. Se creó `.claude/agents/mobile-ux-reviewer.md`: un
+agente de revisión estática especializado en `apps/driver-mobile` que
+corre DESPUÉS de cada tanda de cambios y ANTES de reportar "listo" al
+usuario. Su checklist codifica las clases de bug ya encontradas en esta
+app (propagación de estilos de tamaño en wrappers como `PressableScale`,
+conflictos de gesto ScrollView vs. canvas de firma, placeholders que
+parecen error, overflow de texto en labels largos en español, deriva del
+design system, jerarquía de acción primaria/secundaria, ownership en
+rutas API móviles) más un checklist general de RN/Expo.
+
+Primera corrida (commit `7751889`) encontró 4 problemas reales, todos
+corregidos: touch targets de <20px en los botones Waze/Google Maps
+(`TripDetailScreen.tsx`, `AffiliateTripDetailScreen.tsx`) y en las
+estrellas de calificación (`EarningsScreen.tsx`); el label de estado en
+`AffiliateTripDetailScreen.tsx` sin `numberOfLines`/`flexShrink` (mismo
+riesgo de overflow que ya se había corregido en el hero de estado de
+`TripDetailScreen.tsx`, pero no se había replicado ahí); y un color
+hardcodeado en `SignatureModal.tsx` que duplicaba `color.ink` de
+`lib/theme.ts`. Confirmó también que el fix de `PressableScale`, las
+nuevas rutas API móviles (auth + ownership) y el patrón mapa-sin-placeholder
+quedaron correctos.
