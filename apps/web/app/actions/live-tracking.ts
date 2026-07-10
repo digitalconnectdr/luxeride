@@ -6,6 +6,7 @@
 
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
+import type { SessionUser } from '@/lib/auth/session'
 import { consumeLiveTrackingQuota } from '@/lib/tracking/live-tracking-quota'
 import type { LatLng } from '@/lib/tracking/static-map-url'
 
@@ -14,13 +15,15 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const ACTIVE_TRIP_STATUSES = new Set(['assigned', 'en_route', 'arrived', 'in_progress'])
 
 // ─── Reportar posición (conductor) ─────────────────────────────────────────────
+// Núcleo compartido: recibe un SessionUser ya resuelto (por cookie en la web,
+// por bearer token en la app móvil — ver app/api/mobile/driver/report-location).
 
-export async function reportDriverLocationAction(
+export async function reportDriverLocation(
+  user: SessionUser,
   bookingId: string,
   lat: number,
   lng: number,
 ): Promise<{ success: boolean; error?: string }> {
-  const user = await requireRole('driver')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
   if (!UUID_RE.test(bookingId)) return { success: false, error: 'Reserva inválida' }
   if (typeof lat !== 'number' || typeof lng !== 'number' || Number.isNaN(lat) || Number.isNaN(lng)) {
@@ -48,6 +51,15 @@ export async function reportDriverLocationAction(
   })
   if (error) return { success: false, error: 'Error al guardar ubicación' }
   return { success: true }
+}
+
+export async function reportDriverLocationAction(
+  bookingId: string,
+  lat: number,
+  lng: number,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('driver')
+  return reportDriverLocation(user, bookingId, lat, lng)
 }
 
 // ─── Reportar posición (pasajero, opt-in explícito) ────────────────────────────

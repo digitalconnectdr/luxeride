@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
 import { callDriverApi } from '../lib/api'
 import { uploadPassengerSignature } from '../lib/upload'
+import { useDriverLocationReporter } from '../lib/locationReporter'
 import { SignaturePad } from '../components/SignaturePad'
 import { PressableScale } from '../components/PressableScale'
 import { Button, Card, ScreenLoader, SectionLabel, StatusBadge } from '../components/ui'
@@ -43,6 +44,8 @@ export function TripDetailScreen({ route, navigation }: Props) {
   const [showComplete, setShowComplete] = useState(false)
   const [cashAmount, setCashAmount] = useState('')
   const [signatureBase64, setSignatureBase64] = useState<string | null>(null)
+
+  const { pauseNotice, dismissPauseNotice } = useDriverLocationReporter(trip?.id ?? '', trip?.status ?? 'pending')
 
   const loadTrip = useCallback(async () => {
     const { data } = await supabase.from('bookings').select(BOOKING_COLUMNS).eq('id', tripId).maybeSingle()
@@ -125,6 +128,15 @@ export function TripDetailScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {pauseNotice && (
+        <PressableScale style={styles.pauseBanner} onPress={dismissPauseNotice}>
+          <Ionicons name="location-outline" size={16} color={color.warning} />
+          <Text style={styles.pauseBannerText}>
+            Tu ubicación dejó de compartirse mientras la app estuvo en segundo plano
+          </Text>
+        </PressableScale>
+      )}
+
       <Card>
         <View style={styles.topRow}>
           <Text style={styles.bookingNumber}>{trip.booking_number}</Text>
@@ -265,6 +277,17 @@ const styles = StyleSheet.create({
   content: { padding: space.xl, gap: space.md, flexGrow: 1 },
   center: { flex: 1, backgroundColor: color.bg, justifyContent: 'center', alignItems: 'center', gap: space.sm },
   emptyText: { color: color.inkFaint, fontFamily: font.body, fontSize: 14 },
+  pauseBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    backgroundColor: color.warningSoft,
+    borderWidth: 1,
+    borderColor: `${color.warning}55`,
+    borderRadius: radius.md,
+    padding: space.md,
+  },
+  pauseBannerText: { flex: 1, color: color.warning, fontFamily: font.bodyMedium, fontSize: 12, lineHeight: 17 },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   bookingNumber: { color: color.inkFaint, fontFamily: font.bodySemi, fontSize: 12, letterSpacing: 1 },
   divider: { height: 1, backgroundColor: color.border, marginVertical: space.lg },

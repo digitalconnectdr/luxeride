@@ -947,8 +947,15 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
    producción, y rediseño visual premium (tipografía de marca, iconos
    reales, haptics, motion) — falta que el usuario genere el primer APK
    real con `eas build` (su propia cuenta de expo.dev) y lo pruebe en un
-   Android físico. Detalle completo en docs/PHASE-2-MOBILE.md → "Progreso
-   (2026-07-09)".
+   Android físico. También ya reporta GPS en vivo del conductor (mismo
+   patrón que la web) para no romper el mapa en vivo del pasajero — **con
+   la app en primer plano solamente**; reportar en segundo plano/pantalla
+   bloqueada queda pendiente, requiere build nativo custom (no funciona en
+   Expo Go). Funciones que la web tiene y la app aún no (chat con
+   pasajero, rechazar viaje/reportar incidente, calificar pasajero, push
+   de nuevo viaje asignado, mapa embebido, multi-stop, viajes de la Red de
+   Afiliados) quedan listadas como backlog explícito en
+   docs/PHASE-2-MOBILE.md → "Progreso (2026-07-09)".
 8. **Gaps mayores**: QuickBooks, e-signatures, promo codes, detección de
    conflictos de vehículo, nómina de conductores, WhatsApp Business.
    Pospuesto a propósito. (farm-in/farm-out ya tiene diseño concreto, ver

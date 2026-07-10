@@ -135,7 +135,59 @@ Android real) antes de invertir en todas las pantallas de golpe:
   conductores lo instalen.
 - **Pendiente de decisión**: la app quedó 100% en español (divergiendo del
   resto de la plataforma, que es EN/ES/PT estricto) — flagged al usuario,
-  sin decidir todavía si se le agrega i18n completo.
+  sin decidir todavía si se le agrega i18n completo. Decisión 2026-07-09:
+  primero terminar/probar la app, traducir después.
+- **Reporte de GPS en vivo (2026-07-09)** — la app ya reporta la posición del
+  conductor mientras el viaje está activo, igual que la web
+  (`live-location-reporter.tsx`, throttle ~8s, mismos estados activos), para
+  que `/track/[id]` (mapa en vivo del pasajero) funcione igual sin importar
+  si el conductor usa la web o la app nativa. `reportDriverLocationAction`
+  en `app/actions/live-tracking.ts` se refactorizó al mismo patrón núcleo +
+  wrapper que ya usaban `advanceDriverTrip`/`setDriverAvailability`
+  (`reportDriverLocation(user, ...)` + ruta nueva
+  `/api/mobile/driver/report-location`). En el cliente:
+  `lib/locationReporter.ts` (hook `useDriverLocationReporter`, usa
+  `expo-location`'s `watchPositionAsync`), montado en `TripDetailScreen` —
+  incluye el mismo aviso que la web cuando la app vuelve de segundo plano
+  ("tu ubicación dejó de compartirse").
+  **Limitación pendiente (NO resuelta, requiere build nativo custom):** solo
+  reporta con la app en primer plano. Reportar con la app cerrada/pantalla
+  bloqueada requiere "background location" de `expo-location` — no funciona
+  en Expo Go, exige un dev client custom + permisos adicionales de
+  Android/iOS. Se deja para una fase posterior si hace falta.
+
+### Funciones avanzadas que la web tiene y la app nativa todavía NO (candidatas para seguir, sin construir)
+
+Comparadas contra `/driver/trips` en la web, que ya tiene años de iteración:
+
+1. **Chat con el pasajero dentro de la app** (`trip_messages` + Realtime) —
+   hoy la app solo tiene Llamar/WhatsApp (salen de la app); la web tiene un
+   chat completo con acuses de leído.
+2. **Rechazar un viaje asignado** y **reportar un incidente en viaje
+   activo** — ambos existen como server action + UI en la web
+   (`app/actions/driver.ts`), no portados a la app.
+3. **Calificar al pasajero** al completar el viaje (`submitDriverRatingAction`)
+   — existe en la web, no en la app.
+4. **Notificaciones push** cuando se le asigna un viaje nuevo — hoy el
+   conductor tiene que abrir la app para enterarse; requiere tabla
+   `device_tokens` + Expo push (ya estaba en el plan original de Sprint 0 de
+   este documento).
+5. **Mapa embebido con posición en vivo propia** dentro de la app (en vez de
+   solo botones a Waze/Google Maps) — usaría `react-native-maps`.
+6. **Paradas adicionales (multi-stop)** y **vehículo asignado** — la web
+   los muestra/soporta, la app no.
+7. **Viajes de la Red de Afiliados (Sección G, Fase 1 ya construida)**: los
+   viajes farmed-in NO aparecen en la app — la web los muestra en una
+   sección aparte porque viven en `affiliate_trips`, no en `bookings`
+   (la consulta actual de la app solo lee `bookings`). Si un conductor
+   recibe viajes de afiliados, hoy tendría que seguir usando la web para
+   verlos.
+8. **Cola offline** para zonas sin señal (aeropuertos) — estaba en el plan
+   original de Fase 2A, no construida aún ni en web ni en app.
+
+Ninguna de estas está construida todavía — quedan como backlog explícito
+para cuando el usuario decida priorizarlas, en vez de asumirse como "ya
+cubierto" solo porque la app ya tiene las pantallas base.
 
 ## Sprint 0 — Fundaciones (1 semana)
 

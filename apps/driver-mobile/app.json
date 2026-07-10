@@ -25,7 +25,13 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "LuxeRide usa tu ubicación mientras el viaje está activo para que el pasajero vea tu posición en el mapa en vivo."
+        }
+      ]
     ]
   }
 }
