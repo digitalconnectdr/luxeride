@@ -6,11 +6,13 @@ import { Ionicons } from '@expo/vector-icons'
 import { callDriverApi } from '../lib/api'
 import { PressableScale } from '../components/PressableScale'
 import { Button, Card, ScreenLoader, SectionLabel } from '../components/ui'
+import { useDriverLocationReporter } from '../lib/locationReporter'
 import { color, font, radius, space } from '../lib/theme'
 import type { TripsStackParamList } from '../lib/types'
 
 interface AffiliateTripDetail {
   id: string
+  booking_id: string
   status: 'accepted' | 'en_route' | 'arrived' | 'in_progress' | 'completed'
   booking_number?: string
   passenger_name?: string | null
@@ -18,6 +20,13 @@ interface AffiliateTripDetail {
   pickup_location?: { address?: string } | null
   dropoff_location?: { address?: string } | null
   flight_number?: string | null
+}
+
+// GPS en vivo compartido (Sección G): 'accepted' se traduce a 'assigned',
+// que es el estado equivalente que useDriverLocationReporter reconoce como
+// "aún no en camino" — mismo umbral que las reservas propias.
+function toReporterStatus(status: AffiliateTripDetail['status']) {
+  return status === 'accepted' ? 'assigned' : status
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -73,6 +82,11 @@ export function AffiliateTripDetailScreen({ route, navigation }: Props) {
     }, [load]),
   )
 
+  const { pauseNotice, dismissPauseNotice } = useDriverLocationReporter(
+    trip?.booking_id ?? '',
+    trip ? toReporterStatus(trip.status) : 'pending',
+  )
+
   async function advance() {
     if (!trip) return
     setAdvancing(true)
@@ -100,6 +114,15 @@ export function AffiliateTripDetailScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {pauseNotice && (
+        <PressableScale style={styles.pauseBanner} onPress={dismissPauseNotice}>
+          <Ionicons name="location-outline" size={16} color={color.warning} />
+          <Text style={styles.pauseBannerText}>
+            Tu ubicación dejó de compartirse mientras la app estuvo en segundo plano
+          </Text>
+        </PressableScale>
+      )}
+
       <View style={styles.affiliateNotice}>
         <Ionicons name="git-network-outline" size={14} color={color.gold} />
         <Text style={styles.affiliateNoticeText}>Viaje de la Red de Afiliados</Text>
@@ -192,6 +215,17 @@ const styles = StyleSheet.create({
   content: { padding: space.xl, gap: space.md, flexGrow: 1 },
   center: { flex: 1, backgroundColor: color.bg, justifyContent: 'center', alignItems: 'center', gap: space.sm },
   emptyText: { color: color.inkFaint, fontFamily: font.body, fontSize: 14 },
+  pauseBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    backgroundColor: color.warningSoft,
+    borderWidth: 1,
+    borderColor: `${color.warning}55`,
+    borderRadius: radius.md,
+    padding: space.md,
+  },
+  pauseBannerText: { flex: 1, color: color.warning, fontFamily: font.bodyMedium, fontSize: 12, lineHeight: 17 },
   affiliateNotice: {
     flexDirection: 'row',
     alignItems: 'center',

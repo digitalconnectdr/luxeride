@@ -426,21 +426,63 @@ en la pantalla de éxito; ahora es parte del paso de confirmación.
    distinta).
 
 **Fuera de esta ronda (recortes de alcance conscientes, no bloquean lo anterior):**
-- **Sin tracking GPS en vivo compartido para viajes afiliados** — el mapa
-  interactivo (ver sección de tracking en vivo) sigue atado al conductor
-  propio de la empresa dueña; un viaje farmed-out no expone mapa en vivo
-  todavía, solo el estado por pasos. Diferenciador real del documento
-  original, pendiente para un fast-follow.
+- ✅ **Tracking GPS en vivo compartido para viajes afiliados — HECHO
+  2026-07-10.** Bug real encontrado al implementarlo: `bookings.status`
+  NUNCA avanza para un viaje farmed-out (invariante de la Sección G), así que
+  el gate `isActive`/`getLiveTripPositionsAction`/`activateLiveMapSessionAction`
+  en `/track/[id]` y `app/actions/live-tracking.ts` (que comparaban contra
+  `booking.status` directo) ocultaba el mapa en vivo por completo para
+  cualquier viaje afiliado que arrancó sin conductor interno asignado — no
+  era solo que faltara el lado de ESCRITURA. Arreglado en ambos lados:
+  `reportDriverLocation` ahora acepta también al conductor de un
+  `affiliate_trips` activo (no solo `bookings.driver_id`), y las lecturas
+  (`isActive`, `inMotion`, `allowPassengerShare`) ahora usan `displayStatus`
+  (ya calculado con el override de afiliados) en vez de `booking.status`
+  crudo. Reportado desde `/driver/trips` (web, `AffiliateTripCard` monta
+  `LiveLocationReporter`) y desde la app móvil (`AffiliateTripDetailScreen`
+  monta `useDriverLocationReporter`). El pasajero en `/track/[id]` ve el
+  mismo mapa interactivo que en un viaje propio, sin cambios de UI.
 - **Sin notificaciones por email/SMS** de eventos de afiliados (nueva
   solicitud, aceptada, rechazada) — visibilidad hoy es 100% in-app
-  (bandeja + Realtime). Requeriría nuevas plantillas en
-  `notification_templates`.
-- **Autoservicio sin checkout real de Whop todavía** — el botón "Solicitar
-  acceso" en Starter/Professional genera un lead (mismo patrón que
-  Enterprise), no cobra automáticamente; falta crear el producto dedicado en
-  Whop y conectar el webhook cuando el usuario decida el precio final.
-- Fase 2 (portal de afiliado externo sin cuenta), Fase 3 (pools), Fase 4
-  (bidding) y Fase 5 (auto-farm) siguen sin construir — ver diseño completo
+  (bandeja + Realtime) + push nativo (app móvil). Requeriría nuevas
+  plantillas en `notification_templates`. Sigue sin construir.
+- **Autoservicio: código 100% listo, falta que el usuario cree el producto
+  en Whop.** Investigado a fondo 2026-07-10: `isAffiliateAddonPlan()`, el
+  webhook (`app/api/webhooks/whop/route.ts`) y la UI
+  (`AffiliateNetworkUpsell`) ya están completos y funcionando — el
+  "checkout" de TODOS los planes en este proyecto (no solo el addon) es una
+  URL estática pegada en una env var, nunca generada dinámicamente por
+  código; no hay nada más que escribir. Falta únicamente que el usuario cree
+  el producto ($29/mes ya decidido) en su dashboard de Whop y dé dos
+  valores: `WHOP_PLAN_ID_AFFILIATE_ADDON` y `WHOP_CHECKOUT_URL_AFFILIATE_ADDON`
+  (ninguno configurado hoy en producción) — sin eso, seguirá mostrando el
+  formulario de lead en vez del botón de pago real.
+- ✅ **Fase 2 — Portal de afiliado externo: MVP construido 2026-07-10**
+  (migración `20260710000045_affiliate_external_invite.sql`, pendiente de
+  aplicar). `companies.is_external_affiliate` + tabla
+  `affiliate_invite_tokens` (capability-URL de un solo uso, mismo patrón que
+  `bookings.id` en `/track/[id]`). Flujo: una empresa genera un link desde
+  `/admin/affiliates` (`createAffiliateInviteAction`) → el afiliado externo
+  entra a `/affiliate/join/[token]` (página pública, sin cuenta previa) →
+  completa un alta real (empresa + dueño), reusando el mismo patrón de
+  `signupAction` — se crea una fila normal en `companies`
+  (`is_external_affiliate = true`, sin plan de LuxeRide) y su
+  `company_affiliates` queda YA aprobada (fue invitación explícita, no pasa
+  por el flujo de solicitar/aprobar del marketplace interno). El conductor y
+  vehículo del afiliado se registran en las MISMAS tablas `drivers`/
+  `vehicles` de siempre — nada de texto libre. **Whop Connect obligatorio
+  antes de aceptar pagos**: `respondToAffiliateTripAction` bloquea la
+  decisión `'accept'` con un error explícito si
+  `is_external_affiliate && !whop_connect_onboarded` — cierra la brecha de
+  pago sin verificación que el usuario había rechazado en el diseño
+  original. El sidebar de `/admin` oculta Dispatch/Zonas/Precios/Reservas/
+  Reportes/Corporativo/Compliance para estas cuentas (solo ven Flota,
+  Afiliados, Equipo y Configuración — ahí ya está el bloque existente de
+  "Conectar Whop" reusado tal cual, sin código nuevo). **Recorte consciente
+  de esta ronda**: `/admin/dashboard` no tiene una vista dedicada para
+  afiliados externos, solo muestra contadores en cero (no rompe, pero no es
+  útil) — dejarlo así hasta que haya feedback real de uso. Fases 3 (pools),
+  4 (bidding) y 5 (auto-farm) siguen sin construir — ver diseño completo
   abajo.
 
 Pedido original: explorar cómo resuelven esto Limo Anywhere (**LA Net**) y

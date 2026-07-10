@@ -12,9 +12,11 @@
 // progreso real sin tocar el booking original.
 
 import { revalidatePath } from 'next/cache'
-import { createAdminClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { requireRole, getCurrentUser } from '@/lib/auth/session'
 import type { SessionUser } from '@/lib/auth/session'
+import { getDefaultRoute } from '@/lib/auth/permissions'
 import {
   computeResponseDeadline,
   computeMargin,
@@ -295,6 +297,21 @@ export async function respondToAffiliateTripAction(opts: {
   if (trip.affiliate_company_id !== user.company_id) return { success: false, error: 'No autorizado' }
   if (!canAffiliateRespond(trip.status as never, trip.expires_at)) {
     return { success: false, error: 'Esta solicitud ya expiró o no está disponible' }
+  }
+
+  if (opts.decision === 'accept') {
+    // Fase 2 (afiliado externo): Whop Connect es obligatorio antes de poder
+    // aceptar cualquier solicitud paga — cierra la brecha de pago sin
+    // verificación que el usuario rechazó explícitamente en el diseño
+    // original (ver docs/PENDING.md sección G, "Fase 2").
+    const { data: company } = await admin
+      .from('companies')
+      .select('is_external_affiliate, whop_connect_onboarded')
+      .eq('id', user.company_id)
+      .single()
+    if (company?.is_external_affiliate && !company.whop_connect_onboarded) {
+      return { success: false, error: 'Conecta tu cuenta de Whop antes de aceptar solicitudes pagas (Configuración → Whop Connect)' }
+    }
   }
 
   if (opts.decision === 'reject') {
@@ -626,4 +643,191 @@ export async function sendAffiliateMessageAction(
   })
   if (error) return { success: false, error: error.message }
   return { success: true }
+}
+
+// ─── Fase 2 — Portal de afiliado externo ───────────────────────────────────────
+// Una empresa FUERA de LuxeRide se une a la Red de Afiliados de quien la
+// invita a través de un link de un solo uso (capability-URL, mismo patrón que
+// bookings.id en /track/[id] — ver docs/PENDING.md sección G). Al aceptar se
+// crea una fila REAL en `companies` (is_external_affiliate = true, sin plan/
+// suscripción de LuxeRide) para que su conductor/vehículo se registren en las
+// MISMAS tablas drivers/vehicles que ya existen.
+
+const INVITE_EXPIRY_DAYS = 14
+
+export async function createAffiliateInviteAction(
+  coverageNotes?: string,
+): Promise<AffiliateActionResult & { token?: string }> {
+  const user = await requireRole(...MANAGER_ROLES)
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const admin = createAdminClient()
+  const token = crypto.randomUUID()
+  const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * 86_400_000)
+
+  const { error } = await admin.from('affiliate_invite_tokens').insert({
+    inviting_company_id: user.company_id,
+    token,
+    coverage_notes: coverageNotes ?? null,
+    created_by: user.id,
+    expires_at: expiresAt.toISOString(),
+  })
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/admin/affiliates')
+  return { success: true, token }
+}
+
+export interface AffiliateInvitePreview {
+  invitingCompanyName: string
+  invitingCompanyLogoUrl: string | null
+  valid: boolean
+}
+
+/** Lectura pública (sin sesión) para que la página de alta muestre quién invita. */
+export async function getAffiliateInvitePreviewAction(token: string): Promise<AffiliateInvitePreview | null> {
+  if (!token) return null
+  const admin = createAdminClient()
+  const { data: invite } = await admin
+    .from('affiliate_invite_tokens')
+    .select('inviting_company_id, used_at, expires_at')
+    .eq('token', token)
+    .maybeSingle()
+  if (!invite) return null
+
+  const { data: company } = await admin
+    .from('companies')
+    .select('name, logo_url')
+    .eq('id', invite.inviting_company_id)
+    .maybeSingle()
+
+  return {
+    invitingCompanyName: company?.name ?? '—',
+    invitingCompanyLogoUrl: company?.logo_url ?? null,
+    valid: !invite.used_at && new Date(invite.expires_at).getTime() > Date.now(),
+  }
+}
+
+/** Alta ligera del afiliado externo — sin login previo, el token es la única
+ *  autorización (igual que aceptar una invitación por link en cualquier SaaS).
+ *  Firma (token, _prev, formData) para usarse con useFormState vía .bind(null, token),
+ *  mismo patrón que signupAction en app/actions/auth.ts. */
+export async function joinAsExternalAffiliateAction(
+  token: string,
+  _prev: AffiliateActionResult | null,
+  formData: FormData,
+): Promise<AffiliateActionResult> {
+  const input = {
+    companyName: (formData.get('company_name') as string) ?? '',
+    city: (formData.get('city') as string) || undefined,
+    firstName: (formData.get('first_name') as string) ?? '',
+    lastName: (formData.get('last_name') as string) ?? '',
+    email: (formData.get('email') as string) ?? '',
+    phone: (formData.get('phone') as string) || undefined,
+    password: (formData.get('password') as string) ?? '',
+  }
+
+  if (!token) return { success: false, error: 'Enlace inválido' }
+  if (!input.companyName.trim()) return { success: false, error: 'Nombre de empresa requerido' }
+  if (!input.firstName.trim() || !input.lastName.trim()) return { success: false, error: 'Nombre y apellido requeridos' }
+  if (!input.email.trim()) return { success: false, error: 'Email requerido' }
+  if (!input.password || input.password.length < 8) return { success: false, error: 'La contraseña debe tener al menos 8 caracteres' }
+
+  const admin = createAdminClient()
+  const { data: invite } = await admin
+    .from('affiliate_invite_tokens')
+    .select('id, inviting_company_id, used_at, expires_at')
+    .eq('token', token)
+    .maybeSingle()
+  if (!invite) return { success: false, error: 'Enlace inválido' }
+  if (invite.used_at) return { success: false, error: 'Este enlace de invitación ya fue usado' }
+  if (new Date(invite.expires_at).getTime() < Date.now()) return { success: false, error: 'Este enlace de invitación expiró' }
+
+  // 1. Crear la empresa externa — sin plan/suscripción de LuxeRide (patrón de
+  // signupAction en app/actions/auth.ts, adaptado: status 'active' de una vez,
+  // sin trial, porque no hay período de prueba que ofrecer aquí).
+  const slugBase = input.companyName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'afiliado'
+  let slug = slugBase
+  for (let i = 0; i < 5; i++) {
+    const { data: existing } = await admin.from('companies').select('id').eq('slug', slug).maybeSingle()
+    if (!existing) break
+    slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`
+  }
+
+  const { data: company, error: companyError } = await admin
+    .from('companies')
+    .insert({
+      name: input.companyName.trim(),
+      slug,
+      status: 'active',
+      plan: 'free',
+      city: input.city?.trim() || null,
+      is_external_affiliate: true,
+    })
+    .select('id')
+    .single()
+  if (companyError || !company) return { success: false, error: 'No se pudo crear la empresa' }
+
+  // 2. Crear el usuario dueño (mismo patrón que signupAction).
+  const { data: authUser, error: authError } = await admin.auth.admin.createUser({
+    email: input.email.trim(),
+    password: input.password,
+    email_confirm: true,
+    user_metadata: {
+      company_id: company.id,
+      role: 'company_owner',
+      first_name: input.firstName.trim(),
+      last_name: input.lastName.trim(),
+      phone: input.phone ?? null,
+    },
+  })
+  if (authError || !authUser.user) {
+    await admin.from('companies').delete().eq('id', company.id)
+    if (authError?.message?.toLowerCase().includes('already')) return { success: false, error: 'Ya existe una cuenta con este email' }
+    return { success: false, error: 'No se pudo crear la cuenta' }
+  }
+
+  await admin.from('user_profiles').upsert({
+    id: authUser.user.id,
+    company_id: company.id,
+    role: 'company_owner',
+    first_name: input.firstName.trim(),
+    last_name: input.lastName.trim(),
+    phone: input.phone ?? null,
+  })
+
+  // 3. Relación de afiliación YA aprobada — fue una invitación explícita, no
+  // pasa por el flujo normal de solicitar/aprobar del marketplace interno.
+  const { error: relError } = await admin.from('company_affiliates').insert({
+    requester_company_id: invite.inviting_company_id,
+    affiliate_company_id: company.id,
+    status: 'approved',
+    requested_by: authUser.user.id,
+    responded_by: authUser.user.id,
+    responded_at: new Date().toISOString(),
+  })
+  if (relError) {
+    // No revertimos la cuenta ya creada — el dueño puede solicitar la
+    // afiliación manualmente desde /admin/affiliates si esto llegara a fallar.
+    console.error('[joinAsExternalAffiliateAction] company_affiliates insert error:', relError)
+  }
+
+  // 4. Token de un solo uso.
+  await admin
+    .from('affiliate_invite_tokens')
+    .update({ used_at: new Date().toISOString(), used_by_company_id: company.id })
+    .eq('id', invite.id)
+
+  // 5. Iniciar sesión directo (mismo patrón que signupAction) y aterrizar en
+  // /admin/dashboard — el layout admin oculta las secciones que no aplican
+  // para is_external_affiliate = true.
+  const supabase = await createClient()
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: input.email.trim(),
+    password: input.password,
+  })
+  if (signInError) redirect('/auth/login')
+
+  revalidatePath('/', 'layout')
+  redirect(getDefaultRoute('company_owner'))
 }

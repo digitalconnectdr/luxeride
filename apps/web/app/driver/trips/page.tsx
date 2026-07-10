@@ -146,6 +146,7 @@ export default async function DriverTripsPage() {
     const dLoc = b?.dropoff_location as { address?: string } | null
     return {
       id: t.id,
+      bookingId: t.booking_id,
       status: t.status,
       ownerCompanyName: ownerNameById.get(t.owner_company_id) ?? '—',
       pickupAddress: pLoc?.address ?? '—',
@@ -283,7 +284,13 @@ export default async function DriverTripsPage() {
           <div className="space-y-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#75716a]">{affiliatesDict.requests.title}</p>
             {affiliateTrips.map((t) => (
-              <AffiliateTripCard key={t.id} trip={t} localeTag={localeTag} t={affiliatesDict} />
+              <AffiliateTripCard
+                key={t.id}
+                trip={t}
+                localeTag={localeTag}
+                t={affiliatesDict}
+                locationPauseNotice={dt.locationPauseNotice}
+              />
             ))}
           </div>
         )}

@@ -143,14 +143,19 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const isTerminal = displayStatus in t.terminal
   const isCompleted = displayStatus === 'completed'
   const currentIdx = STATUS_KEYS.findIndex((k) => k === displayStatus)
-  const isActive = ACTIVE.has(booking.status)
+  // Sección G: para un viaje de afiliado, bookings.status NUNCA avanza (se
+  // queda congelado en lo que era al momento del farm-out, incluso 'pending'
+  // si aún no tenía conductor propio) — el estado real vive en displayStatus.
+  // Usar solo booking.status aquí ocultaba el mapa en vivo para cualquier
+  // viaje afiliado que arrancó sin conductor interno asignado.
+  const isActive = ACTIVE.has(displayStatus)
   // Auto-refresh ESCALONADO por cercanía al viaje, para no saturar el sistema con
   // reservas hechas con días de antelación:
   //   • Viaje en movimiento (en_route/arrived/in_progress) o a ≤2h → cada 15s
   //   • A ≤24h (capta la asignación del conductor el día previo)     → cada 60s
   //   • A más de 24h (reserva lejana, pending/assigned)              → sin polling
   const hoursUntilTrip = (new Date(booking.scheduled_at).getTime() - Date.now()) / 3_600_000
-  const inMotion = ['en_route', 'arrived', 'in_progress'].includes(booking.status)
+  const inMotion = ['en_route', 'arrived', 'in_progress'].includes(displayStatus)
   let pollSeconds = 0
   if (!isTerminal && !isCompleted) {
     if (inMotion || hoursUntilTrip <= 2) pollSeconds = 15
@@ -353,7 +358,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
               alt={t.mapAlt}
               openLabel={t.openInMaps}
               fallbackSrc={mapSrc}
-              allowPassengerShare={booking.status !== 'in_progress'}
+              allowPassengerShare={displayStatus !== 'in_progress'}
               labels={t.liveMap}
             />
           )}
@@ -361,7 +366,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
               sin polling — no hay nada "en vivo" que mostrar todavía. Una vez
               el viaje termina (completado o cancelado) el mapa se retira por
               completo, no queda una imagen congelada en la página. */}
-          {mapSrc && booking.status === 'pending' && (
+          {mapSrc && !isActive && displayStatus === 'pending' && (
             <StaticMap src={mapSrc} href={dirHref} alt={t.mapAlt} openLabel={t.openInMaps} />
           )}
           <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-3 text-sm">

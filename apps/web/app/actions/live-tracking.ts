@@ -14,6 +14,27 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // Estados donde tiene sentido reportar/mostrar posición en vivo.
 const ACTIVE_TRIP_STATUSES = new Set(['assigned', 'en_route', 'arrived', 'in_progress'])
 
+// Sección G: para un viaje de la Red de Afiliados, bookings.status NUNCA
+// avanza (queda congelado en lo que era al momento del farm-out, a veces
+// 'pending' si nunca tuvo conductor propio) — el progreso real vive en
+// affiliate_trips. Sin este chequeo extra, un viaje afiliado nunca se
+// consideraría "activo" para lectura/escritura de posición, aunque el
+// conductor del afiliado sí esté en camino.
+async function isBookingLiveTrackingActive(
+  admin: ReturnType<typeof createAdminClient>,
+  bookingId: string,
+  bookingStatus: string,
+): Promise<boolean> {
+  if (ACTIVE_TRIP_STATUSES.has(bookingStatus)) return true
+  const { data: affiliateTrip } = await admin
+    .from('affiliate_trips')
+    .select('id')
+    .eq('booking_id', bookingId)
+    .in('status', ['accepted', 'en_route', 'arrived', 'in_progress'])
+    .maybeSingle()
+  return !!affiliateTrip
+}
+
 // ─── Reportar posición (conductor) ─────────────────────────────────────────────
 // Núcleo compartido: recibe un SessionUser ya resuelto (por cookie en la web,
 // por bearer token en la app móvil — ver app/api/mobile/driver/report-location).
@@ -33,14 +54,31 @@ export async function reportDriverLocation(
   const admin = createAdminClient()
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, status, company_id')
+    .select('id, status, company_id, driver_id')
     .eq('id', bookingId)
-    .eq('company_id', user.company_id)
-    .eq('driver_id', user.id)
     .single()
 
   if (!booking) return { success: false, error: 'Viaje no encontrado' }
-  if (!ACTIVE_TRIP_STATUSES.has(booking.status)) return { success: false, error: 'El viaje no está activo' }
+
+  let isActive = booking.company_id === user.company_id && booking.driver_id === user.id && ACTIVE_TRIP_STATUSES.has(booking.status)
+
+  if (!isActive) {
+    // Viaje de la Red de Afiliados (Sección G): bookings.driver_id/company_id
+    // NUNCA se tocan para estos — el conductor real y su estado operativo
+    // viven en affiliate_trips. bookings.company_id sigue siendo el de la
+    // empresa dueña, que es quien paga la cuota de tracking en vivo — el
+    // insert de abajo usa ese company_id sin cambios.
+    const { data: affiliateTrip } = await admin
+      .from('affiliate_trips')
+      .select('id')
+      .eq('booking_id', bookingId)
+      .eq('driver_id', user.id)
+      .in('status', ['accepted', 'en_route', 'arrived', 'in_progress'])
+      .maybeSingle()
+    isActive = !!affiliateTrip
+  }
+
+  if (!isActive) return { success: false, error: 'Viaje no encontrado' }
 
   const { error } = await admin.from('trip_locations').insert({
     booking_id: bookingId,
@@ -82,7 +120,9 @@ export async function reportPassengerLocationAction(
     .single()
 
   if (!booking) return { success: false, error: 'Reserva no encontrada' }
-  if (!ACTIVE_TRIP_STATUSES.has(booking.status)) return { success: false, error: 'El viaje no está activo' }
+  if (!(await isBookingLiveTrackingActive(admin, bookingId, booking.status))) {
+    return { success: false, error: 'El viaje no está activo' }
+  }
 
   const { error } = await admin.from('trip_locations').insert({
     booking_id: bookingId,
@@ -122,7 +162,7 @@ export async function getLiveTripPositionsAction(bookingId: string): Promise<Liv
     .select('id, status')
     .eq('id', bookingId)
     .single()
-  if (!booking || !ACTIVE_TRIP_STATUSES.has(booking.status)) return null
+  if (!booking || !(await isBookingLiveTrackingActive(admin, bookingId, booking.status))) return null
 
   const [{ data: latestDriver }, { data: latestPassenger }] = await Promise.all([
     admin.from('trip_locations').select('latitude, longitude, recorded_at').eq('booking_id', bookingId).eq('reporter', 'driver').order('recorded_at', { ascending: false }).limit(1).maybeSingle(),
@@ -153,7 +193,7 @@ export async function activateLiveMapSessionAction(bookingId: string): Promise<{
     .select('id, status, company_id')
     .eq('id', bookingId)
     .single()
-  if (!booking || !ACTIVE_TRIP_STATUSES.has(booking.status)) return null
+  if (!booking || !(await isBookingLiveTrackingActive(admin, bookingId, booking.status))) return null
 
   const allowed = await consumeLiveTrackingQuota(booking.company_id, bookingId)
   return { allowed }

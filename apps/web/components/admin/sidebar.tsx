@@ -64,6 +64,7 @@ interface Props {
     isDispatcher: boolean
     isAccounting: boolean
     affiliateNetworkEnabled: boolean
+    isExternalAffiliate: boolean
   }
 }
 
@@ -99,6 +100,13 @@ export function AdminSidebar({
     })
   }
 
+  // Afiliado externo (Sección G, Fase 2): solo participa de la Red de
+  // Afiliados de quien lo invitó — no es cliente de LuxeRide, así que no
+  // tiene reservas propias, dispatch, zonas, precios, ni compliance/reportes
+  // internos que gestionar. Solo Flota (para registrar su conductor/vehículo
+  // real), Afiliados (solicitudes entrantes) y Configuración (Whop Connect).
+  const ext = flags.isExternalAffiliate
+
   const sections: NavSection[] = [
     {
       header: nav.overview,
@@ -109,7 +117,7 @@ export function AdminSidebar({
       header: nav.operations,
       show: flags.isOwnerOrAdmin || flags.isDispatcher,
       items: [
-        { href: '/dispatcher/dashboard', label: nav.dispatch, icon: RadioTower },
+        ...(ext ? [] : [{ href: '/dispatcher/dashboard', label: nav.dispatch, icon: RadioTower }]),
         { href: '/admin/fleet', label: nav.fleet, icon: Car },
         { href: '/admin/drivers', label: nav.drivers, icon: Users },
         { href: '/admin/affiliates', label: nav.affiliates, icon: Handshake },
@@ -117,7 +125,7 @@ export function AdminSidebar({
     },
     {
       header: nav.geography,
-      show: flags.isOwnerOrAdmin || flags.isDispatcher,
+      show: !ext && (flags.isOwnerOrAdmin || flags.isDispatcher),
       items: [
         { href: '/admin/zones', label: nav.zones, icon: MapPinned },
         { href: '/admin/airports', label: nav.airports, icon: Plane },
@@ -125,12 +133,12 @@ export function AdminSidebar({
     },
     {
       header: nav.pricing,
-      show: flags.isOwnerOrAdmin,
+      show: !ext && flags.isOwnerOrAdmin,
       items: [{ href: '/admin/pricing', label: nav.pricingRules, icon: Tags }],
     },
     {
       header: nav.bookings,
-      show: flags.isOwnerOrAdmin || flags.isDispatcher,
+      show: !ext && (flags.isOwnerOrAdmin || flags.isDispatcher),
       items: [
         { href: '/admin/bookings', label: nav.reservations, icon: CalendarDays },
         { href: '/admin/quotes', label: nav.quotes, icon: FileText },
@@ -140,7 +148,7 @@ export function AdminSidebar({
     },
     {
       header: nav.finance,
-      show: flags.isOwnerOrAdmin || flags.isAccounting,
+      show: !ext && (flags.isOwnerOrAdmin || flags.isAccounting),
       items: [
         { href: '/admin/reports', label: nav.reports, icon: BarChart3 },
         { href: '/admin/audit', label: nav.auditLog, icon: ScrollText },
@@ -150,9 +158,11 @@ export function AdminSidebar({
       header: nav.management,
       show: flags.isOwnerOrAdmin,
       items: [
-        { href: '/admin/corporate', label: nav.corporate, icon: Building2 },
+        ...(ext ? [] : [
+          { href: '/admin/corporate', label: nav.corporate, icon: Building2 },
+          { href: '/admin/compliance', label: nav.compliance, icon: ShieldCheck },
+        ]),
         { href: '/admin/team', label: nav.team, icon: UserCog },
-        { href: '/admin/compliance', label: nav.compliance, icon: ShieldCheck },
         ...(flags.isOwner
           ? [{ href: '/admin/settings', label: nav.settings, icon: Settings }]
           : []),

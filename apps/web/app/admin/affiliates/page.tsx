@@ -4,6 +4,7 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getDict } from '@/lib/i18n/server'
 import { InviteAffiliateForm } from '@/components/admin/affiliates/invite-affiliate-form'
+import { InviteExternalAffiliateCard } from '@/components/admin/affiliates/invite-external-affiliate-card'
 import { AffiliateRelationRow, type AffiliateRelation } from '@/components/admin/affiliates/affiliate-relation-row'
 import { AffiliateNetworkUpsell } from '@/components/admin/affiliates/affiliate-network-upsell'
 
@@ -62,6 +63,7 @@ export default async function AffiliatesPage() {
       ) : (
         <>
           <InviteAffiliateForm t={t.relationships} />
+          <InviteExternalAffiliateCard t={t.externalInvite} />
 
           <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between">

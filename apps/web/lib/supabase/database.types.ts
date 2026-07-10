@@ -123,6 +123,7 @@ export type Database = {
           affiliate_network_enabled: boolean
           affiliate_network_enabled_at: string | null
           affiliate_network_whop_membership_id: string | null
+          is_external_affiliate: boolean
           trial_ends_at: string | null
           subscription_ends_at: string | null
           created_at: string
@@ -170,6 +171,7 @@ export type Database = {
           affiliate_network_enabled?: boolean | undefined
           affiliate_network_enabled_at?: string | null | undefined
           affiliate_network_whop_membership_id?: string | null | undefined
+          is_external_affiliate?: boolean | undefined
           trial_ends_at?: string | null | undefined
           subscription_ends_at?: string | null | undefined
           created_at?: string | undefined
@@ -217,10 +219,49 @@ export type Database = {
           affiliate_network_enabled?: boolean | undefined
           affiliate_network_enabled_at?: string | null | undefined
           affiliate_network_whop_membership_id?: string | null | undefined
+          is_external_affiliate?: boolean | undefined
           trial_ends_at?: string | null | undefined
           subscription_ends_at?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── affiliate_invite_tokens ─────────────────────────────────────────────
+      affiliate_invite_tokens: {
+        Row: {
+          id: string
+          inviting_company_id: string
+          token: string
+          coverage_notes: string | null
+          created_by: string | null
+          used_at: string | null
+          used_by_company_id: string | null
+          expires_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          inviting_company_id: string
+          token: string
+          coverage_notes?: string | null | undefined
+          created_by?: string | null | undefined
+          used_at?: string | null | undefined
+          used_by_company_id?: string | null | undefined
+          expires_at: string
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          inviting_company_id?: string | undefined
+          token?: string | undefined
+          coverage_notes?: string | null | undefined
+          created_by?: string | null | undefined
+          used_at?: string | null | undefined
+          used_by_company_id?: string | null | undefined
+          expires_at?: string | undefined
+          created_at?: string | undefined
         }
         Relationships: []
       }
