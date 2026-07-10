@@ -457,9 +457,9 @@ en la pantalla de éxito; ahora es parte del paso de confirmación.
   valores: `WHOP_PLAN_ID_AFFILIATE_ADDON` y `WHOP_CHECKOUT_URL_AFFILIATE_ADDON`
   (ninguno configurado hoy en producción) — sin eso, seguirá mostrando el
   formulario de lead en vez del botón de pago real.
-- ✅ **Fase 2 — Portal de afiliado externo: MVP construido 2026-07-10**
-  (migración `20260710000045_affiliate_external_invite.sql`, pendiente de
-  aplicar). `companies.is_external_affiliate` + tabla
+- ✅ **Fase 2 — Portal de afiliado externo: MVP construido y desplegado
+  2026-07-10** (migración `20260710000045_affiliate_external_invite.sql`,
+  aplicada en producción por el usuario). `companies.is_external_affiliate` + tabla
   `affiliate_invite_tokens` (capability-URL de un solo uso, mismo patrón que
   `bookings.id` en `/track/[id]`). Flujo: una empresa genera un link desde
   `/admin/affiliates` (`createAffiliateInviteAction`) → el afiliado externo
