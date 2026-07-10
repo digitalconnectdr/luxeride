@@ -23,8 +23,19 @@
 import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import Constants from 'expo-constants'
-import { Platform } from 'react-native'
+import { LogBox, Platform } from 'react-native'
 import { supabase } from './supabase'
+
+// El propio módulo nativo de expo-notifications imprime este error+warning
+// automáticamente al inicializarse en Expo Go / sin build propio — pasa
+// ANTES de que cualquier función de este archivo llegue a ejecutarse, así
+// que no hay guard de lógica que lo evite. Es informativo, no rompe nada
+// (se confirmó: la app sigue funcionando normal) — se apaga solo el aviso
+// en pantalla para no confundirlo con un error real.
+LogBox.ignoreLogs([
+  'expo-notifications: Android Push notifications',
+  '`expo-notifications` functionality is not fully supported in Expo Go',
+])
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
