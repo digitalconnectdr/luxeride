@@ -117,7 +117,7 @@ export default async function BookingDetailPage({
 
   // ── Sección G — Red de afiliados ──────────────────────────────────────────
   const affiliatesDict = getDict().affiliates
-  const [{ data: companyRow }, { data: relations }, { data: existingTrip }] = await Promise.all([
+  const [{ data: companyRow }, { data: relations }, { data: existingTrips }] = await Promise.all([
     admin.from('companies').select('affiliate_network_enabled').eq('id', companyId).single(),
     admin
       .from('company_affiliates')
@@ -128,10 +128,8 @@ export default async function BookingDetailPage({
       .from('affiliate_trips')
       .select('id, company_affiliate_id, status, offered_price, countered_price, agreed_price, margin_amount, affiliate_company_id')
       .eq('booking_id', booking.id)
-      .in('status', ['requested', 'accepted', 'rejected', 'countered', 'expired', 'cancelled', 'en_route', 'arrived', 'in_progress', 'completed'])
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .in('status', ['requested', 'accepted', 'rejected', 'countered', 'expired', 'cancelled', 'lost', 'en_route', 'arrived', 'in_progress', 'completed'])
+      .order('created_at', { ascending: false }),
   ])
 
   const affiliateNetworkEnabled = companyRow?.affiliate_network_enabled ?? false
@@ -148,19 +146,17 @@ export default async function BookingDetailPage({
     return { companyAffiliateId: r.id, name: nameByCompanyId.get(otherId) ?? '—' }
   })
 
-  const activeAffiliateTrip: ActiveAffiliateTrip | null = existingTrip
-    ? {
-        id: existingTrip.id,
-        companyAffiliateId: existingTrip.company_affiliate_id,
-        status: existingTrip.status,
-        affiliateName: nameByCompanyId.get(existingTrip.affiliate_company_id) ?? '—',
-        offeredPrice: Number(existingTrip.offered_price),
-        counteredPrice: existingTrip.countered_price != null ? Number(existingTrip.countered_price) : null,
-        agreedPrice: existingTrip.agreed_price != null ? Number(existingTrip.agreed_price) : null,
-        marginAmount: existingTrip.margin_amount != null ? Number(existingTrip.margin_amount) : null,
-        currency: booking.currency ?? 'USD',
-      }
-    : null
+  const affiliateTrips: ActiveAffiliateTrip[] = (existingTrips ?? []).map((tr) => ({
+    id: tr.id,
+    companyAffiliateId: tr.company_affiliate_id,
+    status: tr.status,
+    affiliateName: nameByCompanyId.get(tr.affiliate_company_id) ?? '—',
+    offeredPrice: Number(tr.offered_price),
+    counteredPrice: tr.countered_price != null ? Number(tr.countered_price) : null,
+    agreedPrice: tr.agreed_price != null ? Number(tr.agreed_price) : null,
+    marginAmount: tr.margin_amount != null ? Number(tr.margin_amount) : null,
+    currency: booking.currency ?? 'USD',
+  }))
 
   return (
     <div className="p-8 max-w-[1100px] mx-auto space-y-6">
@@ -362,7 +358,7 @@ export default async function BookingDetailPage({
           bookingId={booking.id}
           enabled={affiliateNetworkEnabled}
           affiliates={affiliateOptions}
-          activeTrip={activeAffiliateTrip}
+          trips={affiliateTrips}
           myCompanyId={companyId}
           t={affiliatesDict}
         />

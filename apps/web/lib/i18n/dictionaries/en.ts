@@ -2061,6 +2061,7 @@ export const en = {
       arrived: 'Arrived',
       in_progress: 'In progress',
       completed: 'Completed',
+      lost: 'Did not win the pool',
     },
     settlementStatus: {
       pending: 'Pending',
@@ -2095,6 +2096,10 @@ export const en = {
       paymentTermsLabel: 'Payment terms',
       save: 'Save',
       saved: 'Saved',
+      reliabilityResponseRate: 'Response rate',
+      reliabilityAvgResponse: 'Responds in',
+      reliabilityMinutes: 'min',
+      reliabilityPunctuality: 'Punctuality',
     },
     send: {
       title: 'Send to affiliate',
@@ -2116,6 +2121,10 @@ export const en = {
       counterReceived: 'The affiliate countered with',
       acceptCounter: 'Accept counter-offer',
       rejectCounter: 'Decline counter-offer',
+      poolHint: 'This will go out to everyone selected at once — the first to accept gets the trip.',
+      poolTitle: 'Waiting on affiliates',
+      poolCancelAll: 'Cancel the whole send',
+      poolLostTitle: 'Did not win the pool',
     },
     requests: {
       title: 'Incoming requests',

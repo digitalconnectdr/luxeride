@@ -871,7 +871,7 @@ export type Database = {
           company_affiliate_id: string
           owner_company_id: string
           affiliate_company_id: string
-          status: 'requested' | 'accepted' | 'rejected' | 'countered' | 'expired' | 'cancelled' | 'en_route' | 'arrived' | 'in_progress' | 'completed'
+          status: 'requested' | 'accepted' | 'rejected' | 'countered' | 'expired' | 'cancelled' | 'lost' | 'en_route' | 'arrived' | 'in_progress' | 'completed'
           reason: 'no_driver' | 'out_of_zone' | 'overcapacity' | 'better_affiliate_rate' | 'other'
           branding_mode: 'white_label' | 'operated_by' | 'co_branded'
           preview_zone: string | null
@@ -910,7 +910,7 @@ export type Database = {
           company_affiliate_id: string
           owner_company_id: string
           affiliate_company_id: string
-          status?: 'requested' | 'accepted' | 'rejected' | 'countered' | 'expired' | 'cancelled' | 'en_route' | 'arrived' | 'in_progress' | 'completed' | undefined
+          status?: 'requested' | 'accepted' | 'rejected' | 'countered' | 'expired' | 'cancelled' | 'lost' | 'en_route' | 'arrived' | 'in_progress' | 'completed' | undefined
           reason?: 'no_driver' | 'out_of_zone' | 'overcapacity' | 'better_affiliate_rate' | 'other' | undefined
           branding_mode?: 'white_label' | 'operated_by' | 'co_branded' | undefined
           preview_zone?: string | null | undefined
@@ -949,7 +949,7 @@ export type Database = {
           company_affiliate_id?: string | undefined
           owner_company_id?: string | undefined
           affiliate_company_id?: string | undefined
-          status?: 'requested' | 'accepted' | 'rejected' | 'countered' | 'expired' | 'cancelled' | 'en_route' | 'arrived' | 'in_progress' | 'completed' | undefined
+          status?: 'requested' | 'accepted' | 'rejected' | 'countered' | 'expired' | 'cancelled' | 'lost' | 'en_route' | 'arrived' | 'in_progress' | 'completed' | undefined
           reason?: 'no_driver' | 'out_of_zone' | 'overcapacity' | 'better_affiliate_rate' | 'other' | undefined
           branding_mode?: 'white_label' | 'operated_by' | 'co_branded' | undefined
           preview_zone?: string | null | undefined

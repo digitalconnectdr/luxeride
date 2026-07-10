@@ -8,6 +8,7 @@ import {
   updateAffiliationTermsAction,
 } from '@/app/actions/affiliates'
 import { AffiliateChat } from './affiliate-chat'
+import type { AffiliateReliability } from '@/lib/affiliates/engine'
 import type { Dictionary } from '@/lib/i18n/server'
 
 type T = Dictionary['affiliates']['relationships']
@@ -21,6 +22,7 @@ export interface AffiliateRelation {
   direction: 'incoming' | 'outgoing'
   coverageNotes: string | null
   paymentTerms: PaymentTerms
+  reliability: AffiliateReliability | null
 }
 
 const PAYMENT_TERMS: PaymentTerms[] = ['due_on_receipt', 'net_7', 'net_15', 'net_30']
@@ -86,6 +88,20 @@ export function AffiliateRelationRow({
                 : t.revoke}
         </span>
       </div>
+
+      {relation.reliability && (relation.reliability.completedCount > 0 || relation.reliability.responseRatePct != null) && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-sl-on-surface-muted">
+          {relation.reliability.responseRatePct != null && (
+            <span>{t.reliabilityResponseRate}: <span className="text-sl-on-surface font-medium">{relation.reliability.responseRatePct}%</span></span>
+          )}
+          {relation.reliability.avgResponseMinutes != null && (
+            <span>{t.reliabilityAvgResponse}: <span className="text-sl-on-surface font-medium">{relation.reliability.avgResponseMinutes} {t.reliabilityMinutes}</span></span>
+          )}
+          {relation.reliability.punctualityPct != null && (
+            <span>{t.reliabilityPunctuality}: <span className="text-sl-on-surface font-medium">{relation.reliability.punctualityPct}%</span></span>
+          )}
+        </div>
+      )}
 
       {relation.status === 'pending' && relation.direction === 'incoming' && (
         <div className="flex gap-2">

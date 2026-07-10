@@ -3,7 +3,7 @@
 // y lib/policy/engine.ts). Ver docs/PENDING.md sección G para el diseño.
 
 export type AffiliateTripStatus =
-  | 'requested' | 'accepted' | 'rejected' | 'countered' | 'expired' | 'cancelled'
+  | 'requested' | 'accepted' | 'rejected' | 'countered' | 'expired' | 'cancelled' | 'lost'
   | 'en_route' | 'arrived' | 'in_progress' | 'completed'
 
 export type AffiliateReason = 'no_driver' | 'out_of_zone' | 'overcapacity' | 'better_affiliate_rate' | 'other'
@@ -19,8 +19,9 @@ export const PENDING_RESPONSE_STATUSES: AffiliateTripStatus[] = ['requested', 'c
 // Estados en los que el afiliado ya está operando el viaje (aceptado).
 export const OPERATING_STATUSES: AffiliateTripStatus[] = ['accepted', 'en_route', 'arrived', 'in_progress']
 
-// Estados terminales — el registro ya no cambia más.
-export const CLOSED_STATUSES: AffiliateTripStatus[] = ['rejected', 'expired', 'cancelled', 'completed']
+// Estados terminales — el registro ya no cambia más. 'lost' = otro afiliado
+// del mismo pool (Sección G, Fase 3) aceptó primero.
+export const CLOSED_STATUSES: AffiliateTripStatus[] = ['rejected', 'expired', 'cancelled', 'lost', 'completed']
 
 export function isPendingResponse(status: AffiliateTripStatus): boolean {
   return PENDING_RESPONSE_STATUSES.includes(status)
@@ -99,4 +100,53 @@ export function resolveBrandingLabel(
   if (mode === 'white_label') return { operatedByLine: null }
   if (mode === 'operated_by') return { operatedByLine: affiliateName }
   return { operatedByLine: `${ownerName} · ${affiliateName}` } // co_branded
+}
+
+// ── Score de confiabilidad por afiliado ─────────────────────────────────────
+// Mismo enfoque que la puntualidad/cancelación de conductores en
+// /admin/drivers/[id]: se calcula dinámicamente desde el historial de
+// affiliate_trips, sin columnas contadoras que mantener sincronizadas.
+
+const RELIABILITY_GRACE_MINUTES = 10
+
+export interface AffiliateTripReliabilityInput {
+  status: AffiliateTripStatus
+  createdAt: string
+  respondedAt: string | null
+  previewScheduledAt: string
+  arrivedAt: string | null
+}
+
+export interface AffiliateReliability {
+  /** % de solicitudes recibidas que obtuvieron alguna respuesta (no las dejó expirar). */
+  responseRatePct: number | null
+  /** Minutos promedio entre recibir la solicitud y responder. */
+  avgResponseMinutes: number | null
+  /** % de viajes completados que llegaron a tiempo (dentro de la gracia). */
+  punctualityPct: number | null
+  completedCount: number
+}
+
+export function computeAffiliateReliability(trips: AffiliateTripReliabilityInput[]): AffiliateReliability {
+  if (!trips.length) return { responseRatePct: null, avgResponseMinutes: null, punctualityPct: null, completedCount: 0 }
+
+  const responded = trips.filter((t) => t.respondedAt != null)
+  const responseRatePct = Math.round((responded.length / trips.length) * 100)
+
+  const responseMinutes = responded.map(
+    (t) => (new Date(t.respondedAt!).getTime() - new Date(t.createdAt).getTime()) / 60_000,
+  )
+  const avgResponseMinutes = responseMinutes.length
+    ? Math.round(responseMinutes.reduce((a, b) => a + b, 0) / responseMinutes.length)
+    : null
+
+  const completed = trips.filter((t) => t.status === 'completed')
+  const onTime = completed.filter((t) => {
+    if (!t.arrivedAt) return false
+    const grace = new Date(t.previewScheduledAt).getTime() + RELIABILITY_GRACE_MINUTES * 60_000
+    return new Date(t.arrivedAt).getTime() <= grace
+  })
+  const punctualityPct = completed.length ? Math.round((onTime.length / completed.length) * 100) : null
+
+  return { responseRatePct, avgResponseMinutes, punctualityPct, completedCount: completed.length }
 }

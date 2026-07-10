@@ -174,43 +174,61 @@ export async function updateAffiliationTermsAction(
   return { success: true }
 }
 
-// ─── Enviar un viaje a un afiliado ─────────────────────────────────────────────
+// ─── Enviar un viaje a uno o varios afiliados (Fase 3 — pools) ────────────────
+// Un solo afiliado a la vez sigue siendo el caso normal (companyAffiliateIds
+// con un elemento); mandar el mismo booking a VARIOS a la vez crea una fila
+// 'requested' por cada uno — el primero que acepta gana, los demás pasan a
+// 'lost' automáticamente (ver respondToAffiliateTripAction/resolveCounterOfferAction).
 
-export async function sendBookingToAffiliateAction(opts: {
-  bookingId: string
-  companyAffiliateId: string
-  reason: AffiliateReason
-  offeredPrice: number
-  brandingMode: BrandingMode
-}): Promise<AffiliateActionResult> {
-  const user = await requireRole(...MANAGER_ROLES)
-  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+/** Núcleo compartido: recibe la empresa dueña y quién solicita ya resueltos
+ *  (por cookie en la Server Action de abajo, o `null`/sistema desde el
+ *  auto-farm de lib/dispatch/auto-assign.ts — ver Fase 5). Sin auth propia:
+ *  el llamador ya validó rol/pertenencia o es código de servidor confiable. */
+export async function createAffiliatePoolTrips(
+  admin: ReturnType<typeof createAdminClient>,
+  input: {
+    bookingId: string
+    ownerCompanyId: string
+    companyAffiliateIds: string[]
+    reason: AffiliateReason
+    offeredPrice: number
+    brandingMode: BrandingMode
+    requestedBy: string | null
+  },
+): Promise<AffiliateActionResult> {
+  if (!input.companyAffiliateIds.length) return { success: false, error: 'Selecciona al menos un afiliado' }
+  if (input.offeredPrice < 0) return { success: false, error: 'Precio inválido' }
 
-  const admin = createAdminClient()
-
-  const [{ data: booking }, { data: rel }, { data: company }] = await Promise.all([
+  const [{ data: booking }, { data: rels }, { data: company }, { data: existingOperating }] = await Promise.all([
     admin
       .from('bookings')
       .select('id, company_id, status, pickup_location, vehicle_type_id, passenger_count, distance_miles, duration_minutes, scheduled_at, total_amount')
-      .eq('id', opts.bookingId)
-      .eq('company_id', user.company_id)
+      .eq('id', input.bookingId)
+      .eq('company_id', input.ownerCompanyId)
       .single(),
     admin
       .from('company_affiliates')
       .select('id, requester_company_id, affiliate_company_id, status')
-      .eq('id', opts.companyAffiliateId)
-      .single(),
-    admin.from('companies').select('affiliate_network_enabled').eq('id', user.company_id).single(),
+      .in('id', input.companyAffiliateIds),
+    admin.from('companies').select('affiliate_network_enabled').eq('id', input.ownerCompanyId).single(),
+    admin
+      .from('affiliate_trips')
+      .select('id')
+      .eq('booking_id', input.bookingId)
+      .in('status', ['accepted', 'en_route', 'arrived', 'in_progress'])
+      .maybeSingle(),
   ])
 
   if (!company?.affiliate_network_enabled) return { success: false, error: 'La red de afiliados no está activa para tu empresa' }
   if (!booking) return { success: false, error: 'Reserva no encontrada' }
-  if (!rel || rel.status !== 'approved') return { success: false, error: 'Afiliado no válido o relación no aprobada' }
-  if (rel.requester_company_id !== user.company_id && rel.affiliate_company_id !== user.company_id) {
-    return { success: false, error: 'No autorizado' }
-  }
-  const affiliateCompanyId = rel.requester_company_id === user.company_id ? rel.affiliate_company_id : rel.requester_company_id
-  if (opts.offeredPrice < 0) return { success: false, error: 'Precio inválido' }
+  if (existingOperating) return { success: false, error: 'Esta reserva ya tiene un afiliado operando el viaje' }
+
+  const validRels = (rels ?? []).filter(
+    (rel) =>
+      rel.status === 'approved' &&
+      (rel.requester_company_id === input.ownerCompanyId || rel.affiliate_company_id === input.ownerCompanyId),
+  )
+  if (!validRels.length) return { success: false, error: 'Afiliado no válido o relación no aprobada' }
 
   let vehicleTypeName: string | null = null
   if (booking.vehicle_type_id) {
@@ -222,24 +240,26 @@ export async function sendBookingToAffiliateAction(opts: {
   const scheduledAt = new Date(booking.scheduled_at)
   const expiresAt = computeResponseDeadline(scheduledAt)
 
-  const { error } = await admin.from('affiliate_trips').insert({
+  const rows = validRels.map((rel) => ({
     booking_id: booking.id,
-    company_affiliate_id: opts.companyAffiliateId,
-    owner_company_id: user.company_id,
-    affiliate_company_id: affiliateCompanyId,
-    reason: opts.reason,
-    branding_mode: opts.brandingMode,
+    company_affiliate_id: rel.id,
+    owner_company_id: input.ownerCompanyId,
+    affiliate_company_id: rel.requester_company_id === input.ownerCompanyId ? rel.affiliate_company_id : rel.requester_company_id,
+    reason: input.reason,
+    branding_mode: input.brandingMode,
     preview_zone: approximateZone(pickup?.address),
     preview_scheduled_at: booking.scheduled_at,
     preview_vehicle_type: vehicleTypeName,
     preview_passenger_count: booking.passenger_count,
     preview_distance_miles: booking.distance_miles,
     preview_duration_minutes: booking.duration_minutes,
-    offered_price: opts.offeredPrice,
+    offered_price: input.offeredPrice,
     passenger_charged_amount: booking.total_amount,
     expires_at: expiresAt.toISOString(),
-    requested_by: user.id,
-  })
+    requested_by: input.requestedBy,
+  }))
+
+  const { error } = await admin.from('affiliate_trips').insert(rows)
 
   if (error) {
     if (error.code === '23505') return { success: false, error: 'Esta reserva ya tiene una solicitud activa con un afiliado' }
@@ -248,6 +268,49 @@ export async function sendBookingToAffiliateAction(opts: {
 
   revalidatePath('/admin/bookings')
   revalidatePath(`/admin/bookings/${booking.id}`)
+  return { success: true }
+}
+
+export async function sendBookingToAffiliateAction(opts: {
+  bookingId: string
+  companyAffiliateIds: string[]
+  reason: AffiliateReason
+  offeredPrice: number
+  brandingMode: BrandingMode
+}): Promise<AffiliateActionResult> {
+  const user = await requireRole(...MANAGER_ROLES)
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const admin = createAdminClient()
+  return createAffiliatePoolTrips(admin, {
+    bookingId: opts.bookingId,
+    ownerCompanyId: user.company_id,
+    companyAffiliateIds: opts.companyAffiliateIds,
+    reason: opts.reason,
+    offeredPrice: opts.offeredPrice,
+    brandingMode: opts.brandingMode,
+    requestedBy: user.id,
+  })
+}
+
+/** Cancela TODOS los miembros pendientes del pool de una reserva (antes de
+ *  que cualquiera acepte) — para cuando el owner quiere retirar el envío
+ *  completo en vez de cancelar un afiliado puntual. */
+export async function cancelAffiliatePoolAction(bookingId: string): Promise<AffiliateActionResult> {
+  const user = await requireRole(...MANAGER_ROLES)
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('affiliate_trips')
+    .update({ status: 'cancelled' })
+    .eq('booking_id', bookingId)
+    .eq('owner_company_id', user.company_id)
+    .in('status', ['requested', 'countered'])
+
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/admin/bookings')
+  revalidatePath(`/admin/bookings/${bookingId}`)
   return { success: true }
 }
 
@@ -289,7 +352,7 @@ export async function respondToAffiliateTripAction(opts: {
   const admin = createAdminClient()
   const { data: trip } = await admin
     .from('affiliate_trips')
-    .select('id, affiliate_company_id, status, expires_at, offered_price, passenger_charged_amount')
+    .select('id, booking_id, affiliate_company_id, status, expires_at, offered_price, passenger_charged_amount')
     .eq('id', opts.affiliateTripId)
     .single()
 
@@ -333,12 +396,33 @@ export async function respondToAffiliateTripAction(opts: {
       .from('affiliate_trips')
       .update({ status: 'accepted', agreed_price: agreedPrice, margin_amount: margin, responded_at: new Date().toISOString() })
       .eq('id', opts.affiliateTripId)
-    if (error) return { success: false, error: error.message }
+    if (error) {
+      // Fase 3 (pools): dos afiliados aceptando casi al mismo tiempo — el
+      // índice único de "un solo operativo por reserva" frena al segundo.
+      if (error.code === '23505') return { success: false, error: 'Otro afiliado ya se quedó con este viaje' }
+      return { success: false, error: error.message }
+    }
+    await closeSiblingPoolMembers(admin, trip.booking_id, opts.affiliateTripId)
   }
 
   revalidatePath('/admin/affiliates/requests')
   revalidatePath('/admin/bookings')
   return { success: true }
+}
+
+/** Fase 3 (pools): al aceptar un miembro del pool, los demás que seguían
+ *  pendientes de respuesta pasan a 'lost' — el primero que acepta gana. */
+async function closeSiblingPoolMembers(
+  admin: ReturnType<typeof createAdminClient>,
+  bookingId: string,
+  acceptedTripId: string,
+): Promise<void> {
+  await admin
+    .from('affiliate_trips')
+    .update({ status: 'lost' })
+    .eq('booking_id', bookingId)
+    .neq('id', acceptedTripId)
+    .in('status', ['requested', 'countered'])
 }
 
 /** El owner acepta o rechaza la contraoferta del afiliado. */
@@ -349,7 +433,7 @@ export async function resolveCounterOfferAction(affiliateTripId: string, accept:
   const admin = createAdminClient()
   const { data: trip } = await admin
     .from('affiliate_trips')
-    .select('id, owner_company_id, status, countered_price, passenger_charged_amount')
+    .select('id, booking_id, owner_company_id, status, countered_price, passenger_charged_amount')
     .eq('id', affiliateTripId)
     .single()
 
@@ -373,7 +457,11 @@ export async function resolveCounterOfferAction(affiliateTripId: string, accept:
     .update({ status: 'accepted', agreed_price: agreedPrice, margin_amount: margin })
     .eq('id', affiliateTripId)
 
-  if (error) return { success: false, error: error.message }
+  if (error) {
+    if (error.code === '23505') return { success: false, error: 'Otro afiliado ya se quedó con este viaje' }
+    return { success: false, error: error.message }
+  }
+  await closeSiblingPoolMembers(admin, trip.booking_id, affiliateTripId)
   revalidatePath('/admin/bookings')
   return { success: true }
 }

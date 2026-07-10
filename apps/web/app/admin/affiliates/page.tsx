@@ -7,6 +7,7 @@ import { InviteAffiliateForm } from '@/components/admin/affiliates/invite-affili
 import { InviteExternalAffiliateCard } from '@/components/admin/affiliates/invite-external-affiliate-card'
 import { AffiliateRelationRow, type AffiliateRelation } from '@/components/admin/affiliates/affiliate-relation-row'
 import { AffiliateNetworkUpsell } from '@/components/admin/affiliates/affiliate-network-upsell'
+import { computeAffiliateReliability } from '@/lib/affiliates/engine'
 
 export function generateMetadata(): Metadata {
   return { title: getDict().affiliates.pageTitle }
@@ -39,6 +40,32 @@ export default async function AffiliatesPage() {
     : { data: [] as { id: string; name: string }[] }
   const nameById = new Map((otherCompanies ?? []).map((c) => [c.id, c.name]))
 
+  // Score de confiabilidad (Fase 5): historial COMPLETO de cada afiliado como
+  // operador (con cualquier empresa dueña, no solo la de acá) — mismo cálculo
+  // que la puntualidad/cancelación de conductores en /admin/drivers/[id].
+  const { data: reliabilityTrips } = otherIds.length
+    ? await admin
+        .from('affiliate_trips')
+        .select('affiliate_company_id, status, created_at, responded_at, preview_scheduled_at, arrived_at')
+        .in('affiliate_company_id', otherIds)
+    : { data: [] as { affiliate_company_id: string; status: string; created_at: string; responded_at: string | null; preview_scheduled_at: string; arrived_at: string | null }[] }
+  const reliabilityByCompanyId = new Map(
+    otherIds.map((id) => [
+      id,
+      computeAffiliateReliability(
+        (reliabilityTrips ?? [])
+          .filter((tr) => tr.affiliate_company_id === id)
+          .map((tr) => ({
+            status: tr.status as never,
+            createdAt: tr.created_at,
+            respondedAt: tr.responded_at,
+            previewScheduledAt: tr.preview_scheduled_at,
+            arrivedAt: tr.arrived_at,
+          })),
+      ),
+    ]),
+  )
+
   const rows: AffiliateRelation[] = (relations ?? []).map((r) => {
     const otherId = r.requester_company_id === companyId ? r.affiliate_company_id : r.requester_company_id
     return {
@@ -48,6 +75,7 @@ export default async function AffiliatesPage() {
       direction: r.requester_company_id === companyId ? 'outgoing' : 'incoming',
       coverageNotes: r.coverage_notes,
       paymentTerms: r.payment_terms,
+      reliability: reliabilityByCompanyId.get(otherId) ?? null,
     }
   })
 

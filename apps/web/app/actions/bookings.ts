@@ -24,7 +24,7 @@ import { checkMonthlyBookingLimit } from '@/lib/plans/limits'
 import { getAppUrl } from '@/lib/app-url'
 import { calculateFare, bestRule, type PricingRuleFields } from '@/lib/pricing/engine'
 import { resolveZoneId, type ServiceZoneForMatch } from '@/lib/pricing/zones'
-import { tryAutoAssignDriver } from '@/lib/dispatch/auto-assign'
+import { tryAutoAssignDriver, tryAutoFarmToAffiliates } from '@/lib/dispatch/auto-assign'
 import type { BookingStatus, BookingType, Json } from '@/lib/supabase/database.types'
 
 // ─── Multi-stop: validación de paradas intermedias ────────────────────────────
@@ -399,7 +399,7 @@ export async function createBookingAction(
   // pendiente igual que antes, para asignación manual o el barrido diario).
   if (!asQuote) {
     try {
-      await tryAutoAssignDriver(admin, {
+      const autoAssignBooking = {
         id: booking.id,
         company_id: user.company_id,
         booking_number: booking.booking_number,
@@ -412,7 +412,9 @@ export async function createBookingAction(
         dropoff_location: { address: dropoffAddr },
         total_amount: quote.total_amount,
         currency: quote.currency ?? 'USD',
-      })
+      }
+      const result = await tryAutoAssignDriver(admin, autoAssignBooking)
+      if (!result.assigned) await tryAutoFarmToAffiliates(admin, autoAssignBooking)
     } catch (e) {
       console.error('[createBookingAction] auto-assign', e)
     }
@@ -1039,7 +1041,7 @@ export async function createPublicBookingAction(data: {
 
   // Auto-asignación a un conductor en servicio (best-effort)
   try {
-    await tryAutoAssignDriver(admin, {
+    const autoAssignBooking = {
       id: booking.id,
       company_id: company.id,
       booking_number: booking.booking_number,
@@ -1052,7 +1054,9 @@ export async function createPublicBookingAction(data: {
       dropoff_location: { address: data.dropoffAddress },
       total_amount: quote.total_amount,
       currency: quote.currency ?? 'USD',
-    })
+    }
+    const result = await tryAutoAssignDriver(admin, autoAssignBooking)
+    if (!result.assigned) await tryAutoFarmToAffiliates(admin, autoAssignBooking)
   } catch (e) {
     console.error('[createPublicBookingAction] auto-assign', e)
   }

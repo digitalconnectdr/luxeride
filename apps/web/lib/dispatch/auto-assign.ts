@@ -13,6 +13,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { notifyBookingEventInBackground } from '@/lib/notifications'
 import { notifyDriverPushInBackground } from '@/lib/notifications/push'
 import { getAppUrl } from '@/lib/app-url'
+import { createAffiliatePoolTrips } from '@/app/actions/affiliates'
 
 // Margen entre el fin estimado de un viaje y el inicio del siguiente para no
 // considerarlos en conflicto — tiempo de traslado/descanso razonable.
@@ -194,4 +195,76 @@ export async function tryAutoAssignDriver(
   })
 
   return { assigned: true, driverId }
+}
+
+// ── Sección G, Fase 5 — Auto-farm a la Red de Afiliados ────────────────────────
+// Si no hay conductor propio disponible (tryAutoAssignDriver ya falló), y la
+// empresa tiene la Red de Afiliados activa, se manda la reserva como un POOL
+// (Fase 3) a TODOS sus afiliados aprobados a la vez, en vez de dejarla sin
+// asignar hasta que alguien la mande a mano. El primero que acepta se la
+// queda — el afiliado ve el tipo de vehículo requerido en la vista previa y
+// puede rechazar si no tiene uno disponible, así que no hace falta verificar
+// flota cruzada (la empresa dueña no tiene visibilidad de la flota ajena).
+// No prioriza por score de confiabilidad todavía (ver computeAffiliateReliability
+// en lib/affiliates/engine.ts) — mandar a todos a la vez y dejar que el
+// primero en aceptar gane ya reparte razonablemente; priorizar/escalonar por
+// score queda para un fast-follow (ver docs/PENDING.md sección G).
+
+// Porcentaje del total cobrado al pasajero que se ofrece al afiliado por
+// defecto — mismo espíritu que el resto del pricing: conservador, el
+// dispatcher puede ajustar a mano después vía "Enviar a afiliado" si esto
+// no encuentra tomador.
+const AUTO_FARM_PAYOUT_PCT = 0.7
+
+export interface AutoFarmResult {
+  sent: boolean
+  affiliateCount?: number
+}
+
+export async function tryAutoFarmToAffiliates(
+  admin: ReturnType<typeof createAdminClient>,
+  booking: AutoAssignBooking,
+): Promise<AutoFarmResult> {
+  if (!booking.total_amount || booking.total_amount <= 0) return { sent: false }
+
+  // Guard de re-ejecución: el barrido diario (cron/auto-assign) corre sobre
+  // TODA reserva pendiente sin conductor, incluida una que ya farmeó por acá
+  // mismo en un intento anterior — sin esto, cada corrida del cron duplicaría
+  // el envío a los mismos afiliados.
+  const { data: existingTrips } = await admin
+    .from('affiliate_trips')
+    .select('id')
+    .eq('booking_id', booking.id)
+    .limit(1)
+  if (existingTrips?.length) return { sent: false }
+
+  const { data: company } = await admin
+    .from('companies')
+    .select('affiliate_network_enabled')
+    .eq('id', booking.company_id)
+    .single()
+  if (!company?.affiliate_network_enabled) return { sent: false }
+
+  const { data: relations } = await admin
+    .from('company_affiliates')
+    .select('id')
+    .eq('status', 'approved')
+    .or(`requester_company_id.eq.${booking.company_id},affiliate_company_id.eq.${booking.company_id}`)
+  const companyAffiliateIds = (relations ?? []).map((r) => r.id)
+  if (!companyAffiliateIds.length) return { sent: false }
+
+  const offeredPrice = Math.round(booking.total_amount * AUTO_FARM_PAYOUT_PCT * 100) / 100
+
+  const result = await createAffiliatePoolTrips(admin, {
+    bookingId: booking.id,
+    ownerCompanyId: booking.company_id,
+    companyAffiliateIds,
+    reason: 'no_driver',
+    offeredPrice,
+    brandingMode: 'white_label',
+    requestedBy: null,
+  })
+
+  if (!result.success) return { sent: false }
+  return { sent: true, affiliateCount: companyAffiliateIds.length }
 }

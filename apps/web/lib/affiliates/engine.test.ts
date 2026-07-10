@@ -7,6 +7,9 @@ import {
   canOwnerCancel,
   nextOperationalStatus,
   resolveBrandingLabel,
+  isClosed,
+  computeAffiliateReliability,
+  type AffiliateTripReliabilityInput,
 } from './engine'
 
 const NOW = new Date('2026-07-09T12:00:00Z')
@@ -94,5 +97,44 @@ describe('resolveBrandingLabel', () => {
   })
   it('co_branded muestra ambas marcas', () => {
     expect(resolveBrandingLabel('co_branded', 'Revival', 'Afiliado X').operatedByLine).toBe('Revival · Afiliado X')
+  })
+})
+
+describe('isClosed — incluye lost (Fase 3, pools)', () => {
+  it('lost es terminal', () => {
+    expect(isClosed('lost')).toBe(true)
+  })
+  it('requested no es terminal', () => {
+    expect(isClosed('requested')).toBe(false)
+  })
+})
+
+describe('computeAffiliateReliability', () => {
+  it('sin historial → todo null', () => {
+    expect(computeAffiliateReliability([])).toEqual({
+      responseRatePct: null, avgResponseMinutes: null, punctualityPct: null, completedCount: 0,
+    })
+  })
+
+  it('calcula tasa de respuesta y minutos promedio', () => {
+    const trips: AffiliateTripReliabilityInput[] = [
+      { status: 'rejected', createdAt: '2026-07-09T10:00:00Z', respondedAt: '2026-07-09T10:05:00Z', previewScheduledAt: '2026-07-09T12:00:00Z', arrivedAt: null },
+      { status: 'accepted', createdAt: '2026-07-09T10:00:00Z', respondedAt: '2026-07-09T10:15:00Z', previewScheduledAt: '2026-07-09T12:00:00Z', arrivedAt: null },
+      { status: 'lost', createdAt: '2026-07-09T10:00:00Z', respondedAt: null, previewScheduledAt: '2026-07-09T12:00:00Z', arrivedAt: null },
+    ]
+    const result = computeAffiliateReliability(trips)
+    expect(result.responseRatePct).toBe(67) // 2 de 3
+    expect(result.avgResponseMinutes).toBe(10) // (5 + 15) / 2
+  })
+
+  it('puntualidad solo sobre viajes completados, con gracia de 10 min', () => {
+    const trips: AffiliateTripReliabilityInput[] = [
+      { status: 'completed', createdAt: '2026-07-09T09:00:00Z', respondedAt: '2026-07-09T09:05:00Z', previewScheduledAt: '2026-07-09T12:00:00Z', arrivedAt: '2026-07-09T12:05:00Z' }, // a tiempo (dentro de gracia)
+      { status: 'completed', createdAt: '2026-07-09T09:00:00Z', respondedAt: '2026-07-09T09:05:00Z', previewScheduledAt: '2026-07-09T12:00:00Z', arrivedAt: '2026-07-09T12:30:00Z' }, // tarde
+      { status: 'lost', createdAt: '2026-07-09T09:00:00Z', respondedAt: null, previewScheduledAt: '2026-07-09T12:00:00Z', arrivedAt: null }, // no cuenta
+    ]
+    const result = computeAffiliateReliability(trips)
+    expect(result.completedCount).toBe(2)
+    expect(result.punctualityPct).toBe(50)
   })
 })

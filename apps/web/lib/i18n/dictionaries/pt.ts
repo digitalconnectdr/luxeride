@@ -2062,6 +2062,7 @@ export const pt: Dictionary = {
       arrived: 'Chegou',
       in_progress: 'Em viagem',
       completed: 'Concluído',
+      lost: 'Não ganhou o pool',
     },
     settlementStatus: {
       pending: 'Pendente',
@@ -2096,6 +2097,10 @@ export const pt: Dictionary = {
       paymentTermsLabel: 'Prazo de pagamento',
       save: 'Salvar',
       saved: 'Salvo',
+      reliabilityResponseRate: 'Taxa de resposta',
+      reliabilityAvgResponse: 'Responde em',
+      reliabilityMinutes: 'min',
+      reliabilityPunctuality: 'Pontualidade',
     },
     send: {
       title: 'Enviar para afiliado',
@@ -2117,6 +2122,10 @@ export const pt: Dictionary = {
       counterReceived: 'O afiliado fez uma contraproposta de',
       acceptCounter: 'Aceitar contraproposta',
       rejectCounter: 'Recusar contraproposta',
+      poolHint: 'Isso será enviado a todos os selecionados ao mesmo tempo — o primeiro que aceitar fica com a viagem.',
+      poolTitle: 'Aguardando resposta dos afiliados',
+      poolCancelAll: 'Cancelar todo o envio',
+      poolLostTitle: 'Não ganharam o pool',
     },
     requests: {
       title: 'Solicitações recebidas',

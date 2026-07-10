@@ -7,7 +7,7 @@
 
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
-import { tryAutoAssignDriver } from '@/lib/dispatch/auto-assign'
+import { tryAutoAssignDriver, tryAutoFarmToAffiliates } from '@/lib/dispatch/auto-assign'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -36,9 +36,10 @@ export async function GET(request: Request) {
     .limit(500)
 
   let assigned = 0
+  let farmedOut = 0
   for (const b of pending ?? []) {
     try {
-      const result = await tryAutoAssignDriver(admin, {
+      const autoAssignBooking = {
         id: b.id,
         company_id: b.company_id,
         booking_number: b.booking_number,
@@ -51,12 +52,18 @@ export async function GET(request: Request) {
         dropoff_location: b.dropoff_location,
         total_amount: b.total_amount,
         currency: b.currency,
-      })
-      if (result.assigned) assigned++
+      }
+      const result = await tryAutoAssignDriver(admin, autoAssignBooking)
+      if (result.assigned) {
+        assigned++
+      } else {
+        const farmResult = await tryAutoFarmToAffiliates(admin, autoAssignBooking)
+        if (farmResult.sent) farmedOut++
+      }
     } catch (e) {
       console.error('[cron/auto-assign]', b.id, e)
     }
   }
 
-  return NextResponse.json({ ok: true, checked: pending?.length ?? 0, assigned })
+  return NextResponse.json({ ok: true, checked: pending?.length ?? 0, assigned, farmedOut })
 }

@@ -480,9 +480,42 @@ en la pantalla de éxito; ahora es parte del paso de confirmación.
   "Conectar Whop" reusado tal cual, sin código nuevo). **Recorte consciente
   de esta ronda**: `/admin/dashboard` no tiene una vista dedicada para
   afiliados externos, solo muestra contadores en cero (no rompe, pero no es
-  útil) — dejarlo así hasta que haya feedback real de uso. Fases 3 (pools),
-  4 (bidding) y 5 (auto-farm) siguen sin construir — ver diseño completo
-  abajo.
+  útil) — dejarlo así hasta que haya feedback real de uso.
+- ✅ **Fases 3 (Pools), 4 (Bidding) y 5 (Auto-farm) — construidas 2026-07-10**
+  (migración `20260710000046_affiliate_pools.sql`, pendiente de aplicar).
+  Antes solo se podía enviar un booking a UN afiliado a la vez (índice único
+  por `booking_id`) — ahora se puede mandar a varios simultáneamente
+  (`sendBookingToAffiliateAction` acepta `companyAffiliateIds: string[]`):
+  cada uno recibe su propia fila `requested`, el primero que acepta gana
+  (`closeSiblingPoolMembers` pasa a los demás a un nuevo estado `'lost'`,
+  llamado tanto desde `respondToAffiliateTripAction` como desde
+  `resolveCounterOfferAction`), protegido a nivel de base de datos por un
+  índice único que ahora solo cubre estados OPERATIVOS
+  (`accepted`/`en_route`/`arrived`/`in_progress`) en vez de cualquier
+  solicitud activa — dos afiliados aceptando casi al mismo tiempo dan un
+  error de carrera con mensaje claro ("Otro afiliado ya se quedó con este
+  viaje"), no un 500. `send-to-affiliate-card.tsx` (en `/admin/bookings/[id]`)
+  ahora es una lista de checkboxes en vez de un `<select>`, y muestra un
+  estado de "pool" con cada afiliado pendiente + sus contraofertas
+  (Fase 4: comparar y aceptar cualquiera desde ahí) + "Cancelar todo el
+  envío" (`cancelAffiliatePoolAction`). **Fase 5 (auto-farm)**: si
+  `tryAutoAssignDriver` no encuentra conductor propio, y la empresa tiene la
+  Red de Afiliados activa, `tryAutoFarmToAffiliates` (en
+  `lib/dispatch/auto-assign.ts`) manda automáticamente la reserva como pool
+  a TODOS los afiliados aprobados (precio por defecto: 70% de lo cobrado al
+  pasajero) — conectado en los 3 puntos donde ya se llamaba
+  `tryAutoAssignDriver` (creación de reserva interna, reserva pública, y el
+  cron diario de respaldo), con guard contra re-ejecución (si el cron corre
+  de nuevo sobre una reserva que ya farmeó, no duplica el envío). **Score de
+  confiabilidad**: `computeAffiliateReliability()` en
+  `lib/affiliates/engine.ts` (tasa de respuesta, minutos promedio de
+  respuesta, puntualidad — mismo cálculo que ya existía por conductor en
+  `/admin/drivers/[id]`), mostrado en `/admin/affiliates` por cada relación
+  aprobada. **Recorte consciente**: el auto-farm manda a TODOS los afiliados
+  a la vez en vez de escalonar por score (mandar primero al mejor, esperar,
+  luego al siguiente) — el pool con "el primero que acepta gana" ya reparte
+  razonablemente; escalonar por score queda como fast-follow si hace falta
+  más adelante.
 
 Pedido original: explorar cómo resuelven esto Limo Anywhere (**LA Net**) y
 **GroundXchange**. Diseño inicial (LA Net/GroundXchange) reemplazado por uno
@@ -642,20 +675,30 @@ explícito del usuario):
      sigue yendo DESPUÉS del MVP (fase separada) — la corrección de este
      feedback no cambia el orden de fases, solo el diseño interno de esta
      fase específica.
-3. **Fase 3 — Pools.** Enviar a un grupo de afiliados a la vez (por ciudad,
-   aeropuerto, tipo de vehículo, rating) en vez de uno por uno; el primero
-   que acepta gana, expiración automática de los demás.
-4. **Fase 4 — Bidding.** El afiliado puede contraofertar un precio distinto
-   al ofrecido; el dispatcher compara y elige.
-5. **Fase 5 — Auto-farm.** Extender `lib/dispatch/auto-assign.ts`: si no hay
-   conductor propio disponible o la reserva cae fuera de `service_zones`,
-   buscar automáticamente entre afiliados aprobados con cobertura y tipo de
-   vehículo compatible, por reglas (zona, rating, precio máximo, margen
-   mínimo) — antes de dejar la reserva sin asignar.
-6. **Score de confiabilidad por afiliado** (transversal, se puede sumar en
-   cualquier fase): puntualidad, cancelaciones, tiempo de respuesta —
-   mismo cálculo que ya existe por conductor en `/admin/drivers/[id]`, para
-   que Fase 5 priorice al afiliado con mejor historial.
+3. ✅ **Fase 3 — Pools — HECHO 2026-07-10.** Enviar a un grupo de afiliados a
+   la vez en vez de uno por uno; el primero que acepta gana, los demás pasan
+   a `'lost'` automáticamente. (Recorte: sin filtro por ciudad/aeropuerto/
+   rating todavía — el dispatcher elige a mano de su lista de afiliados
+   aprobados vía checkboxes; el auto-farm de Fase 5 sí manda a todos los
+   aprobados sin filtrar.)
+4. ✅ **Fase 4 — Bidding — HECHO 2026-07-10.** El mecanismo de contraoferta ya
+   existía desde la Fase 1 (1 a 1); lo nuevo es la vista de pool en
+   `/admin/bookings/[id]` que muestra las contraofertas de varios afiliados
+   a la vez para que el dispatcher compare y acepte cualquiera.
+5. ✅ **Fase 5 — Auto-farm — HECHO 2026-07-10.** `tryAutoFarmToAffiliates` en
+   `lib/dispatch/auto-assign.ts`: si no hay conductor propio disponible,
+   manda automáticamente un pool a TODOS los afiliados aprobados (precio
+   por defecto 70% de lo cobrado al pasajero). (Recorte: no filtra por
+   cobertura/tipo de vehículo real de la flota del afiliado — no hay
+   visibilidad cruzada de flota ajena — ni por `service_zones`; el afiliado
+   ve el tipo de vehículo requerido en la vista previa y puede rechazar si
+   no aplica.)
+6. ✅ **Score de confiabilidad por afiliado — HECHO 2026-07-10.**
+   `computeAffiliateReliability()` en `lib/affiliates/engine.ts` (tasa de
+   respuesta, minutos promedio de respuesta, puntualidad), mostrado en
+   `/admin/affiliates`. (Recorte: el auto-farm de Fase 5 NO prioriza/escalona
+   por este score todavía — manda a todos a la vez; usar el score para
+   priorizar queda como fast-follow.)
 
 **Diferenciadores reales frente a LA Net/GroundXchange** (según el
 documento, validados): link externo sin cuenta para afiliados (punto 2),
