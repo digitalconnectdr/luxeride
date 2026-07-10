@@ -5,9 +5,18 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
 import { PressableScale } from '../components/PressableScale'
-import { Card, EmptyState, ScreenLoader, StatusBadge } from '../components/ui'
+import { Card, EmptyState, ScreenLoader, SectionLabel, StatusBadge } from '../components/ui'
 import { color, font, radius, space } from '../lib/theme'
-import { ACTIVE_STATUSES, type DriverBooking, type TripsStackParamList } from '../lib/types'
+import { ACTIVE_STATUSES, type AffiliateTrip, type DriverBooking, type TripsStackParamList } from '../lib/types'
+
+const AFFILIATE_ACTIVE_STATUSES = ['accepted', 'en_route', 'arrived', 'in_progress']
+
+const AFFILIATE_STATUS_LABEL: Record<string, string> = {
+  accepted: 'Asignado',
+  en_route: 'En ruta al pickup',
+  arrived: 'En el punto de recogida',
+  in_progress: 'Viaje en curso',
+}
 
 type Props = NativeStackScreenProps<TripsStackParamList, 'TripsList'>
 
@@ -98,6 +107,7 @@ function TripCard({ trip, isNext, index, onPress }: { trip: DriverBooking; isNex
 
 export function TripsListScreen({ navigation }: Props) {
   const [trips, setTrips] = useState<DriverBooking[]>([])
+  const [affiliateTrips, setAffiliateTrips] = useState<AffiliateTrip[]>([])
   const [loading, setLoading] = useState(true)
   const [, setTick] = useState(0)
 
@@ -107,14 +117,23 @@ export function TripsListScreen({ navigation }: Props) {
     } = await supabase.auth.getUser()
     if (!user) return
 
-    const { data } = await supabase
-      .from('bookings')
-      .select(BOOKING_COLUMNS)
-      .eq('driver_id', user.id)
-      .in('status', ACTIVE_STATUSES)
-      .order('scheduled_at', { ascending: true })
+    const [{ data }, { data: affiliateData }] = await Promise.all([
+      supabase
+        .from('bookings')
+        .select(BOOKING_COLUMNS)
+        .eq('driver_id', user.id)
+        .in('status', ACTIVE_STATUSES)
+        .order('scheduled_at', { ascending: true }),
+      supabase
+        .from('affiliate_trips')
+        .select('id, booking_id, status, affiliate_company_id, preview_zone, preview_scheduled_at, en_route_at, arrived_at, started_at, completed_at')
+        .eq('driver_id', user.id)
+        .in('status', AFFILIATE_ACTIVE_STATUSES)
+        .order('preview_scheduled_at', { ascending: true }),
+    ])
 
     setTrips((data as DriverBooking[] | null) ?? [])
+    setAffiliateTrips((affiliateData as AffiliateTrip[] | null) ?? [])
     setLoading(false)
   }, [])
 
@@ -162,6 +181,34 @@ export function TripsListScreen({ navigation }: Props) {
           />
         ))
       )}
+
+      {affiliateTrips.length > 0 && (
+        <>
+          <SectionLabel>Viajes de la red de afiliados</SectionLabel>
+          {affiliateTrips.map((trip) => (
+            <PressableScale
+              key={trip.id}
+              onPress={() => navigation.navigate('AffiliateTripDetail', { affiliateTripId: trip.id })}
+              haptic="light"
+            >
+              <Card style={styles.affiliateCard}>
+                <View style={styles.affiliateTopRow}>
+                  <View style={styles.affiliateBadge}>
+                    <Ionicons name="git-network-outline" size={12} color={color.gold} />
+                    <Text style={styles.affiliateBadgeText}>AFILIADO</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={color.inkFaint} />
+                </View>
+                <Text style={styles.affiliateStatus}>{AFFILIATE_STATUS_LABEL[trip.status] ?? trip.status}</Text>
+                <View style={styles.passengerRow}>
+                  <Ionicons name="location-outline" size={14} color={color.inkMuted} />
+                  <Text style={styles.affiliateZone}>{trip.preview_zone ?? 'Zona sin especificar'}</Text>
+                </View>
+              </Card>
+            </PressableScale>
+          ))}
+        </>
+      )}
     </ScrollView>
   )
 }
@@ -201,4 +248,10 @@ const styles = StyleSheet.create({
   },
   flightChipText: { color: color.inkFaint, fontFamily: font.bodyMedium, fontSize: 12 },
   flightChipTextAlert: { color: color.warning },
+  affiliateCard: { borderStyle: 'dashed', borderWidth: 1, borderColor: `${color.gold}55` },
+  affiliateTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  affiliateBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  affiliateBadgeText: { color: color.gold, fontFamily: font.bodyBold, fontSize: 10, letterSpacing: 1 },
+  affiliateStatus: { color: color.ink, fontFamily: font.bodySemi, fontSize: 15, marginTop: space.sm, marginBottom: space.sm },
+  affiliateZone: { color: color.inkMuted, fontFamily: font.body, fontSize: 13 },
 })

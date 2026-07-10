@@ -17,6 +17,7 @@ import {
 } from '@/lib/policy/engine'
 import { waitUntil } from '@vercel/functions'
 import { notifyBookingEventInBackground, notify } from '@/lib/notifications'
+import { notifyDriverPushInBackground } from '@/lib/notifications/push'
 import { trackBookingFlight } from '@/lib/flights/refresh'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
 import { checkMonthlyBookingLimit } from '@/lib/plans/limits'
@@ -666,6 +667,13 @@ export async function assignDriverAction(
     plate_number: vehicle?.plate_number ?? '',
     tracking_url: `${getAppUrl()}/track/${booking.id}`,
   }))
+
+  notifyDriverPushInBackground(
+    driverId,
+    'Nuevo viaje asignado',
+    `${booking.booking_number} · ${(booking.pickup_location as { address?: string } | null)?.address ?? ''}`,
+    { bookingId: booking.id, type: 'trip_assigned' },
+  )
 
   if (isReassignment && previousDriverId) {
     await admin.from('booking_events').insert({

@@ -957,10 +957,18 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
    perfil del conductor (visible al pasajero en `/track/[id]`), rechazar
    viaje asignado, reportar incidente en viaje activo, y calificar al
    pasajero al completar (las tres reusan la misma lógica ya construida en
-   la web). Funciones que la web tiene y la app aún no (chat con
-   pasajero, push de nuevo viaje asignado, mapa embebido, multi-stop,
-   viajes de la Red de Afiliados, cola offline) quedan listadas como
-   backlog explícito en docs/PHASE-2-MOBILE.md → "Progreso (2026-07-09)".
+   la web). También agregado: **notificaciones push** (Expo, con sonido
+   incluso con la app abierta) para viaje nuevo asignado / mensaje de chat /
+   viaje de afiliado asignado (migración 44, `device_tokens`) — requiere que
+   el usuario corra su primer `eas build` para que el registro del token
+   funcione; **chat con el pasajero** dentro de la app (lee/escribe directo
+   por RLS, Realtime); y **viajes de la Red de Afiliados visibles** en la
+   app (sección aparte, detalle vía ruta nueva con service-role). Pendiente
+   detectado de paso y NO arreglado (flaggeado aparte): algunas acciones de
+   `app/actions/affiliates.ts` no validan rol/pertenencia antes de mutar.
+   Lo que sigue faltando (mapa embebido, multi-stop, cola offline) queda
+   listado como backlog explícito en docs/PHASE-2-MOBILE.md → "Progreso
+   (2026-07-09)".
 8. **Gaps mayores**: QuickBooks, e-signatures, promo codes, detección de
    conflictos de vehículo, nómina de conductores, WhatsApp Business.
    Pospuesto a propósito. (farm-in/farm-out ya tiene diseño concreto, ver

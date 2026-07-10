@@ -372,7 +372,7 @@ export async function assignAffiliateDriverAction(opts: {
 
   const admin = createAdminClient()
   const [{ data: trip }, { data: driver }, { data: vehicle }] = await Promise.all([
-    admin.from('affiliate_trips').select('id, affiliate_company_id, status').eq('id', opts.affiliateTripId).single(),
+    admin.from('affiliate_trips').select('id, affiliate_company_id, status, booking_id').eq('id', opts.affiliateTripId).single(),
     admin.from('user_profiles').select('id, company_id, role').eq('id', opts.driverId).maybeSingle(),
     admin.from('vehicles').select('id, company_id').eq('id', opts.vehicleId).maybeSingle(),
   ])
@@ -389,6 +389,14 @@ export async function assignAffiliateDriverAction(opts: {
     .eq('id', opts.affiliateTripId)
 
   if (error) return { success: false, error: error.message }
+
+  const { data: booking } = await admin.from('bookings').select('booking_number').eq('id', trip.booking_id).maybeSingle()
+  const { notifyDriverPushInBackground } = await import('@/lib/notifications/push')
+  notifyDriverPushInBackground(opts.driverId, 'Nuevo viaje de afiliado', booking?.booking_number ?? 'Viaje asignado', {
+    affiliateTripId: opts.affiliateTripId,
+    type: 'affiliate_trip_assigned',
+  })
+
   revalidatePath('/admin/affiliates/requests')
   revalidatePath('/driver/trips')
   return { success: true }

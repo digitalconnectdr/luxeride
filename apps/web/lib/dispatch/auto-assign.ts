@@ -11,6 +11,7 @@
 
 import { createAdminClient } from '@/lib/supabase/server'
 import { notifyBookingEventInBackground } from '@/lib/notifications'
+import { notifyDriverPushInBackground } from '@/lib/notifications/push'
 import { getAppUrl } from '@/lib/app-url'
 
 // Margen entre el fin estimado de un viaje y el inicio del siguiente para no
@@ -185,6 +186,11 @@ export async function tryAutoAssignDriver(
     totalAmount: booking.total_amount,
     currency: booking.currency ?? 'USD',
     extraVars: { tracking_url: `${getAppUrl()}/track/${booking.id}` },
+  })
+
+  notifyDriverPushInBackground(driverId, 'Nuevo viaje asignado', `${booking.booking_number} · ${pickup}`, {
+    bookingId: booking.id,
+    type: 'trip_assigned',
   })
 
   return { assigned: true, driverId }

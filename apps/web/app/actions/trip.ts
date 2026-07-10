@@ -7,6 +7,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
+import type { SessionUser } from '@/lib/auth/session'
 import { parsePolicy, computeCancellationFee, parseExtraFees } from '@/lib/policy/engine'
 import { calculateFare, bestRule, type PricingRuleFields } from '@/lib/pricing/engine'
 import { calculateRoute } from '@/lib/maps/routes'
@@ -671,7 +672,7 @@ export async function sendClientMessageAction(
   const admin = createAdminClient()
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, company_id, status')
+    .select('id, company_id, status, driver_id, booking_number')
     .eq('id', bookingId)
     .single()
   if (!booking) return { success: false, error: 'Reserva no encontrada' }
@@ -689,6 +690,15 @@ export async function sendClientMessageAction(
     console.error('[sendClientMessageAction]', error)
     return { success: false, error: 'No se pudo enviar el mensaje.' }
   }
+
+  if (booking.driver_id) {
+    const { notifyDriverPushInBackground } = await import('@/lib/notifications/push')
+    notifyDriverPushInBackground(booking.driver_id, `Mensaje · ${booking.booking_number}`, clean.slice(0, 120), {
+      bookingId: booking.id,
+      type: 'chat_message',
+    })
+  }
+
   return { success: true }
 }
 
@@ -776,8 +786,7 @@ export async function markClientMessagesReadAction(bookingId: string): Promise<{
   return { success: true }
 }
 
-export async function markDriverMessagesReadAction(bookingId: string): Promise<{ success: boolean }> {
-  const user = await requireRole('driver')
+export async function markDriverMessagesRead(user: SessionUser, bookingId: string): Promise<{ success: boolean }> {
   const admin = createAdminClient()
   const { data: booking } = await admin
     .from('bookings')
@@ -794,4 +803,9 @@ export async function markDriverMessagesReadAction(bookingId: string): Promise<{
     .eq('sender', 'client')
     .is('read_at', null)
   return { success: true }
+}
+
+export async function markDriverMessagesReadAction(bookingId: string): Promise<{ success: boolean }> {
+  const user = await requireRole('driver')
+  return markDriverMessagesRead(user, bookingId)
 }

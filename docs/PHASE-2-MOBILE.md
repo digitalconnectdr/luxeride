@@ -194,28 +194,71 @@ A pedido del usuario ("no quiero que se vea de aficionados"):
   botones, duplicando el ícono real ya agregado en el rediseño premium —
   limpiado.
 
+### Ronda 3 (2026-07-09, mismo día) — push con sonido, chat, viajes de afiliados
+
+A pedido del usuario: notificaciones push, chat con el pasajero y viajes de
+afiliados, los tres con sonido cuando ocurren.
+
+- **Push (Expo), simplificado a propósito**: NO pasa por el sistema de
+  templates de `notification_templates` (ese es para email/SMS al
+  pasajero, multi-idioma por empresa) — es un aviso operativo corto SOLO al
+  conductor, mismo alcance ya aceptado de "la app es 100% español por
+  ahora". Migración 44 (`device_tokens`, RLS: cada usuario gestiona solo
+  sus propios tokens). `lib/notifications/push.ts` (`notifyDriverPush` /
+  `notifyDriverPushInBackground`, vía Expo Push API directa, gratis, sin
+  Firebase) — se dispara desde 3 puntos: viaje nuevo asignado (manual en
+  `app/actions/bookings.ts` y automático en `lib/dispatch/auto-assign.ts`),
+  nuevo mensaje de chat del pasajero (`sendClientMessageAction` en
+  `app/actions/trip.ts`), y viaje de afiliado asignado
+  (`assignAffiliateDriverAction` en `app/actions/affiliates.ts`). En la
+  app: `lib/push.ts` (`registerForPushNotifications`, montado en `App.tsx`
+  tras login) pide permiso y registra el token; el `setNotificationHandler`
+  fuerza `shouldPlaySound: true` **incluso con la app abierta** — el
+  "sonido cuando ocurran" pedido se resuelve solo con esto, sin necesitar
+  un sistema de sonido local aparte para el chat. **Caveat real**: pedir el
+  token de Expo requiere un `projectId` de EAS; como el usuario todavía no
+  corrió su primer `eas build`, el registro puede fallar en silencio
+  (try/catch) hasta que exista ese build — se resuelve solo, no rompe nada
+  mientras tanto.
+- **Chat con el pasajero dentro de la app**: `screens/ChatScreen.tsx`, leer/
+  enviar mensajes van DIRECTO por Supabase (RLS `driver_reads_trip_messages`/
+  `driver_writes_trip_messages`, migración 18 — ya existían, no fue
+  necesario tocar nada del lado del servidor para eso) + Realtime
+  (`postgres_changes` sobre `trip_messages`). Marcar como leído sí necesitó
+  refactor núcleo+wrapper (`markDriverMessagesRead` en `app/actions/trip.ts`,
+  ya no hay policy de UPDATE para el driver) + ruta nueva
+  `/api/mobile/driver/mark-messages-read`. Botón "Chat con el pasajero" en
+  `TripDetailScreen`.
+- **Viajes de la Red de Afiliados visibles en la app**: `TripsListScreen`
+  ahora también consulta `affiliate_trips` (RLS
+  `affiliate_driver_reads_own_affiliate_trips`, ya existía) y los muestra en
+  una sección aparte con borde punteado dorado. El detalle completo
+  (pickup/dropoff exactos, nombre/teléfono del pasajero) NO se puede leer
+  directo por RLS —vive en `bookings`, que pertenece a la empresa dueña, no
+  a la afiliada— así que `screens/AffiliateTripDetailScreen.tsx` lo pide a
+  una ruta nueva con service-role,
+  `/api/mobile/driver/affiliate-trip-detail`, que valida primero que el
+  viaje sea del conductor. Avanzar estado SÍ tiene RLS de UPDATE directa
+  para el conductor (`affiliate_driver_updates_own_affiliate_trips`), pero
+  se reusa `advanceAffiliateTripAction` vía
+  `/api/mobile/driver/advance-affiliate-trip` para no duplicar la lógica de
+  transición de estados/timestamps.
+- **Hallazgo de seguridad fuera de alcance, NO arreglado en esta ronda**:
+  `advanceAffiliateTripAction` y partes de `assignAffiliateDriverAction` en
+  `app/actions/affiliates.ts` no llaman `requireRole(...)` ni validan
+  pertenencia — alcanzables como RPC por cualquier sesión autenticada del
+  sitio. Flaggeado como tarea aparte (spawn_task), no auditado a fondo
+  todavía.
+
 ### Funciones avanzadas que la web tiene y la app nativa todavía NO (candidatas para seguir, sin construir)
 
 Comparadas contra `/driver/trips` en la web, que ya tiene años de iteración:
 
-1. **Chat con el pasajero dentro de la app** (`trip_messages` + Realtime) —
-   hoy la app solo tiene Llamar/WhatsApp (salen de la app); la web tiene un
-   chat completo con acuses de leído.
-2. **Notificaciones push** cuando se le asigna un viaje nuevo — hoy el
-   conductor tiene que abrir la app para enterarse; requiere tabla
-   `device_tokens` + Expo push (ya estaba en el plan original de Sprint 0 de
-   este documento).
-3. **Mapa embebido con posición en vivo propia** dentro de la app (en vez de
+1. **Mapa embebido con posición en vivo propia** dentro de la app (en vez de
    solo botones a Waze/Google Maps) — usaría `react-native-maps`.
-4. **Paradas adicionales (multi-stop)** y **vehículo asignado** — la web
+2. **Paradas adicionales (multi-stop)** y **vehículo asignado** — la web
    los muestra/soporta, la app no.
-5. **Viajes de la Red de Afiliados (Sección G, Fase 1 ya construida)**: los
-   viajes farmed-in NO aparecen en la app — la web los muestra en una
-   sección aparte porque viven en `affiliate_trips`, no en `bookings`
-   (la consulta actual de la app solo lee `bookings`). Si un conductor
-   recibe viajes de afiliados, hoy tendría que seguir usando la web para
-   verlos.
-6. **Cola offline** para zonas sin señal (aeropuertos) — estaba en el plan
+3. **Cola offline** para zonas sin señal (aeropuertos) — estaba en el plan
    original de Fase 2A, no construida aún ni en web ni en app.
 
 Ninguna de estas está construida todavía — quedan como backlog explícito

@@ -15,11 +15,14 @@ import {
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { useDriverPresenceReporter } from './lib/presenceReporter'
+import { registerForPushNotifications } from './lib/push'
 import { color, font } from './lib/theme'
 import { ScreenLoader } from './components/ui'
 import { LoginScreen } from './screens/LoginScreen'
 import { TripsListScreen } from './screens/TripsListScreen'
 import { TripDetailScreen } from './screens/TripDetailScreen'
+import { ChatScreen } from './screens/ChatScreen'
+import { AffiliateTripDetailScreen } from './screens/AffiliateTripDetailScreen'
 import { EarningsScreen } from './screens/EarningsScreen'
 import { DocumentsScreen } from './screens/DocumentsScreen'
 import { ProfileScreen } from './screens/ProfileScreen'
@@ -40,6 +43,8 @@ function TripsStackScreen() {
     <TripsStack.Navigator screenOptions={darkHeader}>
       <TripsStack.Screen name="TripsList" component={TripsListScreen} options={{ title: 'Hoy' }} />
       <TripsStack.Screen name="TripDetail" component={TripDetailScreen} options={{ title: 'Viaje' }} />
+      <TripsStack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat' }} />
+      <TripsStack.Screen name="AffiliateTripDetail" component={AffiliateTripDetailScreen} options={{ title: 'Viaje de afiliado' }} />
     </TripsStack.Navigator>
   )
 }
@@ -146,6 +151,12 @@ export default function App() {
 // pantalla de login.
 function DriverApp() {
   useDriverPresenceReporter()
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) registerForPushNotifications(data.user.id)
+    })
+  }, [])
 
   return (
     <NavigationContainer>

@@ -1055,6 +1055,35 @@ export type Database = {
         Relationships: []
       }
 
+      // ── device_tokens (push Expo — nuevo viaje / chat / afiliados) ──────────
+      device_tokens: {
+        Row: {
+          id: string
+          user_id: string
+          expo_push_token: string
+          platform: string
+          last_seen: string
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          user_id: string
+          expo_push_token: string
+          platform?: string | undefined
+          last_seen?: string | undefined
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          user_id?: string | undefined
+          expo_push_token?: string | undefined
+          platform?: string | undefined
+          last_seen?: string | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── driver_presence (última posición del conductor mientras está "en
       // servicio", independiente de tener un viaje activo — Dispatch Board) ──
       driver_presence: {

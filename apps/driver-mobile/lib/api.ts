@@ -12,7 +12,10 @@ export interface ApiResult {
   error?: string
 }
 
-export async function callDriverApi(path: string, body: Record<string, unknown>): Promise<ApiResult> {
+export async function callDriverApi<T extends object = object>(
+  path: string,
+  body: Record<string, unknown>,
+): Promise<ApiResult & T> {
   const {
     data: { session },
   } = await supabase.auth.getSession()
@@ -26,8 +29,8 @@ export async function callDriverApi(path: string, body: Record<string, unknown>)
       },
       body: JSON.stringify(body),
     })
-    return (await res.json()) as ApiResult
+    return (await res.json()) as ApiResult & T
   } catch {
-    return { success: false, error: 'Error de conexión. Intenta de nuevo.' }
+    return { success: false, error: 'Error de conexión. Intenta de nuevo.' } as ApiResult & T
   }
 }

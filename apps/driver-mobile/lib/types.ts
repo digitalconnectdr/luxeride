@@ -56,7 +56,30 @@ export const STATUS_LABEL: Partial<Record<BookingStatus, string>> = {
 
 export const ACTIVE_STATUSES: BookingStatus[] = ['assigned', 'en_route', 'arrived', 'in_progress']
 
+export interface TripMessage {
+  id: string
+  sender: 'client' | 'driver'
+  body: string
+  created_at: string
+  read_at: string | null
+}
+
+export interface AffiliateTrip {
+  id: string
+  booking_id: string
+  status: 'accepted' | 'en_route' | 'arrived' | 'in_progress' | 'completed'
+  affiliate_company_id: string
+  preview_zone: string | null
+  preview_scheduled_at: string
+  en_route_at: string | null
+  arrived_at: string | null
+  started_at: string | null
+  completed_at: string | null
+}
+
 export type TripsStackParamList = {
   TripsList: undefined
   TripDetail: { tripId: string }
+  Chat: { tripId: string }
+  AffiliateTripDetail: { affiliateTripId: string }
 }

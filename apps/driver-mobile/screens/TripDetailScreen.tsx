@@ -211,6 +211,11 @@ export function TripDetailScreen({ route, navigation }: Props) {
             </PressableScale>
           </View>
         )}
+
+        <PressableScale style={styles.chatButton} onPress={() => navigation.navigate('Chat', { tripId: trip.id })}>
+          <Ionicons name="chatbubble-ellipses-outline" size={16} color={color.gold} />
+          <Text style={styles.chatButtonText}>Chat con el pasajero</Text>
+        </PressableScale>
       </Card>
 
       <Card>
@@ -460,6 +465,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   contactButtonText: { color: color.ink, fontFamily: font.bodySemi, fontSize: 13 },
+  chatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.xs,
+    marginTop: space.sm,
+    paddingVertical: 12,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: `${color.gold}55`,
+  },
+  chatButtonText: { color: color.gold, fontFamily: font.bodySemi, fontSize: 13 },
   routeBlock: { marginTop: space.md },
   routeStop: { flexDirection: 'row', gap: space.md },
   routeIconCol: { width: 14, alignItems: 'center' },
