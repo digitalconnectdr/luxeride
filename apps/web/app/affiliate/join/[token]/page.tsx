@@ -18,7 +18,7 @@ export default async function AffiliateJoinPage({ params }: { params: { token: s
 
   return (
     <div className="min-h-screen bg-sl-bg flex items-center justify-center p-4 py-10">
-      <div className={`w-full ${preview?.valid ? 'max-w-2xl' : 'max-w-md'}`}>
+      <div className={`w-full ${preview?.valid ? 'max-w-3xl' : 'max-w-md'}`}>
         <div className="mb-8 text-center">
           <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface mb-2">{t.pageTitle}</h1>
           {preview?.valid && (
@@ -28,7 +28,7 @@ export default async function AffiliateJoinPage({ params }: { params: { token: s
           )}
         </div>
 
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-8 shadow-luxury">
+        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-8 md:p-12 shadow-luxury">
           {!preview?.valid ? (
             <div className="text-center space-y-2">
               <p className="font-medium text-sl-on-surface">{t.invalidTitle}</p>

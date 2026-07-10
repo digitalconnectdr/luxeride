@@ -23,12 +23,13 @@ export function JoinExternalAffiliateForm({ token, t }: { token: string; t: T })
         </div>
       )}
 
-      {/* Dos columnas desde md: hasta ahí el formulario era una sola columna
-          angosta (pensada para mobile) que en desktop quedaba absurdamente
-          larga — ahora Empresa y Cuenta se ven lado a lado en pantallas
-          anchas, una sola columna en mobile. */}
-      <div className="grid gap-6 md:grid-cols-2 md:gap-x-8">
-        <div className="space-y-4">
+      {/* Dos columnas desde md, cada una con la misma cantidad de campos
+          (empresa + identidad a la izquierda, contacto + credenciales a la
+          derecha) para que ambas queden parejas en altura y el contenedor
+          ancho no deje un hueco de espacio vacío debajo de una sola columna
+          corta. */}
+      <div className="grid gap-8 md:grid-cols-2 md:gap-x-12">
+        <div className="space-y-5">
           <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.companySection}</p>
           <div className="space-y-1.5">
             <label htmlFor="company_name" className={labelClass}>{t.companyNameLabel}</label>
@@ -38,11 +39,7 @@ export function JoinExternalAffiliateForm({ token, t }: { token: string; t: T })
             <label htmlFor="city" className={labelClass}>{t.cityLabel}</label>
             <input id="city" name="city" type="text" className={inputClass} />
           </div>
-        </div>
-
-        <div className="space-y-4 md:border-l md:border-sl-outline-variant md:pl-8">
-          <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.ownerSection}</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label htmlFor="first_name" className={labelClass}>{t.firstNameLabel}</label>
               <input id="first_name" name="first_name" type="text" autoComplete="given-name" required className={inputClass} />
@@ -52,6 +49,10 @@ export function JoinExternalAffiliateForm({ token, t }: { token: string; t: T })
               <input id="last_name" name="last_name" type="text" autoComplete="family-name" required className={inputClass} />
             </div>
           </div>
+        </div>
+
+        <div className="space-y-5 md:border-l md:border-sl-outline-variant md:pl-12">
+          <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.ownerSection}</p>
           <div className="space-y-1.5">
             <label htmlFor="email" className={labelClass}>{t.emailLabel}</label>
             <input id="email" name="email" type="email" autoComplete="email" required className={inputClass} />
