@@ -287,6 +287,44 @@ A partir de probar un viaje real de punta a punta en el teléfono:
   (pantalla limpia, para entregarle el teléfono al pasajero) sin que se
   vean juntos.
 
+### Ronda 5 (2026-07-10) — bug de fondo en PressableScale + más feedback de uso
+
+Probando el viaje de prueba con el rediseño de la Ronda 4 puesto:
+
+- **Bug real encontrado y arreglado en `components/PressableScale.tsx`**:
+  el `style` del llamador (que casi siempre incluye `flex: 1` para
+  estirarse en una fila) solo se aplicaba al `Pressable` interno — el
+  `Animated.View` exterior, que es el que en realidad es hijo directo de la
+  fila del padre, nunca recibía ese `flex: 1` y se encogía al tamaño de su
+  contenido. Esto explicaba DOS reportes distintos a la vez: los botones
+  Llamar/WhatsApp que "seguían igual" pese al rediseño, Y los botones de la
+  firma (Borrar/Omitir/Guardar) que no se veían — mismo bug de fondo, dos
+  síntomas. Fix: las propiedades de tamaño (`flex`, `width`, `alignSelf`,
+  etc.) ahora también se copian al `Animated.View` exterior; el resto del
+  estilo se queda igual en el `Pressable` interno. Afecta a TODA la app
+  (cualquier botón con `flex: 1` en una fila), no solo esas dos pantallas.
+- **Mapa: sin placeholder cuando falla** — antes, si el mapa no cargaba,
+  se mostraba un cuadro con un ícono de mapa (se leía como "error de
+  carga"). Ahora si `mapUrl` no está disponible o la imagen falla, no se
+  muestra nada — ni la tarjeta.
+- **Estado del viaje más compacto**: el "hero" de estado de la Ronda 4
+  quedaba demasiado alto/ancho para una sola línea de texto. Se redujo
+  ícono, padding y tamaño de fuente para que se vea como una píldora
+  compacta de una sola línea, sin espacio sobrante.
+- **Ganancias: rango de fechas (7/15/30 días) + cantidad de viajes**:
+  `EarningsScreen` ahora trae hasta 30 días de viajes completados en un
+  solo fetch (antes traía los últimos 30 REGISTROS sin importar la fecha)
+  y filtra en cliente según el rango elegido — sin pegarle de nuevo al
+  servidor al cambiar de rango. Se agregó una tarjeta con el total ganado
+  + cantidad de viajes completados en el rango seleccionado, sin tocar la
+  tarjeta de "ganancias totales" (histórico) que ya existía.
+- **Notificaciones push con el teléfono bloqueado — sigue sin funcionar,
+  por la misma razón de siempre**: Expo Go no soporta push remoto desde el
+  SDK 53 (ver Ronda 3). No hay fix de código posible para esto mientras se
+  pruebe en Expo Go — se necesita un development build
+  (`eas build --profile development`, perfil ya listo en `eas.json`) o el
+  APK final para validar esto de verdad.
+
 ### Funciones avanzadas que la web tiene y la app nativa todavía NO (candidatas para seguir, sin construir)
 
 Comparadas contra `/driver/trips` en la web, que ya tiene años de iteración:

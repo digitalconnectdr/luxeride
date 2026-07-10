@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { View, Text, StyleSheet, RefreshControl, ScrollView, TextInput } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -14,6 +14,16 @@ interface CompletedTrip
   extends Pick<DriverBooking, 'id' | 'booking_number' | 'passenger_name' | 'total_amount' | 'currency' | 'completed_at'> {
   driver_rated_at: string | null
 }
+
+const RANGE_OPTIONS = [
+  { days: 7, label: '7 días' },
+  { days: 15, label: '15 días' },
+  { days: 30, label: '30 días' },
+] as const
+
+// Cubre el rango más amplio (30 días) en un solo fetch — cambiar de rango
+// solo filtra en cliente, sin volver a golpear la red.
+const FETCH_WINDOW_DAYS = 30
 
 function TripRow({ trip, isFirst, onRated }: { trip: CompletedTrip; isFirst: boolean; onRated: (id: string) => void }) {
   const [expanded, setExpanded] = useState(false)
@@ -90,12 +100,15 @@ export function EarningsScreen() {
   const [totalTrips, setTotalTrips] = useState(0)
   const [trips, setTrips] = useState<CompletedTrip[]>([])
   const [loading, setLoading] = useState(true)
+  const [rangeDays, setRangeDays] = useState<number>(7)
 
   const load = useCallback(async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) return
+
+    const windowStart = new Date(Date.now() - FETCH_WINDOW_DAYS * 86_400_000).toISOString()
 
     const [{ data: driverRow }, { data: tripRows }] = await Promise.all([
       supabase.from('drivers').select('total_earnings, total_trips').eq('id', user.id).maybeSingle(),
@@ -104,8 +117,9 @@ export function EarningsScreen() {
         .select('id, booking_number, passenger_name, total_amount, currency, completed_at, driver_rated_at')
         .eq('driver_id', user.id)
         .eq('status', 'completed')
+        .gte('completed_at', windowStart)
         .order('completed_at', { ascending: false })
-        .limit(30),
+        .limit(300),
     ])
 
     setTotalEarnings(driverRow?.total_earnings ?? 0)
@@ -123,6 +137,16 @@ export function EarningsScreen() {
   function markRated(id: string) {
     setTrips((prev) => prev.map((t) => (t.id === id ? { ...t, driver_rated_at: new Date().toISOString() } : t)))
   }
+
+  const rangedTrips = useMemo(() => {
+    const cutoff = Date.now() - rangeDays * 86_400_000
+    return trips.filter((t) => t.completed_at && new Date(t.completed_at).getTime() >= cutoff)
+  }, [trips, rangeDays])
+
+  const rangedEarnings = useMemo(
+    () => rangedTrips.reduce((sum, t) => sum + (t.total_amount ?? 0), 0),
+    [rangedTrips],
+  )
 
   if (loading) return <ScreenLoader />
 
@@ -143,13 +167,38 @@ export function EarningsScreen() {
         </View>
       </LinearGradient>
 
-      <SectionLabel>Últimos viajes completados</SectionLabel>
+      <View style={styles.rangeHeader}>
+        <SectionLabel>Período</SectionLabel>
+        <View style={styles.rangeToggle}>
+          {RANGE_OPTIONS.map((opt) => (
+            <PressableScale
+              key={opt.days}
+              style={[styles.rangeButton, rangeDays === opt.days && styles.rangeButtonActive]}
+              onPress={() => setRangeDays(opt.days)}
+            >
+              <Text style={[styles.rangeButtonText, rangeDays === opt.days && styles.rangeButtonTextActive]}>{opt.label}</Text>
+            </PressableScale>
+          ))}
+        </View>
+      </View>
 
-      {trips.length === 0 ? (
-        <EmptyState icon="wallet-outline" title="Aún no tienes viajes completados" subtitle="Tus ganancias aparecerán aquí a medida que completes viajes." />
+      <Card style={styles.rangeStatCard}>
+        <Text style={styles.rangeStatValue}>${rangedEarnings.toFixed(2)}</Text>
+        <View style={styles.rangeStatFooter}>
+          <Ionicons name="checkmark-done" size={13} color={color.inkFaint} />
+          <Text style={styles.rangeStatFooterText}>
+            {rangedTrips.length} viaje{rangedTrips.length === 1 ? '' : 's'} completado{rangedTrips.length === 1 ? '' : 's'} en los últimos {rangeDays} días
+          </Text>
+        </View>
+      </Card>
+
+      <SectionLabel>Viajes completados</SectionLabel>
+
+      {rangedTrips.length === 0 ? (
+        <EmptyState icon="wallet-outline" title="Sin viajes en este período" subtitle="Prueba con un rango más amplio, o aún no has completado viajes." />
       ) : (
         <Card style={styles.listCard}>
-          {trips.map((t, i) => (
+          {rangedTrips.map((t, i) => (
             <TripRow key={t.id} trip={t} isFirst={i === 0} onRated={markRated} />
           ))}
         </Card>
@@ -173,6 +222,23 @@ const styles = StyleSheet.create({
   heroValue: { color: color.gold, fontFamily: font.display, fontSize: 44, marginTop: space.sm },
   heroFooter: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: space.md },
   heroFooterText: { color: color.inkFaint, fontFamily: font.body, fontSize: 12 },
+  rangeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  rangeToggle: {
+    flexDirection: 'row',
+    backgroundColor: color.surface,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.border,
+    padding: 3,
+  },
+  rangeButton: { paddingHorizontal: space.md, paddingVertical: 6, borderRadius: radius.pill },
+  rangeButtonActive: { backgroundColor: color.gold },
+  rangeButtonText: { color: color.inkMuted, fontFamily: font.bodySemi, fontSize: 12 },
+  rangeButtonTextActive: { color: color.bg },
+  rangeStatCard: { alignItems: 'center', paddingVertical: space.xl },
+  rangeStatValue: { color: color.ink, fontFamily: font.displaySemi, fontSize: 28 },
+  rangeStatFooter: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: space.sm },
+  rangeStatFooterText: { color: color.inkFaint, fontFamily: font.body, fontSize: 12 },
   listCard: { padding: 0, overflow: 'hidden' },
   tripRow: { padding: space.lg },
   tripRowDivider: { borderTopWidth: 1, borderTopColor: color.border },

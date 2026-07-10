@@ -220,8 +220,10 @@ export function TripDetailScreen({ route, navigation }: Props) {
         <Text style={styles.bookingNumber}>{trip.booking_number}</Text>
 
         <View style={[styles.statusHero, { backgroundColor: `${statusTint}1c`, borderColor: `${statusTint}55` }]}>
-          <Ionicons name={STATUS_ICON[trip.status] ?? 'ellipse'} size={20} color={statusTint} />
-          <Text style={[styles.statusHeroText, { color: statusTint }]}>{STATUS_LABEL[trip.status] ?? trip.status}</Text>
+          <Ionicons name={STATUS_ICON[trip.status] ?? 'ellipse'} size={15} color={statusTint} />
+          <Text style={[styles.statusHeroText, { color: statusTint }]} numberOfLines={1}>
+            {STATUS_LABEL[trip.status] ?? trip.status}
+          </Text>
         </View>
 
         <View style={styles.divider} />
@@ -251,20 +253,10 @@ export function TripDetailScreen({ route, navigation }: Props) {
         )}
       </Card>
 
-      {MAP_VISIBLE_STATUSES.has(trip.status) && (mapUrl || !mapFailed) && (
+      {MAP_VISIBLE_STATUSES.has(trip.status) && mapUrl && !mapFailed && (
         <Card style={styles.mapCard}>
           <SectionLabel>Ubicación</SectionLabel>
-          {mapUrl && !mapFailed ? (
-            <Image
-              source={{ uri: mapUrl }}
-              style={styles.mapImage}
-              onError={() => setMapFailed(true)}
-            />
-          ) : (
-            <View style={styles.mapPlaceholder}>
-              <Ionicons name="map-outline" size={22} color={color.inkFaint} />
-            </View>
-          )}
+          <Image source={{ uri: mapUrl }} style={styles.mapImage} onError={() => setMapFailed(true)} />
         </Card>
       )}
 
@@ -516,15 +508,15 @@ const styles = StyleSheet.create({
   statusHero: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.sm,
+    gap: space.xs,
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderRadius: radius.md,
-    paddingVertical: 10,
-    paddingHorizontal: space.lg,
-    marginTop: space.md,
+    borderRadius: radius.sm,
+    paddingVertical: 6,
+    paddingHorizontal: space.md,
+    marginTop: space.sm,
   },
-  statusHeroText: { fontFamily: font.bodyBold, fontSize: 16 },
+  statusHeroText: { fontFamily: font.bodyBold, fontSize: 14 },
   divider: { height: 1, backgroundColor: color.border, marginVertical: space.lg },
   passengerName: { color: color.ink, fontFamily: font.displaySemi, fontSize: 20, marginTop: space.xs, marginBottom: space.lg },
   chatButton: {
@@ -553,7 +545,6 @@ const styles = StyleSheet.create({
   contactButtonText: { color: color.ink, fontFamily: font.bodySemi, fontSize: 14 },
   mapCard: { padding: 0, overflow: 'hidden' },
   mapImage: { width: '100%', height: 180 },
-  mapPlaceholder: { width: '100%', height: 120, alignItems: 'center', justifyContent: 'center' },
   routeBlock: { marginTop: space.md },
   routeStop: { flexDirection: 'row', gap: space.md },
   routeIconCol: { width: 14, alignItems: 'center' },
