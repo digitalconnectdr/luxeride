@@ -33,6 +33,12 @@ function countdownLabel(scheduledAt: string): string {
   return `En ${hours}h ${rest}min`
 }
 
+function isToday(dateStr: string): boolean {
+  const d = new Date(dateStr)
+  const now = new Date()
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+}
+
 function flightChip(trip: DriverBooking): { label: string; alert: boolean } | null {
   if (!trip.flight_number) return null
   if (trip.flight_status === 'cancelled') return { label: `${trip.flight_number} · Cancelado`, alert: true }
@@ -105,10 +111,13 @@ function TripCard({ trip, isNext, index, onPress }: { trip: DriverBooking; isNex
   )
 }
 
+type ViewMode = 'today' | 'upcoming'
+
 export function TripsListScreen({ navigation }: Props) {
   const [trips, setTrips] = useState<DriverBooking[]>([])
   const [affiliateTrips, setAffiliateTrips] = useState<AffiliateTrip[]>([])
   const [loading, setLoading] = useState(true)
+  const [viewMode, setViewMode] = useState<ViewMode>('today')
   const [, setTick] = useState(0)
 
   const loadTrips = useCallback(async () => {
@@ -151,6 +160,12 @@ export function TripsListScreen({ navigation }: Props) {
 
   if (loading) return <ScreenLoader />
 
+  const visibleTrips = viewMode === 'today' ? trips.filter((t) => isToday(t.scheduled_at)) : trips
+  const emptyCopy =
+    viewMode === 'today'
+      ? { title: 'No tienes viajes hoy', subtitle: 'Cuando te asignen un viaje para hoy, aparecerá aquí al instante.' }
+      : { title: 'Sin reservas próximas', subtitle: 'Tus viajes asignados a futuro aparecerán aquí, del más próximo al más lejano.' }
+
   return (
     <ScrollView
       style={styles.container}
@@ -158,20 +173,28 @@ export function TripsListScreen({ navigation }: Props) {
       refreshControl={<RefreshControl refreshing={false} onRefresh={loadTrips} tintColor={color.gold} />}
     >
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Hoy</Text>
+        <Text style={styles.headerTitle}>Mis viajes</Text>
+
+        <View style={styles.viewToggle}>
+          <PressableScale style={[styles.viewToggleButton, viewMode === 'today' && styles.viewToggleButtonActive]} onPress={() => setViewMode('today')}>
+            <Text style={[styles.viewToggleText, viewMode === 'today' && styles.viewToggleTextActive]}>Hoy</Text>
+          </PressableScale>
+          <PressableScale style={[styles.viewToggleButton, viewMode === 'upcoming' && styles.viewToggleButtonActive]} onPress={() => setViewMode('upcoming')}>
+            <Text style={[styles.viewToggleText, viewMode === 'upcoming' && styles.viewToggleTextActive]}>Reservas</Text>
+          </PressableScale>
+        </View>
+
         <Text style={styles.headerSubtitle}>
-          {trips.length === 0 ? 'Sin viajes activos' : `${trips.length} viaje${trips.length === 1 ? '' : 's'} activo${trips.length === 1 ? '' : 's'}`}
+          {visibleTrips.length === 0
+            ? viewMode === 'today' ? 'Sin viajes activos' : 'Sin reservas próximas'
+            : `${visibleTrips.length} viaje${visibleTrips.length === 1 ? '' : 's'}`}
         </Text>
       </View>
 
-      {trips.length === 0 ? (
-        <EmptyState
-          icon="car-sport-outline"
-          title="No tienes viajes activos"
-          subtitle="Cuando te asignen un viaje, aparecerá aquí al instante."
-        />
+      {visibleTrips.length === 0 ? (
+        <EmptyState icon="car-sport-outline" title={emptyCopy.title} subtitle={emptyCopy.subtitle} />
       ) : (
-        trips.map((trip, i) => (
+        visibleTrips.map((trip, i) => (
           <TripCard
             key={trip.id}
             trip={trip}
@@ -218,7 +241,21 @@ const styles = StyleSheet.create({
   content: { padding: space.xl, paddingTop: space.lg, flexGrow: 1, gap: space.md },
   header: { marginBottom: space.xs },
   headerTitle: { color: color.ink, fontFamily: font.display, fontSize: 28 },
-  headerSubtitle: { color: color.inkFaint, fontFamily: font.body, fontSize: 13, marginTop: 2 },
+  viewToggle: {
+    flexDirection: 'row',
+    backgroundColor: color.surface,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.border,
+    padding: 4,
+    marginTop: space.md,
+    alignSelf: 'flex-start',
+  },
+  viewToggleButton: { paddingHorizontal: space.lg, paddingVertical: 8, borderRadius: radius.pill },
+  viewToggleButtonActive: { backgroundColor: color.gold },
+  viewToggleText: { color: color.inkMuted, fontFamily: font.bodySemi, fontSize: 13 },
+  viewToggleTextActive: { color: color.bg },
+  headerSubtitle: { color: color.inkFaint, fontFamily: font.body, fontSize: 13, marginTop: space.sm },
   cardNext: { borderColor: `${color.gold}66` },
   cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   bookingNumber: { color: color.inkFaint, fontFamily: font.bodySemi, fontSize: 11, letterSpacing: 1 },

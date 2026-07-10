@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, Linking, TextInput } from 'react-native'
+import { useCallback, useEffect, useState } from 'react'
+import { View, Text, StyleSheet, ScrollView, Linking, TextInput, Image } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
@@ -7,14 +7,16 @@ import { supabase } from '../lib/supabase'
 import { callDriverApi } from '../lib/api'
 import { uploadPassengerSignature } from '../lib/upload'
 import { useDriverLocationReporter } from '../lib/locationReporter'
-import { SignaturePad } from '../components/SignaturePad'
+import { SignatureModal } from '../components/SignatureModal'
 import { PressableScale } from '../components/PressableScale'
-import { Button, Card, ScreenLoader, SectionLabel, StatusBadge } from '../components/ui'
-import { color, font, radius, space } from '../lib/theme'
-import { NEXT_ACTION_LABEL, type BookingStatus, type DriverBooking, type TripsStackParamList } from '../lib/types'
+import { Button, Card, ScreenLoader, SectionLabel } from '../components/ui'
+import { color, font, radius, space, STATUS_COLOR } from '../lib/theme'
+import { NEXT_ACTION_LABEL, STATUS_LABEL, type BookingStatus, type DriverBooking, type TripsStackParamList } from '../lib/types'
 
 const BOOKING_COLUMNS =
   'id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, flight_number, flight_status, flight_delay_minutes, total_amount, currency, completed_at'
+
+const MAP_VISIBLE_STATUSES = new Set<BookingStatus>(['en_route', 'arrived'])
 
 function mapsUrl(address: string) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
@@ -24,6 +26,14 @@ function wazeUrl(address: string) {
 }
 function whatsappUrl(phone: string) {
   return `https://wa.me/${phone.replace(/\D/g, '')}`
+}
+
+const STATUS_ICON: Partial<Record<BookingStatus, keyof typeof Ionicons.glyphMap>> = {
+  assigned: 'navigate-circle',
+  en_route: 'car',
+  arrived: 'location',
+  in_progress: 'flag',
+  completed: 'checkmark-circle',
 }
 
 const ACTION_ICON: Partial<Record<BookingStatus, keyof typeof Ionicons.glyphMap>> = {
@@ -54,6 +64,7 @@ export function TripDetailScreen({ route, navigation }: Props) {
   const [showComplete, setShowComplete] = useState(false)
   const [cashAmount, setCashAmount] = useState('')
   const [signatureBase64, setSignatureBase64] = useState<string | null>(null)
+  const [showSignatureModal, setShowSignatureModal] = useState(false)
   const [showReject, setShowReject] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [rejecting, setRejecting] = useState(false)
@@ -62,6 +73,8 @@ export function TripDetailScreen({ route, navigation }: Props) {
   const [incidentReason, setIncidentReason] = useState('')
   const [reportingIncident, setReportingIncident] = useState(false)
   const [incidentSent, setIncidentSent] = useState(false)
+  const [mapUrl, setMapUrl] = useState<string | null>(null)
+  const [mapFailed, setMapFailed] = useState(false)
 
   const { pauseNotice, dismissPauseNotice } = useDriverLocationReporter(trip?.id ?? '', trip?.status ?? 'pending')
 
@@ -76,6 +89,23 @@ export function TripDetailScreen({ route, navigation }: Props) {
       loadTrip()
     }, [loadTrip]),
   )
+
+  // Mapa con la posición del pasajero (si compartió ubicación) mientras el
+  // conductor va en camino o ya está en el punto de recogida.
+  useEffect(() => {
+    if (!trip || !MAP_VISIBLE_STATUSES.has(trip.status)) {
+      setMapUrl(null)
+      return
+    }
+    let cancelled = false
+    setMapFailed(false)
+    callDriverApi<{ mapUrl?: string | null }>('trip-map', { bookingId: trip.id }).then((res) => {
+      if (!cancelled) setMapUrl(res.mapUrl ?? null)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [trip?.id, trip?.status])
 
   async function advance() {
     if (!trip) return
@@ -173,6 +203,7 @@ export function TripDetailScreen({ route, navigation }: Props) {
 
   const pickup = trip.pickup_location?.address ?? ''
   const dropoff = trip.dropoff_location?.address ?? ''
+  const statusTint = STATUS_COLOR[trip.status] ?? color.inkMuted
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -186,9 +217,11 @@ export function TripDetailScreen({ route, navigation }: Props) {
       )}
 
       <Card>
-        <View style={styles.topRow}>
-          <Text style={styles.bookingNumber}>{trip.booking_number}</Text>
-          <StatusBadge status={trip.status} />
+        <Text style={styles.bookingNumber}>{trip.booking_number}</Text>
+
+        <View style={[styles.statusHero, { backgroundColor: `${statusTint}1c`, borderColor: `${statusTint}55` }]}>
+          <Ionicons name={STATUS_ICON[trip.status] ?? 'ellipse'} size={20} color={statusTint} />
+          <Text style={[styles.statusHeroText, { color: statusTint }]}>{STATUS_LABEL[trip.status] ?? trip.status}</Text>
         </View>
 
         <View style={styles.divider} />
@@ -196,27 +229,44 @@ export function TripDetailScreen({ route, navigation }: Props) {
         <SectionLabel>Pasajero</SectionLabel>
         <Text style={styles.passengerName}>{trip.passenger_name ?? 'Sin nombre'}</Text>
 
+        <PressableScale style={styles.chatButton} onPress={() => navigation.navigate('Chat', { tripId: trip.id })} haptic="light">
+          <Ionicons name="chatbubble-ellipses" size={18} color={color.bg} />
+          <Text style={styles.chatButtonText}>Chat con el pasajero</Text>
+        </PressableScale>
+
         {trip.passenger_phone && (
           <View style={styles.contactRow}>
             <PressableScale style={styles.contactButton} onPress={() => Linking.openURL(`tel:${trip.passenger_phone}`)}>
-              <Ionicons name="call" size={16} color={color.ink} />
+              <Ionicons name="call-outline" size={18} color={color.inkMuted} />
               <Text style={styles.contactButtonText}>Llamar</Text>
             </PressableScale>
             <PressableScale
               style={styles.contactButton}
               onPress={() => Linking.openURL(whatsappUrl(trip.passenger_phone!))}
             >
-              <Ionicons name="logo-whatsapp" size={16} color={color.success} />
+              <Ionicons name="logo-whatsapp" size={18} color={color.success} />
               <Text style={styles.contactButtonText}>WhatsApp</Text>
             </PressableScale>
           </View>
         )}
-
-        <PressableScale style={styles.chatButton} onPress={() => navigation.navigate('Chat', { tripId: trip.id })}>
-          <Ionicons name="chatbubble-ellipses-outline" size={16} color={color.gold} />
-          <Text style={styles.chatButtonText}>Chat con el pasajero</Text>
-        </PressableScale>
       </Card>
+
+      {MAP_VISIBLE_STATUSES.has(trip.status) && (mapUrl || !mapFailed) && (
+        <Card style={styles.mapCard}>
+          <SectionLabel>Ubicación</SectionLabel>
+          {mapUrl && !mapFailed ? (
+            <Image
+              source={{ uri: mapUrl }}
+              style={styles.mapImage}
+              onError={() => setMapFailed(true)}
+            />
+          ) : (
+            <View style={styles.mapPlaceholder}>
+              <Ionicons name="map-outline" size={22} color={color.inkFaint} />
+            </View>
+          )}
+        </Card>
+      )}
 
       <Card>
         <SectionLabel>Ruta</SectionLabel>
@@ -409,13 +459,22 @@ export function TripDetailScreen({ route, navigation }: Props) {
             />
           </View>
 
-          <SignaturePad onSave={setSignatureBase64} onSkip={() => setSignatureBase64(null)} />
-          {signatureBase64 && (
-            <View style={styles.signatureSavedRow}>
-              <Ionicons name="checkmark-circle" size={14} color={color.success} />
-              <Text style={styles.signatureSaved}>Firma capturada</Text>
-            </View>
-          )}
+          <View style={styles.divider} />
+
+          <SectionLabel>Firma del pasajero (opcional)</SectionLabel>
+          <PressableScale style={styles.signatureField} onPress={() => setShowSignatureModal(true)}>
+            {signatureBase64 ? (
+              <>
+                <Ionicons name="checkmark-circle" size={18} color={color.success} />
+                <Text style={styles.signatureFieldTextSaved}>Firma capturada · toca para cambiar</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="create-outline" size={18} color={color.gold} />
+                <Text style={styles.signatureFieldText}>Toca para capturar la firma</Text>
+              </>
+            )}
+          </PressableScale>
 
           <Button
             label="Completar viaje"
@@ -427,6 +486,12 @@ export function TripDetailScreen({ route, navigation }: Props) {
           />
         </Card>
       )}
+
+      <SignatureModal
+        visible={showSignatureModal}
+        onClose={() => setShowSignatureModal(false)}
+        onSave={setSignatureBase64}
+      />
     </ScrollView>
   )
 }
@@ -447,36 +512,48 @@ const styles = StyleSheet.create({
     padding: space.md,
   },
   pauseBannerText: { flex: 1, color: color.warning, fontFamily: font.bodyMedium, fontSize: 12, lineHeight: 17 },
-  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   bookingNumber: { color: color.inkFaint, fontFamily: font.bodySemi, fontSize: 12, letterSpacing: 1 },
+  statusHero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingVertical: 10,
+    paddingHorizontal: space.lg,
+    marginTop: space.md,
+  },
+  statusHeroText: { fontFamily: font.bodyBold, fontSize: 16 },
   divider: { height: 1, backgroundColor: color.border, marginVertical: space.lg },
   passengerName: { color: color.ink, fontFamily: font.displaySemi, fontSize: 20, marginTop: space.xs, marginBottom: space.lg },
-  contactRow: { flexDirection: 'row', gap: space.sm },
+  chatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.sm,
+    paddingVertical: 15,
+    borderRadius: radius.md,
+    backgroundColor: color.gold,
+  },
+  chatButtonText: { color: color.bg, fontFamily: font.bodyBold, fontSize: 15 },
+  contactRow: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
   contactButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: space.xs,
+    gap: space.sm,
     backgroundColor: color.surfaceRaised,
     borderWidth: 1,
     borderColor: color.borderStrong,
     borderRadius: radius.md,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
-  contactButtonText: { color: color.ink, fontFamily: font.bodySemi, fontSize: 13 },
-  chatButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.xs,
-    marginTop: space.sm,
-    paddingVertical: 12,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: `${color.gold}55`,
-  },
-  chatButtonText: { color: color.gold, fontFamily: font.bodySemi, fontSize: 13 },
+  contactButtonText: { color: color.ink, fontFamily: font.bodySemi, fontSize: 14 },
+  mapCard: { padding: 0, overflow: 'hidden' },
+  mapImage: { width: '100%', height: 180 },
+  mapPlaceholder: { width: '100%', height: 120, alignItems: 'center', justifyContent: 'center' },
   routeBlock: { marginTop: space.md },
   routeStop: { flexDirection: 'row', gap: space.md },
   routeIconCol: { width: 14, alignItems: 'center' },
@@ -502,12 +579,23 @@ const styles = StyleSheet.create({
     borderColor: color.border,
     paddingHorizontal: space.lg,
     marginTop: space.sm,
-    marginBottom: space.lg,
   },
   cashSign: { color: color.inkFaint, fontFamily: font.bodySemi, fontSize: 15, marginRight: 4 },
   cashInput: { flex: 1, color: color.ink, fontFamily: font.bodyMedium, fontSize: 15, paddingVertical: 12 },
-  signatureSavedRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: space.sm },
-  signatureSaved: { color: color.success, fontFamily: font.bodyMedium, fontSize: 12 },
+  signatureField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    backgroundColor: color.bg,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: color.border,
+    paddingHorizontal: space.lg,
+    paddingVertical: 14,
+    marginTop: space.sm,
+  },
+  signatureFieldText: { color: color.gold, fontFamily: font.bodyMedium, fontSize: 13 },
+  signatureFieldTextSaved: { color: color.success, fontFamily: font.bodyMedium, fontSize: 13 },
   completeButton: { marginTop: space.lg },
   secondaryActionsRow: { flexDirection: 'row', justifyContent: 'center', gap: space.xl },
   secondaryAction: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: space.sm },

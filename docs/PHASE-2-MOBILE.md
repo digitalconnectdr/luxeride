@@ -250,6 +250,43 @@ afiliados, los tres con sonido cuando ocurren.
   sitio. Flaggeado como tarea aparte (spawn_task), no auditado a fondo
   todavía.
 
+### Ronda 4 (2026-07-09, mismo día) — feedback de uso real sobre el viaje de prueba
+
+A partir de probar un viaje real de punta a punta en el teléfono:
+
+- **Pestañas "Hoy" / "Reservas"** en `TripsListScreen` — antes solo existía
+  una lista sin filtrar por fecha (a pesar de llamarse "Hoy"). Ahora "Hoy"
+  filtra por fecha local, "Reservas" muestra TODOS los viajes activos
+  asignados al conductor sin importar la fecha (ordenados del más próximo
+  al más lejano) — un solo fetch, filtro en cliente, sin pegarle dos veces
+  al servidor.
+- **Botones de contacto rediseñados**: "Chat con el pasajero" ahora es la
+  opción principal (botón dorado de ancho completo, arriba), Llamar/
+  WhatsApp pasan a ser secundarios (botones más grandes, mejor espaciados)
+  debajo — antes los 3 competían al mismo nivel y se veían apretados.
+- **Estado del viaje más prominente**: se reemplazó el badge chico por un
+  "hero" de estado (ícono + texto grande, con color e ícono por estado,
+  fondo tintado) justo debajo del número de reserva.
+- **Mapa con la ubicación del pasajero**: nuevo, en `en_route`/`arrived`.
+  Ruta nueva `/api/mobile/driver/trip-map` reusa `buildTripStaticMapUrl`
+  (la misma función del fallback estático de `/track/[id]`) + 
+  `getLiveTripPositionsAction` para la posición del pasajero (si compartió
+  ubicación) — sin duplicar esa lógica. **Caveat real, sin confirmar**: usa
+  `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (ya pública, sin riesgo nuevo de
+  exponerla), pero si esa key tiene restricción por referrer HTTP al
+  dominio web, una petición de imagen hecha desde la app (sin ese
+  referrer) podría ser rechazada por Google — degrada con gracia (oculta
+  el mapa) si la imagen falla, no rompe nada, pero hay que confirmar que
+  cargue en el teléfono.
+- **Firma del pasajero como Modal**: el bug real reportado ("el cuadro se
+  mueve, no deja dibujar") era el lienzo de la firma compitiendo por el
+  gesto con el ScrollView padre. `components/SignatureModal.tsx` abre la
+  firma en un Modal de pantalla completa (jerarquía nativa aparte, sin
+  scroll padre) — de paso separa visualmente el monto en efectivo (que se
+  queda en la pantalla principal, solo para el conductor) de la firma
+  (pantalla limpia, para entregarle el teléfono al pasajero) sin que se
+  vean juntos.
+
 ### Funciones avanzadas que la web tiene y la app nativa todavía NO (candidatas para seguir, sin construir)
 
 Comparadas contra `/driver/trips` en la web, que ya tiene años de iteración:
