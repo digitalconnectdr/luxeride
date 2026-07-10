@@ -2,17 +2,23 @@
 // Gratis, sin config de Firebase. El handler fuerza sonido incluso con la app
 // abierta (por defecto expo-notifications lo suprime en foreground).
 //
-// Nota 1: requiere un projectId de EAS para pedir el token — si el proyecto
-// todavía no se vinculó con `eas build`/`eas init`, el registro falla
-// silenciosamente (try/catch) sin romper el resto de la app; una vez hecho
-// el primer build esto empieza a funcionar solo.
+// IMPORTANTE — dos requisitos que hoy NO se cumplen (por diseño, hasta que
+// el usuario corra su primer build), así que el registro se omite del todo:
 //
-// Nota 2 (importante): desde el SDK 53, Expo Go YA NO soporta push remoto
-// en Android (lo sacaron del cliente). Mientras se pruebe con Expo Go esto
-// SIEMPRE va a fallar al pedir el token — no es un bug, es una limitación
-// de la plataforma. Para probar push de verdad hace falta un development
-// build (`eas build --profile development`, perfil ya en eas.json) o el
-// APK real de producción, no Expo Go.
+// 1. Pedir un token de Expo requiere un projectId de EAS en app.json — no
+//    existe todavía porque no se corrió `eas build`/`eas init`. Se revisa
+//    ESTO PRIMERO, antes de tocar cualquier función de Notifications, para
+//    no disparar advertencias del módulo nativo por gusto.
+// 2. Desde el SDK 53, Expo Go además dejó de soportar push remoto en
+//    Android por completo (lo sacaron del cliente) — aunque hubiera
+//    projectId, en Expo Go seguiría sin funcionar. Hace falta un
+//    development build (`eas build --profile development`, perfil ya en
+//    eas.json) o el APK final.
+//
+// En cuanto el usuario corra su primer `eas build`, el projectId queda
+// escrito en app.json y este código empieza a intentar el registro solo
+// (seguirá sin funcionar en Expo Go específicamente, sí en development
+// build o APK).
 
 import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
@@ -34,10 +40,11 @@ export async function registerForPushNotifications(userId: string): Promise<void
   try {
     if (!Device.isDevice) return // los simuladores no reciben push
 
-    if (Constants.appOwnership === 'expo') {
-      // Expo Go (SDK 53+) no soporta push remoto — ver nota arriba. Se sale
-      // temprano en vez de dejar que getExpoPushTokenAsync tire un error.
-      console.log('[registerForPushNotifications] Expo Go no soporta push remoto — probar con un development build.')
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId
+    if (!projectId) {
+      console.log(
+        '[registerForPushNotifications] Sin projectId de EAS todavía (falta el primer `eas build`) — se omite el registro de push.',
+      )
       return
     }
 
@@ -57,8 +64,7 @@ export async function registerForPushNotifications(userId: string): Promise<void
     }
     if (finalStatus !== 'granted') return
 
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId
-    const tokenResponse = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)
+    const tokenResponse = await Notifications.getExpoPushTokenAsync({ projectId })
 
     await supabase
       .from('device_tokens')
