@@ -13,7 +13,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
-import { requireRole } from '@/lib/auth/session'
+import { requireRole, getCurrentUser } from '@/lib/auth/session'
+import type { SessionUser } from '@/lib/auth/session'
 import {
   computeResponseDeadline,
   computeMargin,
@@ -411,15 +412,21 @@ const STATUS_TIMESTAMP_FIELD: Record<string, string> = {
 
 /** Avanza el viaje afiliado al siguiente paso operativo (en_route → arrived →
  *  in_progress → completed). Lo puede llamar el afiliado (staff) o el propio
- *  conductor asignado. */
-export async function advanceAffiliateTripAction(affiliateTripId: string): Promise<AffiliateActionResult> {
+ *  conductor asignado. Core reusable desde la Server Action web (cookie) y
+ *  desde la ruta móvil bearer-token (`/api/mobile/driver/advance-affiliate-trip`). */
+export async function advanceAffiliateTrip(user: SessionUser, affiliateTripId: string): Promise<AffiliateActionResult> {
   const admin = createAdminClient()
   const { data: trip } = await admin
     .from('affiliate_trips')
-    .select('id, status, driver_id')
+    .select('id, status, driver_id, affiliate_company_id')
     .eq('id', affiliateTripId)
     .single()
   if (!trip) return { success: false, error: 'Solicitud no encontrada' }
+
+  const isAssignedDriver = user.role === 'driver' && trip.driver_id === user.id
+  const isAffiliateStaff =
+    (MANAGER_ROLES as readonly string[]).includes(user.role) && trip.affiliate_company_id === user.company_id
+  if (!isAssignedDriver && !isAffiliateStaff) return { success: false, error: 'No autorizado' }
 
   const next = nextOperationalStatus(trip.status as never)
   if (!next) return { success: false, error: 'No hay siguiente paso disponible' }
@@ -434,6 +441,12 @@ export async function advanceAffiliateTripAction(affiliateTripId: string): Promi
   revalidatePath('/admin/affiliates/requests')
   revalidatePath('/driver/trips')
   return { success: true }
+}
+
+export async function advanceAffiliateTripAction(affiliateTripId: string): Promise<AffiliateActionResult> {
+  const user = await getCurrentUser()
+  if (!user) return { success: false, error: 'No autorizado' }
+  return advanceAffiliateTrip(user, affiliateTripId)
 }
 
 // ─── Liquidación (settlement) ──────────────────────────────────────────────────
