@@ -76,7 +76,7 @@ function TripRow({ trip, isFirst, onRated }: { trip: CompletedTrip; isFirst: boo
         <View style={styles.ratingPanel}>
           <View style={styles.starsRow}>
             {[1, 2, 3, 4, 5].map((n) => (
-              <PressableScale key={n} onPress={() => setStars(n)} haptic="light">
+              <PressableScale key={n} style={styles.starButton} onPress={() => setStars(n)} haptic="light" hitSlop={6}>
                 <Ionicons name={n <= stars ? 'star' : 'star-outline'} size={26} color={color.gold} />
               </PressableScale>
             ))}
@@ -260,7 +260,8 @@ const styles = StyleSheet.create({
   rateButton: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: space.sm, marginLeft: 42 },
   rateButtonText: { color: color.gold, fontFamily: font.bodySemi, fontSize: 12 },
   ratingPanel: { marginTop: space.md, marginLeft: 42, gap: space.sm },
-  starsRow: { flexDirection: 'row', gap: space.sm },
+  starsRow: { flexDirection: 'row', gap: space.xs },
+  starButton: { padding: space.sm },
   commentInput: {
     backgroundColor: color.bg,
     color: color.ink,

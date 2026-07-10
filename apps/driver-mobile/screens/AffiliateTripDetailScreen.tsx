@@ -108,7 +108,9 @@ export function AffiliateTripDetailScreen({ route, navigation }: Props) {
       <Card>
         <View style={styles.topRow}>
           <Text style={styles.bookingNumber}>{trip.booking_number ?? '—'}</Text>
-          <Text style={styles.statusLabel}>{STATUS_LABEL[trip.status] ?? trip.status}</Text>
+          <Text style={styles.statusLabel} numberOfLines={1}>
+            {STATUS_LABEL[trip.status] ?? trip.status}
+          </Text>
         </View>
 
         <View style={styles.divider} />
@@ -203,9 +205,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   affiliateNoticeText: { color: color.gold, fontFamily: font.bodySemi, fontSize: 11, letterSpacing: 0.5 },
-  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  bookingNumber: { color: color.inkFaint, fontFamily: font.bodySemi, fontSize: 12, letterSpacing: 1 },
-  statusLabel: { color: color.gold, fontFamily: font.bodySemi, fontSize: 13 },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm },
+  bookingNumber: { color: color.inkFaint, fontFamily: font.bodySemi, fontSize: 12, letterSpacing: 1, flexShrink: 0 },
+  statusLabel: { color: color.gold, fontFamily: font.bodySemi, fontSize: 13, flexShrink: 1, textAlign: 'right' },
   divider: { height: 1, backgroundColor: color.border, marginVertical: space.lg },
   passengerName: { color: color.ink, fontFamily: font.displaySemi, fontSize: 20, marginTop: space.xs, marginBottom: space.lg },
   contactRow: { flexDirection: 'row', gap: space.sm },
@@ -227,7 +229,7 @@ const styles = StyleSheet.create({
   routeLabelSpaced: { marginTop: space.lg },
   routeAddress: { color: color.ink, fontFamily: font.body, fontSize: 14, marginTop: 4, lineHeight: 19 },
   navRow: { flexDirection: 'row', gap: space.lg, marginTop: space.sm },
-  navButton: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  navButton: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 10, paddingHorizontal: 2 },
   navButtonText: { color: color.gold, fontFamily: font.bodySemi, fontSize: 12 },
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.xs },
   error: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1 },

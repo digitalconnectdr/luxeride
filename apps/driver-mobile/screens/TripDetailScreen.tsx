@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
   routeLabel: { color: color.inkFaint, fontFamily: font.bodySemi, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
   routeAddress: { color: color.ink, fontFamily: font.body, fontSize: 14, marginTop: 4, lineHeight: 19 },
   navRow: { flexDirection: 'row', gap: space.lg, marginTop: space.sm },
-  navButton: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  navButton: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 10, paddingHorizontal: 2 },
   navButtonText: { color: color.gold, fontFamily: font.bodySemi, fontSize: 12 },
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.xs },
   error: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1 },

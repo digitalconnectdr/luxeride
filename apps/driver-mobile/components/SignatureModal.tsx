@@ -40,8 +40,8 @@ export function SignatureModal({
               onSave(sig)
               onClose()
             }}
-            webStyle="body,html{background:#f6f2ea;margin:0;padding:0;} .m-signature-pad--footer{display:none;}"
-            backgroundColor="#f6f2ea"
+            webStyle={`body,html{background:${color.ink};margin:0;padding:0;} .m-signature-pad--footer{display:none;}`}
+            backgroundColor={color.ink}
           />
         </View>
 
