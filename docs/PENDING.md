@@ -446,20 +446,16 @@ en la pantalla de éxito; ahora es parte del paso de confirmación.
   solicitud, aceptada, rechazada) — visibilidad hoy es 100% in-app
   (bandeja + Realtime) + push nativo (app móvil). Requeriría nuevas
   plantillas en `notification_templates`. Sigue sin construir.
-- **Autoservicio: código 100% listo, producto ya creado en Whop — solo
-  falta cargar 2 env vars en Vercel.** Investigado a fondo 2026-07-10:
-  `isAffiliateAddonPlan()`, el webhook (`app/api/webhooks/whop/route.ts`) y
-  la UI (`AffiliateNetworkUpsell`) ya están completos y funcionando — el
-  "checkout" de TODOS los planes en este proyecto (no solo el addon) es una
-  URL estática pegada en una env var, nunca generada dinámicamente por
-  código; no hay nada más que escribir en código. El usuario ya creó el
-  producto ($29/mes) en Whop: plan ID `plan_yiizBu4P6kbnt`, checkout URL
-  `https://whop.com/jprs-digital-connect/luxeride-affiliate-network-add-on/`.
-  Falta SOLO que el usuario cargue `WHOP_PLAN_ID_AFFILIATE_ADDON` y
-  `WHOP_CHECKOUT_URL_AFFILIATE_ADDON` con esos valores en Vercel → Settings
-  → Environment Variables (no configurables desde este entorno, sin acceso a
-  Vercel CLI) + redeploy — sin eso, seguirá mostrando el formulario de lead
-  en vez del botón de pago real.
+- ✅ **Autoservicio: HECHO por completo.** Producto creado en Whop
+  ($29/mes, plan ID `plan_yiizBu4P6kbnt`, checkout URL
+  `https://whop.com/jprs-digital-connect/luxeride-affiliate-network-add-on/`)
+  y las dos env vars (`WHOP_PLAN_ID_AFFILIATE_ADDON`,
+  `WHOP_CHECKOUT_URL_AFFILIATE_ADDON`) ya cargadas en Vercel por el usuario
+  (2026-07-10, en otra sesión). Código ya estaba 100% listo desde antes
+  (`isAffiliateAddonPlan()`, webhook, `AffiliateNetworkUpsell`). Pendiente
+  solo confirmar visualmente en producción que `/admin/affiliates` muestra
+  el botón de checkout real (no el formulario de lead) para una empresa
+  Starter/Professional sin el addon activo.
 - ✅ **Fase 2 — Portal de afiliado externo: MVP construido y desplegado
   2026-07-10** (migración `20260710000045_affiliate_external_invite.sql`,
   aplicada en producción por el usuario). `companies.is_external_affiliate` + tabla
