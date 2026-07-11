@@ -10,6 +10,7 @@ interface PlanForSchema {
   name: string
   price: string
   desc: string
+  features: string[]
 }
 
 interface FaqForSchema {
@@ -39,7 +40,7 @@ export function buildLandingStructuredData(params: {
         name: plan.name,
         price: price.toFixed(2),
         priceCurrency: 'USD',
-        description: plan.desc,
+        description: [plan.desc, ...plan.features].join('. '),
         url: `${baseUrl}/#pricing`,
       }
     })

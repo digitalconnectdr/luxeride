@@ -2,7 +2,7 @@
 
 > LuxeRide is a white-label software platform for luxury ground transportation
 > operators (limousine, black car, chauffeur, and airport transfer companies).
-> It is operated by JPRS Digital Connect. LuxeRide is software only — it is
+> It is operated by JPRS Digital Connect. LuxeRide is software only | it is
 > not a transportation carrier, does not own vehicles, and does not employ
 > drivers. Each operator runs its own independent transportation business on
 > top of LuxeRide's software.
@@ -11,32 +11,42 @@
 
 - Online booking engine with instant, rule-based fare pricing (by zone, distance, or fixed route)
 - Real-time dispatch board and driver assignment (manual or automatic)
-- Card payments via Whop, plus manual payment tracking (cash, Zelle, bank transfer)
+- Card payments via Stripe or Whop (operator's choice), plus manual payment tracking (cash, Zelle, bank transfer)
+- QuickBooks Online integration: syncs completed bookings and invoices automatically per operator
 - Corporate accounts with credit lines, per-user limits, and automatic invoicing
 - Cancellation and no-show policy engine, deposits and gratuities
 - Live GPS trip tracking shared with passengers, in-app chat, and post-trip ratings
-- Compliance Center: tracks license, permit, and insurance expiration dates for the operator's own records (an organizational tool — LuxeRide does not certify or guarantee regulatory compliance)
+- Affiliate network: operators can send/receive trips with other LuxeRide operators, including pooled requests and bidding
+- Compliance Center: tracks license, permit, and insurance expiration dates for the operator's own records (an organizational tool | LuxeRide does not certify or guarantee regulatory compliance)
 - Each operator gets its own branded booking page, available in English, Spanish, and Portuguese
 - Reports, CSV exports, and audit trail
 
-## Pricing (as of 2026-07-08)
+## Add-ons (available on Starter/Professional, included free on Elite/Enterprise)
 
-- Starter — $99/month: up to 6 vehicles and 6 chauffeurs, up to 150 bookings/month, 2 team members, 3% platform fee per completed trip
-- Professional — $299/month: up to 15 vehicles and 15 chauffeurs, unlimited bookings, 8 team members, corporate accounts, real-time dispatch, 1.5% platform fee
-- Elite — $548.99/month: unlimited vehicles, chauffeurs and team members, affiliate network (send/receive trips with other LuxeRide operators), 0.5% platform fee
-- Enterprise — custom pricing: multiple companies/DBAs, dedicated account manager, custom integrations
+- Driver payroll ($9/month): commission or flat-per-trip earnings calculation and reporting per driver. Calculation and reporting only | it does not move real money.
+- E-signature ($9/month): HTML5 signature capture for the driver agreement (at onboarding) and the corporate account contract.
+- Promo codes ($3/month): percentage or fixed-amount discount codes for the public booking wizard, with usage limits and minimum booking amount rules.
+- Affiliate network ($29/month on Starter/Professional; included on Elite/Enterprise): send and receive trips with other LuxeRide operators.
+
+## Pricing (as of 2026-07-11)
+
+- Starter | $99/month: up to 6 vehicles and 6 chauffeurs, up to 150 bookings/month, 2 team members, 3% platform fee per completed trip
+- Professional | $299/month: up to 15 vehicles and 15 chauffeurs, unlimited bookings, 8 team members, corporate accounts, real-time dispatch, 1.5% platform fee
+- Elite | $549/month: unlimited vehicles, chauffeurs and team members, affiliate network included, driver payroll/e-signature/promo codes included, 0.5% platform fee
+- Enterprise | custom pricing: multiple companies/DBAs, dedicated account manager, custom integrations
 
 No setup fees on any plan.
 
 ## Key differentiators vs. competitors (Limo Anywhere, Moovs)
 
-- Trilingual (English/Spanish/Portuguese) out of the box — competitors are English-only
+- Trilingual (English/Spanish/Portuguese) out of the box | competitors are English-only
 - No setup fee on any plan
 - Platform fee decreases as operators grow, rather than a flat per-trip charge regardless of fare
+- Built-in affiliate network for overflow trips between operators, with pooled requests and bidding
 
 ## Pages
 
-- [Home / pricing](/) — product overview, pricing plans, FAQ
+- [Home / pricing](/) | product overview, pricing plans, FAQ
 - [Privacy Policy](/privacy)
 - [Terms of Service](/terms)
 
