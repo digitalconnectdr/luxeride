@@ -1075,9 +1075,43 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
    se revisó de nuevo y ya tenía `requireRole` + ownership correctos, no
    necesitó cambios. Detalle completo y punto exacto para retomar en
    `docs/PHASE-2-MOBILE.md` → "Estado al pausar (2026-07-10)".
-8. **Gaps mayores**: QuickBooks, e-signatures, promo codes, nómina de
-   conductores, WhatsApp Business. Pospuesto a propósito. (farm-in/farm-out
-   ya tiene diseño concreto, ver sección G más abajo.)
+8. **Gaps mayores**: e-signatures, promo codes, nómina de conductores,
+   WhatsApp Business. Pospuesto a propósito. (farm-in/farm-out ya tiene
+   diseño concreto, ver sección G más abajo.)
+   - ✅ **QuickBooks Online — construido 2026-07-11, falta configuración del
+     usuario.** Cada empresa conecta SU PROPIA cuenta de QuickBooks Online
+     (mismo espíritu que Stripe Connect / Whop Connect, pero con OAuth2 real
+     — QBO no permite crear sub-cuentas desde una key de plataforma única, así
+     que sí se guarda un access_token/refresh_token por empresa en
+     `companies`, a diferencia de los otros dos rieles). Sincroniza DOS cosas
+     (alcance confirmado con el usuario: "ambos"): un Sales Receipt por cada
+     reserva `completed` (`syncCompletedBookingsForCompany`), y una Invoice
+     espejo de cada factura corporativa que ya genera el cron mensual
+     existente (`syncInvoiceToQuickBooks`, conectado en
+     `app/api/cron/corporate-invoices/route.ts`). Cliente e Item de servicio
+     ("LuxeRide Transportation Service") se crean una sola vez por empresa y
+     se cachean (`companies.quickbooks_item_id`). Dos caminos de sync: manual
+     ("Sincronizar ahora" en `/admin/settings`, inmediato) + cron diario
+     nuevo (`/api/cron/quickbooks-sync`) que también reintenta cualquier
+     invoice que haya quedado sin sincronizar. Migración
+     `20260711000047_quickbooks_integration.sql` (columnas en `companies`/
+     `bookings`/`invoices`, sin tocar nada existente) — **pendiente de que el
+     usuario la aplique en Supabase**. **Falta para activarlo end-to-end**:
+     (1) el usuario tiene que crear una app en developer.intuit.com y cargar
+     `QUICKBOOKS_CLIENT_ID`/`QUICKBOOKS_CLIENT_SECRET` (+ opcional
+     `QUICKBOOKS_ENVIRONMENT=production`, default `sandbox`) en Vercel — sin
+     esto la tarjeta de Configuración muestra "no configurado" y degrada
+     limpio, mismo patrón que Stripe/Whop; (2) validar el flujo completo
+     (conectar, crear cliente/item, generar un Sales Receipt real) contra un
+     Sandbox de QuickBooks antes de confiar en esto para datos de
+     producción — las formas de request/response siguen la documentación
+     pública de la API v3 pero NO se probaron contra una cuenta real
+     todavía; (3) nota de mercado: QuickBooks Online no está disponible para
+     empresas registradas en República Dominicana (a diferencia de Stripe/
+     Whop, donde Whop existe justamente por esa limitación de Stripe) — esta
+     integración solo la pueden usar operadores con entidad en un país
+     soportado por Intuit (EE.UU., Canadá, Reino Unido, Australia, etc.),
+     coherente con el público objetivo del Compliance Center (sección J).
    - ✅ **Detección de conflictos de vehículo — HECHO 2026-07-11.** Antes solo
      se evitaba que un mismo CONDUCTOR quedara en dos viajes que se solapan
      (`windowFor`/`overlaps` en `lib/dispatch/auto-assign.ts`); el VEHÍCULO

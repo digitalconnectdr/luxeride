@@ -17,8 +17,15 @@ import {
   refreshWhopConnectStatusAction,
   setActivePaymentProviderAction,
 } from '@/app/actions/whop-connect'
+import {
+  createQuickBooksOnboardingAction,
+  disconnectQuickBooksAction,
+  setQuickBooksSyncEnabledAction,
+  syncQuickBooksNowAction,
+} from '@/app/actions/quickbooks'
 import { isStripeConfigured } from '@/lib/stripe/server'
 import { isWhopConnectConfigured } from '@/lib/whop/connect-server'
+import { isQuickBooksConfigured } from '@/lib/quickbooks/server'
 import { BrandingForm } from '@/components/admin/branding-form'
 import { BookingLinkCard } from '@/components/admin/booking-link-card'
 import { BookingWidgetCard } from '@/components/admin/booking-widget-card'
@@ -90,10 +97,25 @@ const WHOP_ERRORS: Record<string, string> = {
   no_company: 'Tu usuario no tiene empresa asignada.',
 }
 
+const QUICKBOOKS_ERRORS: Record<string, string> = {
+  connect_failed: 'No se pudo conectar con QuickBooks. Revisa los logs del servidor.',
+  not_configured: 'QuickBooks no está configurado (falta QUICKBOOKS_CLIENT_ID o QUICKBOOKS_CLIENT_SECRET).',
+  denied: 'Cancelaste la conexión en la pantalla de QuickBooks.',
+  invalid_state: 'La sesión de conexión expiró o no es válida. Intenta de nuevo.',
+  no_company: 'Tu usuario no tiene empresa asignada.',
+}
+
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: { stripe_error?: string; connect?: string; whop_error?: string; whop_connect?: string }
+  searchParams: {
+    stripe_error?: string
+    connect?: string
+    whop_error?: string
+    whop_connect?: string
+    quickbooks_error?: string
+    quickbooks?: string
+  }
 }) {
   const user = await requireRole('company_owner')
   if (!user.company_id) return <p className="p-8 text-sl-on-surface-muted">Sin empresa asignada.</p>
@@ -101,7 +123,7 @@ export default async function SettingsPage({
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('name, slug, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, whop_connect_company_id, whop_connect_onboarded, active_payment_provider, logo_url, primary_color, tagline, hero_image_url, about, status, plan, subscription_ends_at, whop_membership_id')
+    .select('name, slug, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, whop_connect_company_id, whop_connect_onboarded, active_payment_provider, logo_url, primary_color, tagline, hero_image_url, about, status, plan, subscription_ends_at, whop_membership_id, quickbooks_realm_id, quickbooks_connected_at, quickbooks_sync_enabled, quickbooks_last_synced_at')
     .eq('id', user.company_id)
     .single()
 
@@ -147,6 +169,11 @@ export default async function SettingsPage({
   const extraFeesAction: (fd: FormData) => void = updateExtraFeesAction
   const whopConnectAction: () => void = createWhopConnectOnboardingAction
   const whopRefreshAction: () => void = refreshWhopConnectStatusAction
+  const quickbooksConnectAction: () => void = createQuickBooksOnboardingAction
+  const quickbooksDisconnectAction: () => void = disconnectQuickBooksAction
+  const quickbooksSyncNowAction: () => void = syncQuickBooksNowAction
+  const enableQuickBooksSyncAction: () => void = setQuickBooksSyncEnabledAction.bind(null, true)
+  const disableQuickBooksSyncAction: () => void = setQuickBooksSyncEnabledAction.bind(null, false)
 
   const policy = parsePolicy(company.settings)
   const extraFees = parseExtraFees(company.settings)
@@ -159,6 +186,10 @@ export default async function SettingsPage({
   const hasWhopConnect   = Boolean(company.whop_connect_company_id)
   const whopOnboarded    = Boolean(company.whop_connect_onboarded)
   const activeProvider   = company.active_payment_provider
+
+  const quickbooksReady        = isQuickBooksConfigured()
+  const hasQuickBooks          = Boolean(company.quickbooks_realm_id)
+  const quickbooksSyncEnabled  = Boolean(company.quickbooks_sync_enabled)
   const adminDict = getDict().admin
   const t = adminDict.settings
   const actions = adminDict.actions
@@ -768,6 +799,101 @@ export default async function SettingsPage({
                   }}
                 />
               </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* ── QuickBooks Online ── */}
+      <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+        <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.quickbooksTitle}</h2>
+
+        {searchParams.quickbooks_error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+            <p className="text-sm text-red-700 font-medium">
+              {QUICKBOOKS_ERRORS[searchParams.quickbooks_error] ?? 'Error al conectar con QuickBooks.'}
+            </p>
+          </div>
+        )}
+        {searchParams.quickbooks === 'connected' && (
+          <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+            <p className="text-sm text-green-700 font-medium">{t.quickbooksConnectedBanner}</p>
+          </div>
+        )}
+        <p className="text-xs text-sl-on-surface-muted mb-2">{t.quickbooksIntro}</p>
+        <ul className="text-xs text-sl-on-surface-muted mb-5 space-y-1 list-disc pl-4">
+          <li>{t.quickbooksBullet1}</li>
+          <li>{t.quickbooksBullet2}</li>
+        </ul>
+
+        {!quickbooksReady ? (
+          <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3">
+            <p className="text-sm text-yellow-800 font-medium">{t.quickbooksNotReady}</p>
+            <p className="text-xs text-yellow-700 mt-1">{t.quickbooksNotReadyHint}</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                  hasQuickBooks ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                {hasQuickBooks ? t.connected : t.notConnected}
+              </span>
+              {hasQuickBooks && (
+                <span className="text-xs font-mono text-sl-on-surface-muted">
+                  {company.quickbooks_realm_id}
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              {!hasQuickBooks && (
+                <form action={quickbooksConnectAction}>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors"
+                  >
+                    {t.connectQuickBooks}
+                  </button>
+                </form>
+              )}
+              {hasQuickBooks && (
+                <>
+                  <form action={quickbooksSyncEnabled ? disableQuickBooksSyncAction : enableQuickBooksSyncAction}>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 text-sm font-medium border border-sl-outline-variant text-sl-on-surface rounded-lg hover:border-bronze transition-colors"
+                    >
+                      {quickbooksSyncEnabled ? t.disableQuickBooksSync : t.enableQuickBooksSync}
+                    </button>
+                  </form>
+                  <form action={quickbooksSyncNowAction}>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 text-sm font-medium border border-sl-outline-variant text-sl-on-surface rounded-lg hover:border-bronze transition-colors"
+                    >
+                      {t.syncQuickBooksNow}
+                    </button>
+                  </form>
+                  <form action={quickbooksDisconnectAction}>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+                    >
+                      {t.disconnectQuickBooks}
+                    </button>
+                  </form>
+                </>
+              )}
+            </div>
+
+            {hasQuickBooks && company.quickbooks_last_synced_at && (
+              <p className="text-xs text-sl-on-surface-muted">
+                {t.quickbooksLastSynced}{' '}
+                {new Date(company.quickbooks_last_synced_at).toLocaleString(localeTag)}
+              </p>
             )}
           </div>
         )}

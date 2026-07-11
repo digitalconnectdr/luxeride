@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { notify } from '@/lib/notifications'
+import { syncInvoiceToQuickBooks } from '@/lib/quickbooks/sync'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -107,6 +108,21 @@ export async function GET(request: Request) {
         .from('corporate_accounts')
         .update({ current_balance: Number(account.current_balance ?? 0) + subtotal })
         .eq('id', account.id)
+
+      // Espejo en QuickBooks (si la empresa lo tiene conectado y activado) —
+      // no bloquea el resto del flujo si falla; el cron diario de
+      // quickbooks-sync reintenta cualquier invoice con
+      // quickbooks_synced_at IS NULL, asi que no queda huerfana hasta el
+      // proximo mes.
+      try {
+        await syncInvoiceToQuickBooks(admin, {
+          companyId: account.company_id,
+          invoiceId: invoice.id,
+          customerName: account.name,
+        })
+      } catch (err) {
+        console.error(`[cron/corporate-invoices] quickbooks sync for invoice ${invoice.id}`, err)
+      }
 
       // Email de factura
       const recipient = account.billing_email ?? account.contact_email

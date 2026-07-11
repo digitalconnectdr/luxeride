@@ -124,6 +124,14 @@ export type Database = {
           affiliate_network_enabled_at: string | null
           affiliate_network_whop_membership_id: string | null
           is_external_affiliate: boolean
+          quickbooks_realm_id: string | null
+          quickbooks_access_token: string | null
+          quickbooks_refresh_token: string | null
+          quickbooks_token_expires_at: string | null
+          quickbooks_connected_at: string | null
+          quickbooks_sync_enabled: boolean
+          quickbooks_item_id: string | null
+          quickbooks_last_synced_at: string | null
           trial_ends_at: string | null
           subscription_ends_at: string | null
           created_at: string
@@ -172,6 +180,14 @@ export type Database = {
           affiliate_network_enabled_at?: string | null | undefined
           affiliate_network_whop_membership_id?: string | null | undefined
           is_external_affiliate?: boolean | undefined
+          quickbooks_realm_id?: string | null | undefined
+          quickbooks_access_token?: string | null | undefined
+          quickbooks_refresh_token?: string | null | undefined
+          quickbooks_token_expires_at?: string | null | undefined
+          quickbooks_connected_at?: string | null | undefined
+          quickbooks_sync_enabled?: boolean | undefined
+          quickbooks_item_id?: string | null | undefined
+          quickbooks_last_synced_at?: string | null | undefined
           trial_ends_at?: string | null | undefined
           subscription_ends_at?: string | null | undefined
           created_at?: string | undefined
@@ -220,6 +236,14 @@ export type Database = {
           affiliate_network_enabled_at?: string | null | undefined
           affiliate_network_whop_membership_id?: string | null | undefined
           is_external_affiliate?: boolean | undefined
+          quickbooks_realm_id?: string | null | undefined
+          quickbooks_access_token?: string | null | undefined
+          quickbooks_refresh_token?: string | null | undefined
+          quickbooks_token_expires_at?: string | null | undefined
+          quickbooks_connected_at?: string | null | undefined
+          quickbooks_sync_enabled?: boolean | undefined
+          quickbooks_item_id?: string | null | undefined
+          quickbooks_last_synced_at?: string | null | undefined
           trial_ends_at?: string | null | undefined
           subscription_ends_at?: string | null | undefined
           created_at?: string | undefined
@@ -1591,6 +1615,8 @@ export type Database = {
           driver_rating: number | null
           driver_rating_comment: string | null
           driver_rated_at: string | null
+          quickbooks_synced_at: string | null
+          quickbooks_sales_receipt_id: string | null
           created_at: string
           updated_at: string
         }
@@ -1649,6 +1675,8 @@ export type Database = {
           driver_rating?: number | null | undefined
           driver_rating_comment?: string | null | undefined
           driver_rated_at?: string | null | undefined
+          quickbooks_synced_at?: string | null | undefined
+          quickbooks_sales_receipt_id?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -1707,6 +1735,8 @@ export type Database = {
           driver_rating?: number | null | undefined
           driver_rating_comment?: string | null | undefined
           driver_rated_at?: string | null | undefined
+          quickbooks_synced_at?: string | null | undefined
+          quickbooks_sales_receipt_id?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -1956,6 +1986,8 @@ export type Database = {
           due_date: string | null
           sent_at: string | null
           paid_at: string | null
+          quickbooks_invoice_id: string | null
+          quickbooks_synced_at: string | null
           created_at: string
           updated_at: string
         }
@@ -1975,6 +2007,8 @@ export type Database = {
           due_date?: string | null | undefined
           sent_at?: string | null | undefined
           paid_at?: string | null | undefined
+          quickbooks_invoice_id?: string | null | undefined
+          quickbooks_synced_at?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -1994,6 +2028,8 @@ export type Database = {
           due_date?: string | null | undefined
           sent_at?: string | null | undefined
           paid_at?: string | null | undefined
+          quickbooks_invoice_id?: string | null | undefined
+          quickbooks_synced_at?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
