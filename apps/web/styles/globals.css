@@ -369,6 +369,19 @@
   .lux-badge-pulse { animation: none; }
 }
 
+/* CTA "Empieza gratis" del plan popular — mismo pulso de resplandor que el
+   badge, en fase con él, para que todo el bloque respire junto. */
+@keyframes lux-cta-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(233,193,118,0.35); transform: scale(1); }
+  50%      { box-shadow: 0 0 22px 4px rgba(233,193,118,0.35); transform: scale(1.015); }
+}
+.lux-cta-pulse {
+  animation: lux-cta-pulse 2.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lux-cta-pulse { animation: none; }
+}
+
 /* Variante contenida para la plantilla Corporate: mismo principio (que la
    fila de categorías no se vea estática en reposo) pero con una amplitud
    mucho más discreta, acorde a su identidad restringida/profesional. */

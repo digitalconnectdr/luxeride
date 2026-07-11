@@ -135,7 +135,7 @@ export function LandingPageContent({
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-9">
                 <Link
                   href="/auth/signup"
-                  className="px-8 py-4 text-sm font-semibold bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] text-[#141313] rounded-full hover:opacity-90 transition-opacity shadow-[0_8px_30px_rgba(233,193,118,0.25)]"
+                  className="lux-cta-pulse px-8 py-4 text-sm font-semibold bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] text-[#141313] rounded-full hover:opacity-90 transition-opacity"
                 >
                   {t.hero.ctaPrimary}
                 </Link>
@@ -442,7 +442,7 @@ export function LandingPageContent({
                     href="/auth/signup"
                     className={`mt-8 block text-center px-6 py-3.5 text-sm font-semibold rounded-full transition-all ${
                       popular
-                        ? 'bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] text-[#141313] hover:opacity-90'
+                        ? 'lux-cta-pulse bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] text-[#141313] hover:opacity-90'
                         : 'border border-white/20 hover:border-[#e9c176]/60 hover:text-[#e9c176]'
                     }`}
                   >
