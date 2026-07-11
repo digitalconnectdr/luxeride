@@ -1075,10 +1075,31 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
    se revisó de nuevo y ya tenía `requireRole` + ownership correctos, no
    necesitó cambios. Detalle completo y punto exacto para retomar en
    `docs/PHASE-2-MOBILE.md` → "Estado al pausar (2026-07-10)".
-8. **Gaps mayores**: QuickBooks, e-signatures, promo codes, detección de
-   conflictos de vehículo, nómina de conductores, WhatsApp Business.
-   Pospuesto a propósito. (farm-in/farm-out ya tiene diseño concreto, ver
-   sección G más abajo.)
+8. **Gaps mayores**: QuickBooks, e-signatures, promo codes, nómina de
+   conductores, WhatsApp Business. Pospuesto a propósito. (farm-in/farm-out
+   ya tiene diseño concreto, ver sección G más abajo.)
+   - ✅ **Detección de conflictos de vehículo — HECHO 2026-07-11.** Antes solo
+     se evitaba que un mismo CONDUCTOR quedara en dos viajes que se solapan
+     (`windowFor`/`overlaps` en `lib/dispatch/auto-assign.ts`); el VEHÍCULO
+     que trae asignado el conductor se copiaba sin validar. Ahora se aplica
+     el mismo chequeo de horario también por `vehicle_id`, en dos puntos:
+     `tryAutoAssignDriver` (excluye del reparto automático a cualquier
+     candidato cuyo vehículo actual ya esté comprometido en otro viaje activo
+     que se solape — cubre el caso de dos conductores de turnos distintos que
+     comparten el mismo carro) y `assignDriverAction` (asignación/reasignación
+     manual desde el Dispatch Board: si el vehículo efectivo — explícito o el
+     `current_vehicle_id` del conductor — ya está en otra reserva
+     `assigned`/`en_route`/`arrived`/`in_progress` que se solapa, devuelve el
+     error "Vehículo ya asignado a la reserva [núm.] en un horario que se
+     solapa" en vez de permitir el doble-booking). `windowFor`/`overlaps` se
+     exportaron de `auto-assign.ts` para reusarlos en ambos archivos, con test
+     nuevo (`lib/dispatch/auto-assign.test.ts`, 4 casos). No hizo falta
+     migración — usa columnas ya existentes (`vehicle_id`, `scheduled_at`,
+     `duration_minutes`, `status`). Nota: hoy ninguna UI deja elegir un
+     vehículo distinto al del conductor (el parámetro `vehicleId` de
+     `assignDriverAction` existe pero no lo usa ningún componente todavía),
+     así que el caso de uso principal cubierto es el de flota compartida
+     entre turnos, no un selector manual de vehículo en pantalla.
 9. **✅ HECHO (2026-07-03) — Dispatch avanzado** (sección A): construido sobre
    una tabla nueva `booking_events` (tipo/actor/motivo/hora) EN VEZ DE agregar
    estados nuevos a `booking_status` (ese enum se referencia en ~15 archivos —

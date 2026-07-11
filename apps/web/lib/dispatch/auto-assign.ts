@@ -4,10 +4,11 @@
 // respaldo, se intenta asignar automáticamente al conductor "en servicio"
 // (drivers.is_available, controlado por el conductor mismo) más adecuado.
 //
-// "Más adecuado" = sin choque de horario con otro viaje que ya tenga, y entre
-// los que califican, el que MENOS viajes tenga asignados HOY (reparto justo —
-// nadie se queda sin viajes mientras otro acumula). Activo para todas las
-// empresas de la plataforma (sin interruptor de configuración).
+// "Más adecuado" = sin choque de horario con otro viaje que ya tenga (ni el
+// conductor ni el VEHÍCULO que trae asignado), y entre los que califican, el
+// que MENOS viajes tenga asignados HOY (reparto justo — nadie se queda sin
+// viajes mientras otro acumula). Activo para todas las empresas de la
+// plataforma (sin interruptor de configuración).
 
 import { createAdminClient } from '@/lib/supabase/server'
 import { notifyBookingEventInBackground } from '@/lib/notifications'
@@ -49,13 +50,13 @@ export interface AutoAssignResult {
   driverId?: string
 }
 
-function windowFor(scheduledAt: string, durationMinutes: number | null): { start: number; end: number } {
+export function windowFor(scheduledAt: string, durationMinutes: number | null): { start: number; end: number } {
   const start = new Date(scheduledAt).getTime() - BUFFER_MINUTES * 60_000
   const end = start + (BUFFER_MINUTES * 2 + (durationMinutes ?? DEFAULT_DURATION_MINUTES)) * 60_000
   return { start, end }
 }
 
-function overlaps(a: { start: number; end: number }, b: { start: number; end: number }): boolean {
+export function overlaps(a: { start: number; end: number }, b: { start: number; end: number }): boolean {
   return a.start < b.end && b.start < a.end
 }
 
@@ -127,6 +128,26 @@ export async function tryAutoAssignDriver(
     if (overlaps(newWindow, w)) conflicted.add(b.driver_id)
   }
 
+  // Conflicto de VEHÍCULO: el mismo vehículo no puede quedar comprometido en
+  // dos viajes activos que se solapen, sin importar qué conductor los maneje
+  // (ej. dos conductores de turnos distintos que comparten el mismo carro) —
+  // por eso se consulta por `vehicle_id`, no solo por `driver_id` como arriba.
+  const { data: activeVehicleBookings } = vehicleIdsInPlay.length
+    ? await admin
+        .from('bookings')
+        .select('vehicle_id, scheduled_at, duration_minutes')
+        .in('vehicle_id', vehicleIdsInPlay)
+        .in('status', ['assigned', 'en_route', 'arrived', 'in_progress'])
+        .neq('id', booking.id)
+    : { data: [] as { vehicle_id: string | null; scheduled_at: string; duration_minutes: number | null }[] }
+
+  const vehicleConflicted = new Set<string>()
+  for (const b of activeVehicleBookings ?? []) {
+    if (!b.vehicle_id) continue
+    const w = windowFor(b.scheduled_at, b.duration_minutes)
+    if (overlaps(newWindow, w)) vehicleConflicted.add(b.vehicle_id)
+  }
+
   // Reparto justo = menos viajes COMPLETADOS hoy. Si a un conductor le
   // cancelan/rechazan un viaje antes de empezarlo, ese viaje nunca llega a
   // 'completed' y por lo tanto no cuenta en su contra.
@@ -147,7 +168,9 @@ export async function tryAutoAssignDriver(
   const candidates = Array.from(eligibleIds).filter((id) => {
     if (conflicted.has(id)) return false
     const vehicleId = currentVehicleByDriver.get(id)
-    return !(vehicleId && blockedVehicleIds.has(vehicleId))
+    if (vehicleId && blockedVehicleIds.has(vehicleId)) return false
+    if (vehicleId && vehicleConflicted.has(vehicleId)) return false
+    return true
   })
   if (!candidates.length) return { assigned: false }
 

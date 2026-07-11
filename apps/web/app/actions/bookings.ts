@@ -24,7 +24,7 @@ import { checkMonthlyBookingLimit } from '@/lib/plans/limits'
 import { getAppUrl } from '@/lib/app-url'
 import { calculateFare, bestRule, type PricingRuleFields } from '@/lib/pricing/engine'
 import { resolveZoneId, type ServiceZoneForMatch } from '@/lib/pricing/zones'
-import { tryAutoAssignDriver, tryAutoFarmToAffiliates } from '@/lib/dispatch/auto-assign'
+import { tryAutoAssignDriver, tryAutoFarmToAffiliates, windowFor, overlaps } from '@/lib/dispatch/auto-assign'
 import type { BookingStatus, BookingType, Json } from '@/lib/supabase/database.types'
 
 // ─── Multi-stop: validación de paradas intermedias ────────────────────────────
@@ -580,7 +580,7 @@ export async function assignDriverAction(
 
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, status, company_id, driver_id, scheduled_at, total_amount, booking_number, passenger_name, passenger_email, passenger_phone, pickup_location, dropoff_location, currency')
+    .select('id, status, company_id, driver_id, scheduled_at, duration_minutes, total_amount, booking_number, passenger_name, passenger_email, passenger_phone, pickup_location, dropoff_location, currency')
     .eq('id', bookingId)
     .eq('company_id', user.company_id)
     .single()
@@ -632,6 +632,28 @@ export async function assignDriverAction(
       .single()
     if (vehicleCompliance?.operational_block) {
       return { success: false, error: `Vehículo bloqueado por cumplimiento: ${vehicleCompliance.block_reason ?? 'ver Compliance Center'}` }
+    }
+
+    // Detección de conflicto de vehículo: el mismo vehículo no puede quedar
+    // comprometido en dos viajes activos que se solapen en el tiempo, sin
+    // importar qué conductor los maneje (ej. dos conductores de turnos
+    // distintos que comparten el mismo carro, o una reasignación manual que
+    // elige un vehículo ya ocupado a esa hora).
+    const { data: otherVehicleBookings } = await admin
+      .from('bookings')
+      .select('id, booking_number, scheduled_at, duration_minutes')
+      .eq('vehicle_id', effectiveVehicleId)
+      .in('status', ['assigned', 'en_route', 'arrived', 'in_progress'])
+      .neq('id', bookingId)
+    const newWindow = windowFor(booking.scheduled_at, booking.duration_minutes)
+    const vehicleConflict = (otherVehicleBookings ?? []).find((b) =>
+      overlaps(newWindow, windowFor(b.scheduled_at, b.duration_minutes)),
+    )
+    if (vehicleConflict) {
+      return {
+        success: false,
+        error: `Vehículo ya asignado a la reserva ${vehicleConflict.booking_number} en un horario que se solapa`,
+      }
     }
   }
 
