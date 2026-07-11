@@ -185,7 +185,7 @@ export function BookingPayments({ bookingId, payments, stripeConfigured, canRefu
             </div>
             <div className="col-span-2">
               <label className="block text-xs text-sl-on-surface-muted mb-1">
-                Referencia <span className="normal-case">(núm. de confirmación Zelle, etc. — opcional)</span>
+                Referencia <span className="normal-case">(núm. de confirmación Zelle, etc. | opcional)</span>
               </label>
               <input
                 name="reference"
@@ -243,7 +243,7 @@ export function BookingPayments({ bookingId, payments, stripeConfigured, canRefu
                 </div>
                 <p className="text-xs text-sl-on-surface-muted mt-1">
                   {new Date(p.created_at).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' })}
-                  {p.failure_message && <span className="text-red-500"> — {p.failure_message}</span>}
+                  {p.failure_message && <span className="text-red-500"> | {p.failure_message}</span>}
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">

@@ -155,7 +155,7 @@ export default async function AdminDashboardPage() {
         <div>
           <h1 className="font-playfair text-3xl font-semibold text-[#1d1b18]">{t.title}</h1>
           <p className="text-sm text-[#75716a] mt-1">
-            {t.welcome}, {user.profile.first_name} —{' '}
+            {t.welcome}, {user.profile.first_name} |{' '}
             <span className="text-[#8a6520] font-medium capitalize">{user.role.replace(/_/g, ' ')}</span>
           </p>
         </div>

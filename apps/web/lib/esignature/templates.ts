@@ -16,7 +16,7 @@ By signing below, the chauffeur acknowledges and agrees to:
 4. Keep passenger information confidential and treat all passengers with respect.
 5. Follow the payment terms and schedule agreed with the company operating this platform.
 
-This agreement does not constitute an employment contract unless otherwise stated by the company. It is a general-purpose template — the company is responsible for reviewing it with qualified legal counsel before relying on it.`
+This agreement does not constitute an employment contract unless otherwise stated by the company. It is a general-purpose template | the company is responsible for reviewing it with qualified legal counsel before relying on it.`
 
 export const CORPORATE_AGREEMENT_VERSION = 'v1'
 
@@ -28,4 +28,4 @@ By signing below, the corporate account holder acknowledges and agrees to:
 3. Notify the company of any changes to authorized users, billing contacts, or approval requirements.
 4. Review trip activity and dispute any charges within a reasonable time of receiving an invoice.
 
-This agreement does not replace a formal service contract if one already exists between the parties. It is a general-purpose template — the company is responsible for reviewing it with qualified legal counsel before relying on it.`
+This agreement does not replace a formal service contract if one already exists between the parties. It is a general-purpose template | the company is responsible for reviewing it with qualified legal counsel before relying on it.`

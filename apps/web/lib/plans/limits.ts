@@ -88,7 +88,7 @@ export async function checkVehicleLimitBulk(
     const remaining = Math.max(0, maxVehicles - (count ?? 0))
     return {
       ok: false,
-      error: `Tu plan permite hasta ${maxVehicles} vehículos (te quedan ${remaining} disponibles) — esta importación agregaría ${additional}. ${UPGRADE_HINT}`,
+      error: `Tu plan permite hasta ${maxVehicles} vehículos (te quedan ${remaining} disponibles) | esta importación agregaría ${additional}. ${UPGRADE_HINT}`,
     }
   }
   return { ok: true }

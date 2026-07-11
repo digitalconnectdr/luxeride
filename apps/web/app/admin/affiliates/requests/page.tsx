@@ -36,7 +36,7 @@ export default async function AffiliateRequestsPage() {
   const ownerNameById = new Map((owners ?? []).map((c) => [c.id, c.name]))
 
   const driverOptions: DriverOption[] = (drivers ?? []).map((d) => ({ id: d.id, name: `${d.first_name} ${d.last_name}` }))
-  const vehicleOptions: VehicleOption[] = (vehicles ?? []).map((v) => ({ id: v.id, label: `${v.make} ${v.model} — ${v.plate_number}` }))
+  const vehicleOptions: VehicleOption[] = (vehicles ?? []).map((v) => ({ id: v.id, label: `${v.make} ${v.model} | ${v.plate_number}` }))
 
   const requests: IncomingRequest[] = (trips ?? []).map((tr) => ({
     id: tr.id,

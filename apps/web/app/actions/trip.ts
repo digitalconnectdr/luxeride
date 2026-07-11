@@ -521,7 +521,7 @@ async function createStopChargeIfPaidOnline(
       net_amount: (cents - feeCents) / 100,
       status: 'pending',
       payment_method: 'card',
-      description: `Parada adicional — Booking ${booking.booking_number}`,
+      description: `Parada adicional | Booking ${booking.booking_number}`,
       stripe_connect_account_id: useConnect ? company!.stripe_connect_account_id : null,
     })
     .select('id')
@@ -534,7 +534,7 @@ async function createStopChargeIfPaidOnline(
       amountCents: cents,
       feeCents,
       currency,
-      title: `Parada adicional — Reservación ${booking.booking_number}`,
+      title: `Parada adicional | Reservación ${booking.booking_number}`,
       productExternalId: `luxeride-booking-${booking.company_id}`,
       productTitle: 'Reservaciones LuxeRide',
       redirectUrl: `${getAppUrl()}/payment/success?booking=${encodeURIComponent(booking.booking_number)}`,
@@ -566,7 +566,7 @@ async function createStopChargeIfPaidOnline(
         price_data: {
           currency,
           unit_amount: cents,
-          product_data: { name: `Parada adicional — Reservación ${booking.booking_number}` },
+          product_data: { name: `Parada adicional | Reservación ${booking.booking_number}` },
         },
       }],
       payment_intent_data: {

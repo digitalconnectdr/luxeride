@@ -40,7 +40,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     id: `/book/${company.slug}`,
     name,
     short_name: name.slice(0, 12),
-    description: (company.tagline as string | null) || `${name} — reservas online`,
+    description: (company.tagline as string | null) || `${name} | reservas online`,
     start_url: `/book/${company.slug}`,
     // scope amplio: la reserva vive en /book/<slug>/… y el tracking en /track/…,
     // así que el scope debe cubrir todo el origen para no salirse de la app.

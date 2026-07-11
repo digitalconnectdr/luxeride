@@ -75,7 +75,7 @@ export default async function AirportsPage() {
                 <option value="">{t.selectPlaceholder}</option>
                 {notAddedAirports.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.iata_code} — {a.name} ({a.city}, {a.country})
+                    {a.iata_code} | {a.name} ({a.city}, {a.country})
                   </option>
                 ))}
               </select>

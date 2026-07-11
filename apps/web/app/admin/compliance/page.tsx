@@ -103,7 +103,7 @@ export default async function CompliancePage() {
                 <div key={d.id} className="flex items-center justify-between text-xs bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2">
                   <div>
                     <span className="text-sl-on-surface">{d.user_profiles.first_name} {d.user_profiles.last_name}</span>
-                    {d.block_reason && <span className="text-red-400/80 ml-2">— {d.block_reason}</span>}
+                    {d.block_reason && <span className="text-red-400/80 ml-2">| {d.block_reason}</span>}
                   </div>
                   <Link href={`/admin/drivers/${d.id}`} className="text-bronze hover:text-bronze/80 shrink-0">{t.viewDriver}</Link>
                 </div>
@@ -117,7 +117,7 @@ export default async function CompliancePage() {
                 <div key={v.id} className="flex items-center justify-between text-xs bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2">
                   <div>
                     <span className="text-sl-on-surface">{v.make} {v.model} · {v.plate_number}</span>
-                    {v.block_reason && <span className="text-red-400/80 ml-2">— {v.block_reason}</span>}
+                    {v.block_reason && <span className="text-red-400/80 ml-2">| {v.block_reason}</span>}
                   </div>
                   <Link href={`/admin/fleet/${v.id}`} className="text-bronze hover:text-bronze/80 shrink-0">{t.viewVehicle}</Link>
                 </div>

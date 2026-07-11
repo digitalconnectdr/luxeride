@@ -82,7 +82,7 @@ export async function GET(request: Request) {
           currency: pending[0]!.currency ?? 'USD',
           due_date: dueDate.toISOString().slice(0, 10),
           sent_at: new Date().toISOString(),
-          notes: `Facturación automática — ${pending.length} viaje(s) completado(s)`,
+          notes: `Facturación automática | ${pending.length} viaje(s) completado(s)`,
         })
         .select('id, invoice_number')
         .single()
@@ -96,7 +96,7 @@ export async function GET(request: Request) {
         pending.map((b) => ({
           invoice_id: invoice.id,
           booking_id: b.id,
-          description: `Viaje ${b.booking_number} — ${new Date(b.scheduled_at).toLocaleDateString('es-DO')}`,
+          description: `Viaje ${b.booking_number} | ${new Date(b.scheduled_at).toLocaleDateString('es-DO')}`,
           quantity: 1,
           unit_price: Number(b.total_amount ?? 0),
           total_price: Number(b.total_amount ?? 0),

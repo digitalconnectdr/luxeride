@@ -448,7 +448,7 @@ export default async function BookingDetailPage({
                   <div className="flex items-center justify-between gap-2">
                     <span className={`text-xs font-semibold ${isIncident ? 'text-amber-800' : 'text-sl-on-surface'}`}>
                       {t.eventTypes[ev.type as keyof typeof t.eventTypes] ?? ev.type}
-                      {category && ` — ${t.incidentCategories[category as keyof typeof t.incidentCategories] ?? category}`}
+                      {category && ` | ${t.incidentCategories[category as keyof typeof t.incidentCategories] ?? category}`}
                     </span>
                     <span className="text-[11px] text-sl-on-surface-muted">{fmt(ev.created_at, localeTag)}</span>
                   </div>

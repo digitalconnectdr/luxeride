@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og'
 import { brand } from '@/lib/brand'
 
 export const runtime = 'edge'
-export const alt = `${brand.name} — Premium Transportation Software`
+export const alt = `${brand.name} | Premium Transportation Software`
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -46,7 +46,7 @@ export default async function OpengraphImage() {
           Premium software for luxury ground transportation
         </div>
         <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.6)', marginTop: 28, maxWidth: 900, display: 'flex' }}>
-          Online bookings, live dispatch, payments and corporate accounts — in one platform.
+          Online bookings, live dispatch, payments and corporate accounts | in one platform.
         </div>
       </div>
     ),

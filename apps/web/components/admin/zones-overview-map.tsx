@@ -110,7 +110,7 @@ export function ZonesOverviewMap({
               (z.postal_codes ?? [])
                 .filter((c) => c in pins)
                 .map((c) => (
-                  <Marker key={`${z.id}-${c}`} position={pins[c]} title={`${z.name} — ${c}`} label={{ text: c.slice(-4), fontSize: '10px' }} />
+                  <Marker key={`${z.id}-${c}`} position={pins[c]} title={`${z.name} | ${c}`} label={{ text: c.slice(-4), fontSize: '10px' }} />
                 )),
             )}
           </Map>

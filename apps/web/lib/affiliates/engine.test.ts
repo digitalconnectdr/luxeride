@@ -100,7 +100,7 @@ describe('resolveBrandingLabel', () => {
   })
 })
 
-describe('isClosed — incluye lost (Fase 3, pools)', () => {
+describe('isClosed | incluye lost (Fase 3, pools)', () => {
   it('lost es terminal', () => {
     expect(isClosed('lost')).toBe(true)
   })

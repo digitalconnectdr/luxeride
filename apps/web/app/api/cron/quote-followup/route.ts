@@ -66,7 +66,7 @@ export async function GET(request: Request) {
       companyId: q.company_id,
       bookingId: q.id,
       to: email,
-      subject: `Tu cotización ${q.booking_number} — confírmala en un clic`,
+      subject: `Tu cotización ${q.booking_number} | confírmala en un clic`,
       body,
     })
     if (result.sent) sent += 1

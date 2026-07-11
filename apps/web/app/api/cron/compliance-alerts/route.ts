@@ -112,7 +112,7 @@ export async function GET(request: Request) {
     if (!items.length) continue
     const result = await sendOperatorEmail(
       v.company_id,
-      `Vencimiento próximo — ${v.make} ${v.model} (${v.plate_number})`,
+      `Vencimiento próximo | ${v.make} ${v.model} (${v.plate_number})`,
       `${v.make} ${v.model} (${v.plate_number}):\n${items.join('\n')}\n\nActualiza estos datos en el Compliance Center para evitar el bloqueo operativo del vehículo.`,
     )
     if (result.sent) emailsSent += 1
@@ -138,7 +138,7 @@ export async function GET(request: Request) {
     if (!items.length) continue
     const result = await sendOperatorEmail(
       c.id,
-      `Vencimiento próximo — ${c.name}`,
+      `Vencimiento próximo | ${c.name}`,
       `${items.join('\n')}\n\nActualiza estos datos en el Compliance Center (/admin/compliance).`,
     )
     if (result.sent) emailsSent += 1

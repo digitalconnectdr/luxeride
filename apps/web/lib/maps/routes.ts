@@ -33,7 +33,7 @@ export async function calculateRoute(
   // Usar la key del servidor (no expuesta al browser)
   const apiKey = process.env.GOOGLE_MAPS_SERVER_KEY
   if (!apiKey || apiKey === 'placeholder') {
-    console.warn('[Maps] GOOGLE_MAPS_SERVER_KEY no configurado — omitiendo cálculo de ruta')
+    console.warn('[Maps] GOOGLE_MAPS_SERVER_KEY no configurado | omitiendo cálculo de ruta')
     return null
   }
 

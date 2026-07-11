@@ -40,7 +40,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     id: `/driver?c=${company.slug}`, // distinto del PWA del cliente (mismo dominio)
     name,
     short_name: 'Conductor',
-    description: `${baseName} — portal del conductor`,
+    description: `${baseName} | portal del conductor`,
     start_url: '/driver/trips',
     scope: '/driver',
     display: 'standalone',

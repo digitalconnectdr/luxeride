@@ -33,7 +33,7 @@ function rule(overrides: Partial<PricingRuleFields> = {}): PricingRuleFields {
 const WEEKDAY_AFTERNOON = new Date('2026-06-17T18:00:00Z')
 const TZ_SD = 'America/Santo_Domingo'
 
-describe('calculateFare — modelos', () => {
+describe('calculateFare | modelos', () => {
   it('per_mile: base + tarifa por milla', () => {
     const fare = calculateFare(rule(), 10, 20, WEEKDAY_AFTERNOON, 'one_way', TZ_SD)
     expect(fare.baseAmount).toBe(40) // 10 + 3*10
@@ -74,7 +74,7 @@ describe('calculateFare — modelos', () => {
   })
 })
 
-describe('calculateFare — recargos con timezone (el bug de UTC)', () => {
+describe('calculateFare | recargos con timezone (el bug de UTC)', () => {
   // 01:00 UTC = 21:00 del día anterior en Santo Domingo → NO es noche local
   const UTC_NIGHT_LOCAL_EVENING = new Date('2026-06-17T01:00:00Z') // martes 21:00 SD
 
@@ -123,7 +123,7 @@ describe('calculateFare — recargos con timezone (el bug de UTC)', () => {
   })
 })
 
-describe('calculateFare — fees y surge', () => {
+describe('calculateFare | fees y surge', () => {
   it('suma fee de aeropuerto según tipo de booking', () => {
     const r = rule({ airport_pickup_fee: 15, airport_dropoff_fee: 10 })
     expect(calculateFare(r, 10, 20, WEEKDAY_AFTERNOON, 'airport_pickup', TZ_SD).surchargeAmount).toBe(15)
@@ -141,7 +141,7 @@ describe('calculateFare — fees y surge', () => {
   })
 })
 
-describe('calculateFare — auditoría: modelos restantes y bordes', () => {
+describe('calculateFare | auditoría: modelos restantes y bordes', () => {
   it('zone_based / desconocido cae a base_price', () => {
     expect(calculateFare(rule({ model: 'zone_based', base_price: 90 }), 50, 60, WEEKDAY_AFTERNOON, 'one_way', TZ_SD).totalAmount).toBe(90)
     expect(calculateFare(rule({ model: 'cualquier_cosa', base_price: 42 }), 50, 60, WEEKDAY_AFTERNOON, 'one_way', TZ_SD).totalAmount).toBe(42)

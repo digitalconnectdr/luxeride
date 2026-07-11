@@ -17,7 +17,7 @@ const ADDON_LABELS: Record<AddonKey, string> = {
   promo_codes: 'Promo Codes ($3/mo)',
 }
 
-export const metadata: Metadata = { title: 'Company Detail — Super Admin' }
+export const metadata: Metadata = { title: 'Company Detail | Super Admin' }
 
 const STATUS_BADGE: Record<CompanyStatus, string> = {
   active:    'bg-green-500/10 text-green-400 border-green-500/20',
@@ -332,7 +332,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
       <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-sl-outline-variant">
           <h2 className="text-sm font-semibold text-sl-on-surface flex items-center">
-            Live Tracking — Map Load by Trip ({yearMonth})
+            Live Tracking | Map Load by Trip ({yearMonth})
             <InfoTip text="Cuántas veces se refrescó el mapa en vivo del pasajero en CADA viaje este mes, con el conductor y pasajero de ese viaje. Útil para investigar feedback puntual (¿este conductor dejó el tracking abierto sin necesidad? ¿este cliente tuvo un viaje inusualmente largo/con muchos refrescos?) sin depender solo del total agregado de la empresa." />
           </h2>
         </div>

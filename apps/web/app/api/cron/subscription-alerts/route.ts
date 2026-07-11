@@ -53,8 +53,8 @@ export async function GET(request: Request) {
     .lte('trial_ends_at', limit)
     .order('trial_ends_at')
 
-  const subRows = (subs ?? []).map((c) => `• ${c.name} (/${c.slug}) — vence en ${daysUntil(c.subscription_ends_at!)} día(s) [${new Date(c.subscription_ends_at!).toLocaleDateString('es-DO')}]`)
-  const trialRows = (trials ?? []).map((c) => `• ${c.name} (/${c.slug}) — prueba termina en ${daysUntil(c.trial_ends_at!)} día(s) [${new Date(c.trial_ends_at!).toLocaleDateString('es-DO')}]`)
+  const subRows = (subs ?? []).map((c) => `• ${c.name} (/${c.slug}) | vence en ${daysUntil(c.subscription_ends_at!)} día(s) [${new Date(c.subscription_ends_at!).toLocaleDateString('es-DO')}]`)
+  const trialRows = (trials ?? []).map((c) => `• ${c.name} (/${c.slug}) | prueba termina en ${daysUntil(c.trial_ends_at!)} día(s) [${new Date(c.trial_ends_at!).toLocaleDateString('es-DO')}]`)
 
   const total = subRows.length + trialRows.length
   if (total === 0) {

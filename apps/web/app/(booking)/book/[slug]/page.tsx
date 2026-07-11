@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const tagline = resolveLocalizedField(site.i18n, locale, 'tagline', (company as { tagline?: string | null }).tagline ?? null)
   const cityPart = company.city ? ` · ${company.city}` : ''
   const inCity = company.city ? ` en ${company.city}` : ''
-  const title = `${company.name} — ${tagline || `Reserva tu traslado de lujo${cityPart}`}`
+  const title = `${company.name} | ${tagline || `Reserva tu traslado de lujo${cityPart}`}`
   const description = `Reserva en línea con ${company.name}: traslados al aeropuerto, chofer ejecutivo y transporte premium${inCity}. Cotización al instante, pago seguro y seguimiento en vivo.`
   const url = `${getAppUrl()}/book/${params.slug}`
   return {
@@ -149,7 +149,7 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org', '@type': 'LocalBusiness', '@id': shortUrl,
     name: company.name, url: shortUrl, priceRange: '$$$',
-    description: tagline || `${company.name} — servicio de transporte premium.`,
+    description: tagline || `${company.name} | servicio de transporte premium.`,
   }
   if (logoUrl) jsonLd.image = logoUrl
   if (company.phone) jsonLd.telephone = company.phone

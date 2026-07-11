@@ -14,7 +14,7 @@ export const brand = {
 } as const
 
 /** "LuxeRide — Powered by JPRS Digital Connect" */
-export const brandLegal = `${brand.name} — Powered by ${brand.poweredBy}`
+export const brandLegal = `${brand.name} | Powered by ${brand.poweredBy}`
 
 /**
  * Reemplaza el placeholder {brand} por el nombre real de la marca.

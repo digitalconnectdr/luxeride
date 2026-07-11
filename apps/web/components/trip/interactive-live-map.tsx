@@ -258,7 +258,7 @@ export function InteractiveLiveMap({
       </div>
       {showPausedBanner && paused && (
         <div className={`rounded-xl border px-3.5 py-2.5 text-xs leading-relaxed ${light ? 'border-[#e5d9b8] bg-[#fdf8ec] text-[#7a5f1a]' : 'border-amber-500/25 bg-amber-500/[0.07] text-amber-300/90'}`}>
-          <span className="font-medium">{labels.paused}</span> — {labels.pausedDesc}
+          <span className="font-medium">{labels.paused}</span> | {labels.pausedDesc}
         </div>
       )}
       {allowPassengerShare && (

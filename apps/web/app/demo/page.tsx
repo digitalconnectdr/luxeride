@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { brand } from '@/lib/brand'
 
 export const metadata: Metadata = {
-  title: `Demo microsite — ${brand.name}`,
+  title: `Demo microsite | ${brand.name}`,
   robots: { index: false, follow: false },
 }
 

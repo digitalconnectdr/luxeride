@@ -84,7 +84,7 @@ export async function checkRateLimit(
       }
       return count <= limit
     } catch (err) {
-      console.error('[rate-limit] Redis error — usando fallback en memoria', err)
+      console.error('[rate-limit] Redis error | usando fallback en memoria', err)
     }
   }
 

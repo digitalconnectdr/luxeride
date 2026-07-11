@@ -14,7 +14,7 @@ const DESCRIPTION =
   'Private transportation software for limousine, airport transfer and executive chauffeur companies: online bookings, dispatch, driver assignment, payments and passenger tracking.'
 
 export const metadata: Metadata = {
-  title: { absolute: `${brand.name} — Private Transportation Software | by ${brand.poweredBy}` },
+  title: { absolute: `${brand.name} | Private Transportation Software | by ${brand.poweredBy}` },
   description: DESCRIPTION,
 }
 

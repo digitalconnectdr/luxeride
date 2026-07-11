@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { StatusSelect } from '@/components/super-admin/status-forms'
 import type { CompanyStatus, CompanyPlan } from '@/lib/supabase/database.types'
 
-export const metadata: Metadata = { title: 'Companies — Super Admin' }
+export const metadata: Metadata = { title: 'Companies | Super Admin' }
 
 const STATUS_BADGE: Record<CompanyStatus, string> = {
   active:    'bg-green-500/10 text-green-400 border-green-500/20',

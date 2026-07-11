@@ -40,7 +40,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     id: `/admin?c=${company.slug}`,
     name,
     short_name: 'Admin',
-    description: `${baseName} — panel de administración`,
+    description: `${baseName} | panel de administración`,
     start_url: '/admin/dashboard',
     scope: '/admin',
     display: 'standalone',

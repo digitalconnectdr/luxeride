@@ -240,7 +240,7 @@ function computeChargeAmounts(
   const amountCents = mainCents + tipCents
 
   const mainLabel = isDeposit
-    ? `Depósito ${depPct}% — Reservación ${booking.booking_number}`
+    ? `Depósito ${depPct}% | Reservación ${booking.booking_number}`
     : `Reservación ${booking.booking_number}`
 
   const feePct = platformFeePct(companySettings)
@@ -369,10 +369,10 @@ async function createCheckoutForBooking(
   if (!stripe) {
     await admin.from('payments').update({ status: 'cancelled' }).eq('id', payment.id)
     const error = whopReady
-      ? 'Pagos online no disponibles — activa Whop como método de cobro en Configuración'
+      ? 'Pagos online no disponibles | activa Whop como método de cobro en Configuración'
       : company?.whop_connect_company_id
-        ? 'Pagos online no disponibles — termina de conectar Whop en Configuración (Stripe tampoco está configurado)'
-        : 'Pagos online no disponibles — conecta Stripe o Whop en Configuración'
+        ? 'Pagos online no disponibles | termina de conectar Whop en Configuración (Stripe tampoco está configurado)'
+        : 'Pagos online no disponibles | conecta Stripe o Whop en Configuración'
     return { success: false, error }
   }
 
@@ -499,7 +499,7 @@ export async function recordManualPaymentAction(params: {
     currency: booking.currency ?? 'USD',
     status: 'succeeded',
     payment_method: method,
-    description: `${methodLabel} — Booking ${booking.booking_number}${reference ? ` (ref: ${reference})` : ''} — registrado por staff`,
+    description: `${methodLabel} | Booking ${booking.booking_number}${reference ? ` (ref: ${reference})` : ''} | registrado por staff`,
     captured_at: new Date().toISOString(),
     metadata: { manual: true, method: params.method, reference: reference ?? null, recorded_by: user.id },
   })
@@ -748,7 +748,7 @@ export async function chargeWithSavedWhopCardAction(
       net_amount: (amountCents - feeCents) / 100,
       status: 'pending',
       payment_method: 'card',
-      description: `${mainLabel}${gratPct > 0 ? ` (incl. propina ${gratPct}%)` : ''} — tarjeta guardada`,
+      description: `${mainLabel}${gratPct > 0 ? ` (incl. propina ${gratPct}%)` : ''} | tarjeta guardada`,
     })
     .select('id')
     .single()

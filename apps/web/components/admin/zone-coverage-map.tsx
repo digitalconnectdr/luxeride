@@ -107,7 +107,7 @@ export function ZoneCoverageMap({ zone, noGeoHint }: { zone: ZoneForCoverage; no
             </>
           )}
           {codes.filter((c) => c in pins).map((c) => (
-            <Marker key={c} position={pins[c]} title={`${zone.name} — ${c}`} label={{ text: c.slice(-4), fontSize: '10px' }} />
+            <Marker key={c} position={pins[c]} title={`${zone.name} | ${c}`} label={{ text: c.slice(-4), fontSize: '10px' }} />
           ))}
         </Map>
       </div>

@@ -177,7 +177,7 @@ export default function SignupPage() {
             disabled={isPending}
             className="w-full rounded-lg bg-gold px-4 py-3 text-sm font-semibold text-gray-900 hover:bg-gold/90 focus:outline-none focus:ring-2 focus:ring-bronze focus:ring-offset-2 focus:ring-offset-sl-surface-high disabled:opacity-60 disabled:cursor-not-allowed transition-all"
           >
-            {isPending ? 'Creating account…' : 'Create account — it\'s free'}
+            {isPending ? 'Creating account…' : 'Create account | it\'s free'}
           </button>
 
           <p className="text-center text-xs text-sl-on-surface-muted">

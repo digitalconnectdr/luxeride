@@ -186,7 +186,7 @@ export async function completeDriverTripWithExtras(
       currency: booking.currency ?? 'USD',
       status: 'succeeded',
       payment_method: 'cash',
-      description: `Efectivo — Booking ${booking.booking_number} — registrado por el conductor desde la app`,
+      description: `Efectivo | Booking ${booking.booking_number} | registrado por el conductor desde la app`,
       captured_at: new Date().toISOString(),
       metadata: { manual: true, method: 'cash', recorded_by: user.id, source: 'driver_mobile_app' },
     })
