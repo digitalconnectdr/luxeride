@@ -1075,9 +1075,68 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
    se revisó de nuevo y ya tenía `requireRole` + ownership correctos, no
    necesitó cambios. Detalle completo y punto exacto para retomar en
    `docs/PHASE-2-MOBILE.md` → "Estado al pausar (2026-07-10)".
-8. **Gaps mayores**: e-signatures, promo codes, nómina de conductores,
-   WhatsApp Business. Pospuesto a propósito. (farm-in/farm-out ya tiene
-   diseño concreto, ver sección G más abajo.)
+8. **Gaps mayores**: WhatsApp Business. Pospuesto a propósito. (farm-in/
+   farm-out ya tiene diseño concreto, ver sección G más abajo; los otros 4
+   gaps originales de esta lista — QuickBooks, e-signatures, promo codes,
+   nómina de conductores — ya se construyeron, ver detalle abajo.)
+   - ✅ **Sistema genérico de add-ons de pago — HECHO 2026-07-11.** Antes de
+     construir nómina/firma/promo codes, se generalizó el patrón de la Red
+     de Afiliados (`companies.affiliate_network_enabled`) en una tabla
+     reusable `company_addons` (`lib/billing/addons.ts`): cada add-on nuevo
+     solo necesita una fila `(company_id, addon_key, enabled, ...)` en vez de
+     3 columnas booleanas repetidas en `companies`. Diferencia deliberada
+     respecto al add-on de afiliados: ahí "incluido en Elite/Enterprise" es
+     una convención manual (el super-admin debe recordar activarlo); aquí
+     `isAddonActive()` compara el plan automáticamente, así que un upgrade a
+     Elite/Enterprise activa el add-on sin tocar ningún toggle. El webhook de
+     Whop (`app/api/webhooks/whop/route.ts`) y el toggle de super-admin
+     (`/super-admin/companies/[id]`) ya reconocen los 3 add-ons nuevos.
+     **Falta del usuario**: crear los 3 productos en Whop
+     (`WHOP_PLAN_ID_PAYROLL_ADDON`/`WHOP_CHECKOUT_URL_PAYROLL_ADDON`,
+     `..._ESIGNATURE_ADDON`, `..._PROMO_CODES_ADDON`) para que el checkout de
+     autoservicio funcione — sin esas env vars, la tarjeta de upsell muestra
+     "no disponible para autoservicio" y solo el super-admin puede activarlo
+     manualmente, degradando limpio.
+   - ✅ **Códigos promocionales ($3/mes Starter/Professional, incluido en
+     Elite/Enterprise) — HECHO 2026-07-11.** Motor puro
+     (`lib/promo/engine.ts`, testeado) valida vigencia/límite de usos total/
+     límite por cliente/monto mínimo y calcula el descuento (% o monto fijo,
+     nunca negativo ni mayor al total). CRUD en `/admin/promo-codes`.
+     Aplicación real en el wizard público (`booking-wizard.tsx`): el
+     pasajero ve una vista previa del descuento al escribir el código
+     (`validatePromoCodeAction`), pero `createPublicBookingAction` SIEMPRE
+     revalida el código server-side antes de descontarlo del `total_amount`
+     real — nunca confía en el descuento mostrado en el navegador. El pago
+     con tarjeta (Stripe Checkout) ya cobra el monto correcto sin cambios
+     porque lee `bookings.total_amount`, que ya viene descontado. Tablas
+     `promo_codes` + `promo_code_redemptions` (para el límite por cliente).
+   - ✅ **Nómina de conductores ($9/mes, incluido en Elite/Enterprise) — HECHO
+     2026-07-11.** Alcance confirmado con el usuario: SOLO cálculo y reporte,
+     nunca mueve dinero real — el operador sigue pagando por fuera (efectivo,
+     transferencia) y solo marca el periodo como pagado en LuxeRide. Dos
+     modelos por conductor (`drivers.payroll_type`/`payroll_rate`): comisión
+     (% de cada viaje) o tarifa fija por viaje — ambos calculables directo
+     desde `bookings.completed`, sin necesitar infraestructura de reloj/
+     turnos que no existe hoy (por eso NO se ofrece un modelo "por hora",
+     recorte consciente). UI en `/admin/payroll`: selector de periodo,
+     reporte por conductor, botón "Marcar como pagado" que congela el monto
+     y la cantidad de viajes exactos de ESE momento en `payroll_payments`
+     (para que un cambio posterior de tarifa no altere un periodo ya
+     liquidado).
+   - ✅ **Firma electrónica ($9/mes, incluido en Elite/Enterprise) — HECHO
+     2026-07-11.** Alcance confirmado con el usuario: acuerdo del conductor
+     al unirse + contrato de cuenta corporativa (NO exención de
+     responsabilidad del pasajero, quedó fuera de esta ronda). Canvas de
+     firma propio en `components/admin/esignature/signature-pad.tsx`
+     (mouse/touch, exporta PNG) — sin agregar una librería externa, ya que
+     el equivalente de React Native (`apps/driver-mobile/components/
+     SignatureModal.tsx`) no es reusable en DOM. Firma guardada en el bucket
+     de Storage `documents` (mismo bucket que ya usa la firma del pasajero
+     en viajes pagados en efectivo) + snapshot completo del texto del
+     acuerdo en `signed_agreements.agreement_text_snapshot` (si el texto
+     cambia después, lo ya firmado no se reescribe). **Nota**: el contenido
+     de las plantillas (`lib/esignature/templates.ts`) es genérico, no es
+     asesoría legal — mismo criterio que `/privacy` y `/terms`.
    - ✅ **QuickBooks Online — construido y validado end-to-end 2026-07-11.**
      Cada empresa conecta SU PROPIA cuenta de QuickBooks Online (mismo
      espíritu que Stripe Connect / Whop Connect, pero con OAuth2 real — QBO
