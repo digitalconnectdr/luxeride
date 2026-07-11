@@ -13,13 +13,16 @@ import type { createAdminClient } from '@/lib/supabase/server'
 // - QUICKBOOKS_CLIENT_ID / QUICKBOOKS_CLIENT_SECRET
 // - QUICKBOOKS_ENVIRONMENT: 'sandbox' | 'production' (default 'sandbox')
 //
-// IMPORTANTE (a diferencia de la nota en lib/whop/connect-server.ts, que SI
-// verifico contra los tipos reales del SDK): las formas de request/response
-// de abajo siguen la documentacion publica de la API v3 de QuickBooks
-// (developer.intuit.com/app/developer/qbo/docs/api/accounting) pero NO se
-// probaron contra un Sandbox real todavia — validar el primer flujo completo
-// (conectar, crear cliente/item, generar un Sales Receipt) contra una cuenta
-// Sandbox antes de confiar en esto para datos de produccion.
+// Validado en vivo (2026-07-11): el usuario conecto su app real de
+// developer.intuit.com contra su Sandbox Company y "Sincronizar ahora"
+// genero correctamente un Sales Receipt con el monto y pasajero exactos de
+// una reserva completada — el flujo completo (OAuth, creacion de
+// cliente/item, Sales Receipt) esta confirmado contra una cuenta real de
+// QuickBooks, no solo contra la documentacion publica de la API v3.
+// Nota: el matching de Customer es por DisplayName EXACTO (sensible a
+// mayusculas) — passenger_name con distinta capitalizacion entre reservas
+// crea un Customer separado por variante en QBO; simplificacion consciente
+// del MVP, sin normalizacion/fuzzy-match de nombres todavia.
 
 const AUTHORIZE_URL = 'https://appcenter.intuit.com/connect/oauth2'
 const TOKEN_URL = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer'
