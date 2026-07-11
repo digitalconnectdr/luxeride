@@ -953,6 +953,18 @@ export const pt: Dictionary = {
       deactivate: 'Desativar',
       activate: 'Ativar',
     },
+    esignature: {
+      title: 'Assinatura eletrônica',
+      subtitle: 'Obtenha um acordo assinado por motoristas e contas corporativas, salvo com data e imagem da assinatura.',
+      addonTitle: 'Add-on de assinatura eletrônica',
+      addonBody: 'Capture uma assinatura real (acordo do motorista, contrato corporativo) em vez de um acordo verbal.',
+      drivers: 'Motoristas',
+      corporateAccounts: 'Contas corporativas',
+      driverAgreementTitle: 'Acordo do motorista',
+      corporateAgreementTitle: 'Acordo de conta corporativa',
+      noDrivers: 'Ainda não há motoristas.',
+      noCorporateAccounts: 'Ainda não há contas corporativas.',
+    },
     payroll: {
       title: 'Folha de pagamento dos motoristas',
       subtitle: 'Calcule quanto você deve a cada motorista — o pagamento é feito fora do LuxeRide (dinheiro, transferência).',

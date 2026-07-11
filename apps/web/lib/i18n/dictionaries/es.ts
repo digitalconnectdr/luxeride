@@ -953,6 +953,18 @@ export const es: Dictionary = {
       deactivate: 'Desactivar',
       activate: 'Activar',
     },
+    esignature: {
+      title: 'Firma electrónica',
+      subtitle: 'Consigue un acuerdo firmado por conductores y cuentas corporativas, guardado con fecha e imagen de la firma.',
+      addonTitle: 'Add-on de firma electrónica',
+      addonBody: 'Captura una firma real (acuerdo del conductor, contrato corporativo) en vez de un acuerdo verbal.',
+      drivers: 'Conductores',
+      corporateAccounts: 'Cuentas corporativas',
+      driverAgreementTitle: 'Acuerdo del conductor',
+      corporateAgreementTitle: 'Acuerdo de cuenta corporativa',
+      noDrivers: 'Todavía no hay conductores.',
+      noCorporateAccounts: 'Todavía no hay cuentas corporativas.',
+    },
     payroll: {
       title: 'Nómina de conductores',
       subtitle: 'Calcula cuánto le debes a cada conductor — el pago lo haces por fuera de LuxeRide (efectivo, transferencia).',

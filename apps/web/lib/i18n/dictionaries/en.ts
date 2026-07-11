@@ -952,6 +952,18 @@ export const en = {
       deactivate: 'Deactivate',
       activate: 'Activate',
     },
+    esignature: {
+      title: 'E-Signature',
+      subtitle: 'Get a signed agreement from drivers and corporate accounts, stored with a timestamp and signature image.',
+      addonTitle: 'E-Signature add-on',
+      addonBody: 'Capture a real signature (driver agreement, corporate contract) instead of a verbal handshake.',
+      drivers: 'Chauffeurs',
+      corporateAccounts: 'Corporate accounts',
+      driverAgreementTitle: 'Chauffeur Agreement',
+      corporateAgreementTitle: 'Corporate Account Agreement',
+      noDrivers: 'No drivers yet.',
+      noCorporateAccounts: 'No corporate accounts yet.',
+    },
     payroll: {
       title: 'Driver Payroll',
       subtitle: 'Calculate what you owe each driver — you still pay them outside LuxeRide (cash, transfer).',
