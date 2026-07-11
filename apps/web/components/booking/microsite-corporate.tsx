@@ -99,6 +99,7 @@ export function MicrositeCorporate(props: {
             {fleet.length > 0 && <a href="#categorias" className="hidden md:inline-block hover:text-[#161a1f] transition-colors">{t.browseCategory}</a>}
             {fleet.length > 0 && <a href="#flota" className="hidden md:inline-block hover:text-[#161a1f] transition-colors">{t.ourFleet}</a>}
             {services.length > 0 && <a href="#servicios" className="hidden lg:inline-block hover:text-[#161a1f] transition-colors">{t.ourServices}</a>}
+            <a href="/auth/login" className="hover:text-[#161a1f] transition-colors">{t.signIn}</a>
             <LanguageSwitcher current={locale} variant="light" />
             <ShareMenu
               url={shareUrl}

@@ -115,6 +115,7 @@ export function MicrositeBold(props: {
                 <span style={{ color: brandColor }}>{PhoneIcon}</span> {company.phone}
               </a>
             )}
+            <a href="/auth/login" className="hover:text-white transition-colors">{t.signIn}</a>
             <LanguageSwitcher current={locale} variant="dark" />
             <ShareMenu
               url={shareUrl}

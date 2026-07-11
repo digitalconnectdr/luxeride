@@ -708,6 +708,7 @@ export const pt: Dictionary = {
     pendingTitle: 'Estamos nos preparando',
     pendingBody: '{company} está dando os últimos retoques na sua página de reservas. Volte em breve.',
     pendingContact: 'Enquanto isso, você pode entrar em contato diretamente:',
+    signIn: 'Entrar',
     bookNow: 'Reservar agora',
     ourFleet: 'Nossa frota',
     pax: 'passageiros',

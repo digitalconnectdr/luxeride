@@ -57,6 +57,7 @@ export async function updateCompanyPlan(
 
   revalidatePath('/super-admin/companies')
   revalidatePath(`/super-admin/companies/${companyId}`)
+  revalidatePath('/super-admin/subscriptions')
   return { success: true }
 }
 

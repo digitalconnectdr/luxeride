@@ -198,6 +198,7 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
           <nav className="flex items-center gap-6 sm:gap-8 text-[13px] text-white/65">
             {services.length > 0 && <a href="#servicios" className="hidden md:inline-block lux-link hover:text-white transition-colors">{t.ourServices}</a>}
             {fleet.length > 0 && <a href="#flota" className="hidden md:inline-block lux-link hover:text-white transition-colors">{t.ourFleet}</a>}
+            <a href="/auth/login" className="hover:text-white transition-colors">{t.signIn}</a>
             <LanguageSwitcher current={locale} variant="dark" />
             <ShareMenu
               url={shortUrl}

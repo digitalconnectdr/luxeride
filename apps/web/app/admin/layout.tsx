@@ -93,7 +93,7 @@ export default async function AdminLayout({
 
   return (
     <div
-      className="min-h-screen bg-sl-bg flex"
+      className="min-h-screen bg-sl-bg flex flex-col md:flex-row"
       style={primaryColor ? ({ '--color-bronze': primaryColor } as React.CSSProperties) : undefined}
     >
       {/* ── Sidebar colapsable (client) ── */}

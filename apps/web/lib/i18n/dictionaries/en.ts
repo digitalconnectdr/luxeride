@@ -707,6 +707,7 @@ export const en = {
     pendingTitle: "We're getting ready",
     pendingBody: '{company} is putting the finishing touches on their booking page. Please check back soon.',
     pendingContact: 'In the meantime, you can reach them directly:',
+    signIn: 'Sign in',
     bookNow: 'Book now',
     ourFleet: 'Our fleet',
     pax: 'passengers',
