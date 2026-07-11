@@ -21,7 +21,7 @@ export const es: Dictionary = {
   landing: {
     metaTitle: 'Software de Transporte Privado',
     metaDescription:
-      'Software de transporte privado para empresas de limusinas, traslados de aeropuerto y chóferes ejecutivos: reservas online, dispatch, asignación de conductores, pagos y seguimiento de pasajeros.',
+      'Software de transporte privado para limusinas, traslados de aeropuerto y chóferes ejecutivos: reservas, dispatch, pagos y seguimiento en vivo.',
     nav: { platform: 'Plataforma', pricing: 'Precios', faq: 'FAQ', book: 'Reservar' },
     hero: {
       badge: 'Software de transporte privado',

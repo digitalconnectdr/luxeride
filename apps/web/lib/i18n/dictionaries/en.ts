@@ -20,7 +20,7 @@ export const en = {
   landing: {
     metaTitle: 'Private Transportation Software',
     metaDescription:
-      'Private transportation software for limousine, airport transfer and executive chauffeur companies: online bookings, dispatch, driver assignment, payments and passenger tracking.',
+      'Private transportation software for limousine, airport transfer and executive chauffeur companies: booking, dispatch, payments and live tracking.',
     nav: { platform: 'Platform', pricing: 'Pricing', faq: 'FAQ', book: 'Book a ride' },
     hero: {
       badge: 'Private transportation software',

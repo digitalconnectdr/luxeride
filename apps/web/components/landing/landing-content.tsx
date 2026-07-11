@@ -418,7 +418,7 @@ export function LandingPageContent({
                   }`}
                 >
                   {popular && (
-                    <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 text-[10px] font-bold uppercase tracking-[0.2em] bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] text-[#141313] rounded-full">
+                    <span className="lux-badge-pulse absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 text-[10px] font-bold uppercase tracking-[0.2em] bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] text-[#141313] rounded-full">
                       {t.pricingPopular}
                     </span>
                   )}

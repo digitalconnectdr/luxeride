@@ -356,6 +356,19 @@
   .lux-breathe { animation: none; }
 }
 
+/* Badge "Más popular" del pricing — pulso suave de escala + resplandor
+   dorado para que llame la atención en reposo, sin llegar a un rebote. */
+@keyframes lux-badge-pulse {
+  0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 0 0 rgba(233,193,118,0.45); }
+  50%      { transform: translateX(-50%) scale(1.06); box-shadow: 0 0 16px 3px rgba(233,193,118,0.4); }
+}
+.lux-badge-pulse {
+  animation: lux-badge-pulse 2.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lux-badge-pulse { animation: none; }
+}
+
 /* Variante contenida para la plantilla Corporate: mismo principio (que la
    fila de categorías no se vea estática en reposo) pero con una amplitud
    mucho más discreta, acorde a su identidad restringida/profesional. */
