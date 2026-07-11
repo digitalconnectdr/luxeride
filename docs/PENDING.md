@@ -481,8 +481,9 @@ en la pantalla de éxito; ahora es parte del paso de confirmación.
   de esta ronda**: `/admin/dashboard` no tiene una vista dedicada para
   afiliados externos, solo muestra contadores en cero (no rompe, pero no es
   útil) — dejarlo así hasta que haya feedback real de uso.
-- ✅ **Fases 3 (Pools), 4 (Bidding) y 5 (Auto-farm) — construidas 2026-07-10**
-  (migración `20260710000046_affiliate_pools.sql`, pendiente de aplicar).
+- ✅ **Fases 3 (Pools), 4 (Bidding) y 5 (Auto-farm) — construidas y desplegadas
+  2026-07-10/11** (migración `20260710000046_affiliate_pools.sql`, aplicada
+  en producción por el usuario).
   Antes solo se podía enviar un booking a UN afiliado a la vez (índice único
   por `booking_id`) — ahora se puede mandar a varios simultáneamente
   (`sendBookingToAffiliateAction` acepta `companyAffiliateIds: string[]`):
