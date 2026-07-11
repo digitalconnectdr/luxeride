@@ -21,21 +21,66 @@ async function queryFirst<T>(connection: QuickBooksConnection, entity: string, w
   return rows?.[0] ?? null
 }
 
-/** Busca (por nombre) o crea un Customer en QBO. Devuelve su Id. */
-async function findOrCreateCustomer(connection: QuickBooksConnection, displayName: string): Promise<string> {
+/**
+ * Normaliza un nombre de pasajero/cliente para usarlo como clave de match:
+ * colapsa espacios repetidos y pasa a minusculas. Evita que "Steephany
+ * Vargas" y "steephany   vargas" (misma persona, distinta captura) se traten
+ * como clientes distintos en QuickBooks. NO corrige errores de tipeo reales
+ * (ej. "Stephany" vs "Steephany" con una letra de mas/menos siguen siendo
+ * nombres distintos) — es normalizacion de formato, no fuzzy-matching.
+ */
+export function normalizeCustomerName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+/**
+ * Busca (por nombre normalizado) o crea un Customer en QBO. Devuelve su Id.
+ * Guarda el mapeo en `quickbooks_customers` (por empresa) para no depender de
+ * una busqueda exacta en QBO en cada sincronizacion, y para que variantes de
+ * capitalizacion/espacios del mismo nombre resuelvan al mismo cliente.
+ */
+async function findOrCreateCustomer(
+  admin: ReturnType<typeof createAdminClient>,
+  companyId: string,
+  connection: QuickBooksConnection,
+  displayName: string,
+): Promise<string> {
   const safeName = displayName.slice(0, 100).trim() || 'Pasajero LuxeRide'
+  const normalized = normalizeCustomerName(safeName)
+
+  const { data: cached } = await admin
+    .from('quickbooks_customers')
+    .select('quickbooks_customer_id')
+    .eq('company_id', companyId)
+    .eq('normalized_name', normalized)
+    .maybeSingle()
+  if (cached) return cached.quickbooks_customer_id
+
+  // Sin cache local todavia (ej. cliente creado antes de que existiera esta
+  // tabla) — se intenta el match exacto en QBO antes de crear uno nuevo, para
+  // no duplicar innecesariamente.
   const existing = await queryFirst<{ Id: string }>(
     connection,
     'Customer',
     `DisplayName = '${escapeQboQueryValue(safeName)}'`,
   )
-  if (existing) return existing.Id
+  const customerId =
+    existing?.Id ??
+    (
+      (await qboFetch(connection, 'customer', {
+        method: 'POST',
+        body: JSON.stringify({ DisplayName: safeName }),
+      })) as { Customer: { Id: string } }
+    ).Customer.Id
 
-  const created = (await qboFetch(connection, 'customer', {
-    method: 'POST',
-    body: JSON.stringify({ DisplayName: safeName }),
-  })) as { Customer: { Id: string } }
-  return created.Customer.Id
+  await admin.from('quickbooks_customers').insert({
+    company_id: companyId,
+    normalized_name: normalized,
+    display_name: safeName,
+    quickbooks_customer_id: customerId,
+  })
+
+  return customerId
 }
 
 /**
@@ -118,6 +163,8 @@ export async function syncCompletedBookingsForCompany(
     try {
       const itemId = await getOrCreateServiceItemId(admin, companyId, connection)
       const customerId = await findOrCreateCustomer(
+        admin,
+        companyId,
         connection,
         booking.passenger_name ?? booking.passenger_email ?? `Reserva ${booking.booking_number}`,
       )
@@ -185,7 +232,7 @@ export async function syncInvoiceToQuickBooks(
 
   try {
     const itemId = await getOrCreateServiceItemId(admin, opts.companyId, connection)
-    const customerId = await findOrCreateCustomer(connection, opts.customerName)
+    const customerId = await findOrCreateCustomer(admin, opts.companyId, connection, opts.customerName)
 
     const created = (await qboFetch(connection, 'invoice', {
       method: 'POST',

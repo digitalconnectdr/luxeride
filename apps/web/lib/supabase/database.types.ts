@@ -2071,6 +2071,35 @@ export type Database = {
         Relationships: []
       }
 
+      // ── quickbooks_customers ────────────────────────────────────────────────
+      quickbooks_customers: {
+        Row: {
+          id: string
+          company_id: string
+          normalized_name: string
+          display_name: string
+          quickbooks_customer_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          normalized_name: string
+          display_name: string
+          quickbooks_customer_id: string
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          normalized_name?: string | undefined
+          display_name?: string | undefined
+          quickbooks_customer_id?: string | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── corporate_accounts (stub) ───────────────────────────────────────────
       corporate_accounts: {
         Row: {

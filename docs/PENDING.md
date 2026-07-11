@@ -1102,13 +1102,22 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
      cliente/item, Sales Receipt) queda confirmado contra una cuenta real de
      QuickBooks, no solo contra la documentación pública de la API.
      **Nota de diseño a tener en cuenta**: el matching de Customer es por
-     `DisplayName` EXACTO (sensible a mayúsculas) — si el mismo pasajero
-     aparece con distinta capitalización en `passenger_name` entre reservas
-     (ej. "stephany vargas" vs "Steephany Vargas"), QuickBooks Online crea un
-     Customer separado por cada variante en vez de reconocerlos como la misma
-     persona; no es un bug, es una simplificación consciente del MVP (no hay
-     normalización/fuzzy-match de nombres todavía). **Nota de mercado**:
-     QuickBooks Online no está disponible para empresas registradas en
+     `DisplayName` EXACTO (sensible a mayúsculas). **HECHO 2026-07-11 —
+     normalización de nombres de cliente**: nueva tabla `quickbooks_customers`
+     (migración `20260711000048_quickbooks_customer_cache.sql`) guarda el
+     mapeo nombre normalizado → `quickbooks_customer_id` por empresa.
+     `normalizeCustomerName()` (función pura, testeada en
+     `lib/quickbooks/sync.test.ts`) colapsa espacios repetidos y pasa a
+     minúsculas antes de buscar/crear el cliente — así "Steephany Vargas" y
+     "steephany   vargas" (misma persona, distinta captura) resuelven al
+     mismo Customer en QuickBooks, y de paso se evita una consulta a la API
+     de QBO en cada sincronización (solo la primera vez que se ve ese
+     nombre). **Alcance deliberado**: esto NO es fuzzy-matching — un error de
+     tipeo real (ej. "Stephany" vs "Steephany", con una letra de más/menos)
+     sigue creando dos clientes distintos, ya que no hay forma segura de
+     saber si es la misma persona sin arriesgar unir a alguien equivocado.
+     **Nota de mercado**: QuickBooks Online no está disponible para empresas
+     registradas en
      República Dominicana (a diferencia de Stripe/Whop, donde Whop existe
      justamente por esa limitación de Stripe) — esta integración solo la
      pueden usar operadores con entidad en un país soportado por Intuit
