@@ -223,15 +223,30 @@ Plan:
    el QR al portal de reservas se puede generar desde ya.
 Es un mini-CMS por operador — feature mediana, se cruza con la PWA branded (C.4).
 
-### E. SEO para IA + todos los buscadores (pedido 2026-06-14)
+### E. SEO para IA + todos los buscadores (pedido 2026-06-14, auditoría/fixes 2026-07-11)
 - ✅ Buscadores: el SEO (meta tags, OG, sitemap, canonical, robots) es estándar
   → sirve para Google, Bing, DuckDuckGo, Brave, Ecosia, etc. (no solo Google).
   Pendiente usuario: enviar el sitemap también en Bing Webmaster Tools.
 - ✅ IA: JSON-LD LocalBusiness por operador (2026-06-14) → ChatGPT, Perplexity,
   Claude, Gemini pueden entender y recomendar cada operador. robots no bloquea
   GPTBot/PerplexityBot/etc.
-- Opcional futuro: llms.txt (índice para LLMs) + más tipos Schema (Review,
-  AggregateRating cuando existan calificaciones) para recomendaciones más ricas.
+- ✅ **llms.txt** (2026-07-11): `public/llms.txt` con resumen del producto,
+  add-ons y pricing exacto — se actualiza cada vez que cambian planes/precios.
+- ✅ **JSON-LD del landing corregido** (2026-07-11): el schema
+  `SoftwareApplication` nunca incluía la lista de features de cada plan en su
+  `Offer` (solo nombre/precio/desc corta) — bug real, ya arreglado en
+  `lib/seo/structured-data.ts`. Ahora cualquier feature/add-on nuevo que se
+  agregue a `plans[i].features` en los diccionarios aparece automáticamente
+  en el JSON-LD, sin tocar el schema.
+- ✅ **hreflang + páginas por idioma** (2026-07-11): el landing ya tiene
+  `/en`, `/es`, `/pt` como páginas ESTÁTICAS dedicadas (antes solo existía
+  `/` con idioma resuelto por cookie/Accept-Language, invisible para SEO
+  multi-idioma). Cada una con su propio `canonical` + `title` +
+  `description` traducidos y tags `hreflang` cruzados + `x-default`. Ver
+  `components/landing/landing-content.tsx` (contenido único, parametrizado
+  por locale) y `lib/seo/hreflang.ts`.
+- Opcional futuro: más tipos Schema (Review, AggregateRating cuando existan
+  calificaciones agregadas) para recomendaciones más ricas.
 
 ### B. Calificaciones + chat (obs. 12)
 1. ✅ **Calificaciones bidireccionales (HECHO 2026-07-03)**: bookings.rating ya
@@ -1091,12 +1106,12 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
      Elite/Enterprise activa el add-on sin tocar ningún toggle. El webhook de
      Whop (`app/api/webhooks/whop/route.ts`) y el toggle de super-admin
      (`/super-admin/companies/[id]`) ya reconocen los 3 add-ons nuevos.
-     **Falta del usuario**: crear los 3 productos en Whop
+     ✅ **Checkout de autoservicio activo (2026-07-11)**: el usuario ya creó
+     los 3 productos en Whop, cargó las 6 env vars
      (`WHOP_PLAN_ID_PAYROLL_ADDON`/`WHOP_CHECKOUT_URL_PAYROLL_ADDON`,
-     `..._ESIGNATURE_ADDON`, `..._PROMO_CODES_ADDON`) para que el checkout de
-     autoservicio funcione — sin esas env vars, la tarjeta de upsell muestra
-     "no disponible para autoservicio" y solo el super-admin puede activarlo
-     manualmente, degradando limpio.
+     `..._ESIGNATURE_ADDON`, `..._PROMO_CODES_ADDON`) en Vercel e hizo
+     redeploy — el checkout de autoservicio de los 3 add-ons ya funciona en
+     producción, no queda pendiente.
    - ✅ **Códigos promocionales ($3/mes Starter/Professional, incluido en
      Elite/Enterprise) — HECHO 2026-07-11.** Motor puro
      (`lib/promo/engine.ts`, testeado) valida vigencia/límite de usos total/
