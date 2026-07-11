@@ -14,6 +14,14 @@ import { notifyBookingEventInBackground } from '@/lib/notifications'
 import { notifyDriverPushInBackground } from '@/lib/notifications/push'
 import { getAppUrl } from '@/lib/app-url'
 import { createAffiliatePoolTrips } from '@/app/actions/affiliates'
+import {
+  canAffiliateRespond,
+  computeAffiliateReliability,
+  isOperating,
+  type AffiliateTripReliabilityInput,
+  type AffiliateTripStatus,
+} from '@/lib/affiliates/engine'
+import { resolveZoneId, type ServiceZoneForMatch } from '@/lib/pricing/zones'
 
 // Margen entre el fin estimado de un viaje y el inicio del siguiente para no
 // considerarlos en conflicto — tiempo de traslado/descanso razonable.
@@ -200,21 +208,42 @@ export async function tryAutoAssignDriver(
 // ── Sección G, Fase 5 — Auto-farm a la Red de Afiliados ────────────────────────
 // Si no hay conductor propio disponible (tryAutoAssignDriver ya falló), y la
 // empresa tiene la Red de Afiliados activa, se manda la reserva como un POOL
-// (Fase 3) a TODOS sus afiliados aprobados a la vez, en vez de dejarla sin
-// asignar hasta que alguien la mande a mano. El primero que acepta se la
-// queda — el afiliado ve el tipo de vehículo requerido en la vista previa y
-// puede rechazar si no tiene uno disponible, así que no hace falta verificar
-// flota cruzada (la empresa dueña no tiene visibilidad de la flota ajena).
-// No prioriza por score de confiabilidad todavía (ver computeAffiliateReliability
-// en lib/affiliates/engine.ts) — mandar a todos a la vez y dejar que el
-// primero en aceptar gane ya reparte razonablemente; priorizar/escalonar por
-// score queda para un fast-follow (ver docs/PENDING.md sección G).
+// (Fase 3) a sus afiliados aprobados, en vez de dejarla sin asignar hasta que
+// alguien la mande a mano. El primero que acepta se la queda.
+//
+// Elegibilidad — un afiliado solo entra al pool si:
+//   1. Tiene al menos un vehículo de la MISMA CLASE que pide la reserva
+//      (vehicle_types.class es un enum compartido entre empresas; el id/name
+//      del tipo es un valor propio de cada empresa y no se puede comparar
+//      directo). Sin tipo requerido en la reserva → no se filtra por esto.
+//   2. Su cobertura de zona incluye el punto de recogida (resolveZoneId). Un
+//      afiliado sin ninguna zona definida se considera SIN restricción
+//      (cobertura total) — la mayoría de afiliados chicos no configuran zonas.
+//
+// Priorización por score de confiabilidad — dos tandas, sin necesitar un
+// trigger nuevo (el cron de barrido diario ya corre a diario y sirve de
+// "tanda 2"):
+//   - Tanda 1 (primer intento): solo la mitad superior de los candidatos
+//     elegibles, ordenados por computeAffiliateReliability() (mejor tasa de
+//     respuesta + puntualidad primero). Un afiliado sin historial aún recibe
+//     un puntaje neutro (no se le penaliza por ser nuevo).
+//   - Tanda 2: si la tanda 1 se cierra ENTERA sin que nadie acepte (todos
+//     expiraron/rechazaron), el siguiente intento (el barrido diario) detecta
+//     que ya no queda nadie con una solicitud viva y manda el resto de los
+//     candidatos elegibles que no se probaron en la tanda 1.
+// No se puede escalonar con un delay corto real (ej. "esperar 10 minutos y
+// expandir") porque el plan actual de Vercel (Hobby) solo permite cron una
+// vez al día — la tanda 2 depende de esa próxima corrida, no de un temporizador.
 
 // Porcentaje del total cobrado al pasajero que se ofrece al afiliado por
 // defecto — mismo espíritu que el resto del pricing: conservador, el
 // dispatcher puede ajustar a mano después vía "Enviar a afiliado" si esto
 // no encuentra tomador.
 const AUTO_FARM_PAYOUT_PCT = 0.7
+
+// Puntaje neutro para un afiliado sin historial todavía — no lo penaliza
+// frente a uno con historial mediocre, ni lo prioriza sobre uno excelente.
+const NEUTRAL_RELIABILITY_SCORE = 60
 
 export interface AutoFarmResult {
   sent: boolean
@@ -227,16 +256,25 @@ export async function tryAutoFarmToAffiliates(
 ): Promise<AutoFarmResult> {
   if (!booking.total_amount || booking.total_amount <= 0) return { sent: false }
 
-  // Guard de re-ejecución: el barrido diario (cron/auto-assign) corre sobre
-  // TODA reserva pendiente sin conductor, incluida una que ya farmeó por acá
-  // mismo en un intento anterior — sin esto, cada corrida del cron duplicaría
-  // el envío a los mismos afiliados.
+  // El barrido diario (cron/auto-assign) corre sobre TODA reserva pendiente
+  // sin conductor, incluida una que ya farmeó por acá mismo en un intento
+  // anterior. Si alguien ya está operando el viaje, no hay nada que hacer. Si
+  // la tanda anterior sigue con solicitudes vivas (sin expirar), tampoco —
+  // recién cuando esa tanda se cierra ENTERA (todas expiradas/rechazadas/
+  // perdidas) se manda una tanda 2 a los afiliados que faltan por probar.
   const { data: existingTrips } = await admin
     .from('affiliate_trips')
-    .select('id')
+    .select('company_affiliate_id, status, expires_at')
     .eq('booking_id', booking.id)
-    .limit(1)
-  if (existingTrips?.length) return { sent: false }
+
+  if ((existingTrips ?? []).some((t) => isOperating(t.status as AffiliateTripStatus))) {
+    return { sent: false }
+  }
+  if ((existingTrips ?? []).some((t) => canAffiliateRespond(t.status as AffiliateTripStatus, t.expires_at))) {
+    return { sent: false }
+  }
+  const alreadyTriedIds = new Set((existingTrips ?? []).map((t) => t.company_affiliate_id))
+  const isSecondWave = alreadyTriedIds.size > 0
 
   const { data: company } = await admin
     .from('companies')
@@ -245,20 +283,129 @@ export async function tryAutoFarmToAffiliates(
     .single()
   if (!company?.affiliate_network_enabled) return { sent: false }
 
+  const { data: bookingDetails } = await admin
+    .from('bookings')
+    .select('vehicle_type_id, pickup_location')
+    .eq('id', booking.id)
+    .single()
+
   const { data: relations } = await admin
     .from('company_affiliates')
-    .select('id')
+    .select('id, requester_company_id, affiliate_company_id')
     .eq('status', 'approved')
     .or(`requester_company_id.eq.${booking.company_id},affiliate_company_id.eq.${booking.company_id}`)
-  const companyAffiliateIds = (relations ?? []).map((r) => r.id)
-  if (!companyAffiliateIds.length) return { sent: false }
+
+  const candidates = (relations ?? [])
+    .filter((r) => !alreadyTriedIds.has(r.id))
+    .map((r) => ({
+      companyAffiliateId: r.id,
+      affiliateCompanyId: r.requester_company_id === booking.company_id ? r.affiliate_company_id : r.requester_company_id,
+    }))
+  if (!candidates.length) return { sent: false }
+
+  let eligibleCompanyIds = new Set(candidates.map((c) => c.affiliateCompanyId))
+
+  // Filtro 1: tipo de vehículo. Solo aplica si la reserva pide una clase.
+  if (bookingDetails?.vehicle_type_id) {
+    const { data: requiredType } = await admin
+      .from('vehicle_types')
+      .select('class')
+      .eq('id', bookingDetails.vehicle_type_id)
+      .maybeSingle()
+
+    if (requiredType?.class) {
+      const { data: matchingTypes } = await admin
+        .from('vehicle_types')
+        .select('id')
+        .in('company_id', Array.from(eligibleCompanyIds))
+        .eq('class', requiredType.class)
+        .eq('is_active', true)
+      const matchingTypeIds = (matchingTypes ?? []).map((t) => t.id)
+
+      const { data: matchingVehicles } = matchingTypeIds.length
+        ? await admin
+            .from('vehicles')
+            .select('company_id')
+            .in('vehicle_type_id', matchingTypeIds)
+            .neq('status', 'retired')
+            .eq('operational_block', false)
+        : { data: [] as { company_id: string }[] }
+
+      eligibleCompanyIds = new Set((matchingVehicles ?? []).map((v) => v.company_id))
+    }
+  }
+
+  // Filtro 2: zona de servicio. Un afiliado sin zonas definidas no se filtra
+  // (cobertura total); solo se excluye si tiene zonas Y el punto de recogida
+  // cae fuera de todas ellas.
+  const pickup = bookingDetails?.pickup_location as { lat?: number; lng?: number } | null
+  if (eligibleCompanyIds.size && pickup?.lat != null && pickup?.lng != null) {
+    const { data: allZones } = await admin
+      .from('service_zones')
+      .select('id, company_id, postal_codes, center_lat, center_lng, radius_miles')
+      .in('company_id', Array.from(eligibleCompanyIds))
+      .eq('is_active', true)
+
+    const zonesByCompany = new Map<string, ServiceZoneForMatch[]>()
+    for (const z of allZones ?? []) {
+      const list = zonesByCompany.get(z.company_id) ?? []
+      list.push(z)
+      zonesByCompany.set(z.company_id, list)
+    }
+
+    eligibleCompanyIds = new Set(
+      Array.from(eligibleCompanyIds).filter((companyId) => {
+        const zones = zonesByCompany.get(companyId) ?? []
+        if (!zones.length) return true
+        return resolveZoneId(zones, { lat: pickup.lat!, lng: pickup.lng! }) != null
+      }),
+    )
+  }
+
+  const eligibleCandidates = candidates.filter((c) => eligibleCompanyIds.has(c.affiliateCompanyId))
+  if (!eligibleCandidates.length) return { sent: false }
+
+  // Priorizar por score de confiabilidad (ver comentario de arriba).
+  const { data: history } = await admin
+    .from('affiliate_trips')
+    .select('affiliate_company_id, status, created_at, responded_at, preview_scheduled_at, arrived_at')
+    .in('affiliate_company_id', Array.from(eligibleCompanyIds))
+
+  const historyByCompany = new Map<string, AffiliateTripReliabilityInput[]>()
+  for (const h of history ?? []) {
+    const list = historyByCompany.get(h.affiliate_company_id) ?? []
+    list.push({
+      status: h.status as AffiliateTripStatus,
+      createdAt: h.created_at,
+      respondedAt: h.responded_at,
+      previewScheduledAt: h.preview_scheduled_at,
+      arrivedAt: h.arrived_at,
+    })
+    historyByCompany.set(h.affiliate_company_id, list)
+  }
+
+  function reliabilityScore(companyId: string): number {
+    const reliability = computeAffiliateReliability(historyByCompany.get(companyId) ?? [])
+    const responseRate = reliability.responseRatePct ?? NEUTRAL_RELIABILITY_SCORE
+    const punctuality = reliability.punctualityPct ?? NEUTRAL_RELIABILITY_SCORE
+    return responseRate * 0.6 + punctuality * 0.4
+  }
+
+  eligibleCandidates.sort((a, b) => reliabilityScore(b.affiliateCompanyId) - reliabilityScore(a.affiliateCompanyId))
+
+  // Tanda 1 = mitad superior por score (mínimo 2, para no reducir demasiado
+  // el pool en el primer intento). Tanda 2 = el resto, ya sin volver a cortar.
+  const wave = isSecondWave
+    ? eligibleCandidates
+    : eligibleCandidates.slice(0, Math.max(2, Math.ceil(eligibleCandidates.length / 2)))
+  if (!wave.length) return { sent: false }
 
   const offeredPrice = Math.round(booking.total_amount * AUTO_FARM_PAYOUT_PCT * 100) / 100
 
   const result = await createAffiliatePoolTrips(admin, {
     bookingId: booking.id,
     ownerCompanyId: booking.company_id,
-    companyAffiliateIds,
+    companyAffiliateIds: wave.map((c) => c.companyAffiliateId),
     reason: 'no_driver',
     offeredPrice,
     brandingMode: 'white_label',
@@ -266,5 +413,5 @@ export async function tryAutoFarmToAffiliates(
   })
 
   if (!result.success) return { sent: false }
-  return { sent: true, affiliateCount: companyAffiliateIds.length }
+  return { sent: true, affiliateCount: wave.length }
 }

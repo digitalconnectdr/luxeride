@@ -503,20 +503,28 @@ en la pantalla de éxito; ahora es parte del paso de confirmación.
   `tryAutoAssignDriver` no encuentra conductor propio, y la empresa tiene la
   Red de Afiliados activa, `tryAutoFarmToAffiliates` (en
   `lib/dispatch/auto-assign.ts`) manda automáticamente la reserva como pool
-  a TODOS los afiliados aprobados (precio por defecto: 70% de lo cobrado al
+  a sus afiliados aprobados (precio por defecto: 70% de lo cobrado al
   pasajero) — conectado en los 3 puntos donde ya se llamaba
   `tryAutoAssignDriver` (creación de reserva interna, reserva pública, y el
   cron diario de respaldo), con guard contra re-ejecución (si el cron corre
-  de nuevo sobre una reserva que ya farmeó, no duplica el envío). **Score de
-  confiabilidad**: `computeAffiliateReliability()` en
-  `lib/affiliates/engine.ts` (tasa de respuesta, minutos promedio de
-  respuesta, puntualidad — mismo cálculo que ya existía por conductor en
-  `/admin/drivers/[id]`), mostrado en `/admin/affiliates` por cada relación
-  aprobada. **Recorte consciente**: el auto-farm manda a TODOS los afiliados
-  a la vez en vez de escalonar por score (mandar primero al mejor, esperar,
-  luego al siguiente) — el pool con "el primero que acepta gana" ya reparte
-  razonablemente; escalonar por score queda como fast-follow si hace falta
-  más adelante.
+  de nuevo sobre una reserva que ya farmeó y sigue con solicitudes vivas, no
+  duplica el envío). **Score de confiabilidad**:
+  `computeAffiliateReliability()` en `lib/affiliates/engine.ts` (tasa de
+  respuesta, minutos promedio de respuesta, puntualidad — mismo cálculo que
+  ya existía por conductor en `/admin/drivers/[id]`), mostrado en
+  `/admin/affiliates` por cada relación aprobada. **HECHO 2026-07-11 —
+  filtrado + priorización real del auto-farm**: ya no manda a todos los
+  aprobados sin filtrar. (1) Excluye afiliados sin un vehículo de la misma
+  CLASE que pide la reserva (`vehicle_types.class`, enum compartido entre
+  empresas) y sin cobertura de zona de servicio en el punto de recogida
+  (`resolveZoneId`; un afiliado sin zonas definidas cuenta como sin
+  restricción). (2) Prioriza por `computeAffiliateReliability()`: la tanda 1
+  solo va a la mitad superior por score (un afiliado sin historial recibe
+  puntaje neutro, no penalizado); si esa tanda se cierra entera sin que nadie
+  acepte, la siguiente corrida del cron diario manda una tanda 2 al resto de
+  los elegibles. No hay escalonamiento con delay corto real (el plan Hobby de
+  Vercel solo permite cron una vez al día) — la tanda 2 depende de esa
+  corrida, no de un temporizador.
 
 Pedido original: explorar cómo resuelven esto Limo Anywhere (**LA Net**) y
 **GroundXchange**. Diseño inicial (LA Net/GroundXchange) reemplazado por uno
@@ -678,22 +686,26 @@ explícito del usuario):
      fase específica.
 3. ✅ **Fase 3 — Pools — HECHO 2026-07-10.** Enviar a un grupo de afiliados a
    la vez en vez de uno por uno; el primero que acepta gana, los demás pasan
-   a `'lost'` automáticamente. (Recorte: sin filtro por ciudad/aeropuerto/
-   rating todavía — el dispatcher elige a mano de su lista de afiliados
-   aprobados vía checkboxes; el auto-farm de Fase 5 sí manda a todos los
-   aprobados sin filtrar.)
+   a `'lost'` automáticamente. (Recorte: el dispatcher sigue eligiendo a mano
+   de su lista de afiliados aprobados vía checkboxes, sin filtro por ciudad/
+   aeropuerto/rating en ESTA pantalla manual — el auto-farm de Fase 5 sí
+   filtra y prioriza, ver más abajo.)
 4. ✅ **Fase 4 — Bidding — HECHO 2026-07-10.** El mecanismo de contraoferta ya
    existía desde la Fase 1 (1 a 1); lo nuevo es la vista de pool en
    `/admin/bookings/[id]` que muestra las contraofertas de varios afiliados
    a la vez para que el dispatcher compare y acepte cualquiera.
-5. ✅ **Fase 5 — Auto-farm — HECHO 2026-07-10.** `tryAutoFarmToAffiliates` en
+5. ✅ **Fase 5 — Auto-farm — HECHO 2026-07-10, filtrado + priorización
+   HECHO 2026-07-11.** `tryAutoFarmToAffiliates` en
    `lib/dispatch/auto-assign.ts`: si no hay conductor propio disponible,
-   manda automáticamente un pool a TODOS los afiliados aprobados (precio
-   por defecto 70% de lo cobrado al pasajero). (Recorte: no filtra por
-   cobertura/tipo de vehículo real de la flota del afiliado — no hay
-   visibilidad cruzada de flota ajena — ni por `service_zones`; el afiliado
-   ve el tipo de vehículo requerido en la vista previa y puede rechazar si
-   no aplica.)
+   manda automáticamente un pool a sus afiliados aprobados (precio por
+   defecto 70% de lo cobrado al pasajero). Filtra por clase de vehículo real
+   de la flota del afiliado (`vehicle_types.class`, enum compartido) y por
+   cobertura de `service_zones` en el punto de recogida (sin zonas definidas
+   = sin restricción); prioriza a los candidatos elegibles por
+   `computeAffiliateReliability()`, mandando la primera tanda solo a la
+   mitad superior por score y una segunda tanda al resto si la primera se
+   cierra entera sin aceptación (vía la próxima corrida del cron diario, sin
+   necesitar un temporizador nuevo).
 6. ✅ **Score de confiabilidad por afiliado — HECHO 2026-07-10.**
    `computeAffiliateReliability()` en `lib/affiliates/engine.ts` (tasa de
    respuesta, minutos promedio de respuesta, puntualidad), mostrado en

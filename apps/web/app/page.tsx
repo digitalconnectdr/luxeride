@@ -619,7 +619,21 @@ export default async function LandingPage() {
               <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-4">
                 {t.footerCompanyHeading}
               </p>
-              <p className="text-[13px] text-white/60">{brand.poweredBy}</p>
+              <a
+                href="https://digitalconnectdr.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-[13px] text-white/60 hover:text-[#e9c176] transition-colors"
+              >
+                <Image
+                  src="/logo-jprs.png"
+                  alt={brand.poweredBy}
+                  width={20}
+                  height={20}
+                  className="rounded-md shrink-0"
+                />
+                {brand.poweredBy}
+              </a>
             </div>
           </div>
 
