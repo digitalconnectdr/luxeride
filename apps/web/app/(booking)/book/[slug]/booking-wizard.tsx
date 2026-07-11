@@ -15,6 +15,7 @@ import {
   type VehicleQuote,
   type BookingResult,
 } from '@/app/actions/bookings'
+import { validatePromoCodeAction } from '@/app/actions/promo-codes'
 import {
   createPublicCheckoutAction,
   getSavedWhopCardAction,
@@ -137,6 +138,40 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
     name: '', phone: '', email: '', count: 1, instructions: '', flightNumber: '', meetAndGreet: false,
   })
   const [confirmation, setConfirmation] = useState<BookingResult | null>(null)
+
+  // Código promocional (add-on de pago — ver lib/billing/addons.ts). El
+  // descuento mostrado aquí es solo una vista previa; createPublicBookingAction
+  // SIEMPRE revalida el código server-side antes de aplicarlo de verdad.
+  const [promoCodeInput, setPromoCodeInput] = useState('')
+  const [promoState, setPromoState] = useState<{ code: string; discountAmount: number } | null>(null)
+  const [promoError, setPromoError] = useState('')
+  const [isPromoPending, startPromoTransition] = useTransition()
+
+  function applyPromoCode() {
+    const code = promoCodeInput.trim()
+    if (!code || !selectedQuote) return
+    setPromoError('')
+    startPromoTransition(async () => {
+      const result = await validatePromoCodeAction({
+        slug: company.slug,
+        code,
+        bookingAmount: selectedQuote.totalAmount,
+        customerPhone: passengerData.phone,
+      })
+      if (!result.success || !result.data) {
+        setPromoError(result.error ?? 'Código no válido')
+        setPromoState(null)
+        return
+      }
+      setPromoState({ code: code.toUpperCase(), discountAmount: result.data.discountAmount })
+    })
+  }
+
+  function removePromoCode() {
+    setPromoState(null)
+    setPromoCodeInput('')
+    setPromoError('')
+  }
 
   // Viajero recurrente — capa 1: autocompletar desde este navegador (sin
   // cuenta, sin backend). Capa 2: reconocer por teléfono en otro dispositivo,
@@ -359,6 +394,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
         dropoffLat:          routeData.dropoffLat,
         dropoffLng:          routeData.dropoffLng,
         stops:               routeData.stops,
+        promoCode:           promoState?.code,
       })
 
       if (!result.success || !result.data) {
@@ -980,17 +1016,51 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               )}
             </div>
 
-            <div className="border-t border-gray-100 pt-3">
-              <div className="flex justify-between items-center">
+            <div className="border-t border-gray-100 pt-3 space-y-2">
+              {!promoState ? (
+                <div className="flex gap-2">
+                  <input
+                    value={promoCodeInput}
+                    onChange={(e) => setPromoCodeInput(e.target.value)}
+                    placeholder={dict.promoCodePlaceholder}
+                    className="flex-1 min-w-0 rounded-xl border border-gray-200 px-3 py-2 text-sm uppercase placeholder:normal-case"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyPromoCode}
+                    disabled={isPromoPending || !promoCodeInput.trim()}
+                    className="px-4 py-2 border border-gray-200 text-sm font-medium rounded-xl hover:border-[var(--brand)] disabled:opacity-50 transition-colors text-[#1d1d1f]"
+                  >
+                    {isPromoPending ? '...' : dict.promoCodeApply}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-green-600">{dict.promoCodeApplied.replace('{code}', promoState.code)}</span>
+                  <button type="button" onClick={removePromoCode} className="text-xs text-gray-400 hover:underline">
+                    {dict.promoCodeRemove}
+                  </button>
+                </div>
+              )}
+              {promoError && <p className="text-xs text-red-600">{promoError}</p>}
+
+              {promoState && (
+                <div className="flex justify-between items-center text-sm text-gray-500">
+                  <span>{dict.promoCodeDiscount}</span>
+                  <span>-${promoState.discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center pt-1">
                 <span className="font-semibold text-[#1d1d1f]">{dict.totalToPay}</span>
                 <span className="font-bold text-2xl text-[#1d1d1f]">
-                  ${selectedQuote.totalAmount.toFixed(2)}
+                  ${(selectedQuote.totalAmount - (promoState?.discountAmount ?? 0)).toFixed(2)}
                   <span className="text-sm font-normal text-gray-400 ml-1">
                     {selectedQuote.currency}
                   </span>
                 </span>
               </div>
-              <p className="text-xs text-gray-400 mt-1 text-right">{dict.payToDriver}</p>
+              <p className="text-xs text-gray-400 text-right">{dict.payToDriver}</p>
             </div>
           </div>
 

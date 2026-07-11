@@ -5,9 +5,17 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { StatusSelect, PlanSelect } from '@/components/super-admin/status-forms'
 import { CommissionInput } from '@/components/super-admin/commission-input'
 import { AffiliateNetworkToggle } from '@/components/super-admin/affiliate-network-toggle'
+import { CompanyAddonToggle } from '@/components/super-admin/company-addon-toggle'
 import { currentYearMonth } from '@/lib/tracking/live-tracking-quota'
 import { InfoTip } from '@/components/ui/info-tip'
 import type { CompanyStatus } from '@/lib/supabase/database.types'
+import { isAddonIncludedInPlan, type AddonKey } from '@/lib/billing/addons'
+
+const ADDON_LABELS: Record<AddonKey, string> = {
+  driver_payroll: 'Driver Payroll ($9/mo)',
+  esignature: 'E-Signature ($9/mo)',
+  promo_codes: 'Promo Codes ($3/mo)',
+}
 
 export const metadata: Metadata = { title: 'Company Detail — Super Admin' }
 
@@ -38,7 +46,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
   const yearMonth = currentYearMonth()
 
-  const [{ data: company, error: companyError }, { data: users }, { data: mapUsageRows }] = await Promise.all([
+  const [{ data: company, error: companyError }, { data: users }, { data: mapUsageRows }, { data: addonRows }] = await Promise.all([
     admin.from('companies').select('*').eq('id', params.id).single(),
     admin
       .from('user_profiles')
@@ -52,9 +60,13 @@ export default async function CompanyDetailPage({ params }: PageProps) {
       .eq('year_month', yearMonth)
       .order('refresh_count', { ascending: false })
       .limit(15),
+    admin.from('company_addons').select('addon_key, enabled, enabled_at').eq('company_id', params.id),
   ])
 
   if (companyError || !company) return notFound()
+
+  const addonByKey = new Map((addonRows ?? []).map((a) => [a.addon_key, a]))
+  const planIncludesAddons = isAddonIncludedInPlan(company.plan)
 
   const currentCommissionPct =
     (company.settings as { payments?: { platform_fee_pct?: number } } | null)?.payments?.platform_fee_pct ?? 0
@@ -173,6 +185,31 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             enabled={company.affiliate_network_enabled}
             enabledAt={company.affiliate_network_enabled_at}
           />
+        </div>
+
+        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6 space-y-1 sm:col-span-3">
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
+            Add-ons
+          </h2>
+          <p className="text-xs text-sl-on-surface-muted mb-1">
+            Included automatically on Elite/Enterprise. Toggle manually for Starter/Professional (paid) or to cut off for abuse/non-payment.
+          </p>
+          <div className="divide-y divide-sl-outline-variant/50">
+            {(Object.keys(ADDON_LABELS) as AddonKey[]).map((key) => {
+              const row = addonByKey.get(key)
+              return (
+                <CompanyAddonToggle
+                  key={key}
+                  companyId={company.id}
+                  addonKey={key}
+                  label={ADDON_LABELS[key]}
+                  enabled={row?.enabled ?? false}
+                  enabledAt={row?.enabled_at ?? null}
+                  includedByPlan={planIncludesAddons}
+                />
+              )
+            })}
+          </div>
         </div>
       </div>
 

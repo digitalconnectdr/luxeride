@@ -24,6 +24,9 @@ import {
   UserCog,
   ShieldCheck,
   Handshake,
+  Percent,
+  Wallet,
+  FileSignature,
   Settings,
   LogOut,
   ChevronsLeft,
@@ -144,6 +147,7 @@ export function AdminSidebar({
         { href: '/admin/quotes', label: nav.quotes, icon: FileText },
         { href: '/admin/messages', label: nav.messages, icon: MessageSquare },
         { href: '/admin/driver-reports', label: nav.driverReports, icon: AlertTriangle },
+        ...(ext ? [] : [{ href: '/admin/promo-codes', label: nav.promoCodes, icon: Percent }]),
       ],
     },
     {
@@ -152,6 +156,7 @@ export function AdminSidebar({
       items: [
         { href: '/admin/reports', label: nav.reports, icon: BarChart3 },
         { href: '/admin/audit', label: nav.auditLog, icon: ScrollText },
+        { href: '/admin/payroll', label: nav.payroll, icon: Wallet },
       ],
     },
     {
@@ -163,6 +168,7 @@ export function AdminSidebar({
           { href: '/admin/compliance', label: nav.compliance, icon: ShieldCheck },
         ]),
         { href: '/admin/team', label: nav.team, icon: UserCog },
+        { href: '/admin/esignature', label: nav.esignature, icon: FileSignature },
         ...(flags.isOwner
           ? [{ href: '/admin/settings', label: nav.settings, icon: Settings }]
           : []),

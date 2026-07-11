@@ -22,6 +22,7 @@ import {
   mapWhopPlanId,
   isAffiliateAddonPlan,
 } from '@/lib/billing/whop'
+import { resolveAddonKeyForPlanId } from '@/lib/billing/addons'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -79,6 +80,27 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: error.message }, { status: 500 })
         }
         return NextResponse.json({ received: true, affiliateAddonDisabled: addonCompany.id })
+      }
+
+      // ¿Es la membresía de alguno de los add-ons genéricos (nómina, firma
+      // electrónica, códigos promocionales)? Mismo criterio: solo se apaga
+      // ESE add-on, nunca se suspende la cuenta.
+      const { data: genericAddon } = await admin
+        .from('company_addons')
+        .select('id, company_id, addon_key')
+        .eq('whop_membership_id', event.membershipId)
+        .maybeSingle()
+
+      if (genericAddon) {
+        const { error } = await admin
+          .from('company_addons')
+          .update({ enabled: false, whop_membership_id: null })
+          .eq('id', genericAddon.id)
+        if (error) {
+          console.error('[whop/webhook] addon deactivation failed', error)
+          return NextResponse.json({ error: error.message }, { status: 500 })
+        }
+        return NextResponse.json({ received: true, addonDisabled: { company: genericAddon.company_id, addon: genericAddon.addon_key } })
       }
 
       const { data: company } = await admin
@@ -145,6 +167,40 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
       return NextResponse.json({ received: true, affiliateAddonEnabled: company.id })
+    }
+
+    // Add-ons genéricos (nómina, firma electrónica, códigos promocionales) —
+    // mismo espíritu: ciclo de cobro propio, no pasa por
+    // activateCompanySubscription ni por la idempotencia de whop_last_event_id
+    // (ese campo es del plan principal, no de un add-on).
+    const genericAddonKey = resolveAddonKeyForPlanId(event.planId)
+    if (genericAddonKey) {
+      const { data: existingAddon } = await admin
+        .from('company_addons')
+        .select('id, whop_membership_id')
+        .eq('company_id', company.id)
+        .eq('addon_key', genericAddonKey)
+        .maybeSingle()
+
+      if (existingAddon?.whop_membership_id === event.membershipId) {
+        return NextResponse.json({ received: true, skipped: `${genericAddonKey} addon already active` })
+      }
+
+      const { error } = await admin.from('company_addons').upsert(
+        {
+          company_id: company.id,
+          addon_key: genericAddonKey,
+          enabled: true,
+          enabled_at: new Date().toISOString(),
+          whop_membership_id: event.membershipId,
+        },
+        { onConflict: 'company_id,addon_key' },
+      )
+      if (error) {
+        console.error(`[whop/webhook] ${genericAddonKey} addon activation failed`, error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+      return NextResponse.json({ received: true, addonEnabled: { company: company.id, addon: genericAddonKey } })
     }
 
     // Idempotencia: solo se ignora si es la MISMA entrega del webhook

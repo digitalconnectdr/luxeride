@@ -25,6 +25,8 @@ import { getAppUrl } from '@/lib/app-url'
 import { calculateFare, bestRule, type PricingRuleFields } from '@/lib/pricing/engine'
 import { resolveZoneId, type ServiceZoneForMatch } from '@/lib/pricing/zones'
 import { tryAutoAssignDriver, tryAutoFarmToAffiliates, windowFor, overlaps } from '@/lib/dispatch/auto-assign'
+import { isAddonActive } from '@/lib/billing/addons'
+import { validatePromoCode, computeDiscount } from '@/lib/promo/engine'
 import type { BookingStatus, BookingType, Json } from '@/lib/supabase/database.types'
 
 // ─── Multi-stop: validación de paradas intermedias ────────────────────────────
@@ -953,6 +955,7 @@ export async function createPublicBookingAction(data: {
   dropoffLat: number
   dropoffLng: number
   stops?: StopInput[]
+  promoCode?: string
 }): Promise<{ success: boolean; error?: string; data?: BookingResult }> {
   // F1.17 — rate limit por IP
   if (!(await checkRateLimit('public_booking', 5))) {
@@ -963,7 +966,7 @@ export async function createPublicBookingAction(data: {
 
   const { data: company } = await admin
     .from('companies')
-    .select('id, status, settings, timezone')
+    .select('id, status, settings, timezone, plan')
     .eq('slug', data.slug)
     .single()
 
@@ -1016,6 +1019,64 @@ export async function createPublicBookingAction(data: {
   }
   const passengerCount = Math.min(50, Math.max(1, Math.floor(data.passengerCount) || 1))
 
+  // Código promocional — SIEMPRE revalidado server-side (nunca se confía en
+  // el descuento que haya mostrado el wizard). Si el código dejó de ser
+  // válido entre la vista previa y este submit (se agotó, expiró, etc.), la
+  // reserva se rechaza en vez de cobrar de más silenciosamente.
+  let promoCodeId: string | null = null
+  let promoUsesCount = 0
+  let discountAmount = 0
+  if (data.promoCode?.trim()) {
+    const { data: addon } = await admin
+      .from('company_addons')
+      .select('enabled')
+      .eq('company_id', company.id)
+      .eq('addon_key', 'promo_codes')
+      .maybeSingle()
+
+    if (!isAddonActive(company.plan, addon?.enabled ?? false)) {
+      return { success: false, error: 'Los códigos promocionales no están disponibles para este operador' }
+    }
+
+    const code = data.promoCode.trim().toUpperCase()
+    const { data: promo } = await admin
+      .from('promo_codes')
+      .select('*')
+      .eq('company_id', company.id)
+      .eq('code', code)
+      .maybeSingle()
+    if (!promo) return { success: false, error: 'Código promocional no válido' }
+
+    const { count: customerRedemptionsCount } = await admin
+      .from('promo_code_redemptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('promo_code_id', promo.id)
+      .eq('customer_phone', phone)
+
+    const validation = validatePromoCode(
+      {
+        discountType: promo.discount_type as 'percentage' | 'fixed',
+        discountValue: Number(promo.discount_value),
+        maxUses: promo.max_uses,
+        usesCount: promo.uses_count,
+        maxUsesPerCustomer: promo.max_uses_per_customer,
+        validFrom: promo.valid_from,
+        validUntil: promo.valid_until,
+        minBookingAmount: promo.min_booking_amount,
+        isActive: promo.is_active,
+      },
+      { bookingAmount: quote.total_amount, customerRedemptionsCount: customerRedemptionsCount ?? 0 },
+    )
+    if (!validation.valid) return { success: false, error: 'El código promocional ya no es válido' }
+
+    promoCodeId = promo.id
+    promoUsesCount = promo.uses_count
+    discountAmount = computeDiscount(
+      { discountType: promo.discount_type as 'percentage' | 'fixed', discountValue: Number(promo.discount_value) },
+      quote.total_amount,
+    )
+  }
+
   const { data: booking, error } = await admin
     .from('bookings')
     .insert({
@@ -1036,11 +1097,13 @@ export async function createPublicBookingAction(data: {
       meet_and_greet:   Boolean(data.meetAndGreet),
       price_quote_id:   data.quoteId,
       base_amount:      quote.base_amount,
-      total_amount:     quote.total_amount,
+      total_amount:     quote.total_amount - discountAmount,
       currency:         quote.currency ?? 'USD',
       distance_miles:   quote.distance_miles,
       duration_minutes: quote.duration_minutes,
       route_polyline:   quote.route_polyline,
+      promo_code_id:        promoCodeId,
+      promo_discount_amount: promoCodeId ? discountAmount : null,
     })
     .select('id, booking_number')
     .single()
@@ -1051,6 +1114,21 @@ export async function createPublicBookingAction(data: {
   }
 
   await admin.from('price_quotes').update({ is_used: true }).eq('id', data.quoteId)
+
+  if (promoCodeId) {
+    await admin.from('promo_code_redemptions').insert({
+      promo_code_id: promoCodeId,
+      booking_id: booking.id,
+      customer_phone: phone,
+      customer_email: email || null,
+      discount_amount: discountAmount,
+    })
+    // Incremento no atómico (lee-y-escribe) — el volumen de canjes
+    // simultáneos del MISMO código es bajo; mismo criterio que otros
+    // contadores no críticos de este proyecto (ej. drivers.total_trips). Un
+    // pequeño over-run de maxUses en una carrera muy rara no es grave.
+    await admin.from('promo_codes').update({ uses_count: promoUsesCount + 1 }).eq('id', promoCodeId)
+  }
 
   const fees: { booking_id: string; company_id: string; type: string; description: string; amount: number }[] = []
   if (quote.base_amount > 0) {

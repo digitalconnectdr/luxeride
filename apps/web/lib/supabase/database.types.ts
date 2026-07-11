@@ -501,6 +501,8 @@ export type Database = {
           block_reason: string | null
           compliance_last_reviewed_at: string | null
           compliance_reviewed_by: string | null
+          payroll_type: string | null
+          payroll_rate: number | null
           created_at: string
           updated_at: string
         }
@@ -527,6 +529,8 @@ export type Database = {
           block_reason?: string | null | undefined
           compliance_last_reviewed_at?: string | null | undefined
           compliance_reviewed_by?: string | null | undefined
+          payroll_type?: string | null | undefined
+          payroll_rate?: number | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -553,6 +557,8 @@ export type Database = {
           block_reason?: string | null | undefined
           compliance_last_reviewed_at?: string | null | undefined
           compliance_reviewed_by?: string | null | undefined
+          payroll_type?: string | null | undefined
+          payroll_rate?: number | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -1617,6 +1623,8 @@ export type Database = {
           driver_rated_at: string | null
           quickbooks_synced_at: string | null
           quickbooks_sales_receipt_id: string | null
+          promo_code_id: string | null
+          promo_discount_amount: number | null
           created_at: string
           updated_at: string
         }
@@ -1677,6 +1685,8 @@ export type Database = {
           driver_rated_at?: string | null | undefined
           quickbooks_synced_at?: string | null | undefined
           quickbooks_sales_receipt_id?: string | null | undefined
+          promo_code_id?: string | null | undefined
+          promo_discount_amount?: number | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -1737,6 +1747,8 @@ export type Database = {
           driver_rated_at?: string | null | undefined
           quickbooks_synced_at?: string | null | undefined
           quickbooks_sales_receipt_id?: string | null | undefined
+          promo_code_id?: string | null | undefined
+          promo_discount_amount?: number | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -2095,6 +2107,211 @@ export type Database = {
           normalized_name?: string | undefined
           display_name?: string | undefined
           quickbooks_customer_id?: string | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── company_addons ───────────────────────────────────────────────────────
+      company_addons: {
+        Row: {
+          id: string
+          company_id: string
+          addon_key: string
+          enabled: boolean
+          enabled_at: string | null
+          whop_membership_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          addon_key: string
+          enabled?: boolean | undefined
+          enabled_at?: string | null | undefined
+          whop_membership_id?: string | null | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          addon_key?: string | undefined
+          enabled?: boolean | undefined
+          enabled_at?: string | null | undefined
+          whop_membership_id?: string | null | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── payroll_payments ─────────────────────────────────────────────────────
+      payroll_payments: {
+        Row: {
+          id: string
+          company_id: string
+          driver_id: string
+          period_start: string
+          period_end: string
+          trips_count: number
+          total_amount: number
+          marked_paid_at: string
+          marked_paid_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          driver_id: string
+          period_start: string
+          period_end: string
+          trips_count: number
+          total_amount: number
+          marked_paid_at?: string | undefined
+          marked_paid_by?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          driver_id?: string | undefined
+          period_start?: string | undefined
+          period_end?: string | undefined
+          trips_count?: number | undefined
+          total_amount?: number | undefined
+          marked_paid_at?: string | undefined
+          marked_paid_by?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── signed_agreements ────────────────────────────────────────────────────
+      signed_agreements: {
+        Row: {
+          id: string
+          company_id: string
+          subject_type: string
+          subject_id: string
+          document_version: string
+          agreement_text_snapshot: string
+          signature_image_path: string
+          signed_by_name: string
+          signed_at: string
+          ip_address: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          subject_type: string
+          subject_id: string
+          document_version: string
+          agreement_text_snapshot: string
+          signature_image_path: string
+          signed_by_name: string
+          signed_at?: string | undefined
+          ip_address?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          subject_type?: string | undefined
+          subject_id?: string | undefined
+          document_version?: string | undefined
+          agreement_text_snapshot?: string | undefined
+          signature_image_path?: string | undefined
+          signed_by_name?: string | undefined
+          signed_at?: string | undefined
+          ip_address?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── promo_codes ──────────────────────────────────────────────────────────
+      promo_codes: {
+        Row: {
+          id: string
+          company_id: string
+          code: string
+          discount_type: string
+          discount_value: number
+          max_uses: number | null
+          uses_count: number
+          max_uses_per_customer: number | null
+          valid_from: string | null
+          valid_until: string | null
+          min_booking_amount: number | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          code: string
+          discount_type: string
+          discount_value: number
+          max_uses?: number | null | undefined
+          uses_count?: number | undefined
+          max_uses_per_customer?: number | null | undefined
+          valid_from?: string | null | undefined
+          valid_until?: string | null | undefined
+          min_booking_amount?: number | null | undefined
+          is_active?: boolean | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          code?: string | undefined
+          discount_type?: string | undefined
+          discount_value?: number | undefined
+          max_uses?: number | null | undefined
+          uses_count?: number | undefined
+          max_uses_per_customer?: number | null | undefined
+          valid_from?: string | null | undefined
+          valid_until?: string | null | undefined
+          min_booking_amount?: number | null | undefined
+          is_active?: boolean | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── promo_code_redemptions ───────────────────────────────────────────────
+      promo_code_redemptions: {
+        Row: {
+          id: string
+          promo_code_id: string
+          booking_id: string | null
+          customer_phone: string | null
+          customer_email: string | null
+          discount_amount: number
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          promo_code_id: string
+          booking_id?: string | null | undefined
+          customer_phone?: string | null | undefined
+          customer_email?: string | null | undefined
+          discount_amount: number
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          promo_code_id?: string | undefined
+          booking_id?: string | null | undefined
+          customer_phone?: string | null | undefined
+          customer_email?: string | null | undefined
+          discount_amount?: number | undefined
           created_at?: string | undefined
         }
         Relationships: []
