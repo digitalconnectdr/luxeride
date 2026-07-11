@@ -16,6 +16,11 @@ const RAW_VERIFICATION = (process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ?? ''
 const GOOGLE_VERIFICATION =
   RAW_VERIFICATION.match(/content=["']([^"']+)["']/)?.[1] ?? RAW_VERIFICATION
 
+// Bing Webmaster Tools — mismo patrón tolerante que Google (msvalidate.01)
+const RAW_BING_VERIFICATION = (process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION ?? '').trim()
+const BING_VERIFICATION =
+  RAW_BING_VERIFICATION.match(/content=["']([^"']+)["']/)?.[1] ?? RAW_BING_VERIFICATION
+
 const playfair = Playfair_Display({
   subsets: ['latin'],
   variable: '--font-playfair',
@@ -58,8 +63,11 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  // Google Search Console — meta de verificación (solo si está configurada)
-  verification: GOOGLE_VERIFICATION ? { google: GOOGLE_VERIFICATION } : undefined,
+  // Search Console + Bing Webmaster Tools — metas de verificación (solo si están configuradas)
+  verification: {
+    google: GOOGLE_VERIFICATION || undefined,
+    other: BING_VERIFICATION ? { 'msvalidate.01': BING_VERIFICATION } : undefined,
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
