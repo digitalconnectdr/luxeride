@@ -550,7 +550,7 @@ export function LandingPageContent({
             <p className="text-white/45 mt-6 mb-10 text-sm sm:text-base">{t.ctaSubtitle}</p>
             <Link
               href="/auth/signup"
-              className="inline-block px-10 py-4 text-sm font-semibold bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] text-[#141313] rounded-full hover:opacity-90 transition-opacity shadow-[0_8px_30px_rgba(233,193,118,0.25)]"
+              className="lux-cta-pulse inline-block px-10 py-4 text-sm font-semibold bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] text-[#141313] rounded-full hover:opacity-90 transition-opacity"
             >
               {t.ctaButton}
             </Link>
