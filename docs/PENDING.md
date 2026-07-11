@@ -91,18 +91,18 @@ Cada operador elige el diseño de su micrositio en Ajustes → Portada:
 
 ## ⬜ Pendientes del USUARIO (configuración)
 
-1. **Search Console**: ✅ completado 2026-07-11 — propiedad verificada,
-   `sitemap.xml` enviado (incluye ahora también `/en`, `/es`, `/pt`). El
-   primer intento de Google mostró "Couldn't fetch" en el sitemap — normal
-   justo después de enviarlo por primera vez, se resuelve solo en horas
-   (confirmado que `https://getluxeride.vercel.app/sitemap.xml` responde
-   XML válido). **Bing Webmaster Tools**: agregado soporte de código
-   (`NEXT_PUBLIC_BING_SITE_VERIFICATION` → meta `msvalidate.01`, mismo
-   patrón que Google) — falta que el usuario cargue esa env var en Vercel
-   con el código que le da Bing en el método "HTML Meta Tag" al agregar
-   `getluxeride.vercel.app` como sitio nuevo (su cuenta de Bing solo tenía
-   verificado `credytek.vercel.app`, otro proyecto), luego click en
-   "Verificar" ahí y enviar el sitemap.
+1. **Search Console + Bing Webmaster Tools**: ✅ completado 2026-07-11 —
+   ambos verificados y con sitemap enviado (`getluxeride.vercel.app`,
+   distinto del otro proyecto del usuario `credytek.vercel.app` que ya
+   tenía en Bing). Bing marcó un issue real de SEO al inspeccionar la URL:
+   "Meta Description too long or too short" — la description medía entre
+   177 y 199 caracteres según idioma (EN/ES/PT), por encima del máximo
+   recomendado (~160). Ya corregida a 142-147 caracteres en los 3 idiomas
+   (`landing.metaDescription` en los diccionarios), manteniendo la info
+   clave. El "Couldn't fetch" que mostró Google en el primer intento de
+   leer el sitemap es normal justo después de enviarlo por primera vez
+   (se confirmó que `https://getluxeride.vercel.app/sitemap.xml` responde
+   XML válido) — se resuelve solo en horas, no requiere acción.
 2. (Opcional) Vercel → Settings → Deployment Protection → desactivar
    "Vercel Authentication" si se quiere compartir previews de develop sin
    login de Vercel. Producción (getluxeride.vercel.app) ya es pública.
@@ -120,7 +120,14 @@ Cada operador elige el diseño de su micrositio en Ajustes → Portada:
 5. **Twilio** (SMS) cuando se quiera activar — mismo patrón placeholder-safe,
    sin las 3 env vars (`TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`/
    `TWILIO_FROM_NUMBER`) los SMS simplemente no salen.
-6. Probar /super-admin/subscriptions con el usuario super_admin.
+6. **Probar /super-admin/subscriptions**: ✅ revisado 2026-07-11 (código,
+   no login directo — no había credenciales disponibles en este entorno).
+   Encontrado y corregido un bug real: `updateCompanyPlan` no invalidaba
+   `/super-admin/subscriptions` (solo `/super-admin/companies`), así que
+   cambiar el plan de una empresa desde el selector de esa página no se
+   reflejaba ahí sin recargar manualmente. El resto (KPIs, aprobar/
+   rechazar solicitudes, renovar suscripción con `activateCompanySubscription`
+   extendiendo desde la fecha correcta) se revisó y está bien.
 7. **Páginas de Privacy Policy y Terms of Service** — ✅ completado
    2026-07-08: `/privacy` y `/terms`, contenido real en EN/ES/PT (no
    placeholder), enlazadas desde el footer del landing y en el sitemap.
@@ -235,7 +242,8 @@ Es un mini-CMS por operador — feature mediana, se cruza con la PWA branded (C.
 ### E. SEO para IA + todos los buscadores (pedido 2026-06-14, auditoría/fixes 2026-07-11)
 - ✅ Buscadores: el SEO (meta tags, OG, sitemap, canonical, robots) es estándar
   → sirve para Google, Bing, DuckDuckGo, Brave, Ecosia, etc. (no solo Google).
-  Pendiente usuario: enviar el sitemap también en Bing Webmaster Tools.
+  Google Search Console y Bing Webmaster Tools ya verificados y con sitemap
+  enviado (2026-07-11) — ver detalle en "Pendientes del usuario" #1.
 - ✅ IA: JSON-LD LocalBusiness por operador (2026-06-14) → ChatGPT, Perplexity,
   Claude, Gemini pueden entender y recomendar cada operador. robots no bloquea
   GPTBot/PerplexityBot/etc.
@@ -256,6 +264,30 @@ Es un mini-CMS por operador — feature mediana, se cruza con la PWA branded (C.
   por locale) y `lib/seo/hreflang.ts`.
 - Opcional futuro: más tipos Schema (Review, AggregateRating cuando existan
   calificaciones agregadas) para recomendaciones más ricas.
+
+### F2. Navegación del sistema + gap de API (auditoría/fixes 2026-07-11)
+- ✅ **Login en los micrositios**: ninguna de las 4 plantillas (noir, ivory,
+  bold, corporate) tenía acceso a `/auth/login` desde el header público — se
+  agregó un link "Iniciar sesión" en las 4, verificado sin desborde a 375px.
+- ✅ **Sidebar de super-admin reconstruido**: no tenía íconos ni se ocultaba
+  en móvil (a diferencia del sidebar de admin normal). Reconstruido con
+  paridad completa (íconos lucide, modo colapsado persistido) + drawer móvil
+  nuevo detrás de un botón hamburguesa. Se descubrió que el sidebar de admin
+  normal tenía el mismo hueco de responsividad móvil (nunca reportado) y se
+  le aplicó el mismo arreglo. **Nota de verificación**: el slide-in del
+  drawer al hacer clic no se pudo confirmar visualmente al 100% en este
+  entorno de preview (mediciones de posición inconsistentes pese a que el
+  estado de React y las clases CSS se actualizaban bien en cada prueba) —
+  probable limitación de tooling, no del código, pero pendiente que el
+  usuario lo confirme una vez en su teléfono.
+- ⬜ **API pública para Enterprise — NO existe, solo copy.** El plan
+  Enterprise promete "Integraciones a medida y API" pero se confirmó por
+  búsqueda exhaustiva en `app/api/*` que hoy solo hay endpoints internos
+  (app móvil del conductor, webhooks de Stripe/Whop/QuickBooks, crons,
+  manifest/PWA) — nada público/documentado que un cliente pueda consumir.
+  **Pendiente de decisión del usuario**: construir una API real (auth por
+  API key, endpoints documentados, rate limiting propio) o ajustar el copy
+  de Enterprise mientras tanto para no prometer algo que no existe.
 
 ### B. Calificaciones + chat (obs. 12)
 1. ✅ **Calificaciones bidireccionales (HECHO 2026-07-03)**: bookings.rating ya
