@@ -18,6 +18,9 @@ export const en = {
   },
 
   landing: {
+    metaTitle: 'Private Transportation Software',
+    metaDescription:
+      'Private transportation software for limousine, airport transfer and executive chauffeur companies: online bookings, dispatch, driver assignment, payments and passenger tracking.',
     nav: { platform: 'Platform', pricing: 'Pricing', faq: 'FAQ', book: 'Book a ride' },
     hero: {
       badge: 'Private transportation software',
@@ -105,7 +108,7 @@ export const en = {
           'Automatic monthly corporate invoicing',
           'Cancellation and no-show fees enforced by policy',
           'Revenue reports, CSV exports & full reconciliation',
-          'Sync completed trips and invoices to your own QuickBooks Online account',
+          'QuickBooks Online sync (coming soon)',
         ],
       },
     ],

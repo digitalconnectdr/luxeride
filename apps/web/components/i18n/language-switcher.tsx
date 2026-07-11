@@ -11,9 +11,15 @@ const FLAGS: Record<Locale, string> = { en: '🇺🇸', es: '🇪🇸', pt: '�
 export function LanguageSwitcher({
   current,
   variant = 'dark',
+  localizedPaths,
 }: {
   current: Locale
   variant?: 'dark' | 'light'
+  // Cuando la página actual tiene una URL dedicada por idioma (ej. /en, /es,
+  // /pt), navega a la URL del idioma elegido en vez de solo refrescar la
+  // página actual con la cookie nueva | necesario para que el switcher
+  // funcione en esas páginas, que ignoran la cookie a propósito (SEO).
+  localizedPaths?: Partial<Record<Locale, string>>
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -41,7 +47,8 @@ export function LanguageSwitcher({
     setOpen(false)
     if (locale === current) return
     document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=31536000; samesite=lax`
-    startTransition(() => router.refresh())
+    const targetPath = localizedPaths?.[locale]
+    startTransition(() => (targetPath ? router.push(targetPath) : router.refresh()))
   }
 
   const dark = variant === 'dark'

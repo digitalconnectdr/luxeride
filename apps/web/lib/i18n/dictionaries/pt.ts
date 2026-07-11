@@ -19,6 +19,9 @@ export const pt: Dictionary = {
   },
 
   landing: {
+    metaTitle: 'Software de Transporte Privado',
+    metaDescription:
+      'Software de transporte privado para empresas de limusine, traslado de aeroporto e motoristas executivos: reservas online, dispatch, atribuição de motoristas, pagamentos e rastreamento de passageiros.',
     nav: { platform: 'Plataforma', pricing: 'Preços', faq: 'FAQ', book: 'Reservar' },
     hero: {
       badge: 'Software de transporte privado',
@@ -106,7 +109,7 @@ export const pt: Dictionary = {
           'Faturamento corporativo mensal automático',
           'Taxas de cancelamento e no-show pela sua política',
           'Relatórios, exportação CSV e conciliação completa',
-          'Sincronize viagens concluídas e faturas com sua própria conta do QuickBooks Online',
+          'Sincronização com QuickBooks Online (em breve)',
         ],
       },
     ],
