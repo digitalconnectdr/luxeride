@@ -105,6 +105,7 @@ export const en = {
           'Automatic monthly corporate invoicing',
           'Cancellation and no-show fees enforced by policy',
           'Revenue reports, CSV exports & full reconciliation',
+          'Sync completed trips and invoices to your own QuickBooks Online account',
         ],
       },
     ],

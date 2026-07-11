@@ -106,6 +106,7 @@ export const pt: Dictionary = {
           'Faturamento corporativo mensal automático',
           'Taxas de cancelamento e no-show pela sua política',
           'Relatórios, exportação CSV e conciliação completa',
+          'Sincronize viagens concluídas e faturas com sua própria conta do QuickBooks Online',
         ],
       },
     ],

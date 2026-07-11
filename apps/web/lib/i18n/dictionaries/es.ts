@@ -106,6 +106,7 @@ export const es: Dictionary = {
           'Facturación corporativa mensual automática',
           'Cargos por cancelación y no-show según tu política',
           'Reportes, exports a CSV y conciliación completa',
+          'Sincroniza viajes completados y facturas con tu propia cuenta de QuickBooks Online',
         ],
       },
     ],
