@@ -91,9 +91,18 @@ Cada operador elige el diseño de su micrositio en Ajustes → Portada:
 
 ## ⬜ Pendientes del USUARIO (configuración)
 
-1. **Search Console**: GA4 (G-GQNY35MX3V) y la meta de verificación ya
-   están en producción ✅ — falta dar "Verificar" en Search Console y
-   enviar https://getluxeride.vercel.app/sitemap.xml en Sitemaps.
+1. **Search Console**: ✅ completado 2026-07-11 — propiedad verificada,
+   `sitemap.xml` enviado (incluye ahora también `/en`, `/es`, `/pt`). El
+   primer intento de Google mostró "Couldn't fetch" en el sitemap — normal
+   justo después de enviarlo por primera vez, se resuelve solo en horas
+   (confirmado que `https://getluxeride.vercel.app/sitemap.xml` responde
+   XML válido). **Bing Webmaster Tools**: agregado soporte de código
+   (`NEXT_PUBLIC_BING_SITE_VERIFICATION` → meta `msvalidate.01`, mismo
+   patrón que Google) — falta que el usuario cargue esa env var en Vercel
+   con el código que le da Bing en el método "HTML Meta Tag" al agregar
+   `getluxeride.vercel.app` como sitio nuevo (su cuenta de Bing solo tenía
+   verificado `credytek.vercel.app`, otro proyecto), luego click en
+   "Verificar" ahí y enviar el sitemap.
 2. (Opcional) Vercel → Settings → Deployment Protection → desactivar
    "Vercel Authentication" si se quiere compartir previews de develop sin
    login de Vercel. Producción (getluxeride.vercel.app) ya es pública.
