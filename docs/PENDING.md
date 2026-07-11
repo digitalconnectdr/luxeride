@@ -1117,12 +1117,51 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
      sigue creando dos clientes distintos, ya que no hay forma segura de
      saber si es la misma persona sin arriesgar unir a alguien equivocado.
      **Nota de mercado**: QuickBooks Online no está disponible para empresas
-     registradas en
-     República Dominicana (a diferencia de Stripe/Whop, donde Whop existe
-     justamente por esa limitación de Stripe) — esta integración solo la
-     pueden usar operadores con entidad en un país soportado por Intuit
-     (EE.UU., Canadá, Reino Unido, Australia, etc.), coherente con el público
-     objetivo del Compliance Center (sección J).
+     registradas en República Dominicana (a diferencia de Stripe/Whop, donde
+     Whop existe justamente por esa limitación de Stripe) — esta integración
+     solo la pueden usar operadores con entidad en un país soportado por
+     Intuit (EE.UU., Canadá, Reino Unido, Australia, etc.), coherente con el
+     público objetivo del Compliance Center (sección J).
+   - ⬜ **Pendiente — pasar de Development a Production en Intuit (investigado
+     2026-07-11, sin construir).** Hoy la app usa credenciales de
+     *Development*, que SOLO permiten conectar contra compañías Sandbox — un
+     cliente real de LuxeRide no puede conectar su propia cuenta de
+     QuickBooks todavía, aunque el código ya está listo. Pasos reales
+     (investigados contra la documentación oficial de Intuit):
+     1. En el dashboard de la app → "Keys & OAuth" → cambiar el toggle de
+        Development a Production, completar "App details" (categoría, host
+        domain, launch/disconnect URL, país(es)/IP(s) donde se hostea).
+     2. Pestaña **Compliance**: cuestionario de auto-evaluación (~30-40 min)
+        — pide URLs de política de privacidad y EULA propios de LuxeRide,
+        declarar litigios/denuncias, confirmar implementación correcta de
+        OAuth2 (refresh tokens, CSRF, expiración), cumplimiento de
+        GDPR/CCPA/LGPD/PIPEDA si aplica, soporte 24/7 con 99.95% uptime
+        esperado, y no operar desde/con países sancionados.
+     3. Registrar el redirect URI de PRODUCCIÓN por separado (pestaña propia
+        en "Redirect URIs", igual que ya se hizo para Development) —
+        confirmado que ambos ambientes tienen listas independientes.
+     4. Para uso privado (sin listar en el QuickBooks App Store, que es el
+        caso de LuxeRide — cada operador conecta su cuenta directamente, no
+        hay un marketplace público), la aprobación suele tardar días, no
+        semanas. Si más adelante se quisiera *listar* la app en el App Store
+        (descubribilidad pública), hay una revisión técnica formal aparte de
+        ~20 días, más una revisión de seguridad anual recurrente para
+        cualquier app en producción.
+     5. **Costo**: el tier gratuito "Builder" del Intuit App Partner Program
+        se asigna automático, sin costo — incluye llamadas ilimitadas a Core
+        API y hasta 500,000 créditos CorePlus API/mes, más que suficiente
+        para el volumen esperado. Los tiers pagos (Silver $300/mes en
+        adelante) solo hacen falta con mucho más volumen o beneficios de
+        marketplace.
+     6. **Rate limits** (iguales en Sandbox y Production, tenerlos en cuenta
+        para el cron de sync): 500 requests/min por compañía conectada, máx.
+        10 concurrentes por app, 200 requests/min en endpoints pesados —
+        HTTP 429 si se exceden. El volumen actual (un sync diario + manual
+        por empresa) está muy por debajo de estos límites.
+     Fuentes: developer.intuit.com/app/developer/qbo/docs/go-live/publish-app
+     (platform-requirements, technical-requirements), help.developer.intuit.com
+     (production-keys, New-app-assessment-process-FAQ, API-call-limits-and-
+     throttling, platform-service-fees).
    - ✅ **Detección de conflictos de vehículo — HECHO 2026-07-11.** Antes solo
      se evitaba que un mismo CONDUCTOR quedara en dos viajes que se solapan
      (`windowFor`/`overlaps` en `lib/dispatch/auto-assign.ts`); el VEHÍCULO
