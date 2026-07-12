@@ -288,6 +288,23 @@ Es un mini-CMS por operador — feature mediana, se cruza con la PWA branded (C.
   **Pendiente de decisión del usuario**: construir una API real (auth por
   API key, endpoints documentados, rate limiting propio) o ajustar el copy
   de Enterprise mientras tanto para no prometer algo que no existe.
+- ✅ **"Múltiples empresas / DBAs" (Enterprise) — mismo problema, ya
+  corregido 2026-07-11.** El usuario preguntó por este punto del plan
+  Enterprise y se confirmó que tampoco existe: `user_profiles.company_id`
+  es una columna simple (una empresa por cuenta, para siempre, reforzado
+  por RLS) — no hay tabla de relación usuario↔empresa, ni selector de
+  "cambiar de empresa" en la UI, ni concepto de empresa padre/grupo de
+  marcas en el esquema. **Decisión del usuario**: no construirlo por ahora
+  (se revisa a fondo si un cliente real lo pide), pero SÍ corregir el copy
+  para no prometer algo inexistente. Reemplazado en `lib/i18n/dictionaries/
+  {en,es,pt}.ts` (tarjeta de pricing + modal de lead Enterprise en
+  `enterpriseBenefit2`) por **"Asistente de chat con IA incluido"** — este
+  sí es un beneficio real y entregable: el super-admin puede activar
+  manualmente `ai_chat_basic`/`ai_chat_plus` sin costo para una cuenta
+  Enterprise negociada (mismo toggle de `/super-admin/companies/[id]`
+  construido para el add-on, ver sección de más abajo), igual que ya se
+  hace con "Dedicated account manager" o "Data migration done for you"
+  (compromisos manuales por venta directa, no automatizados).
 
 ### B. Calificaciones + chat (obs. 12)
 1. ✅ **Calificaciones bidireccionales (HECHO 2026-07-03)**: bookings.rating ya
