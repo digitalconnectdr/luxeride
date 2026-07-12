@@ -20,6 +20,8 @@
 - Compliance Center: tracks license, permit, and insurance expiration dates for the operator's own records (an organizational tool | LuxeRide does not certify or guarantee regulatory compliance)
 - Each operator gets its own branded booking page, available in English, Spanish, and Portuguese
 - Reports, CSV exports, and audit trail
+- Partner Portals (Professional plan and above): private, co-branded booking links for referral partners (hotels, private aviation/FBOs, wedding and event planners). Each partner gets an optional special rate and an operator-tracked referral commission (calculation and reporting only | the operator pays the partner outside the platform, same as driver payroll)
+- LuxeRide Operator Score (Elite plan and above): a single 0-100 score summarizing business health across 8 areas (revenue trend, dispatch speed, chauffeur quality, compliance readiness, passenger experience, growth, corporate account health, affiliate reliability), computed automatically from the operator's own data
 
 ## Add-ons (available on Starter/Professional, included free on Elite/Enterprise)
 
@@ -35,8 +37,8 @@
 ## Pricing (as of 2026-07-11)
 
 - Starter | $99/month: up to 6 vehicles and 6 chauffeurs, up to 150 bookings/month, 2 team members, 3% platform fee per completed trip
-- Professional | $299/month: up to 15 vehicles and 15 chauffeurs, unlimited bookings, 8 team members, corporate accounts, real-time dispatch, 1.5% platform fee
-- Elite | $549/month: unlimited vehicles, chauffeurs and team members, affiliate network included, driver payroll/e-signature/promo codes included, 0.5% platform fee
+- Professional | $299/month: up to 15 vehicles and 15 chauffeurs, unlimited bookings, 8 team members, corporate accounts, real-time dispatch, Partner Portals, 1.5% platform fee
+- Elite | $549/month: unlimited vehicles, chauffeurs and team members, affiliate network included, LuxeRide Operator Score, driver payroll/e-signature/promo codes included, 0.5% platform fee
 - Enterprise | custom pricing: AI chat assistant included, dedicated account manager, custom integrations
 
 No setup fees on any plan.
