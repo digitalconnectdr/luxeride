@@ -34,12 +34,16 @@
 
 - AI Chat Assistant Basic ($15/month, 400 conversations included) or Plus ($29/month, 1,000 conversations included; $5 per extra 100 conversations): a chat widget on the operator's own booking page that answers passenger questions (fleet, coverage area, pricing model, cancellation policy) automatically, using only that operator's own data | it never mentions other operators or unrelated topics. Powered by GPT-4o-mini. Included at no extra cost only on negotiated Enterprise plans.
 
-## Pricing (as of 2026-07-11)
+## AI Growth Assistant (add-on, all plans | not free on any tier)
+
+- AI Growth Assistant Basic ($9/month, 150 AI generations included) or Plus ($19/month, 500 generations included; $3 per extra 50 generations): AI-personalized follow-up emails for abandoned price quotes (automatic), plus an on-demand generator for marketing content (social media captions, Google Business posts) using only the operator's own fleet, services and city | text only, no auto-publishing. Powered by GPT-4o-mini. Included at no extra cost only on negotiated Enterprise plans.
+
+## Pricing (as of 2026-07-12)
 
 - Starter | $99/month: up to 6 vehicles and 6 chauffeurs, up to 150 bookings/month, 2 team members, 3% platform fee per completed trip
 - Professional | $299/month: up to 15 vehicles and 15 chauffeurs, unlimited bookings, 8 team members, corporate accounts, real-time dispatch, Partner Portals, 1.5% platform fee
 - Elite | $549/month: unlimited vehicles, chauffeurs and team members, affiliate network included, LuxeRide Operator Score, driver payroll/e-signature/promo codes included, 0.5% platform fee
-- Enterprise | custom pricing: AI chat assistant included, dedicated account manager, custom integrations
+- Enterprise | custom pricing: AI chat assistant and AI Growth Assistant included, dedicated account manager, custom integrations
 
 No setup fees on any plan.
 
