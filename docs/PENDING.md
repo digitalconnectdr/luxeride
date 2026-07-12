@@ -1480,6 +1480,24 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
         `OPENAI_API_KEY` (la misma que se dejó pendiente a propósito para el
         asistente de chat — ver ítem del add-on de IA más abajo). No bloquear
         el lanzamiento del score esperando la key.
+        - ✅ **FASE 1 CONSTRUIDA 2026-07-11 (solo números, sin narrativa de
+          IA)**: `lib/operator-score/engine.ts` (8 funciones puras, testeadas
+          — 22 tests) + `lib/operator-score/gather.ts` (glue de DB, ventana
+          de 30 días vs. los 30 anteriores). Reuso confirmado: Compliance
+          Readiness lee directo `companies.compliance_score` (ya lo mantiene
+          `lib/compliance/recompute.ts`, cero cálculo nuevo); Affiliate
+          Reliability reusa `computeAffiliateReliability()` tal cual sobre
+          `affiliate_trips` donde esta empresa es `affiliate_company_id`
+          (cómo de confiable es ESTA empresa como afiliada de otras, no al
+          revés). Un área sin datos (`null`) nunca cuenta en el promedio
+          general — un operador sin red de afiliados o sin cuentas
+          corporativas no se ve penalizado por eso. UI en
+          `/admin/operator-score` (nav bajo "Overview", ícono `Gauge`): score
+          general grande + 8 tarjetas. Sin migración nueva — 100% aditivo
+          sobre datos existentes, deployado directo a producción sin ninguna
+          advertencia de orden (a diferencia de Partner Portals). Pendiente
+          (fase 2, cuando exista `OPENAI_API_KEY`): el párrafo de
+          recomendación en lenguaje natural.
      - **Ranking final del usuario tras revisar las 3 (2026-07-11)**: 1)
        Operator Score primero (más barato de construir, mejor gancho de venta,
        ayuda operativa real al cliente); 2) Partner Portals segundo (la que
