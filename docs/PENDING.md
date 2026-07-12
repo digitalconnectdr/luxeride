@@ -1380,6 +1380,78 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
        en este entorno, y ninguna empresa tiene aún el add-on activo para
        probar el widget en vivo) — sí se verificó: typecheck limpio, build de
        producción exitoso, 134 tests pasando.
+   - ⬜ **PENDIENTE DE CONSTRUIR — AI Growth Assistant (add-on nuevo, decidido
+     2026-07-11).** Tras el asistente de chat, el usuario pidió explorar más
+     ideas de IA/automatización para diferenciar vs. Limo Anywhere/Moovs (ver
+     `docs/COMPETITIVE-ANALYSIS.md` línea 57: Moovs ya vende "AI scheduler"/
+     "AI contact center" en Enterprise). Se evaluaron 4 candidatas (seguimiento
+     de cotizaciones con IA, reservas telefónicas por voz, generador de
+     contenido de marketing, copy de SEO local) — el usuario decidió empaquetar
+     LAS DOS MÁS BARATAS en un solo add-on, con precio de bundle más atractivo
+     que verlas sueltas:
+     - **Seguimiento de cotizaciones con IA**: reemplaza el email genérico del
+       cron `quote-followup` existente por uno redactado por IA (contexto:
+       vehículo, precio, fecha). No requiere ninguna API nueva — reusa
+       `lib/ai-chat/openai.ts` (GPT-4o-mini) + Resend, ambos ya integrados.
+     - **Generador de contenido de marketing (solo texto)**: el operador pide
+       un post para Instagram/Google Business y recibe el texto listo para
+       copiar/pegar, generado con el mismo contexto por empresa que ya
+       construimos para el chat (`lib/ai-chat/context.ts`, reusable tal cual).
+       Deliberadamente SIN auto-publicar (eso requeriría aprobación de la API
+       de Google Business Profile y de Meta Graph por cada operador — mucho
+       más esfuerzo, se descarta por ahora).
+     - **Unidad de medida combinada**: "generaciones de IA al mes" (cuenta
+       tanto los seguimientos automáticos como los posts a pedido).
+     - **Precio propuesto y confirmado por el usuario**: Básico $9/mes (150
+       generaciones), Plus $19/mes (500 generaciones), excedente $3 por cada
+       50 extra. Más barato que el AI Chat Assistant ($15/$29) porque cada
+       generación es una respuesta única, no una conversación completa.
+     - **Descartado deliberadamente**: copy de SEO local para el micrositio —
+       aunque es la más barata de construir, el usuario señaló (correctamente)
+       que es la más difícil de justificarle al cliente: no hay forma de
+       mostrar una métrica clara de efectividad (no hay Search Console por
+       operador, todos comparten el dominio de LuxeRide bajo `/book/<slug>`).
+     - Todavía no se ha construido — queda como el próximo add-on de IA a
+       desarrollar cuando el usuario lo pida.
+   - ⬜ **EN EVALUACIÓN — dos ideas nuevas del usuario (2026-07-11), no
+     construidas todavía, solo revisadas y con opinión registrada**:
+     1. **Partner Portals** (hoteles, FBOs, wedding/event planners, clínicas,
+        universidades): portal privado co-brandeado por partner
+        (`luxeride.app/partners/<slug>`) con tarifas especiales, comisión para
+        el partner, reporte por partner, y facturación separada. Evaluación:
+        es una idea genuinamente nueva y de alto valor (canal B2B de
+        referidos, patrón real en la industria — conserjes de hotel refieren
+        traslados a una limusina de confianza a cambio de comisión), y NO está
+        cubierta por lo ya construido: Cuentas Corporativas (`corporate_accounts`)
+        cubre la facturación/tarifas especiales pero no paga comisión al
+        partner ni tiene link/branding privado propio; la Red de Afiliados
+        (`affiliate_trips`, capability-URL de `affiliate_invite_tokens`) es
+        entre operadores LuxeRide (empresas con flota propia), no con un
+        socio no-operador (un hotel no tiene choferes ni vehículos). Sí es
+        construible reusando patrones ya probados: el link privado con el
+        mismo patrón capability-URL del portal de afiliado externo, y el
+        pago de comisión con el mismo enfoque "solo cálculo/reporte, el
+        operador paga por fuera" que ya usa Nómina de conductores (evita
+        prometer un split de pago automático que no existe). Prioridad alta,
+        de acuerdo con el usuario.
+     2. **Chauffeur Quality System** (score del chofer, checklist pre-viaje,
+        VIP brief, incident log, chofer preferido, recordatorios de
+        entrenamiento, resumen de ganancias): evaluación mixta — varias partes
+        YA EXISTEN en piezas sueltas y solo faltaría consolidarlas: puntualidad
+        y cancelación/no-show ya se calculan dinámicamente en
+        `/admin/drivers/[id]` (falta solo la tasa de aceptación, calculable
+        desde los eventos `rejected_by_driver` de `booking_events`, y un
+        "score" único que combine todo); el incident log YA EXISTE
+        (`trip_reports` + `booking_events`); el resumen de ganancias YA EXISTE
+        vía el add-on de Nómina (falta solo exponerlo al conductor, no solo al
+        operador). Lo genuinamente nuevo es: checklist pre-viaje, VIP brief
+        (notas del cliente antes del viaje), chofer preferido (requiere tocar
+        `auto-assign.ts`), y recordatorios de entrenamiento. Sigue teniendo
+        valor real (mejora la experiencia premium, retiene choferes buenos),
+        pero es más una iniciativa de "consolidar + completar" que un módulo
+        nuevo desde cero — menor riesgo arquitectónico que Partner Portals,
+        pero también menor novedad. Prioridad alta, de acuerdo con el usuario,
+        aunque por debajo de Partner Portals en impacto/diferenciación.
 9. **✅ HECHO (2026-07-03) — Dispatch avanzado** (sección A): construido sobre
    una tabla nueva `booking_events` (tipo/actor/motivo/hora) EN VEZ DE agregar
    estados nuevos a `booking_status` (ese enum se referencia en ~15 archivos —
