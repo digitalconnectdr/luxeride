@@ -28,12 +28,16 @@
 - Promo codes ($3/month): percentage or fixed-amount discount codes for the public booking wizard, with usage limits and minimum booking amount rules.
 - Affiliate network ($29/month on Starter/Professional; included on Elite/Enterprise): send and receive trips with other LuxeRide operators.
 
+## AI chat assistant (add-on, all plans | not free on any tier)
+
+- AI Chat Assistant Basic ($15/month, 400 conversations included) or Plus ($29/month, 1,000 conversations included; $5 per extra 100 conversations): a chat widget on the operator's own booking page that answers passenger questions (fleet, coverage area, pricing model, cancellation policy) automatically, using only that operator's own data | it never mentions other operators or unrelated topics. Powered by GPT-4o-mini. Included at no extra cost only on negotiated Enterprise plans.
+
 ## Pricing (as of 2026-07-11)
 
 - Starter | $99/month: up to 6 vehicles and 6 chauffeurs, up to 150 bookings/month, 2 team members, 3% platform fee per completed trip
 - Professional | $299/month: up to 15 vehicles and 15 chauffeurs, unlimited bookings, 8 team members, corporate accounts, real-time dispatch, 1.5% platform fee
 - Elite | $549/month: unlimited vehicles, chauffeurs and team members, affiliate network included, driver payroll/e-signature/promo codes included, 0.5% platform fee
-- Enterprise | custom pricing: multiple companies/DBAs, dedicated account manager, custom integrations
+- Enterprise | custom pricing: AI chat assistant included, dedicated account manager, custom integrations
 
 No setup fees on any plan.
 
