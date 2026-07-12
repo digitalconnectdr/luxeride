@@ -15,6 +15,7 @@
 
 import type { CompanyPlan } from '@/lib/supabase/database.types'
 import { resolveAiChatTierAddonKeyForPlanId } from '@/lib/billing/ai-chat-addon'
+import { resolveAiGrowthTierAddonKeyForPlanId } from '@/lib/billing/ai-growth-addon'
 
 export type AddonKey = 'driver_payroll' | 'esignature' | 'promo_codes'
 
@@ -67,7 +68,7 @@ export function resolveAddonKeyForPlanId(whopPlanId: string | null): string | nu
   for (const key of ADDON_KEYS) {
     if (isAddonPlanId(key, whopPlanId)) return key
   }
-  return resolveAiChatTierAddonKeyForPlanId(whopPlanId)
+  return resolveAiChatTierAddonKeyForPlanId(whopPlanId) ?? resolveAiGrowthTierAddonKeyForPlanId(whopPlanId)
 }
 
 /** Incluido automáticamente en Elite/Enterprise — sin togglear nada a mano. */

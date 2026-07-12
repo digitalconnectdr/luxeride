@@ -2150,6 +2150,29 @@ export type Database = {
         Relationships: []
       }
 
+      // ── ai_growth_generations ────────────────────────────────────────────────
+      ai_growth_generations: {
+        Row: {
+          id: string
+          company_id: string
+          type: string
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          type: string
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          type?: string | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── ai_chat_conversations / ai_chat_messages ─────────────────────────────
       ai_chat_conversations: {
         Row: {
