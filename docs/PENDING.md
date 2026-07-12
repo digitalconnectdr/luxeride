@@ -1411,8 +1411,31 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
        que es la más difícil de justificarle al cliente: no hay forma de
        mostrar una métrica clara de efectividad (no hay Search Console por
        operador, todos comparten el dominio de LuxeRide bajo `/book/<slug>`).
-     - Todavía no se ha construido — queda como el próximo add-on de IA a
-       desarrollar cuando el usuario lo pida.
+     - ✅ **CONSTRUIDO 2026-07-11.** `lib/billing/ai-growth-addon.ts` (mismo
+       patrón que `ai-chat-addon.ts` — tiers separados de `ADDON_KEYS`, nunca
+       gratis en Elite/Enterprise por el costo variable real). Tabla nueva
+       `ai_growth_generations` (migración `20260711000052_ai_growth_addon.sql`
+       — **pendiente de aplicar en producción**, ver más abajo). Seguimiento
+       de cotizaciones con IA integrado directo en el cron existente
+       (`app/api/cron/quote-followup/route.ts`): si la empresa tiene el
+       add-on activo, redacta el email con GPT-4o-mini; si falla o no está
+       activo, cae al texto genérico de siempre — nunca bloquea el envío del
+       recordatorio. Generador de contenido bajo demanda en
+       `/admin/growth-assistant` (`lib/ai-growth/context.ts` para el prompt
+       de marketing, contexto más liviano que el del chat — solo
+       nombre/ciudad/tagline/servicios/flota, no necesita zonas/tarifas).
+       Toggle manual de super-admin agregado en `/super-admin/companies/[id]`
+       igual que el AI Chat Assistant. **A diferencia de Partner Portals**,
+       este código es seguro de desplegar ANTES de aplicar la migración 52 —
+       ningún camino nuevo se ejecuta hasta que una empresa tenga el add-on
+       realmente habilitado (lo cual requiere Whop o el toggle manual, y en
+       cualquier caso degrada limpio si la tabla no existe todavía). Ya
+       desplegado en `develop`/`main`. **Pendiente**: (1) aplicar la
+       migración 52 en producción, (2) crear 2 productos en Whop y cargar 4
+       env vars (mismo patrón que el AI Chat Assistant — ver nombres exactos
+       en la conversación con el usuario), (3) reusa la misma
+       `OPENAI_API_KEY` que ya está pendiente a propósito para el asistente
+       de chat — no necesita una key nueva.
    - ⬜ **EN EVALUACIÓN — dos ideas nuevas del usuario (2026-07-11), no
      construidas todavía, solo revisadas y con opinión registrada**:
      1. **Partner Portals** (hoteles, FBOs, wedding/event planners, clínicas,
