@@ -245,7 +245,7 @@ export const pt: Dictionary = {
         desc: 'Para operadores multi-marca, fluxos complexos e integrações sob medida.',
         features: [
           'Tudo do Elite',
-          'Múltiplas empresas / DBAs',
+          'Assistente de chat com IA incluído',
           'Estrutura de comissões sob medida',
           'Account manager dedicado',
           'Migração de dados feita por nós',
@@ -1342,7 +1342,7 @@ export const pt: Dictionary = {
       enterpriseCustomPricing: 'Sob medida',
       enterpriseRequest: 'Solicitar →',
       enterpriseBenefit1: 'Tudo do Professional',
-      enterpriseBenefit2: 'Múltiplas empresas / marcas',
+      enterpriseBenefit2: 'Assistente de chat com IA incluído',
       enterpriseBenefit3: 'Gerente de conta dedicado',
       enterpriseBenefit4: 'Integrações sob medida e API',
       enterpriseModalTitle: 'Solicitar o plano Enterprise',

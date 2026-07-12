@@ -244,7 +244,7 @@ export const en = {
         desc: 'For multi-brand operators, complex workflows and custom integrations.',
         features: [
           'Everything in Elite',
-          'Multiple companies / DBAs',
+          'AI chat assistant included',
           'Custom platform fee structure',
           'Dedicated account manager',
           'Data migration done for you',
@@ -1341,7 +1341,7 @@ export const en = {
       enterpriseCustomPricing: 'Custom pricing',
       enterpriseRequest: 'Request →',
       enterpriseBenefit1: 'Everything in Professional',
-      enterpriseBenefit2: 'Multiple companies / brands',
+      enterpriseBenefit2: 'AI chat assistant included',
       enterpriseBenefit3: 'Dedicated account manager',
       enterpriseBenefit4: 'Custom integrations and API',
       enterpriseModalTitle: 'Request the Enterprise plan',
