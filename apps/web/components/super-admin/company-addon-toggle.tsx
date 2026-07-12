@@ -6,7 +6,6 @@
 
 import { useTransition } from 'react'
 import { toggleCompanyAddonAction } from '@/app/actions/addons'
-import type { AddonKey } from '@/lib/billing/addons'
 
 export function CompanyAddonToggle({
   companyId,
@@ -17,7 +16,7 @@ export function CompanyAddonToggle({
   includedByPlan,
 }: {
   companyId: string
-  addonKey: AddonKey
+  addonKey: string
   label: string
   enabled: boolean
   enabledAt: string | null

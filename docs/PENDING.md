@@ -1299,6 +1299,61 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
      `assignDriverAction` existe pero no lo usa ningún componente todavía),
      así que el caso de uso principal cubierto es el de flota compartida
      entre turnos, no un selector manual de vehículo en pantalla.
+   - ✅ **Asistente de IA por micrositio (add-on nuevo, 2026-07-11) — código
+     completo, falta configuración externa del usuario.** Origen: el usuario
+     vio un competidor (suncitilimo.com) con un chat de Botpress y preguntó si
+     era viable ofrecer algo así. Se investigó el costo real: Botpress cobra
+     $0.50-0.65 por conversación (y otras plataformas similares o peores —
+     Chatbase, Voiceflow, Tidio — todas revenden con margen alto), mientras
+     que construirlo directo sobre GPT-4o-mini cuesta fracciones de centavo
+     por conversación. Decisión: LuxeRide lo construye y captura ese margen en
+     vez de pagárselo a un tercero.
+     - **Aislamiento por empresa — arquitectónico, no por instrucción.** El
+       riesgo que preguntó el usuario ("¿cómo evitamos que el bot hable de
+       otra empresa o se salga de tema?") se resuelve en dos capas: (1) el
+       bot de la empresa A NUNCA recibe datos de la empresa B en su contexto
+       — `lib/ai-chat/context.ts` solo consulta `service_zones`,
+       `vehicle_types`, `pricing_rules`, `company_services` y la política de
+       cancelación de ESA `company_id`, mismo aislamiento que ya usa el resto
+       de la plataforma; (2) el system prompt además rechaza explícitamente
+       temas ajenos, otras empresas, e intentos de "ignora tus instrucciones".
+     - **Dos tiers, deliberadamente NO incluidos gratis en Elite/Enterprise**
+       (a diferencia de nómina/firma/promo codes) porque este add-on sí tiene
+       costo variable real por uso: **Básico $15/mes (400 conversaciones)** y
+       **Plus $29/mes (1,000 conversaciones)**, ancorados a duplicar lo que
+       da gratis/barato la competencia más económica (Botpress: 250 conv. a
+       $150/mes). Excedente: $5 por cada 100 conversaciones extra — hoy es
+       SOLO informativo (el operador ve su consumo del mes en
+       `/admin/assistant`), no bloquea al visitante ni factura
+       automáticamente; facturar el excedente real queda pendiente de decidir
+       cómo (Whop no tiene un modelo simple de metered billing confirmado).
+     - Tablas nuevas `ai_chat_conversations`/`ai_chat_messages` (migración
+       `20260711000050_ai_chat_addon.sql`, con RLS — **aún NO aplicada en
+       producción**, pendiente de autorización). Estado del add-on vive en la
+       tabla genérica `company_addons` ya existente (`addon_key`
+       `ai_chat_basic`/`ai_chat_plus`), reusando el mismo webhook de Whop y el
+       mismo toggle manual de super-admin que los otros add-ons — sin tocar
+       ese código, solo se amplió `resolveAddonKeyForPlanId()` para reconocer
+       los dos plan_id nuevos.
+     - Widget flotante (`components/booking/ai-chat-widget.tsx`) insertado
+       una sola vez en `book/[slug]/page.tsx` (cubre las 4 plantillas),
+       visible solo si la empresa tiene el add-on activo. Modelo fijo
+       `gpt-4o-mini` (no configurable por el operador — es la base del margen
+       calculado).
+     - **Pendiente de configuración externa (no se puede hacer desde este
+       entorno)**: (1) el usuario debe crear una cuenta en platform.openai.com
+       y generar una `OPENAI_API_KEY`; (2) crear 2 productos en Whop ($15 y
+       $29/mes) y cargar 4 env vars en Vercel
+       (`WHOP_PLAN_ID_AI_CHAT_BASIC_ADDON`/`WHOP_CHECKOUT_URL_AI_CHAT_BASIC_ADDON`,
+       `..._PLUS_ADDON`), mismo patrón que los 3 add-ons anteriores; (3)
+       aplicar la migración 50 en producción (pendiente de autorización del
+       usuario, como toda migración). Hasta que eso ocurra, `/admin/assistant`
+       simplemente muestra las 2 tarjetas de upsell sin botón de checkout
+       activo — no rompe nada.
+     - **No verificado visualmente en navegador** (sin credenciales de login
+       en este entorno, y ninguna empresa tiene aún el add-on activo para
+       probar el widget en vivo) — sí se verificó: typecheck limpio, build de
+       producción exitoso, 134 tests pasando.
 9. **✅ HECHO (2026-07-03) — Dispatch avanzado** (sección A): construido sobre
    una tabla nueva `booking_events` (tipo/actor/motivo/hora) EN VEZ DE agregar
    estados nuevos a `booking_status` (ese enum se referencia en ~15 archivos —

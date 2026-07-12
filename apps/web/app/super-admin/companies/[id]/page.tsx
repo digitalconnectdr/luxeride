@@ -211,6 +211,31 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             })}
           </div>
         </div>
+
+        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6 space-y-1 sm:col-span-3">
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
+            AI Assistant
+          </h2>
+          <p className="text-xs text-sl-on-surface-muted mb-1">
+            Never included automatically by plan — has real variable cost. Toggle one tier manually for negotiated Enterprise deals; enabling one turns off the other.
+          </p>
+          <div className="divide-y divide-sl-outline-variant/50">
+            {(['ai_chat_basic', 'ai_chat_plus'] as const).map((key) => {
+              const row = addonByKey.get(key)
+              return (
+                <CompanyAddonToggle
+                  key={key}
+                  companyId={company.id}
+                  addonKey={key}
+                  label={key === 'ai_chat_basic' ? 'AI Assistant — Basic ($15/mo)' : 'AI Assistant — Plus ($29/mo)'}
+                  enabled={row?.enabled ?? false}
+                  enabledAt={row?.enabled_at ?? null}
+                  includedByPlan={false}
+                />
+              )
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Company info */}

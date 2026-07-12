@@ -15,6 +15,7 @@ import { ServiceWorkerRegister } from '@/components/pwa/sw-register'
 import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
 import { ShareMenu } from '@/components/share/share-menu'
 import { resolveServiceFallbackImage } from '@/lib/booking/service-fallback-images'
+import { AiChatWidget } from '@/components/booking/ai-chat-widget'
 import { MicrositeIvory } from '@/components/booking/microsite-ivory'
 import { MicrositeBold } from '@/components/booking/microsite-bold'
 import { MicrositeCorporate } from '@/components/booking/microsite-corporate'
@@ -106,11 +107,13 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
   }
 
   const placeId = ((company.settings as { site?: { googlePlaceId?: string } } | null)?.site)?.googlePlaceId
-  const [{ data: vehicleTypes }, { data: servicesRaw }, googleReviews] = await Promise.all([
+  const [{ data: vehicleTypes }, { data: servicesRaw }, googleReviews, { data: chatAddons }] = await Promise.all([
     admin.from('vehicle_types').select('id, name, class, capacity, amenities, base_image_url').eq('company_id', company.id).eq('is_active', true).order('sort_order'),
     admin.from('company_services').select('id, title, description, icon, image_url, i18n').eq('company_id', company.id).eq('is_active', true).order('sort_order'),
     fetchGoogleReviews(placeId, locale),
+    admin.from('company_addons').select('addon_key, enabled').eq('company_id', company.id).in('addon_key', ['ai_chat_basic', 'ai_chat_plus']),
   ])
+  const aiChatEnabled = (chatAddons ?? []).some((a) => a.enabled)
 
   // Título/descripción por idioma (Ajustes → Servicios → pestañas EN/ES/PT),
   // con el mismo fallback que tagline/about: idioma actual → ES → columna legada.
@@ -179,6 +182,7 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <ServiceWorkerRegister />
         <Template {...sharedProps} />
+        {aiChatEnabled && <AiChatWidget companySlug={company.slug} companyName={company.name} brandColor={brandColor} t={t} />}
       </>
     )
   }
@@ -458,6 +462,7 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
           </div>
         </div>
       </footer>
+      {aiChatEnabled && <AiChatWidget companySlug={company.slug} companyName={company.name} brandColor={brandColor} t={t} />}
     </div>
   )
 }

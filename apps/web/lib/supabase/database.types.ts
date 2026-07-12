@@ -2147,6 +2147,57 @@ export type Database = {
         Relationships: []
       }
 
+      // ── ai_chat_conversations / ai_chat_messages ─────────────────────────────
+      ai_chat_conversations: {
+        Row: {
+          id: string
+          company_id: string
+          session_token: string
+          started_at: string
+          last_message_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          session_token: string
+          started_at?: string | undefined
+          last_message_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          session_token?: string | undefined
+          started_at?: string | undefined
+          last_message_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      ai_chat_messages: {
+        Row: {
+          id: string
+          conversation_id: string
+          role: string
+          content: string
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          conversation_id: string
+          role: string
+          content: string
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          conversation_id?: string | undefined
+          role?: string | undefined
+          content?: string | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── payroll_payments ─────────────────────────────────────────────────────
       payroll_payments: {
         Row: {

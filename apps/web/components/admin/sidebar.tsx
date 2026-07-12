@@ -29,6 +29,7 @@ import {
   Percent,
   Wallet,
   FileSignature,
+  Bot,
   Settings,
   LogOut,
   ChevronsLeft,
@@ -192,6 +193,7 @@ export function AdminSidebar({
         ]),
         { href: '/admin/team', label: nav.team, icon: UserCog },
         { href: '/admin/esignature', label: nav.esignature, icon: FileSignature },
+        { href: '/admin/assistant', label: nav.assistant, icon: Bot },
         ...(flags.isOwner
           ? [{ href: '/admin/settings', label: nav.settings, icon: Settings }]
           : []),

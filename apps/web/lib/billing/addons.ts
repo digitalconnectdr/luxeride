@@ -14,6 +14,7 @@
 // un toggle.
 
 import type { CompanyPlan } from '@/lib/supabase/database.types'
+import { resolveAiChatTierAddonKeyForPlanId } from '@/lib/billing/ai-chat-addon'
 
 export type AddonKey = 'driver_payroll' | 'esignature' | 'promo_codes'
 
@@ -52,12 +53,21 @@ export function isAddonPlanId(addonKey: AddonKey, whopPlanId: string | null): bo
   return !!configured && whopPlanId === configured
 }
 
-/** ¿A cuál add-on (si alguno) corresponde este plan_id de Whop? Para el webhook. */
-export function resolveAddonKeyForPlanId(whopPlanId: string | null): AddonKey | null {
+/**
+ * ¿A cuál add-on (si alguno) corresponde este plan_id de Whop? Para el webhook.
+ * Devuelve `string` (no `AddonKey`) porque también reconoce los tiers del
+ * add-on de Asistente de IA (ai_chat_basic/ai_chat_plus, ver
+ * lib/billing/ai-chat-addon.ts) — esos NO son un AddonKey a propósito, para
+ * que no hereden el auto-incluido-en-Elite/Enterprise de isAddonActive(). El
+ * webhook (app/api/webhooks/whop/route.ts) los activa/desactiva igual que
+ * cualquier otro addon genérico, porque `company_addons.addon_key` ya es TEXT
+ * libre — no hace falta tocar ese archivo.
+ */
+export function resolveAddonKeyForPlanId(whopPlanId: string | null): string | null {
   for (const key of ADDON_KEYS) {
     if (isAddonPlanId(key, whopPlanId)) return key
   }
-  return null
+  return resolveAiChatTierAddonKeyForPlanId(whopPlanId)
 }
 
 /** Incluido automáticamente en Elite/Enterprise — sin togglear nada a mano. */
