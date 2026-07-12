@@ -61,6 +61,8 @@ interface Props {
   gratuity?: GratuityConfig
   dict: WizardDict
   localeTag: string
+  /** Partner Portals — cuando la reserva viene del link privado de un partner. */
+  partnerSlug?: string
 }
 
 // ─── Progreso ────────────────────────────────────────────────────────────────
@@ -117,7 +119,7 @@ const CLASS_ICONS: Record<string, string> = {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = false, gratuity, dict, localeTag }: Props) {
+export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = false, gratuity, dict, localeTag, partnerSlug }: Props) {
   const [step, setStep] = useState(0)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
@@ -323,6 +325,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
         scheduledAt:  newRouteData.scheduledAt,
         bookingType:  newRouteData.bookingType,
         stops:        newRouteData.stops,
+        partnerSlug,
       })
 
       if (!result.success || !result.data) {
@@ -395,6 +398,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
         dropoffLng:          routeData.dropoffLng,
         stops:               routeData.stops,
         promoCode:           promoState?.code,
+        partnerSlug,
       })
 
       if (!result.success || !result.data) {

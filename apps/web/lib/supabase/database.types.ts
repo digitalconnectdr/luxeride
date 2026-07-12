@@ -1625,6 +1625,7 @@ export type Database = {
           quickbooks_sales_receipt_id: string | null
           promo_code_id: string | null
           promo_discount_amount: number | null
+          partner_id: string | null
           created_at: string
           updated_at: string
         }
@@ -1687,6 +1688,7 @@ export type Database = {
           quickbooks_sales_receipt_id?: string | null | undefined
           promo_code_id?: string | null | undefined
           promo_discount_amount?: number | null | undefined
+          partner_id?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -1749,6 +1751,7 @@ export type Database = {
           quickbooks_sales_receipt_id?: string | null | undefined
           promo_code_id?: string | null | undefined
           promo_discount_amount?: number | null | undefined
+          partner_id?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -2193,6 +2196,99 @@ export type Database = {
           conversation_id?: string | undefined
           role?: string | undefined
           content?: string | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── partners / partner_payments ──────────────────────────────────────────
+      partners: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          slug: string
+          logo_url: string | null
+          contact_name: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          rate_adjustment_pct: number
+          commission_type: string
+          commission_value: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          name: string
+          slug: string
+          logo_url?: string | null | undefined
+          contact_name?: string | null | undefined
+          contact_email?: string | null | undefined
+          contact_phone?: string | null | undefined
+          rate_adjustment_pct?: number | undefined
+          commission_type?: string | undefined
+          commission_value?: number | undefined
+          is_active?: boolean | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          name?: string | undefined
+          slug?: string | undefined
+          logo_url?: string | null | undefined
+          contact_name?: string | null | undefined
+          contact_email?: string | null | undefined
+          contact_phone?: string | null | undefined
+          rate_adjustment_pct?: number | undefined
+          commission_type?: string | undefined
+          commission_value?: number | undefined
+          is_active?: boolean | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      partner_payments: {
+        Row: {
+          id: string
+          company_id: string
+          partner_id: string
+          period_start: string
+          period_end: string
+          trips_count: number
+          total_amount: number
+          marked_paid_at: string
+          marked_paid_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          partner_id: string
+          period_start: string
+          period_end: string
+          trips_count: number
+          total_amount: number
+          marked_paid_at?: string | undefined
+          marked_paid_by?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          partner_id?: string | undefined
+          period_start?: string | undefined
+          period_end?: string | undefined
+          trips_count?: number | undefined
+          total_amount?: number | undefined
+          marked_paid_at?: string | undefined
+          marked_paid_by?: string | null | undefined
           created_at?: string | undefined
         }
         Relationships: []

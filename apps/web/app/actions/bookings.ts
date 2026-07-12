@@ -27,6 +27,7 @@ import { resolveZoneId, type ServiceZoneForMatch } from '@/lib/pricing/zones'
 import { tryAutoAssignDriver, tryAutoFarmToAffiliates, windowFor, overlaps } from '@/lib/dispatch/auto-assign'
 import { isAddonActive } from '@/lib/billing/addons'
 import { validatePromoCode, computeDiscount } from '@/lib/promo/engine'
+import { applyPartnerRateAdjustment } from '@/lib/partners/engine'
 import type { BookingStatus, BookingType, Json } from '@/lib/supabase/database.types'
 
 // ─── Multi-stop: validación de paradas intermedias ────────────────────────────
@@ -751,6 +752,7 @@ export async function getPublicVehicleQuotesAction(
     scheduledAt: string
     bookingType?: BookingType
     stops?: StopInput[]
+    partnerSlug?: string
   },
 ): Promise<{ success: boolean; error?: string; data?: VehicleQuote[] }> {
   // F1.17 — rate limit por IP (cotizaciones disparan llamadas a Google Routes)
@@ -774,6 +776,20 @@ export async function getPublicVehicleQuotesAction(
   const currency  = (company.currency as string | null) ?? 'USD'
   const scheduledAt = new Date(data.scheduledAt)
   const bookingType = data.bookingType ?? 'one_way'
+
+  // Partner Portals — si la cotizacion viene del link privado de un partner,
+  // se aplica su ajuste de tarifa especial (ver lib/partners/engine.ts).
+  let partnerRateAdjustmentPct = 0
+  if (data.partnerSlug) {
+    const { data: partner } = await admin
+      .from('partners')
+      .select('rate_adjustment_pct')
+      .eq('company_id', companyId)
+      .eq('slug', data.partnerSlug)
+      .eq('is_active', true)
+      .maybeSingle()
+    if (partner) partnerRateAdjustmentPct = Number(partner.rate_adjustment_pct)
+  }
 
   // F1.10 — ventana de reservación de la empresa
   const windowCheck = validateBookingTime(parseBookingWindow(company.settings), scheduledAt)
@@ -848,6 +864,12 @@ export async function getPublicVehicleQuotesAction(
     const fare = calculateFare(
       rule, distanceMiles, durationMinutes, scheduledAt, bookingType, company.timezone,
     )
+    // El ajuste de tarifa del partner (si aplica) se hornea en el total
+    // guardado en price_quotes — todo lo que viene despues (createPublicBookingAction)
+    // simplemente lee quote.total_amount, sin tener que conocer partners.
+    const totalAmount = partnerRateAdjustmentPct
+      ? applyPartnerRateAdjustment(fare.totalAmount, partnerRateAdjustmentPct)
+      : fare.totalAmount
 
     const { data: quote } = await admin
       .from('price_quotes')
@@ -866,7 +888,7 @@ export async function getPublicVehicleQuotesAction(
         route_polyline:  route?.polyline ?? null,
         base_amount:     fare.baseAmount,
         surcharge_amount: fare.surchargeAmount,
-        total_amount:    fare.totalAmount,
+        total_amount:    totalAmount,
         currency,
       })
       .select('id')
@@ -877,7 +899,7 @@ export async function getPublicVehicleQuotesAction(
       quoteId:     quote?.id ?? '',
       baseAmount:  fare.baseAmount,
       surchargeAmount: fare.surchargeAmount,
-      totalAmount: fare.totalAmount,
+      totalAmount,
       currency,
       distanceMiles:   distanceMiles || null,
       durationMinutes: durationMinutes || null,
@@ -956,6 +978,7 @@ export async function createPublicBookingAction(data: {
   dropoffLng: number
   stops?: StopInput[]
   promoCode?: string
+  partnerSlug?: string
 }): Promise<{ success: boolean; error?: string; data?: BookingResult }> {
   // F1.17 — rate limit por IP
   if (!(await checkRateLimit('public_booking', 5))) {
@@ -1077,6 +1100,21 @@ export async function createPublicBookingAction(data: {
     )
   }
 
+  // Partner Portals — si la reserva viene del link privado de un partner, se
+  // valida que le pertenezca a ESTA empresa y este activo (nunca se confia en
+  // un slug arbitrario del cliente) antes de etiquetar la reserva.
+  let partnerId: string | null = null
+  if (data.partnerSlug) {
+    const { data: partner } = await admin
+      .from('partners')
+      .select('id')
+      .eq('company_id', company.id)
+      .eq('slug', data.partnerSlug)
+      .eq('is_active', true)
+      .maybeSingle()
+    partnerId = partner?.id ?? null
+  }
+
   const { data: booking, error } = await admin
     .from('bookings')
     .insert({
@@ -1084,6 +1122,7 @@ export async function createPublicBookingAction(data: {
       status:           'pending',
       type:             data.bookingType,
       vehicle_type_id:  quote.vehicle_type_id,
+      partner_id:       partnerId,
       passenger_count:  passengerCount,
       passenger_name:   name,
       passenger_phone:  phone,
