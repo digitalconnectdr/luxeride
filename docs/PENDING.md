@@ -1,7 +1,33 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-07-02. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-07-12. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## 🔑 TL;DR — pendientes activos ahora mismo (2026-07-12)
+
+**Del usuario (acción externa, no depende de código):**
+1. **`OPENAI_API_KEY`** — pendiente A PROPÓSITO hasta el primer cliente real de
+   cualquiera de los dos asistentes de IA (Chat Assistant o Growth Assistant).
+   Sin ella, ambos add-ons responden con un error controlado si alguien los
+   activa por Whop — no rompen nada, solo no generan texto todavía.
+2. **Decisión de negocio, sin fecha**: ¿construir una API pública real para
+   Enterprise, o ajustar el copy? Hoy "Integraciones a medida y API" es una
+   promesa sin nada detrás (ver sección F2 más abajo).
+3. Gaps de infraestructura ya conocidos, sin apuro: WhatsApp Business
+   (pospuesto), Intuit Development→Production para QuickBooks (investigado,
+   sin construir), primer `eas build` de la app nativa del conductor
+   (bloqueado en el usuario), Stripe con keys reales cuando haya clientes,
+   Twilio para SMS cuando se quiera activar.
+
+**Ideas evaluadas, no construidas (esperando que el usuario pida avanzar):**
+- **Chauffeur Quality System** — evaluado, valor real pero menor prioridad;
+  se iría completando como pieza de apoyo al Operator Score, no como
+  lanzamiento propio.
+
+**Todo lo demás de esta ronda (2026-07-11/12) ya está construido y
+desplegado en producción**: AI Chat Assistant, AI Growth Assistant, Partner
+Portals, LuxeRide Operator Score (fase 1), y sus reflejos en landing/SEO —
+ver el detalle completo de cada uno en las secciones de abajo.
 
 ## ✅ Backlog de desarrollo original — COMPLETO (0–6)
 Los 7 ítems que estaban en "Backlog de DESARROLLO" (más abajo) ya están hechos:
