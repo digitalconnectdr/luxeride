@@ -1483,6 +1483,50 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
        y la reputación de cara a los Partner Portals. Ninguna de las 3
        construida todavía — quedan documentadas para cuando el usuario pida
        avanzar con alguna.
+   - ✅ **Partner Portals — CONSTRUIDO 2026-07-11.** Incluido en el plan
+     (Professional+), sin cobro aparte (decisión del usuario, no pasa por
+     company_addons/Whop). Tabla `partners` (`company_id, name, slug,
+     logo_url, contacto, rate_adjustment_pct, commission_type/value,
+     is_active`) + `partner_payments` (mismo patrón "solo cálculo/reporte,
+     nunca mueve dinero real" que Nómina de conductores — al marcar un
+     periodo como pagado se congela el monto/viajes exactos de ESE momento).
+     `bookings.partner_id` (nullable) etiqueta qué partner refirió cada
+     reserva — deliberadamente separada de `corporate_account_id` (semántica
+     distinta: facturación B2B vs. referido con comisión).
+     - **Link privado**: `/book/<slug>/partners/<partner-slug>` (nueva
+       sub-ruta, mismo patrón que `/reservar`), con banner de co-marca
+       (logo/nombre del partner) y el mismo `BookingWizard` de siempre.
+     - **Tarifa especial**: `rate_adjustment_pct` (-50% a +50%,
+       `lib/partners/engine.ts::applyPartnerRateAdjustment`, testeado) se
+       hornea directo en el `total_amount` de `price_quotes` al cotizar
+       desde el link del partner — todo lo que viene después
+       (`createPublicBookingAction`) simplemente lee ese total, sin lógica
+       de partners esparcida. Deliberadamente NO se tocó `bestRule()`/
+       `pricing_rules` (más riesgoso, afecta a TODAS las reservas) — se
+       eligió el mismo mecanismo ya probado de descuento de códigos
+       promocionales, aplicado por canal en vez de por código.
+     - **Comisión**: `computePartnerCommission()` (testeado), reporte por
+       periodo + botón "Marcar como pagado" en `/admin/partners/[id]`,
+       idéntico en espíritu a `/admin/payroll`.
+     - **Admin**: `/admin/partners` (alta + lista + link copiable + toggle
+       activo) y `/admin/partners/[id]` (edición + reporte de comisión).
+       Nueva entrada en el sidebar (ícono `Store`, sección Management).
+     - **⚠️ ADVERTENCIA DE ORDEN DE DESPLIEGUE — distinta a los add-ons
+       anteriores.** `createPublicBookingAction` ahora SIEMPRE inserta la
+       columna `bookings.partner_id` (con valor `null` si la reserva no vino
+       de un partner) — a diferencia del asistente de IA (donde el código
+       nuevo solo se activa si alguien prende el add-on), esto significa que
+       **si se hace push a `main` (producción) ANTES de aplicar la migración
+       51, se rompe la creación de CUALQUIER reserva pública** (Postgrest
+       rechaza el insert por columna inexistente en el schema cache). Por
+       esto, a diferencia del flujo normal de "push a develop → push a main
+       automático", **este código SOLO se subió a `develop`** — falta
+       aplicar la migración `20260711000051_partner_portals.sql` en
+       producción (pendiente de que el usuario la corra, mismo proceso que
+       la migración 50) antes de autorizar el push a `main`.
+     - Verificado: typecheck limpio, build de producción exitoso, 142 tests
+       pasando (8 nuevos de `lib/partners/engine.test.ts`). No verificado
+       visualmente en navegador (sin credenciales de login en este entorno).
 9. **✅ HECHO (2026-07-03) — Dispatch avanzado** (sección A): construido sobre
    una tabla nueva `booking_events` (tipo/actor/motivo/hora) EN VEZ DE agregar
    estados nuevos a `booking_status` (ese enum se referencia en ~15 archivos —
