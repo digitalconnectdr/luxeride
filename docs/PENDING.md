@@ -1328,8 +1328,9 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
        automáticamente; facturar el excedente real queda pendiente de decidir
        cómo (Whop no tiene un modelo simple de metered billing confirmado).
      - Tablas nuevas `ai_chat_conversations`/`ai_chat_messages` (migración
-       `20260711000050_ai_chat_addon.sql`, con RLS — **aún NO aplicada en
-       producción**, pendiente de autorización). Estado del add-on vive en la
+       `20260711000050_ai_chat_addon.sql`, con RLS — ✅ **aplicada en
+       producción 2026-07-11**, ejecutada por el usuario en el SQL Editor de
+       Supabase). Estado del add-on vive en la
        tabla genérica `company_addons` ya existente (`addon_key`
        `ai_chat_basic`/`ai_chat_plus`), reusando el mismo webhook de Whop y el
        mismo toggle manual de super-admin que los otros add-ons — sin tocar
@@ -1345,11 +1346,10 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
        y generar una `OPENAI_API_KEY`; (2) crear 2 productos en Whop ($15 y
        $29/mes) y cargar 4 env vars en Vercel
        (`WHOP_PLAN_ID_AI_CHAT_BASIC_ADDON`/`WHOP_CHECKOUT_URL_AI_CHAT_BASIC_ADDON`,
-       `..._PLUS_ADDON`), mismo patrón que los 3 add-ons anteriores; (3)
-       aplicar la migración 50 en producción (pendiente de autorización del
-       usuario, como toda migración). Hasta que eso ocurra, `/admin/assistant`
-       simplemente muestra las 2 tarjetas de upsell sin botón de checkout
-       activo — no rompe nada.
+       `..._PLUS_ADDON`), mismo patrón que los 3 add-ons anteriores — **en
+       progreso 2026-07-11**, el usuario está creando estas variables ahora.
+       Hasta que eso ocurra, `/admin/assistant` simplemente muestra las 2
+       tarjetas de upsell sin botón de checkout activo — no rompe nada.
      - **No verificado visualmente en navegador** (sin credenciales de login
        en este entorno, y ninguna empresa tiene aún el add-on activo para
        probar el widget en vivo) — sí se verificó: typecheck limpio, build de
