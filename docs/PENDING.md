@@ -1413,29 +1413,35 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
        operador, todos comparten el dominio de LuxeRide bajo `/book/<slug>`).
      - ✅ **CONSTRUIDO 2026-07-11.** `lib/billing/ai-growth-addon.ts` (mismo
        patrón que `ai-chat-addon.ts` — tiers separados de `ADDON_KEYS`, nunca
-       gratis en Elite/Enterprise por el costo variable real). Tabla nueva
+       gratis en Elite/Enterprise por el costo variable real). Tabla
        `ai_growth_generations` (migración `20260711000052_ai_growth_addon.sql`
-       — **pendiente de aplicar en producción**, ver más abajo). Seguimiento
-       de cotizaciones con IA integrado directo en el cron existente
-       (`app/api/cron/quote-followup/route.ts`): si la empresa tiene el
-       add-on activo, redacta el email con GPT-4o-mini; si falla o no está
-       activo, cae al texto genérico de siempre — nunca bloquea el envío del
-       recordatorio. Generador de contenido bajo demanda en
-       `/admin/growth-assistant` (`lib/ai-growth/context.ts` para el prompt
-       de marketing, contexto más liviano que el del chat — solo
-       nombre/ciudad/tagline/servicios/flota, no necesita zonas/tarifas).
-       Toggle manual de super-admin agregado en `/super-admin/companies/[id]`
-       igual que el AI Chat Assistant. **A diferencia de Partner Portals**,
-       este código es seguro de desplegar ANTES de aplicar la migración 52 —
-       ningún camino nuevo se ejecuta hasta que una empresa tenga el add-on
-       realmente habilitado (lo cual requiere Whop o el toggle manual, y en
-       cualquier caso degrada limpio si la tabla no existe todavía). Ya
-       desplegado en `develop`/`main`. **Pendiente**: (1) aplicar la
-       migración 52 en producción, (2) crear 2 productos en Whop y cargar 4
-       env vars (mismo patrón que el AI Chat Assistant — ver nombres exactos
-       en la conversación con el usuario), (3) reusa la misma
-       `OPENAI_API_KEY` que ya está pendiente a propósito para el asistente
-       de chat — no necesita una key nueva.
+       — ✅ **aplicada en producción 2026-07-11** por el usuario en el SQL
+       Editor de Supabase). Seguimiento de cotizaciones con IA integrado
+       directo en el cron existente (`app/api/cron/quote-followup/route.ts`):
+       si la empresa tiene el add-on activo, redacta el email con
+       GPT-4o-mini; si falla o no está activo, cae al texto genérico de
+       siempre — nunca bloquea el envío del recordatorio. Generador de
+       contenido bajo demanda en `/admin/growth-assistant`
+       (`lib/ai-growth/context.ts` para el prompt de marketing, contexto más
+       liviano que el del chat — solo nombre/ciudad/tagline/servicios/flota,
+       no necesita zonas/tarifas). Toggle manual de super-admin agregado en
+       `/super-admin/companies/[id]` igual que el AI Chat Assistant.
+       ✅ **Whop configurado (2026-07-11)**: 2 productos creados, plan ID +
+       checkout URL cargados en Vercel — `WHOP_PLAN_ID_AI_GROWTH_BASIC_ADDON`
+       (`plan_XpOBZZus8DeuK`), `WHOP_CHECKOUT_URL_AI_GROWTH_BASIC_ADDON`
+       (`https://whop.com/jprs-digital-connect/ai-growth-assistant-basic/`),
+       `WHOP_PLAN_ID_AI_GROWTH_PLUS_ADDON` (`plan_lAJ3Y6Pr9jeGM`),
+       `WHOP_CHECKOUT_URL_AI_GROWTH_PLUS_ADDON`
+       (`https://whop.com/jprs-digital-connect/ai-growth-assistant-plus/`).
+       El checkout de autoservicio de `/admin/growth-assistant` ya debería
+       mostrar ambos botones reales tras el redeploy de Vercel. **Único
+       pendiente real**: `OPENAI_API_KEY` — reusa la misma que ya está
+       pendiente a propósito para el AI Chat Assistant, se crea cuando el
+       usuario avise que ya tiene el primer cliente de cualquiera de los dos
+       asistentes de IA. Hasta entonces, si alguien activa el add-on por
+       Whop, el widget/generador responde con un error controlado en vez de
+       fallar mal (mismo comportamiento ya verificado en el AI Chat
+       Assistant).
    - ⬜ **EN EVALUACIÓN — dos ideas nuevas del usuario (2026-07-11), no
      construidas todavía, solo revisadas y con opinión registrada**:
      1. **Partner Portals** (hoteles, FBOs, wedding/event planners, clínicas,
