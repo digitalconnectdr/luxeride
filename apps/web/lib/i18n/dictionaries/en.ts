@@ -827,6 +827,7 @@ export const en = {
     esignature: 'E-Signature',
     assistant: 'AI Assistant',
     partners: 'Partners',
+    operatorScore: 'Operator Score',
     settings: 'Settings',
   },
 
@@ -1042,6 +1043,24 @@ export const en = {
       commissionOwed: 'Commission owed',
       markPaid: 'Mark as paid',
       periodPaid: 'Period paid',
+    },
+    operatorScore: {
+      title: 'Operator Score',
+      subtitle: 'A single 0-100 score for how your operation is running, built from your last 30 days.',
+      overallScore: 'Overall score',
+      overallNote: 'Averages only the areas with enough data — a quiet area (like no affiliate activity) never counts against you.',
+      noData: 'Not enough data yet.',
+      methodNote: 'Based on your last 30 days vs. the 30 days before that. Updates automatically — no action needed.',
+      areas: {
+        revenueHealth: { label: 'Revenue Health', desc: 'Revenue trend vs. the prior 30 days.' },
+        dispatchEfficiency: { label: 'Dispatch Efficiency', desc: 'Share of bookings assigned quickly.' },
+        chauffeurQuality: { label: 'Chauffeur Quality', desc: 'Punctuality, low cancellations and ratings.' },
+        complianceReadiness: { label: 'Compliance Readiness', desc: 'Licenses, permits and insurance up to date.' },
+        customerExperience: { label: 'Customer Experience', desc: 'Average passenger rating.' },
+        growthPerformance: { label: 'Growth Performance', desc: 'Quote-to-booking conversion rate.' },
+        corporateAccountStrength: { label: 'Corporate Account Strength', desc: 'Corporate invoices paid on time.' },
+        affiliateReliability: { label: 'Affiliate Reliability', desc: 'Your response rate and punctuality as an affiliate.' },
+      },
     },
     payroll: {
       title: 'Driver Payroll',

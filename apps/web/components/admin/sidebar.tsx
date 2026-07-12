@@ -31,6 +31,7 @@ import {
   FileSignature,
   Bot,
   Store,
+  Gauge,
   Settings,
   LogOut,
   ChevronsLeft,
@@ -139,7 +140,10 @@ export function AdminSidebar({
     {
       header: nav.overview,
       show: true,
-      items: [{ href: '/admin/dashboard', label: nav.dashboard, icon: LayoutDashboard }],
+      items: [
+        { href: '/admin/dashboard', label: nav.dashboard, icon: LayoutDashboard },
+        ...(ext ? [] : [{ href: '/admin/operator-score', label: nav.operatorScore, icon: Gauge }]),
+      ],
     },
     {
       header: nav.operations,

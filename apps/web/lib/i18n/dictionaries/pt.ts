@@ -828,6 +828,7 @@ export const pt: Dictionary = {
     esignature: 'Assinatura eletrônica',
     assistant: 'Assistente IA',
     partners: 'Partners',
+    operatorScore: 'Operator Score',
     settings: 'Configurações',
   },
 
@@ -1043,6 +1044,24 @@ export const pt: Dictionary = {
       commissionOwed: 'Comissão a pagar',
       markPaid: 'Marcar como pago',
       periodPaid: 'Período pago',
+    },
+    operatorScore: {
+      title: 'Operator Score',
+      subtitle: 'Uma única pontuação de 0-100 sobre como está sua operação, calculada com os últimos 30 dias.',
+      overallScore: 'Pontuação geral',
+      overallNote: 'Faz a média apenas das áreas com dados suficientes — uma área sem atividade (ex. sem rede de afiliados) nunca conta contra você.',
+      noData: 'Ainda não há dados suficientes.',
+      methodNote: 'Baseado nos seus últimos 30 dias vs. os 30 dias anteriores. Atualiza sozinho — não requer nenhuma ação.',
+      areas: {
+        revenueHealth: { label: 'Saúde da receita', desc: 'Tendência de receita vs. os 30 dias anteriores.' },
+        dispatchEfficiency: { label: 'Eficiência de despacho', desc: 'Porcentagem de reservas atribuídas rapidamente.' },
+        chauffeurQuality: { label: 'Qualidade dos motoristas', desc: 'Pontualidade, poucos cancelamentos e avaliações.' },
+        complianceReadiness: { label: 'Conformidade', desc: 'Licenças, permissões e seguros em dia.' },
+        customerExperience: { label: 'Experiência do passageiro', desc: 'Avaliação média dos passageiros.' },
+        growthPerformance: { label: 'Crescimento', desc: 'Taxa de conversão de cotação para reserva.' },
+        corporateAccountStrength: { label: 'Contas corporativas', desc: 'Faturas corporativas pagas em dia.' },
+        affiliateReliability: { label: 'Confiabilidade como afiliado', desc: 'Sua taxa de resposta e pontualidade como afiliado.' },
+      },
     },
     payroll: {
       title: 'Folha de pagamento dos motoristas',
