@@ -1341,15 +1341,24 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
        visible solo si la empresa tiene el add-on activo. Modelo fijo
        `gpt-4o-mini` (no configurable por el operador — es la base del margen
        calculado).
-     - **Pendiente de configuración externa (no se puede hacer desde este
-       entorno)**: (1) el usuario debe crear una cuenta en platform.openai.com
-       y generar una `OPENAI_API_KEY`; (2) crear 2 productos en Whop ($15 y
-       $29/mes) y cargar 4 env vars en Vercel
-       (`WHOP_PLAN_ID_AI_CHAT_BASIC_ADDON`/`WHOP_CHECKOUT_URL_AI_CHAT_BASIC_ADDON`,
-       `..._PLUS_ADDON`), mismo patrón que los 3 add-ons anteriores — **en
-       progreso 2026-07-11**, el usuario está creando estas variables ahora.
-       Hasta que eso ocurra, `/admin/assistant` simplemente muestra las 2
-       tarjetas de upsell sin botón de checkout activo — no rompe nada.
+     - ✅ **Whop configurado (2026-07-11)**: 2 productos creados, plan ID +
+       checkout URL cargados en Vercel — `WHOP_PLAN_ID_AI_CHAT_BASIC_ADDON`
+       (`plan_naWKpgQNH7Rdy`), `WHOP_CHECKOUT_URL_AI_CHAT_BASIC_ADDON`
+       (`https://whop.com/jprs-digital-connect/ai-assistant-basic/`),
+       `WHOP_PLAN_ID_AI_CHAT_PLUS_ADDON` (`plan_pjCyRE8gNmoej`),
+       `WHOP_CHECKOUT_URL_AI_CHAT_PLUS_ADDON`
+       (`https://whop.com/jprs-digital-connect/ai-assistant-plus/`). El
+       checkout de autoservicio de `/admin/assistant` ya debería mostrar
+       ambos botones reales tras el redeploy de Vercel.
+     - ⬜ **Pendiente a propósito — `OPENAI_API_KEY`.** Decisión explícita del
+       usuario (2026-07-11): NO crearla todavía, se hará cuando haya un primer
+       cliente real interesado en el add-on (para no pagar por una key sin
+       uso). Sin esta variable, `isOpenAiConfigured()` es `false` y
+       `sendChatWidgetMessageAction` devuelve un error controlado ("El
+       asistente no está disponible en este momento") en vez de fallar mal —
+       aunque alguien active el add-on por Whop antes de tener la key, el
+       widget no rompe, solo muestra ese mensaje. Retomar este punto cuando el
+       usuario avise que ya tiene el primer cliente.
      - **No verificado visualmente en navegador** (sin credenciales de login
        en este entorno, y ninguna empresa tiene aún el add-on activo para
        probar el widget en vivo) — sí se verificó: typecheck limpio, build de
