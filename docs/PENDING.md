@@ -1452,6 +1452,37 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
         nuevo desde cero — menor riesgo arquitectónico que Partner Portals,
         pero también menor novedad. Prioridad alta, de acuerdo con el usuario,
         aunque por debajo de Partner Portals en impacto/diferenciación.
+     3. **LuxeRide Operator Score** (score general 0-100 de la operación, 8
+        áreas: Revenue Health, Dispatch Efficiency, Chauffeur Quality,
+        Compliance Readiness, Customer Experience, Growth Performance,
+        Corporate Account Strength, Affiliate Reliability + recomendación en
+        lenguaje natural tipo "sube a 82/100 si..."). Evaluación: la de MEJOR
+        relación esfuerzo/valor de las tres — 5 de las 8 áreas ya existen o
+        casi existen (Compliance Readiness = `lib/compliance/engine.ts` casi
+        1:1; Affiliate Reliability = `computeAffiliateReliability()` casi 1:1;
+        Chauffeur Quality reusa lo ya calculado en `/admin/drivers/[id]`;
+        Dispatch Efficiency y Customer Experience solo faltan la fórmula que
+        combine datos que ya existen). Lo único genuinamente nuevo es "Growth
+        Performance" (conversión cotización→reserva, tendencia mes a mes — no
+        se calcula hoy en ningún lado). El párrafo de recomendación reusaría
+        por TERCERA vez el mismo motor de IA (GPT-4o-mini + contexto por
+        empresa) construido para el chat/growth assistant. **Recomendación de
+        posicionamiento**: NO como add-on de pago aparte (a diferencia del
+        chat/growth assistant) — como esta feature usa sobre todo datos que ya
+        son de Elite/Enterprise, tiene más sentido como el gancho de upgrade
+        de Starter/Professional a Elite ("desbloquea tu Operator Score") que
+        como algo a cobrar por separado; el costo de IA aquí es mínimo
+        (un párrafo por refresco semanal/mensual, no por conversación).
+     - **Ranking final del usuario tras revisar las 3 (2026-07-11)**: 1)
+       Operator Score primero (más barato de construir, mejor gancho de venta,
+       ayuda operativa real al cliente); 2) Partner Portals segundo (la que
+       más valor NUEVO crea — comisiones son dinero extra real para el
+       operador, no solo eficiencia); 3) Chauffeur Quality System NO como
+       lanzamiento propio, sino como pieza que se completa en el camino y
+       alimenta directamente el área "Chauffeur Quality" del Operator Score
+       y la reputación de cara a los Partner Portals. Ninguna de las 3
+       construida todavía — quedan documentadas para cuando el usuario pida
+       avanzar con alguna.
 9. **✅ HECHO (2026-07-03) — Dispatch avanzado** (sección A): construido sobre
    una tabla nueva `booking_events` (tipo/actor/motivo/hora) EN VEZ DE agregar
    estados nuevos a `booking_status` (ese enum se referencia en ~15 archivos —
