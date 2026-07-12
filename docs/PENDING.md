@@ -1473,6 +1473,13 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
         de Starter/Professional a Elite ("desbloquea tu Operator Score") que
         como algo a cobrar por separado; el costo de IA aquí es mínimo
         (un párrafo por refresco semanal/mensual, no por conversación).
+        **Plan de lanzamiento confirmado por el usuario (2026-07-11)**:
+        construir primero la versión SOLO con los 8 números (pura matemática,
+        sin dependencia de `OPENAI_API_KEY`, lanzable ya) y agregar el párrafo
+        de recomendación en lenguaje natural DESPUÉS, cuando exista la
+        `OPENAI_API_KEY` (la misma que se dejó pendiente a propósito para el
+        asistente de chat — ver ítem del add-on de IA más abajo). No bloquear
+        el lanzamiento del score esperando la key.
      - **Ranking final del usuario tras revisar las 3 (2026-07-11)**: 1)
        Operator Score primero (más barato de construir, mejor gancho de venta,
        ayuda operativa real al cliente); 2) Partner Portals segundo (la que
