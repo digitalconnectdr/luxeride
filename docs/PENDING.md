@@ -1,7 +1,18 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-07-12. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-07-15. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## ✅ Onboarding guiado para empresas nuevas (2026-07-15)
+
+Checklist de setup en `/admin/dashboard` (banner no bloqueante, siempre
+visible mientras falte algo, sin migración): `lib/onboarding/checklist.ts`
+(puro, 6 tests) + `lib/onboarding/gather.ts` (conteos por `company_id`).
+5 ítems: Flota (vehicle_types + vehicles), Zonas/tarifas (service_zones o
+pricing_rules), Pagos (Stripe Connect o Whop Connect onboarded), Equipo
+(drivers), Marca (logo + color + al menos 1 servicio). Verificado en
+navegador creando una empresa de prueba real ("Onboarding Test Co") —
+pendiente decidir si se borra o se deja esa cuenta de prueba.
 
 ## 🔑 TL;DR — pendientes activos ahora mismo (2026-07-12)
 
