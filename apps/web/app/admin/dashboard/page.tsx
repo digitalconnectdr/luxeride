@@ -1,10 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { CheckCircle2, Circle } from 'lucide-react'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getDict, getLocale } from '@/lib/i18n/server'
 import { LOCALE_BCP47 } from '@/lib/i18n/config'
 import { brand } from '@/lib/brand'
+import { gatherOnboardingCounts } from '@/lib/onboarding/gather'
+import { computeOnboardingChecklist, getOnboardingProgress, type OnboardingItem } from '@/lib/onboarding/checklist'
 
 export const metadata: Metadata = { title: `Dashboard | ${brand.name}` }
 
@@ -19,8 +22,11 @@ export default async function AdminDashboardPage() {
 
   const companyId = user.company_id
   const locale = getLocale()
-  const t = getDict(locale).adminDashboard
+  const dict = getDict(locale)
+  const t = dict.adminDashboard
+  const onboardingT = dict.admin.onboarding
   const dateLocale = LOCALE_BCP47[locale]
+  const isOwnerOrAdmin = user.role === 'company_owner' || user.role === 'company_admin'
 
   // Fetch fleet + driver + booking stats
   let stats = { vehicles: 0, driversAvail: 0, fleet: 0 }
@@ -29,6 +35,8 @@ export default async function AdminDashboardPage() {
   let recentBookings: { id: string; booking_number: string; status: string; passenger_name: string | null; scheduled_at: string; total_amount: number | null }[] = []
   let upcomingBookings: { id: string; booking_number: string; status: string; passenger_name: string | null; scheduled_at: string }[] = []
   let weekTrend: { day: string; count: number }[] = []
+  let onboardingItems: OnboardingItem[] = []
+  let onboardingProgress = { completed: 0, total: 0 }
 
   if (companyId) {
     const admin = createAdminClient()
@@ -129,6 +137,10 @@ export default async function AdminDashboardPage() {
 
     recentBookings = recent ?? []
     upcomingBookings = upcoming ?? []
+
+    const onboardingCounts = await gatherOnboardingCounts(admin, companyId)
+    onboardingItems = computeOnboardingChecklist(onboardingCounts)
+    onboardingProgress = getOnboardingProgress(onboardingItems)
   }
 
   const STATUS_COLORS: Record<string, string> = {
@@ -165,6 +177,43 @@ export default async function AdminDashboardPage() {
           })}
         </p>
       </div>
+
+      {/* Onboarding — checklist de setup, visible mientras falte algo por configurar */}
+      {companyId && isOwnerOrAdmin && onboardingProgress.completed < onboardingProgress.total && (
+        <div className="bg-white border border-[#e5e1d8] rounded-xl px-5 py-4">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <h2 className="font-playfair text-lg font-semibold text-[#1d1b18]">{onboardingT.title}</h2>
+            <p className="text-xs font-semibold text-[#8a6520]">
+              {onboardingT.progress
+                .replace('{completed}', String(onboardingProgress.completed))
+                .replace('{total}', String(onboardingProgress.total))}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {onboardingItems.map((item) => {
+              const label = onboardingT[item.key]
+              return item.done ? (
+                <span
+                  key={item.key}
+                  className="inline-flex items-center gap-1.5 text-xs text-[#75716a] px-3 py-1.5 rounded-lg bg-[#f6f4ef]"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" strokeWidth={2} />
+                  <span className="line-through">{label}</span>
+                </span>
+              ) : (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[#1d1b18] px-3 py-1.5 rounded-lg border border-[#e5e1d8] hover:border-[#8a6520]/50 hover:text-[#8a6520] transition-colors"
+                >
+                  <Circle className="w-3.5 h-3.5 text-[#8a6520]" strokeWidth={2} />
+                  {label}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* KPIs — fila compacta de 6 */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">

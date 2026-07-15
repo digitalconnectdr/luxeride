@@ -1000,6 +1000,15 @@ export const es: Dictionary = {
       noDrivers: 'Todavía no hay conductores.',
       noCorporateAccounts: 'Todavía no hay cuentas corporativas.',
     },
+    onboarding: {
+      title: 'Termina de configurar tu cuenta',
+      progress: '{completed} de {total} pasos completados',
+      fleet: 'Agrega tu flota',
+      pricing: 'Configura zonas o reglas de precio',
+      payments: 'Conecta un método de pago',
+      team: 'Agrega un miembro de equipo o conductor',
+      branding: 'Completa tu marca y servicios',
+    },
     assistant: {
       title: 'Asistente IA',
       subtitle: 'Un widget de chat en tu página de reservas que responde las preguntas de tus pasajeros sobre tu servicio, automáticamente.',

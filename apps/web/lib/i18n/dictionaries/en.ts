@@ -999,6 +999,15 @@ export const en = {
       noDrivers: 'No drivers yet.',
       noCorporateAccounts: 'No corporate accounts yet.',
     },
+    onboarding: {
+      title: 'Finish setting up your account',
+      progress: '{completed} of {total} steps completed',
+      fleet: 'Add your fleet',
+      pricing: 'Set up zones or pricing rules',
+      payments: 'Connect a payment provider',
+      team: 'Add a team member or driver',
+      branding: 'Complete your brand & services',
+    },
     assistant: {
       title: 'AI Assistant',
       subtitle: 'A chat widget on your booking page that answers passenger questions about your service, automatically.',
