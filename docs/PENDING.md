@@ -23,11 +23,90 @@
 - **Chauffeur Quality System** — evaluado, valor real pero menor prioridad;
   se iría completando como pieza de apoyo al Operator Score, no como
   lanzamiento propio.
+- **LuxeRide Launch Package, fork de landing (2 rutas) y plan "Solo
+  Operator"** — evaluados 2026-07-12 tras comparativa contra A+Drive
+  (competidor enfocado en conductores independientes de Uber/Lyft). Usuario
+  confirmó explícitamente NO construir todavía, solo dejarlo documentado.
+  Detalle completo, orden recomendado y hallazgos técnicos en la sección
+  "📋 A+Drive vs LuxeRide" más abajo.
 
 **Todo lo demás de esta ronda (2026-07-11/12) ya está construido y
 desplegado en producción**: AI Chat Assistant, AI Growth Assistant, Partner
 Portals, LuxeRide Operator Score (fase 1), y sus reflejos en landing/SEO —
 ver el detalle completo de cada uno en las secciones de abajo.
+
+## 📋 A+Drive vs LuxeRide + 3 iniciativas evaluadas, NO construir aún (2026-07-12)
+
+Usuario pidió a ChatGPT comparar getluxeride.vercel.app contra aplusdrive.com
+(competidor: paquete de branding+web+booking para conductores independientes
+de Uber/Lyft que quieren dejar de depender de esas apps, US$597 inicial +
+US$29.99/mes). Conclusión del análisis: LuxeRide gana en profundidad
+operativa (despacho, flota, cuentas corporativas, compliance, etc.) por
+amplio margen, pero A+Drive gana el primer contacto con conductores
+individuales — un segmento que hoy LuxeRide ni siquiera le habla en su
+landing. Se evaluaron 3 iniciativas para cerrar esa puerta de entrada SIN
+diluir el posicionamiento premium/empresarial ya construido. **Ninguna se
+construye todavía — el usuario pidió explícitamente dejarlas solo como
+pendiente.** Se descartó expresamente la idea de "LuxeRide Operator
+Academy" (comunidad/cursos) — no interesa agregarla.
+
+### 1. Fork de landing en dos rutas comerciales
+Selector arriba del hero ("Soy conductor independiente" / "Administro una
+empresa o flota") que lleva a dos landings o secciones ancla distintas.
+Importante: el selector va ANTES del hero corporativo actual, no lo
+reemplaza — mezclar ambos mensajes en un solo hero (como sugirió ChatGPT en
+su copy final) diluiría el posicionamiento premium ya construido. Solo
+copy/UI, sin tocar backend.
+
+### 2. LuxeRide Launch Package (paquete de onboarding, pago único)
+Neutraliza directamente la ventaja de A+Drive (implementación "llave en
+mano"). Dos sub-niveles sugeridos en vez de un rango difuso:
+- **Essentials US$597**: marca + web + booking + Stripe configurado.
+- **Complete US$997**: + dominio propio, SEO local extendido, lanzamiento
+  prioritario en 7 días.
+
+Implementación de bajo esfuerzo (cero cambios de esquema):
+- Reutilizar `components/admin/enterprise-lead-modal.tsx` +
+  `app/actions/enterprise-leads.ts` (`submitEnterpriseLeadAction`) agregando
+  un campo `lead_type` (`'enterprise' | 'launch_package'`) en vez de
+  duplicar tabla/action — el patrón ya es genérico.
+- Cobro: producto de pago único en Whop (riel de pagos ya existente, no
+  meter Stripe Checkout aparte solo para esto).
+- Fulfillment 100% manual con las herramientas de super-admin que ya
+  existen (crear empresa, subir logo, configurar flota/tarifas) — es un
+  servicio humano, no una feature de software.
+
+### 3. Plan "Solo Operator" (US$49–79/mes)
+1 conductor, hasta 2 vehículos, hasta 75 reservas/mes, sin despacho
+avanzado, comisión igual o ligeramente arriba del 3% de Starter (para
+proteger margen dado el precio bajo de suscripción).
+
+**Hallazgos técnicos (investigado 2026-07-12, evitar re-investigar):**
+- `plan_quotas` (límites: vehículos/conductores/reservas-mes/equipo/%
+  comisión) es 100% data-driven vía `getPlanLimits()` en
+  `apps/web/lib/plans/limits.ts` — cero cambios de código para los límites.
+- Pero el "plan" en sí es un enum de Postgres (`company_plan`, definido en
+  `supabase/migrations/20260607000001_extensions.sql`) + union type TS en
+  `database.types.ts`. Agregar un tier ya se hizo una vez para Elite
+  (`20260708000035_plan_elite_tier.sql`: `ALTER TYPE` en su propia
+  migración por restricción de Postgres, + INSERT en `plan_quotas`) — mismo
+  patrón, esfuerzo conocido y acotado.
+- `apps/web/app/super-admin/tracking/page.tsx` tiene arrays hard-coded
+  `PLAN_ORDER`/`PLAN_LABEL` — agregar una línea, no permite crear planes
+  desde la UI.
+- `apps/web/lib/billing/whop.ts` (`mapWhopPlanId`) mapea con 4 `if`
+  hard-coded contra env vars — un 5to tier necesita una env var
+  (`WHOP_PLAN_ID_SOLO_OPERATOR`) + un `if` más.
+- **No existe ningún gate de plan sobre Dispatch Board/auto-assign** — no
+  hace falta construir una restricción para "sin despacho avanzado": con 1
+  solo conductor permitido, el despacho ya no tiene nada que despachar.
+
+**Orden recomendado cuando se decida avanzar:** (1) Launch Package primero
+(menor esfuerzo, mayor apalancamiento), (2) fork de landing en paralelo
+(solo copy/UI), (3) Solo Operator al final y solo tras validar demanda real
+capturando esos leads con el mismo modal genérico (`lead_type:
+'solo_operator'`) y dando de alta manual en un Starter con precio ajustado
+— evita construir el tier formal (enum + Whop) especulativamente.
 
 ## ✅ Backlog de desarrollo original — COMPLETO (0–6)
 Los 7 ítems que estaban en "Backlog de DESARROLLO" (más abajo) ya están hechos:
