@@ -9,14 +9,66 @@ Checklist de setup en `/admin/dashboard` (banner no bloqueante, siempre
 visible mientras falte algo, sin migración): `lib/onboarding/checklist.ts`
 (puro, 6 tests) + `lib/onboarding/gather.ts` (conteos por `company_id`).
 5 ítems: Flota (vehicle_types + vehicles), Zonas/tarifas (service_zones o
-pricing_rules), Pagos (Stripe Connect o Whop Connect onboarded), Equipo
-(drivers), Marca (logo + color + al menos 1 servicio). Verificado en
-navegador creando una empresa de prueba real ("Onboarding Test Co") —
-pendiente decidir si se borra o se deja esa cuenta de prueba.
+pricing_rules), Pagos (**solo Whop Connect** — Stripe Connect existe en el
+código pero no es el método de cobro real de LuxeRide; su
+`stripe_connect_onboarded` solo se activa con una key real de Stripe, que
+hoy es un placeholder no funcional), Equipo (drivers), Marca (logo + color
++ al menos 1 servicio). Verificado en navegador con una empresa de prueba
+real, ya eliminada por completo (perfil, auth, audit_logs, empresa).
+
+## ✅ Prueba de estrés pre-lanzamiento (2026-07-15)
+
+Sistema aún sin clientes reales, así que se generó volumen de datos real
+sin riesgo: 5 empresas de prueba × 2,000 reservas c/u (10,000 total,
+insertadas directo vía admin client, sin pasar por Maps/email), + prueba
+de concurrencia con `autocannon` contra un build de producción local
+(`next build && next start`, NO el dev server — el dev server da
+lecturas de latencia irreales por la recompilación de rutas).
+
+**Resultados:**
+- Landing (`/`) y micrositio de reserva pública (`/book/[slug]`) con 50
+  conexiones concurrentes: latencia mediana ~1-1.1s, sin errores, estable
+  (esto corriendo en una sola máquina local — Vercel con auto-scaling e
+  instancias serverless debería comportarse igual o mejor).
+- **Bug de correctness real encontrado y corregido**: `/admin/bookings`
+  traía TODAS las reservas de la empresa (sin `.limit()`) solo para armar
+  el conteo por estado. Con 2,000 reservas eso choca con el límite
+  silencioso de 1000 filas de PostgREST — **cualquier empresa con más de
+  1000 reservas mostraba contadores por estado incorrectos, sin ningún
+  aviso**. Corregido con 9 queries `head:true` en paralelo (mismo patrón
+  que `/admin/dashboard`) — commit `a9789c5`, ya en producción.
+- Dispatch Board, Reportes y Operator Score: tiempos normales con el
+  volumen probado (el "9.2s" inicial en Dispatch Board fue compilación de
+  Next.js en modo dev, no un problema real — confirmado con una segunda
+  carga en 723ms).
+- Todos los índices relevantes de `bookings` (`company_id`,
+  `company_id+status`, `company_id+scheduled_at`) ya existen — no hizo
+  falta agregar ninguno.
+
+**Gap real encontrado, NO corregido (requiere acción externa del
+usuario)**: el rate limiting (`lib/security/rate-limit.ts`) depende de
+Upstash Redis, pero `UPSTASH_REDIS_REST_URL`/`TOKEN` NO están configuradas
+en ningún entorno. Cae a un fallback en memoria por proceso — en Vercel
+(serverless, múltiples instancias) esto significa que los límites de
+intentos de login, checkout, reservas públicas, etc. **no se aplican de
+forma consistente entre usuarios reales concurrentes**. Hace falta crear
+una cuenta Upstash (tiene tier gratis) y agregar esas 2 env vars antes de
+lanzar con clientes reales — es la pieza más importante pendiente de esta
+ronda.
+
+**No probado (fuera de alcance de hoy)**: el flujo completo de
+cotización→reserva bajo carga real, porque la API key de Google Maps está
+restringida por dominio (rechaza `localhost`, correctamente) — para
+probar ese flujo de punta a punta haría falta correrlo contra el dominio
+real de producción, una decisión aparte por tocar el sitio en vivo.
 
 ## 🔑 TL;DR — pendientes activos ahora mismo (2026-07-12)
 
 **Del usuario (acción externa, no depende de código):**
+0. **`UPSTASH_REDIS_REST_URL`/`TOKEN`** — encontrado en la prueba de estrés
+   2026-07-15, ver sección arriba. Sin esto el rate limiting no funciona
+   de forma confiable en producción (Vercel serverless). Crear cuenta
+   Upstash (gratis) y agregar las 2 env vars antes de lanzar con clientes.
 1. **`OPENAI_API_KEY`** — pendiente A PROPÓSITO hasta el primer cliente real de
    cualquiera de los dos asistentes de IA (Chat Assistant o Growth Assistant).
    Sin ella, ambos add-ons responden con un error controlado si alguien los
