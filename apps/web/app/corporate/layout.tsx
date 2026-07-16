@@ -13,7 +13,7 @@ export default async function CorporateLayout({
   return (
     <div className="min-h-screen bg-sl-bg">
       <header className="bg-sl-surface-high border-b border-sl-outline-variant">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2.5">
               <div className="w-6 h-6 rounded-full bg-gold flex items-center justify-center">
