@@ -72,7 +72,7 @@ export default async function DriverReportsPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="p-8 max-w-[1200px] mx-auto space-y-6">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
       <div>
         <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.title}</h1>
         <p className="text-sm text-sl-on-surface-muted mt-1">{t.subtitle}</p>

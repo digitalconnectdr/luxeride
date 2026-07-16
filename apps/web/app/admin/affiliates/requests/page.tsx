@@ -59,7 +59,7 @@ export default async function AffiliateRequestsPage() {
   }))
 
   return (
-    <div className="p-8 max-w-[1000px] mx-auto space-y-6">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface">{t.requests.title}</h1>
         <p className="mt-1 text-sm text-sl-on-surface-muted">{t.requests.subtitle}</p>
