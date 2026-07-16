@@ -26,7 +26,7 @@ export async function gatherOnboardingCounts(
     admin.from('company_services').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
     admin
       .from('companies')
-      .select('logo_url, primary_color, stripe_connect_onboarded, whop_connect_onboarded')
+      .select('logo_url, primary_color, whop_connect_onboarded')
       .eq('id', companyId)
       .single(),
   ])
@@ -36,7 +36,10 @@ export async function gatherOnboardingCounts(
     vehiclesCount: vehiclesCount ?? 0,
     serviceZonesCount: serviceZonesCount ?? 0,
     pricingRulesCount: pricingRulesCount ?? 0,
-    paymentProviderConnected: Boolean(company?.stripe_connect_onboarded) || Boolean(company?.whop_connect_onboarded),
+    // El sistema de cobros de LuxeRide es Whop (Whop Connect), no Stripe —
+    // stripe_connect_onboarded solo puede ser true con una key real de
+    // Stripe configurada, que hoy es un placeholder no funcional.
+    paymentProviderConnected: Boolean(company?.whop_connect_onboarded),
     teamOrDriversCount: teamOrDriversCount ?? 0,
     hasLogo: Boolean(company?.logo_url),
     hasBrandColor: Boolean(company?.primary_color),
