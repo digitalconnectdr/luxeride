@@ -509,6 +509,15 @@ export async function recordManualPaymentAction(params: {
     return { success: false, error: 'Error al registrar el pago' }
   }
 
+  await admin.from('booking_events').insert({
+    booking_id: booking.id,
+    company_id: user.company_id,
+    type: 'payment_recorded',
+    actor: 'dispatcher',
+    actor_id: user.id,
+    metadata: { amount, method: params.method, reference: reference ?? null },
+  })
+
   revalidatePath(`/admin/bookings/${booking.id}`)
   return { success: true }
 }

@@ -1626,6 +1626,8 @@ export type Database = {
           promo_code_id: string | null
           promo_discount_amount: number | null
           partner_id: string | null
+          created_by: string | null
+          dispatched_by: string | null
           created_at: string
           updated_at: string
         }
@@ -1689,6 +1691,8 @@ export type Database = {
           promo_code_id?: string | null | undefined
           promo_discount_amount?: number | null | undefined
           partner_id?: string | null | undefined
+          created_by?: string | null | undefined
+          dispatched_by?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -1752,6 +1756,8 @@ export type Database = {
           promo_code_id?: string | null | undefined
           promo_discount_amount?: number | null | undefined
           partner_id?: string | null | undefined
+          created_by?: string | null | undefined
+          dispatched_by?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }

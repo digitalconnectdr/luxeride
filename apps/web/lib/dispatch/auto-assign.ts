@@ -197,10 +197,10 @@ export async function tryAutoAssignDriver(
   await admin.from('booking_events').insert({
     booking_id: booking.id,
     company_id: booking.company_id,
-    type: 'driver_reassigned',
+    type: 'driver_assigned',
     actor: 'system',
     reason: 'Auto-asignación',
-    metadata: { new_driver_id: driverId, auto: true },
+    metadata: { driver_id: driverId, vehicle_id: vehicleId, auto: true },
   })
 
   const pickup = (booking.pickup_location as { address?: string } | null)?.address ?? ''

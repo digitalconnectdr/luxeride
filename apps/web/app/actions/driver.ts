@@ -194,6 +194,15 @@ export async function completeDriverTripWithExtras(
       console.error('[completeDriverTripWithExtras] payment', paymentError)
       return { success: false, error: 'Error al registrar el pago en efectivo' }
     }
+
+    await admin.from('booking_events').insert({
+      booking_id: booking.id,
+      company_id: user.company_id,
+      type: 'payment_recorded',
+      actor: 'driver',
+      actor_id: user.id,
+      metadata: { amount, method: 'cash', source: 'driver_mobile_app' },
+    })
   }
 
   if (extras.signaturePath) {

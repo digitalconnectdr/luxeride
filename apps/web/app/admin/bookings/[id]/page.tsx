@@ -95,7 +95,7 @@ export default async function BookingDetailPage({
       .order('created_at', { ascending: false }),
     admin
       .from('booking_events')
-      .select('id, type, actor, reason, metadata, created_at')
+      .select('id, type, actor, actor_id, reason, metadata, created_at')
       .eq('booking_id', booking.id)
       .order('created_at', { ascending: false }),
   ])
@@ -109,6 +109,42 @@ export default async function BookingDetailPage({
       .eq('id', booking.driver_id)
       .single()
     if (driver) driverName = `${driver.first_name} ${driver.last_name}`
+  }
+
+  // Vehículo asignado (distinto del "tipo de vehículo" cotizado)
+  let assignedVehicle: { make: string; model: string; plate_number: string } | null = null
+  if (booking.vehicle_id) {
+    const { data: vehicle } = await admin
+      .from('vehicles')
+      .select('make, model, plate_number')
+      .eq('id', booking.vehicle_id)
+      .single()
+    assignedVehicle = vehicle
+  }
+
+  // Audit trail — nombres de quién creó / despachó / canceló la reserva
+  const staffIds = [booking.created_by, booking.dispatched_by, booking.cancelled_by].filter(Boolean) as string[]
+  const staffNameById = new Map<string, string>()
+  if (staffIds.length > 0) {
+    const { data: staffProfiles } = await admin
+      .from('user_profiles')
+      .select('id, first_name, last_name')
+      .in('id', [...new Set(staffIds)])
+    for (const p of staffProfiles ?? []) staffNameById.set(p.id, `${p.first_name} ${p.last_name}`)
+  }
+  const createdByName    = booking.created_by    ? staffNameById.get(booking.created_by)    ?? null : null
+  const dispatchedByName = booking.dispatched_by  ? staffNameById.get(booking.dispatched_by) ?? null : null
+  const cancelledByName  = booking.cancelled_by   ? staffNameById.get(booking.cancelled_by)  ?? null : null
+
+  // Nombres de los actores de la bitácora de eventos (además de driver/customer/system)
+  const eventActorIds = [...new Set((events ?? []).map((e) => e.actor_id).filter(Boolean))] as string[]
+  const eventActorNameById = new Map<string, string>()
+  if (eventActorIds.length > 0) {
+    const { data: actorProfiles } = await admin
+      .from('user_profiles')
+      .select('id, first_name, last_name')
+      .in('id', eventActorIds)
+    for (const p of actorProfiles ?? []) eventActorNameById.set(p.id, `${p.first_name} ${p.last_name}`)
   }
 
   const pickup  = parseLocation(booking.pickup_location)
@@ -349,6 +385,14 @@ export default async function BookingDetailPage({
             <p className="text-xs text-sl-on-surface-muted">{t.driver}</p>
             <p className="text-sm text-sl-on-surface mt-0.5">{driverName}</p>
           </div>
+          {assignedVehicle && (
+            <div>
+              <p className="text-xs text-sl-on-surface-muted">{t.assignedVehicle}</p>
+              <p className="text-sm text-sl-on-surface mt-0.5">
+                {assignedVehicle.make} {assignedVehicle.model} · {assignedVehicle.plate_number}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -407,24 +451,27 @@ export default async function BookingDetailPage({
         </p>
         <div className="grid grid-cols-2 gap-3 text-sm">
           {[
-            { label: t.ts.created,    value: booking.created_at },
-            { label: t.ts.assigned,   value: booking.dispatched_at },
-            { label: t.ts.en_route,   value: booking.en_route_at },
-            { label: t.ts.arrived,    value: booking.arrived_at },
-            { label: t.ts.started,    value: booking.started_at },
-            { label: t.ts.completed,  value: booking.completed_at },
-            { label: t.ts.cancelled,  value: booking.cancelled_at },
-            { label: t.ts.no_show,    value: booking.no_show_at },
+            { label: t.ts.created,    value: booking.created_at,    by: createdByName },
+            { label: t.ts.assigned,   value: booking.dispatched_at, by: dispatchedByName },
+            { label: t.ts.en_route,   value: booking.en_route_at,   by: null },
+            { label: t.ts.arrived,    value: booking.arrived_at,    by: null },
+            { label: t.ts.started,    value: booking.started_at,    by: null },
+            { label: t.ts.completed,  value: booking.completed_at,  by: null },
+            { label: t.ts.cancelled,  value: booking.cancelled_at,  by: cancelledByName },
+            { label: t.ts.no_show,    value: booking.no_show_at,    by: null },
           ].filter((row) => row.value).map((row) => (
             <div key={row.label}>
               <p className="text-xs text-sl-on-surface-muted">{row.label}</p>
               <p className="text-sl-on-surface">{fmt(row.value ?? null, localeTag)}</p>
+              {row.by && (
+                <p className="text-[11px] text-sl-on-surface-muted mt-0.5">{t.by} {row.by}</p>
+              )}
             </div>
           ))}
         </div>
         {booking.cancellation_reason && (
           <div className="mt-3 pt-3 border-t border-sl-outline-variant">
-            <p className="text-xs text-sl-on-surface-muted">Razón de cancelación</p>
+            <p className="text-xs text-sl-on-surface-muted">{t.cancellationReason}</p>
             <p className="text-sm text-sl-on-surface mt-0.5">{booking.cancellation_reason}</p>
           </div>
         )}
@@ -440,6 +487,7 @@ export default async function BookingDetailPage({
             {events.map((ev) => {
               const isIncident = ev.type === 'driver_incident'
               const category = (ev.metadata as { category?: string } | null)?.category
+              const actorName = ev.actor_id ? eventActorNameById.get(ev.actor_id) : null
               return (
                 <div
                   key={ev.id}
@@ -456,7 +504,7 @@ export default async function BookingDetailPage({
                     <p className="text-sm text-sl-on-surface mt-1.5">{ev.reason}</p>
                   )}
                   <p className="text-[11px] text-sl-on-surface-muted mt-1.5">
-                    {t.eventActors[ev.actor as keyof typeof t.eventActors] ?? ev.actor}
+                    {actorName ?? (t.eventActors[ev.actor as keyof typeof t.eventActors] ?? ev.actor)}
                   </p>
                 </div>
               )

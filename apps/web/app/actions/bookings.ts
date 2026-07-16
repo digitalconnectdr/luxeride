@@ -375,6 +375,7 @@ export async function createBookingAction(
       distance_miles:   quote.distance_miles,
       duration_minutes: quote.duration_minutes,
       route_polyline:   quote.route_polyline,
+      created_by:       user.id,
     })
     .select('id, booking_number')
     .single()
@@ -383,6 +384,17 @@ export async function createBookingAction(
     console.error('[createBookingAction]', error)
     return { success: false, error: 'Error al crear reservación' }
   }
+
+  // Audit trail — quién creó la reserva desde el panel (las públicas del
+  // micrositio no tienen staff que las cree, así que no emiten este evento).
+  await admin.from('booking_events').insert({
+    booking_id: booking.id,
+    company_id: user.company_id,
+    type: 'created',
+    actor: 'dispatcher',
+    actor_id: user.id,
+    metadata: { as_quote: asQuote },
+  })
 
   // Marcar cotización como usada
   await admin.from('price_quotes').update({ is_used: true }).eq('id', quoteId)
@@ -664,11 +676,13 @@ export async function assignDriverAction(
     driver_id: string
     status: BookingStatus
     dispatched_at: string
+    dispatched_by: string
     vehicle_id?: string
   } = {
     driver_id:     driverId,
     status:        'assigned',
     dispatched_at: new Date().toISOString(),
+    dispatched_by: user.id,
   }
   if (effectiveVehicleId) updates.vehicle_id = effectiveVehicleId
 
@@ -728,6 +742,16 @@ export async function assignDriverAction(
         bookingId,
       }).catch((err) => console.error('[assignDriverAction] driver_unassigned notify', err))
     }
+  } else {
+    // Primera asignación (no reasignación) — audit trail de quién despachó.
+    await admin.from('booking_events').insert({
+      booking_id: bookingId,
+      company_id: user.company_id,
+      type: 'driver_assigned',
+      actor: 'dispatcher',
+      actor_id: user.id,
+      metadata: { driver_id: driverId, vehicle_id: effectiveVehicleId ?? null },
+    })
   }
 
   revalidatePath('/admin/bookings')
