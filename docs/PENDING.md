@@ -33,6 +33,20 @@ dispatcher, driver, corporate, customer, super_admin) a 375px de ancho —
 cuentas ya eliminadas por completo. Typecheck, 170 tests y build de
 producción limpios. Commit `3709811`, ya en producción.
 
+**Ronda 2 (mismo día)**: el usuario mostró 4 capturas reales de pantallas
+que seguían viéndose mal en móvil. El barrido automático anterior (grep
+por `<table>` y `grid-cols-3+`) no las detectó porque eran dos categorías
+distintas: filas `flex justify-between` sin `flex-wrap` (no son tablas ni
+grids), y un `grid-cols-2` (no 3+) que igual se apretaba con etiquetas
+largas — es decir, "2 columnas siempre es seguro" era un supuesto falso.
+Corregido: `/super-admin/tracking` (fila de precio/cuota por plan),
+`/super-admin/compliance` (filas de la cola de revisión, 3 secciones),
+`/admin/pricing` (grid del formulario "Agregar regla" a `grid-cols-1
+sm:grid-cols-2`), y `/admin/team` (tabla reescrita como tarjetas
+apiladas en móvil, con la tabla original intacta para desktop). Verificado
+en vivo a 375px con cuenta de prueba nueva (creada y eliminada por
+completo). Typecheck limpio. Commit `57f20fb`, ya en producción.
+
 ## ✅ Onboarding guiado para empresas nuevas (2026-07-15)
 
 Checklist de setup en `/admin/dashboard` (banner no bloqueante, siempre
