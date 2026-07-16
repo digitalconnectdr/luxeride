@@ -40,6 +40,7 @@ import {
   Menu,
   X,
   Award,
+  Gift,
   type LucideIcon,
 } from 'lucide-react'
 import { logoutAction } from '@/app/actions/auth'
@@ -216,7 +217,10 @@ export function AdminSidebar({
         { href: '/admin/growth-assistant', label: nav.growthAssistant, icon: TrendingUp },
         { href: '/admin/partners', label: nav.partners, icon: Store },
         ...(flags.isOwner
-          ? [{ href: '/admin/settings', label: nav.settings, icon: Settings }]
+          ? [
+              { href: '/admin/referrals', label: nav.referrals, icon: Gift },
+              { href: '/admin/settings', label: nav.settings, icon: Settings },
+            ]
           : []),
       ],
     },

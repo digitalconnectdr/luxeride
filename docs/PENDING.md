@@ -2056,14 +2056,42 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
     nivel en el sidebar admin (bajo el rol, solo visible para
     `company_owner`, oculta en modo colapsado) que muestra el nivel actual +
     conteo de referidos activos.
-  - Falta (no construido aún): el flujo de atribución real (link de
-    referido propio de LuxeRide, captura al firmar una empresa nueva), la
-    integración con la API de Whop (crear affiliate/override), y el cron/
-    lógica de vencimiento a los 12 meses. Sin eso, la tarjeta del sidebar
-    siempre muestra 0 referidos — es la base sobre la que se construye el
-    resto, no la funcionalidad completa.
-  - Migración `20260716000054_referral_program.sql` pendiente de aplicar
-    manualmente (Supabase Studio, mismo patrón que las anteriores).
+  - Migración `20260716000054_referral_program.sql` aplicada y verificada en
+    producción (tabla existe, CHECK de `tier_key` confirmado activo).
+
+  **Segundo paso (mismo día)** — flujo de atribución real, ya construido y
+  verificado end-to-end en local (signup completo a través del link,
+  atribución correcta en `company_referrals`, página `/admin/referrals`
+  mostrando el nivel + tabla):
+  - `/r/[code]` (route handler): `code` = el `slug` de la empresa referente
+    (se reutiliza, no se agregó columna nueva). Guarda una cookie `lr_ref`
+    (30 días, httpOnly) y redirige a `/auth/signup` — con `new URL(path,
+    request.url)`, NO con `getAppUrl()`, para no forzar el redirect a la URL
+    pública configurada (bug real que se encontró y corrigió durante la
+    verificación: con `getAppUrl()` el redirect saltaba a producción incluso
+    probando en local).
+  - `signupAction` (`app/actions/auth.ts`) lee la cookie `lr_ref` al crear la
+    empresa nueva, calcula el nivel vigente del referrer en ESE momento
+    (conteo de referidos activos + 1) y crea la fila en `company_referrals`
+    con el % y nivel ya congelados. Best-effort — nunca bloquea el signup.
+  - `/admin/referrals` (nueva página, solo `company_owner`, con entrada en
+    el sidebar): muestra el link propio para compartir (con botón copiar),
+    el nivel actual + cuánto falta para el siguiente, y la tabla de
+    empresas referidas con su % congelado y fecha de vencimiento.
+  - Cron `expire-referrals` (`app/api/cron/expire-referrals`, 4pm UTC en
+    `vercel.json`): la expiración en sí ya la respetan las queries de
+    conteo (siempre filtran `expires_at > now()`), así que este cron NO
+    apaga nada — solo manda un email diario al super-admin listando los
+    referidos que cumplieron 12 meses, porque la automatización con Whop
+    (desactivar la comisión real en su dashboard) sigue sin construir.
+  - **Sigue pendiente, sin construir**: la integración real con la API de
+    Whop (crear `affiliate`/`override` cuando se confirma un referido, y
+    sobre todo resolver la duda de cómo cortar selectivamente la comisión
+    de UN referido puntual a los 12 meses sin afectar a los demás del mismo
+    referrer — no confirmado en la documentación de Whop). Hasta que eso
+    exista, el programa registra y muestra todo correctamente pero no paga
+    comisión real todavía; el cron de arriba es el mecanismo puente
+    (aviso manual) mientras tanto.
 
 ## Datos operativos
 

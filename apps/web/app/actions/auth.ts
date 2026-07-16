@@ -2,13 +2,15 @@
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { headers } from 'next/headers'
+import { headers, cookies } from 'next/headers'
 import { z } from 'zod'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getAppUrl } from '@/lib/app-url'
 import { getDefaultRoute } from '@/lib/auth/permissions'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
 import { sendSuperAdminEmailInBackground } from '@/lib/notifications'
+import { getTierForCount } from '@/lib/referrals/tiers'
+import { REFERRAL_COOKIE } from '@/lib/referrals/constants'
 import type { UserRole } from '@/lib/auth/permissions'
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -217,6 +219,47 @@ export async function signupAction(
   if (profileError) {
     console.error('Profile creation error:', profileError)
     // Non-fatal — trigger may have already created it
+  }
+
+  // 4a. Atribución del programa de referidos (best-effort, nunca bloquea el
+  // signup). Si llegó con el link de otra empresa, el % de comisión de ESE
+  // referido queda congelado al nivel vigente del referrer en este momento.
+  try {
+    const refCode = cookies().get(REFERRAL_COOKIE)?.value
+    if (refCode && refCode !== parsed.data.company_slug) {
+      const { data: referrer } = await admin
+        .from('companies')
+        .select('id')
+        .eq('slug', refCode)
+        .single()
+
+      if (referrer) {
+        const { count: activeReferrals } = await admin
+          .from('company_referrals')
+          .select('id', { count: 'exact', head: true })
+          .eq('referrer_company_id', referrer.id)
+          .gt('expires_at', new Date().toISOString())
+
+        const tier = getTierForCount((activeReferrals ?? 0) + 1)
+        if (tier) {
+          const referredAt = new Date()
+          const expiresAt = new Date(referredAt)
+          expiresAt.setFullYear(expiresAt.getFullYear() + 1)
+
+          await admin.from('company_referrals').insert({
+            referrer_company_id: referrer.id,
+            referred_company_id: company.id,
+            tier_key: tier.key,
+            commission_pct: tier.pct,
+            referred_at: referredAt.toISOString(),
+            expires_at: expiresAt.toISOString(),
+          })
+        }
+      }
+    }
+    cookies().delete(REFERRAL_COOKIE)
+  } catch (err) {
+    console.error('Referral attribution error:', err)
   }
 
   // 4b. Avisar al super-admin de la nueva solicitud (no bloquea el flujo).
