@@ -246,3 +246,97 @@ export async function removeCorporateMemberAction(
   revalidatePath(`/admin/corporate/${member.corporate_account_id}`)
   return { success: true }
 }
+
+// ─── Autogestión: el manager corporativo ajusta el límite de SU equipo ────────
+// (distinto de addCorporateMemberAction/removeCorporateMemberAction, que son
+// para el staff del operador — aquí quien llama es el cliente corporativo).
+
+export async function updateCorporateMemberLimitsAction(
+  memberId: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireRole('corporate_manager')
+
+  const admin = createAdminClient()
+
+  // El manager solo puede editar miembros de SU PROPIA cuenta corporativa.
+  const { data: managerMembership } = await admin
+    .from('corporate_members')
+    .select('corporate_account_id')
+    .eq('user_id', user.id)
+    .eq('role', 'manager')
+    .eq('is_active', true)
+    .single()
+
+  if (!managerMembership) return { success: false, error: 'No eres manager de ninguna cuenta corporativa' }
+
+  const { data: target } = await admin
+    .from('corporate_members')
+    .select('id, user_id, corporate_account_id')
+    .eq('id', memberId)
+    .eq('corporate_account_id', managerMembership.corporate_account_id)
+    .single()
+
+  if (!target) return { success: false, error: 'Miembro no encontrado en tu cuenta' }
+  if (target.user_id === user.id) {
+    return { success: false, error: 'No puedes ajustar tu propio límite' }
+  }
+
+  const rawSpending = (formData.get('spending_limit') as string ?? '').trim()
+  const rawMonthly  = (formData.get('monthly_limit') as string ?? '').trim()
+  const spendingLimit = rawSpending ? parseFloat(rawSpending) : null
+  const monthlyLimit  = rawMonthly ? parseFloat(rawMonthly) : null
+
+  if (rawSpending && (!Number.isFinite(spendingLimit) || spendingLimit! < 0)) {
+    return { success: false, error: 'Límite por viaje inválido' }
+  }
+  if (rawMonthly && (!Number.isFinite(monthlyLimit) || monthlyLimit! < 0)) {
+    return { success: false, error: 'Límite mensual inválido' }
+  }
+  if (spendingLimit != null && monthlyLimit != null && spendingLimit > monthlyLimit) {
+    return { success: false, error: 'El límite por viaje no puede ser mayor que el límite mensual' }
+  }
+
+  // Guardrail: lo asignado entre todo el equipo no puede exceder el crédito
+  // total que el operador le otorgó a la cuenta.
+  if (monthlyLimit != null) {
+    const { data: account } = await admin
+      .from('corporate_accounts')
+      .select('credit_limit')
+      .eq('id', managerMembership.corporate_account_id)
+      .single()
+
+    const creditLimit = Number(account?.credit_limit ?? 0)
+    if (creditLimit > 0) {
+      const { data: others } = await admin
+        .from('corporate_members')
+        .select('monthly_limit')
+        .eq('corporate_account_id', managerMembership.corporate_account_id)
+        .eq('is_active', true)
+        .not('monthly_limit', 'is', null)
+        .neq('id', memberId)
+
+      const othersTotal = (others ?? []).reduce((sum, m) => sum + Number(m.monthly_limit ?? 0), 0)
+      if (othersTotal + monthlyLimit > creditLimit) {
+        const available = Math.max(0, creditLimit - othersTotal)
+        return {
+          success: false,
+          error: `Excede el crédito de la cuenta. Disponible para asignar: $${available.toFixed(2)} de $${creditLimit.toFixed(2)}.`,
+        }
+      }
+    }
+  }
+
+  const { error } = await admin
+    .from('corporate_members')
+    .update({ spending_limit: spendingLimit, monthly_limit: monthlyLimit })
+    .eq('id', memberId)
+
+  if (error) {
+    console.error('[updateCorporateMemberLimitsAction]', error)
+    return { success: false, error: 'Error al actualizar el límite' }
+  }
+
+  revalidatePath('/corporate/dashboard')
+  return { success: true }
+}
