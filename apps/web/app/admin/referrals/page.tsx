@@ -87,43 +87,45 @@ export default async function ReferralsPage() {
         {!rows.length ? (
           <p className="p-6 text-sm text-sl-on-surface-muted text-center">{t.empty}</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-sl-outline-variant text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-                <th className="px-6 py-3 font-semibold">{t.tableReferred}</th>
-                <th className="px-6 py-3 font-semibold">{t.tableTier}</th>
-                <th className="px-6 py-3 font-semibold">{t.tableDate}</th>
-                <th className="px-6 py-3 font-semibold">{t.tableExpires}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-sl-outline-variant">
-              {rows.map((r) => {
-                const expired = new Date(r.expires_at).getTime() <= now
-                return (
-                  <tr key={r.referred_company_id}>
-                    <td className="px-6 py-3.5 text-sl-on-surface">
-                      {nameById.get(r.referred_company_id) ?? '—'}
-                    </td>
-                    <td className="px-6 py-3.5 text-sl-on-surface-muted">
-                      {t[TIER_LABEL_KEY[r.tier_key as ReferralTierKey]]} · {Number(r.commission_pct)}%
-                    </td>
-                    <td className="px-6 py-3.5 text-sl-on-surface-muted">
-                      {new Date(r.referred_at).toLocaleDateString('es-DO', { dateStyle: 'medium' })}
-                    </td>
-                    <td className="px-6 py-3.5">
-                      {expired ? (
-                        <span className="text-sl-on-surface-muted">{t.tableExpired}</span>
-                      ) : (
-                        <span className="text-sl-on-surface-muted">
-                          {new Date(r.expires_at).toLocaleDateString('es-DO', { dateStyle: 'medium' })}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-sl-outline-variant text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+                  <th className="px-6 py-3 font-semibold">{t.tableReferred}</th>
+                  <th className="px-6 py-3 font-semibold">{t.tableTier}</th>
+                  <th className="px-6 py-3 font-semibold">{t.tableDate}</th>
+                  <th className="px-6 py-3 font-semibold">{t.tableExpires}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-sl-outline-variant">
+                {rows.map((r) => {
+                  const expired = new Date(r.expires_at).getTime() <= now
+                  return (
+                    <tr key={r.referred_company_id}>
+                      <td className="px-6 py-3.5 text-sl-on-surface whitespace-nowrap">
+                        {nameById.get(r.referred_company_id) ?? '—'}
+                      </td>
+                      <td className="px-6 py-3.5 text-sl-on-surface-muted whitespace-nowrap">
+                        {t[TIER_LABEL_KEY[r.tier_key as ReferralTierKey]]} · {Number(r.commission_pct)}%
+                      </td>
+                      <td className="px-6 py-3.5 text-sl-on-surface-muted whitespace-nowrap">
+                        {new Date(r.referred_at).toLocaleDateString('es-DO', { dateStyle: 'medium' })}
+                      </td>
+                      <td className="px-6 py-3.5 whitespace-nowrap">
+                        {expired ? (
+                          <span className="text-sl-on-surface-muted">{t.tableExpired}</span>
+                        ) : (
+                          <span className="text-sl-on-surface-muted">
+                            {new Date(r.expires_at).toLocaleDateString('es-DO', { dateStyle: 'medium' })}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

@@ -158,6 +158,16 @@ export const en = {
         'Browser-based access | no installs required',
       ],
     },
+    referralProgram: {
+      kicker: 'Extra earnings',
+      title: 'Refer other transportation companies and earn recurring commission',
+      desc: 'Share your unique link. For every transportation company that joins through it, you earn a recurring commission % during their first 12 months of activity — and your percentage goes up automatically the more companies you refer.',
+      points: [
+        'Recurring commission, not a one-time payout',
+        'Your % rises by tier based on your active referrals',
+        'No limit on how many companies you can refer',
+      ],
+    },
     pricingTitle: 'Plans built around your fleet, your team and your bookings',
     pricingSubtitle: 'The per-trip fee drops as you grow. Cancel anytime.',
     pricingNoSetupBadge: 'No setup fee | ever',

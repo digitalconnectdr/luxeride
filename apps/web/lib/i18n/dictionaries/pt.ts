@@ -159,6 +159,16 @@ export const pt: Dictionary = {
         'Acesso pelo navegador | sem instalações',
       ],
     },
+    referralProgram: {
+      kicker: 'Ganhos extras',
+      title: 'Indique outras empresas de transporte e ganhe comissão recorrente',
+      desc: 'Compartilhe seu link único. Para cada empresa de transporte que entrar por ele, você ganha uma comissão recorrente durante os primeiros 12 meses de atividade dela — e seu percentual sobe automaticamente conforme você indica mais empresas.',
+      points: [
+        'Comissão recorrente, não um pagamento único',
+        'Seu % sobe por nível conforme suas indicações ativas',
+        'Sem limite de empresas que você pode indicar',
+      ],
+    },
     pricingTitle: 'Planos de acordo com sua frota, sua equipe e suas reservas',
     pricingSubtitle: 'A taxa por viagem cai conforme você cresce. Cancele quando quiser.',
     pricingNoSetupBadge: 'Sem taxa de instalação | nunca',
