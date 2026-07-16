@@ -45,16 +45,20 @@ lecturas de latencia irreales por la recompilación de rutas).
   `company_id+status`, `company_id+scheduled_at`) ya existen — no hizo
   falta agregar ninguno.
 
-**Gap real encontrado, NO corregido (requiere acción externa del
-usuario)**: el rate limiting (`lib/security/rate-limit.ts`) depende de
-Upstash Redis, pero `UPSTASH_REDIS_REST_URL`/`TOKEN` NO están configuradas
-en ningún entorno. Cae a un fallback en memoria por proceso — en Vercel
-(serverless, múltiples instancias) esto significa que los límites de
-intentos de login, checkout, reservas públicas, etc. **no se aplican de
-forma consistente entre usuarios reales concurrentes**. Hace falta crear
-una cuenta Upstash (tiene tier gratis) y agregar esas 2 env vars antes de
-lanzar con clientes reales — es la pieza más importante pendiente de esta
-ronda.
+**Falsa alarma corregida (2026-07-16)**: se reportó aquí que Upstash Redis
+no estaba configurado y que el rate limiting caía a un fallback en
+memoria no confiable en Vercel. Error mío — solo revisé
+`apps/web/.env.local` (el archivo local de este entorno de desarrollo),
+nunca las variables de entorno reales de Vercel, a las que no tengo
+acceso. El usuario confirmó con captura del dashboard de Vercel
+(Settings → Environment Variables) que `UPSTASH_REDIS_REST_URL` y
+`UPSTASH_REDIS_REST_TOKEN` SÍ están configuradas, en Production y
+Preview, actualizadas 2026-07-09 — antes incluso de esta prueba de
+estrés. El rate limiting distribuido real sí está activo en producción.
+Sin acción pendiente sobre esto. Lección: para cualquier gap de
+configuración futuro, aclarar explícitamente que solo se revisó el
+`.env.local` local y pedir confirmación de Vercel antes de reportarlo
+como pendiente real.
 
 **No probado (fuera de alcance de hoy)**: el flujo completo de
 cotización→reserva bajo carga real, porque la API key de Google Maps está
@@ -65,10 +69,6 @@ real de producción, una decisión aparte por tocar el sitio en vivo.
 ## 🔑 TL;DR — pendientes activos ahora mismo (2026-07-12)
 
 **Del usuario (acción externa, no depende de código):**
-0. **`UPSTASH_REDIS_REST_URL`/`TOKEN`** — encontrado en la prueba de estrés
-   2026-07-15, ver sección arriba. Sin esto el rate limiting no funciona
-   de forma confiable en producción (Vercel serverless). Crear cuenta
-   Upstash (gratis) y agregar las 2 env vars antes de lanzar con clientes.
 1. **`OPENAI_API_KEY`** — pendiente A PROPÓSITO hasta el primer cliente real de
    cualquiera de los dos asistentes de IA (Chat Assistant o Growth Assistant).
    Sin ella, ambos add-ons responden con un error controlado si alguien los
