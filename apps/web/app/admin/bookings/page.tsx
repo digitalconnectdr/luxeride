@@ -62,16 +62,26 @@ export default async function AdminBookingsPage({
   const companyId  = user.company_id
   const filterStatus = searchParams.status as BookingStatus | undefined
 
-  // Stats por estado
-  const { data: allBookings } = await admin
-    .from('bookings')
-    .select('id, status')
-    .eq('company_id', companyId)
-
+  // Stats por estado — counts vía head:true (no transfiere filas). Antes se
+  // traían TODAS las reservas de la empresa solo para tallarlas en memoria,
+  // lo cual además de lento se topaba con el límite silencioso de 1000 filas
+  // de PostgREST: empresas con más de 1000 reservas veían contadores
+  // incorrectos sin ningún aviso.
+  const [totalCountResult, ...statusCountResults] = await Promise.all([
+    admin.from('bookings').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+    ...ALL_STATUSES.map((s) =>
+      admin
+        .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('status', s)
+    ),
+  ])
+  const totalCount = totalCountResult.count ?? 0
   const counts: Record<string, number> = {}
-  for (const b of allBookings ?? []) {
-    counts[b.status] = (counts[b.status] ?? 0) + 1
-  }
+  ALL_STATUSES.forEach((s, i) => {
+    counts[s] = statusCountResults[i].count ?? 0
+  })
 
   // Lista filtrada
   let query = admin
@@ -128,7 +138,7 @@ export default async function AdminBookingsPage({
         <div>
           <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.title}</h1>
           <p className="text-sm text-sl-on-surface-muted mt-1">
-            {t.summary.replace('{total}', String(allBookings?.length ?? 0)).replace('{active}', String(totalActive))}
+            {t.summary.replace('{total}', String(totalCount)).replace('{active}', String(totalActive))}
           </p>
         </div>
         <Link
@@ -149,7 +159,7 @@ export default async function AdminBookingsPage({
               : 'bg-sl-surface-high border border-sl-outline-variant text-sl-on-surface-muted hover:border-[#0071e3]'
           }`}
         >
-          {t.all} ({allBookings?.length ?? 0})
+          {t.all} ({totalCount})
         </Link>
         {ALL_STATUSES.map((s) => (
           counts[s] ? (
