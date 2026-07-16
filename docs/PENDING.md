@@ -1,7 +1,37 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-07-15. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-07-16. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## ✅ Auditoría responsive/móvil de las 71 pantallas (2026-07-16)
+
+Revisión sistemática de todas las rutas de `apps/web/app` (públicas,
+admin, dispatcher, driver, corporate, super-admin) buscando problemas de
+optimización web/móvil, corrigiendo sobre la marcha.
+
+**Hallazgo principal (P1, sistémico)**: ninguna de las 24 tablas de datos
+de toda la app tenía wrapper de scroll horizontal. En móvil, el
+contenedor `overflow-hidden` recortaba silenciosamente las columnas que
+no cabían — confirmado en vivo: 151px de una tabla de 461px quedaban
+invisibles, sin forma de acceder a esos datos desde el celular. Corregido
+envolviendo cada `<table>` en un `<div overflow-x-auto>` (22 archivos, 26
+tablas: bookings, fleet, drivers, team, zones, pricing, payroll,
+promo-codes, partners, quotes, reports, audit, esignature, airports,
+driver-reports, y todo `/super-admin`).
+
+**Otros hallazgos menores corregidos**:
+- 3 grids con `grid-cols-3` fijo sin breakpoint (detalle de reserva,
+  detalle de cuenta corporativa, dashboard super-admin) → `grid-cols-2
+  sm:grid-cols-3`.
+- Touch targets del sidebar móvil (botones Abrir/Cerrar menú) por debajo
+  de 44px → aumentados a ~40-44px.
+- Toggle de disponibilidad del conductor en `/driver/trips` (control
+  frecuente en el celular) de 27px a 38px de alto.
+
+Verificado con cuentas de prueba reales para los 6 roles (owner,
+dispatcher, driver, corporate, customer, super_admin) a 375px de ancho —
+cuentas ya eliminadas por completo. Typecheck, 170 tests y build de
+producción limpios. Commit `3709811`, ya en producción.
 
 ## ✅ Onboarding guiado para empresas nuevas (2026-07-15)
 
