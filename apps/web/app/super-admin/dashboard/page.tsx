@@ -340,6 +340,7 @@ export default async function SuperAdminDashboardPage() {
             {topCompanies.length === 0 ? (
               <p className="p-6 text-sm text-[#75716a] text-center">Sin reservas completadas este mes todavía.</p>
             ) : (
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#f0ede5]">
@@ -370,6 +371,7 @@ export default async function SuperAdminDashboardPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </section>
@@ -431,7 +433,7 @@ export default async function SuperAdminDashboardPage() {
         {/* ── E. Flota y conductores ── */}
         <section className="space-y-3">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520]">Flota y conductores (plataforma)</p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className={`${card} px-4 py-3.5`}>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
                 Conductores totales
@@ -465,6 +467,7 @@ export default async function SuperAdminDashboardPage() {
             {fleetByCompany.length === 0 ? (
               <p className="p-6 text-sm text-[#75716a] text-center">Sin empresas activas o en prueba todavía.</p>
             ) : (
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#f0ede5]">
@@ -497,6 +500,7 @@ export default async function SuperAdminDashboardPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </section>
@@ -564,6 +568,7 @@ export default async function SuperAdminDashboardPage() {
             {companies.length === 0 ? (
               <p className="p-8 text-center text-sm text-[#75716a]">Sin empresas todavía.</p>
             ) : (
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#f0ede5]">
@@ -591,6 +596,7 @@ export default async function SuperAdminDashboardPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </section>

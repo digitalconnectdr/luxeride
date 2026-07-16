@@ -246,7 +246,7 @@ export default async function BookingDetailPage({
             })}
           </div>
         )}
-        <div className="grid grid-cols-3 gap-4 pt-2 border-t border-sl-outline-variant">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2 border-t border-sl-outline-variant">
           <div>
             <p className="text-xs text-sl-on-surface-muted">{t.dateTime}</p>
             <p className="text-sm text-sl-on-surface mt-0.5">{fmt(booking.scheduled_at, localeTag)}</p>

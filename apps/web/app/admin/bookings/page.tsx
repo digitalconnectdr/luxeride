@@ -193,6 +193,7 @@ export default async function AdminBookingsPage({
         </div>
       ) : (
         <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-sl-outline-variant">
@@ -265,6 +266,7 @@ export default async function AdminBookingsPage({
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

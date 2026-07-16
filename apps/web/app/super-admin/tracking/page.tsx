@@ -96,6 +96,7 @@ export default async function TrackingUsagePage() {
         {rows.length === 0 ? (
           <p className="p-6 text-sm text-[#75716a] text-center">Sin consumo registrado todavía este mes.</p>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#f0ede5]">
@@ -145,6 +146,7 @@ export default async function TrackingUsagePage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

@@ -57,6 +57,7 @@ export default async function ZonesPage() {
         </div>
       ) : (
         <div className="bg-sl-surface border border-sl-outline-variant rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-sl-outline-variant">
@@ -76,6 +77,7 @@ export default async function ZonesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

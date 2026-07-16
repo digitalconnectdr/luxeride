@@ -160,6 +160,7 @@ export default async function ReportsPage({
             Reservaciones por estado ({all.length} total)
           </p>
         </div>
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <tbody className="divide-y divide-sl-outline-variant">
             {[...byStatus.entries()]
@@ -182,6 +183,7 @@ export default async function ReportsPage({
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Top conductores */}
@@ -196,6 +198,7 @@ export default async function ReportsPage({
             Sin viajes completados con conductor asignado.
           </p>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <tbody className="divide-y divide-sl-outline-variant">
               {topDriverIds.map(([driverId, e], i) => (
@@ -212,6 +215,7 @@ export default async function ReportsPage({
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

@@ -118,6 +118,7 @@ export default async function AuditLogPage({
             {t.empty}
           </p>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-sl-outline-variant">
@@ -153,6 +154,7 @@ export default async function AuditLogPage({
               ))}
             </tbody>
           </table>
+          </div>
         )}
 
         {/* Paginación — 50 por página */}

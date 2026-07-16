@@ -79,6 +79,7 @@ export default async function EnterpriseLeadsPage({ searchParams }: PageProps) {
         </div>
       ) : (
         <div className="bg-white border border-[#e5e1d8] rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#f0ede5]">
@@ -119,6 +120,7 @@ export default async function EnterpriseLeadsPage({ searchParams }: PageProps) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

@@ -225,7 +225,7 @@ export function AdminSidebar({
           type="button"
           onClick={() => setMobileOpen(true)}
           aria-label="Open menu"
-          className="p-1.5 -ml-1.5 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors"
+          className="p-3 -ml-3 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors"
         >
           <Menu size={20} />
         </button>
@@ -296,7 +296,7 @@ export function AdminSidebar({
               type="button"
               onClick={() => setMobileOpen(false)}
               aria-label="Close menu"
-              className="md:hidden p-1 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors shrink-0"
+              className="md:hidden p-3 -mr-3 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors shrink-0"
             >
               <X size={18} />
             </button>

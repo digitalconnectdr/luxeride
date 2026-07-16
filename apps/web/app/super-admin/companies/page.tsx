@@ -119,6 +119,7 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
             {q ? `No companies match "${q}"` : 'No companies.'}
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-sl-outline-variant">
@@ -177,6 +178,7 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

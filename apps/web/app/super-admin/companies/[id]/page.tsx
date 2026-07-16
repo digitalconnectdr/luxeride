@@ -317,6 +317,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             No users in this company yet.
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-sl-outline-variant">
@@ -375,6 +376,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
@@ -391,6 +393,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             No live-tracking refreshes recorded for any trip this month.
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-sl-outline-variant">
@@ -429,6 +432,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

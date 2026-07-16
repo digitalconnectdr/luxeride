@@ -133,6 +133,7 @@ export default async function SubscriptionsPage() {
         {clients.length === 0 ? (
           <p className="p-6 text-sm text-[#75716a] text-center">Sin clientes todavía.</p>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#f0ede5]">
@@ -194,6 +195,7 @@ export default async function SubscriptionsPage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

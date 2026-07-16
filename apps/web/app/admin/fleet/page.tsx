@@ -133,6 +133,7 @@ export default async function FleetPage({ searchParams }: PageProps) {
               </Link>
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-sl-outline-variant">
@@ -193,6 +194,7 @@ export default async function FleetPage({ searchParams }: PageProps) {
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
@@ -208,6 +210,7 @@ export default async function FleetPage({ searchParams }: PageProps) {
 
           {allTypes.length > 0 && (
             <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-sl-outline-variant">
@@ -224,6 +227,7 @@ export default async function FleetPage({ searchParams }: PageProps) {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 

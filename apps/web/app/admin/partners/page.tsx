@@ -36,6 +36,7 @@ export default async function PartnersPage() {
         {!partners?.length ? (
           <p className="p-6 text-sm text-sl-on-surface-muted">{t.noPartners}</p>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-sl-outline-variant text-left text-xs text-sl-on-surface-muted">
@@ -85,6 +86,7 @@ export default async function PartnersPage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

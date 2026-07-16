@@ -32,6 +32,7 @@ export function AgreementList({
       {!subjects.length ? (
         <p className="p-6 text-sm text-sl-on-surface-muted">{noneLabel}</p>
       ) : (
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <tbody>
             {subjects.map((s) => (
@@ -56,6 +57,7 @@ export function AgreementList({
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {signing && (

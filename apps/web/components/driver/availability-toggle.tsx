@@ -35,7 +35,7 @@ export function DriverSelfAvailabilityToggle({
           })
         }
         className={[
-          'inline-flex items-center gap-1.5 text-[11px] font-medium rounded-full border px-2.5 py-1 transition-colors disabled:opacity-60',
+          'inline-flex items-center gap-1.5 text-[11px] font-medium rounded-full border px-3 py-2.5 transition-colors disabled:opacity-60',
           isAvailable
             ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100'
             : 'border-[#e5e1d8] bg-[#faf8f3] text-[#75716a] hover:bg-[#f0ede5]',

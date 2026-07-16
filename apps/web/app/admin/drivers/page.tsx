@@ -134,6 +134,7 @@ export default async function DriversPage() {
             {/* Invitación disponible en F1.6 */}
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-sl-outline-variant">
@@ -257,6 +258,7 @@ export default async function DriversPage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

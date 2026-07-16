@@ -96,7 +96,7 @@ export default async function CorporateAccountDetailPage({
       </div>
 
       {/* Balance */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {[
           { label: t.pendingBalance, value: `$${Number(account.current_balance ?? 0).toFixed(2)}` },
           { label: t.creditLimit, value: `$${Number(account.credit_limit ?? 0).toFixed(0)}` },
