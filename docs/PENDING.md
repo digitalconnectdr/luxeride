@@ -3,6 +3,37 @@
 > Actualizado: 2026-07-16. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Portal corporativo: facturas + autogestión de crédito del equipo (2026-07-16)
+
+A raíz de explorar la idea de un "portal de clientes" completo, se auditó
+qué tanto ya existía (`/account/bookings`, `/corporate/dashboard`, tarjeta
+guardada de Whop) antes de proponer nada nuevo. Se encontró que la
+facturación corporativa YA estaba completa en el backend (el cron mensual
+`app/api/cron/corporate-invoices` ya generaba `invoices` +
+`invoice_line_items` reales) pero nunca se mostraba al cliente. Se
+construyeron 2 módulos sobre `/corporate/dashboard`, solo visibles para el
+`corporate_manager`:
+
+1. **Facturas** — lista de invoices de la cuenta con detalle de line items
+   expandible (`<details>` nativo, sin JS extra).
+2. **Mi equipo** — el manager ajusta el límite por viaje y mensual de sus
+   propios miembros (`updateCorporateMemberLimitsAction`, nueva), con un
+   guardrail: la suma asignada entre el equipo no puede exceder el
+   `credit_limit` que el operador le otorgó a la cuenta. El manager no
+   puede editar su propio límite ni el crédito total de la cuenta (eso
+   sigue siendo control exclusivo del operador).
+
+Sin migración — ambas columnas (`spending_limit`, `monthly_limit`) y las
+tablas de facturación ya existían. Verificado end-to-end en navegador:
+factura con line items, guardrail de crédito rechazando una asignación que
+excedía el disponible, guardado exitoso dentro del límite, y confirmación
+de que un `corporate_user` normal no ve ninguna de las dos secciones.
+Typecheck, 170 tests y build de producción limpios.
+
+**Explícitamente fuera de alcance** (decisión del usuario): no tocar la
+integración de tarjeta guardada (Whop por teléfono) — se deja tal como
+está hoy.
+
 ## ✅ Audit trail de reservas ampliado + pestaña "Booking Trail" (2026-07-16)
 
 El usuario preguntó qué tan a fondo se puede rastrear una reserva (quién la
