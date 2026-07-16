@@ -884,6 +884,13 @@ export const es: Dictionary = {
       confirmDelete: '¿Eliminar este elemento? Esta acción no se puede deshacer.',
       inUse: 'No se puede eliminar: está en uso.',
     },
+    referrals: {
+      tierIniciado: 'Iniciado',
+      tierSocio: 'Socio',
+      tierAliado: 'Aliado',
+      tierEmbajador: 'Embajador',
+      countLabel: 'referidos',
+    },
     reportsCsv: {
       bookingNumber: 'Reserva #',
       status: 'Estado',

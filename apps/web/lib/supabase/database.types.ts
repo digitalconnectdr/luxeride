@@ -2323,6 +2323,46 @@ export type Database = {
         Relationships: []
       }
 
+      company_referrals: {
+        Row: {
+          id: string
+          referrer_company_id: string
+          referred_company_id: string
+          tier_key: string
+          commission_pct: number
+          referred_at: string
+          expires_at: string
+          whop_affiliate_id: string | null
+          whop_override_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          referrer_company_id: string
+          referred_company_id: string
+          tier_key: string
+          commission_pct: number
+          referred_at?: string | undefined
+          expires_at: string
+          whop_affiliate_id?: string | null | undefined
+          whop_override_id?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          referrer_company_id?: string | undefined
+          referred_company_id?: string | undefined
+          tier_key?: string | undefined
+          commission_pct?: number | undefined
+          referred_at?: string | undefined
+          expires_at?: string | undefined
+          whop_affiliate_id?: string | null | undefined
+          whop_override_id?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── payroll_payments ─────────────────────────────────────────────────────
       payroll_payments: {
         Row: {

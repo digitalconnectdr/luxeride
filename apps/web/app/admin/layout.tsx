@@ -5,6 +5,7 @@ import { MapsProvider } from '@/components/maps/maps-provider'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { AdminSidebar } from '@/components/admin/sidebar'
 import { SubscriptionExpiryPopup } from '@/components/admin/subscription-expiry-popup'
+import { getTierForCount } from '@/lib/referrals/tiers'
 
 const SUBSCRIPTION_WARNING_DAYS = 5
 
@@ -82,10 +83,24 @@ export default async function AdminLayout({
   const isDispatcher   = user.role === 'dispatcher'
   const isAccounting   = user.role === 'accounting'
 
+  // Nivel del programa de referidos — solo el owner lo gestiona/ve.
+  let referralTier: { key: string; count: number } | null = null
+  if (isOwner && user.company_id) {
+    const admin = createAdminClient()
+    const { count } = await admin
+      .from('company_referrals')
+      .select('id', { count: 'exact', head: true })
+      .eq('referrer_company_id', user.company_id)
+      .gt('expires_at', new Date().toISOString())
+    const tier = getTierForCount(count ?? 0)
+    if (tier) referralTier = { key: tier.key, count: count ?? 0 }
+  }
+
   const locale = getLocale()
   const dict = getDict(locale)
   const nav = dict.adminNav
   const settingsDict = dict.admin.settings
+  const referralsDict = dict.admin.referrals
   const isSuspended = companyStatus === 'suspended'
   const showSubscriptionPopup =
     isOwner &&
@@ -106,6 +121,8 @@ export default async function AdminLayout({
         locale={locale}
         nav={nav}
         flags={{ isOwner, isOwnerOrAdmin, isDispatcher, isAccounting, affiliateNetworkEnabled, isExternalAffiliate }}
+        referralTier={referralTier}
+        referralsDict={referralsDict}
       />
 
       {/* ── Main — envuelto en MapsProvider para toda la sección admin ── */}

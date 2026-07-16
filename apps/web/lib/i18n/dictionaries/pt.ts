@@ -884,6 +884,13 @@ export const pt: Dictionary = {
       confirmDelete: 'Excluir este item? Esta ação não pode ser desfeita.',
       inUse: 'Não é possível excluir: está em uso.',
     },
+    referrals: {
+      tierIniciado: 'Iniciante',
+      tierSocio: 'Parceiro',
+      tierAliado: 'Aliado',
+      tierEmbajador: 'Embaixador',
+      countLabel: 'indicações',
+    },
     reportsCsv: {
       bookingNumber: 'Reserva #',
       status: 'Status',

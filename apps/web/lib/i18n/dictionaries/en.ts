@@ -883,6 +883,13 @@ export const en = {
       confirmDelete: 'Delete this item? This cannot be undone.',
       inUse: 'Cannot delete: it is in use.',
     },
+    referrals: {
+      tierIniciado: 'Starter',
+      tierSocio: 'Partner',
+      tierAliado: 'Ally',
+      tierEmbajador: 'Ambassador',
+      countLabel: 'referrals',
+    },
     reportsCsv: {
       bookingNumber: 'Booking #',
       status: 'Status',

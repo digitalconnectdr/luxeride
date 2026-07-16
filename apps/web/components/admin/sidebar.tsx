@@ -39,6 +39,7 @@ import {
   ChevronsRight,
   Menu,
   X,
+  Award,
   type LucideIcon,
 } from 'lucide-react'
 import { logoutAction } from '@/app/actions/auth'
@@ -46,6 +47,7 @@ import { brand } from '@/lib/brand'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
+import type { ReferralTierKey } from '@/lib/referrals/tiers'
 
 const STORAGE_KEY = 'luxeride_sidebar_collapsed'
 
@@ -77,6 +79,15 @@ interface Props {
     affiliateNetworkEnabled: boolean
     isExternalAffiliate: boolean
   }
+  referralTier?: { key: string; count: number } | null
+  referralsDict?: Dictionary['admin']['referrals']
+}
+
+const REFERRAL_TIER_LABEL_KEY: Record<ReferralTierKey, keyof Dictionary['admin']['referrals']> = {
+  iniciado: 'tierIniciado',
+  socio: 'tierSocio',
+  aliado: 'tierAliado',
+  embajador: 'tierEmbajador',
 }
 
 export function AdminSidebar({
@@ -88,6 +99,8 @@ export function AdminSidebar({
   locale,
   nav,
   flags,
+  referralTier,
+  referralsDict,
 }: Props) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
@@ -303,6 +316,22 @@ export function AdminSidebar({
           </div>
           {!effectiveCollapsed && (
             <p className="mt-1 text-[10px] text-sl-on-surface-muted capitalize pl-8">{roleLabel}</p>
+          )}
+          {!effectiveCollapsed && referralTier && referralsDict && (
+            <div className="mt-2 pl-8">
+              <div
+                title={`${referralTier.count} ${referralsDict.countLabel}`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1"
+              >
+                <Award size={11} className="text-bronze shrink-0" />
+                <span className="text-[10px] font-semibold text-bronze">
+                  {referralsDict[REFERRAL_TIER_LABEL_KEY[referralTier.key as ReferralTierKey]]}
+                </span>
+                <span className="text-[9px] text-sl-on-surface-muted">
+                  · {referralTier.count} {referralsDict.countLabel}
+                </span>
+              </div>
+            </div>
           )}
         </div>
 

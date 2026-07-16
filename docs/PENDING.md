@@ -2035,6 +2035,36 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
       redundantes/muertos, no una falla activa. `holiday_surcharge_pct`
       se guarda pero el motor nunca lo aplica (función a medio construir).
 
+## Programa de referidos entre empresas (2026-07-16, primer paso)
+
+  - Comisión escalonada por cantidad de referidos activos, congelada al
+    momento exacto de cada referido individual y con vencimiento a los 12
+    meses de actividad de la empresa referida. Pago real pensado vía Whop
+    (affiliate + override `rev_share`), pero eso NO está construido todavía —
+    solo se diseñó la arquitectura (ver conversación: crear afiliado/override
+    en Whop al momento del referido, LuxeRide lleva su propio reloj de 12
+    meses porque Whop no lo soporta nativamente, y el corte selectivo de un
+    referido puntual a los 12 meses sin afectar a los demás del mismo
+    referrer sigue sin confirmar en la API de Whop — punto pendiente de
+    validar antes de automatizar esa parte).
+  - Niveles (ajustados a pedido del usuario): Iniciado 1-3 referidos (5%),
+    Socio 4-6 (8%), Aliado 7-11 (12%), Embajador 12+ (15%).
+  - Construido en este paso: migración `company_referrals` (quién refirió a
+    quién, % y nivel congelados, `expires_at` a 12 meses, columnas
+    `whop_affiliate_id`/`whop_override_id` nulas para cuando se conecte Whop),
+    `lib/referrals/tiers.ts` (niveles puros, testeable), y una tarjeta de
+    nivel en el sidebar admin (bajo el rol, solo visible para
+    `company_owner`, oculta en modo colapsado) que muestra el nivel actual +
+    conteo de referidos activos.
+  - Falta (no construido aún): el flujo de atribución real (link de
+    referido propio de LuxeRide, captura al firmar una empresa nueva), la
+    integración con la API de Whop (crear affiliate/override), y el cron/
+    lógica de vencimiento a los 12 meses. Sin eso, la tarjeta del sidebar
+    siempre muestra 0 referidos — es la base sobre la que se construye el
+    resto, no la funcionalidad completa.
+  - Migración `20260716000054_referral_program.sql` pendiente de aplicar
+    manualmente (Supabase Studio, mismo patrón que las anteriores).
+
 ## Datos operativos
 
 - Deploy: push a develop → preview (requiere login de Vercel salvo que se
