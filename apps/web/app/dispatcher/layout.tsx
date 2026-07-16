@@ -16,7 +16,7 @@ export default async function DispatcherLayout({
       <header className="bg-sl-surface-high border-b border-sl-outline-variant shrink-0">
         <div className="px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2.5">
+            <Link href="/admin/dashboard" prefetch={false} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
               <div className="w-6 h-6 rounded-full bg-gold flex items-center justify-center">
                 <span className="text-gray-900 font-bold text-[10px] leading-none">L</span>
               </div>
@@ -27,7 +27,7 @@ export default async function DispatcherLayout({
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                 Live
               </span>
-            </div>
+            </Link>
             <nav className="flex items-center gap-4">
               <Link href="/dispatcher/dashboard" prefetch={false} className="text-sm text-sl-on-surface-muted hover:text-bronze transition-colors">
                 Board

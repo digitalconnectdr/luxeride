@@ -209,11 +209,11 @@ export function BookingPayments({ bookingId, payments, stripeConfigured, canRefu
       )}
 
       {paymentUrl && (
-        <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5">
-          <p className="flex-1 text-xs font-mono text-[#0071e3] truncate">{paymentUrl}</p>
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+          <p className="flex-1 text-xs font-mono text-amber-800 truncate">{paymentUrl}</p>
           <button
             onClick={handleCopy}
-            className="text-xs font-medium text-[#0071e3] hover:underline shrink-0"
+            className="text-xs font-medium text-amber-800 hover:underline shrink-0"
           >
             {copied ? '✓ Copiado' : 'Copiar'}
           </button>

@@ -71,7 +71,7 @@ function buildStaticMap(
 // conductor (interna) de la del pasajero (dark premium).
 const sectionLabel = 'text-[10px] font-semibold uppercase tracking-[0.22em] text-[#75716a]'
 const card = 'rounded-2xl border border-[#e5e1d8] bg-white'
-const navLink = 'text-[11px] font-medium text-[#0071e3] hover:underline'
+const navLink = 'text-[11px] font-medium text-bronze hover:underline'
 
 export default async function DriverTripsPage() {
   const user = await requireRole('driver')

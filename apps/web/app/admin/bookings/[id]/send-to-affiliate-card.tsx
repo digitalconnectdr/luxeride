@@ -265,7 +265,7 @@ export function SendToAffiliateCard({ bookingId, enabled, affiliates, trips, myC
               {BRANDING_MODES.map((m) => <option key={m} value={m}>{t.brandingOptions[m]}</option>)}
             </select>
           </div>
-          <button onClick={submit} disabled={isPending || !selected.length} className="px-4 py-2 bg-[#0071e3] text-white text-sm font-medium rounded-xl hover:bg-[#0077ed] disabled:opacity-50 transition-colors">
+          <button onClick={submit} disabled={isPending || !selected.length} className="px-4 py-2 bg-gold text-gray-900 text-sm font-medium rounded-xl hover:bg-gold/90 disabled:opacity-50 transition-colors">
             {isPending ? '...' : t.send.submit}
           </button>
         </div>

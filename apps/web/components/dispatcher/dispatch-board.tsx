@@ -235,7 +235,7 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
                       <div className="flex items-center justify-between">
                         <a
                           href={`/admin/bookings/${b.id}`}
-                          className="font-mono text-[11px] text-[#0071e3] hover:underline"
+                          className="font-mono text-[11px] text-bronze hover:underline"
                         >
                           {b.booking_number}
                         </a>
@@ -304,7 +304,7 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
                           </p>
                         )}
                         {driverName(b.driver_id) && (
-                          <p className="text-[#0071e3]">⊙ {driverName(b.driver_id)}</p>
+                          <p className="text-bronze">⊙ {driverName(b.driver_id)}</p>
                         )}
                         {b.arrived_at && (() => {
                           const grace = new Date(b.scheduled_at).getTime() + ON_TIME_GRACE_MINUTES * 60_000

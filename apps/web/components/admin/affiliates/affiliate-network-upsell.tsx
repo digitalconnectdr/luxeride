@@ -72,7 +72,7 @@ export function AffiliateNetworkUpsell({ companyName, companyEmail, t, checkoutU
             </button>
           </div>
         ) : (
-          <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-[#0071e3] text-white text-sm font-medium rounded-xl hover:bg-[#0077ed]">
+          <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-gold text-gray-900 text-sm font-medium rounded-xl hover:bg-gold/90">
             {t.requestAccessButton}
           </button>
         )
@@ -82,7 +82,7 @@ export function AffiliateNetworkUpsell({ companyName, companyEmail, t, checkoutU
           <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder={t.leadForm.email} className="w-full rounded-xl border border-sl-outline-variant bg-white px-3 py-2 text-sm" />
           <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t.leadForm.phone} className="w-full rounded-xl border border-sl-outline-variant bg-white px-3 py-2 text-sm" />
           <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={2} placeholder={t.leadForm.message} className="w-full rounded-xl border border-sl-outline-variant bg-white px-3 py-2 text-sm resize-none" />
-          <button onClick={submit} disabled={isPending} className="px-4 py-2 bg-[#0071e3] text-white text-sm font-medium rounded-xl hover:bg-[#0077ed] disabled:opacity-50">
+          <button onClick={submit} disabled={isPending} className="px-4 py-2 bg-gold text-gray-900 text-sm font-medium rounded-xl hover:bg-gold/90 disabled:opacity-50">
             {isPending ? '...' : t.leadForm.submit}
           </button>
           {error && <p className="text-sm text-red-600">{error}</p>}

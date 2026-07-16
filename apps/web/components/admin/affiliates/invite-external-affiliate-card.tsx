@@ -49,7 +49,7 @@ export function InviteExternalAffiliateCard({ t }: { t: T }) {
           </div>
         </div>
       ) : (
-        <button onClick={generate} disabled={isPending} className="px-4 py-2 bg-[#0071e3] text-white text-sm font-medium rounded-xl hover:bg-[#0077ed] disabled:opacity-50">
+        <button onClick={generate} disabled={isPending} className="px-4 py-2 bg-gold text-gray-900 text-sm font-medium rounded-xl hover:bg-gold/90 disabled:opacity-50">
           {isPending ? '...' : t.generateButton}
         </button>
       )}

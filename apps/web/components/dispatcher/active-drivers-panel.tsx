@@ -60,7 +60,7 @@ export function ActiveDriversPanel({
                 <span className={`h-2 w-2 rounded-full shrink-0 ${d.isAvailable ? 'bg-green-500' : 'bg-sl-outline-variant'}`} />
                 <p className="text-sm text-sl-on-surface truncate">{d.name}</p>
                 {d.currentBookingNumber && (
-                  <span className="text-[10px] font-mono text-[#0071e3] shrink-0">{d.currentBookingNumber}</span>
+                  <span className="text-[10px] font-mono text-bronze shrink-0">{d.currentBookingNumber}</span>
                 )}
               </div>
               <div className="flex items-center gap-2 shrink-0">

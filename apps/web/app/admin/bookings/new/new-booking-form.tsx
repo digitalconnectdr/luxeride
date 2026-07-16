@@ -126,7 +126,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
           <select
             name="booking_type"
             defaultValue="one_way"
-            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
           >
             {BOOKING_TYPE_VALUES.map((v) => (
               <option key={v} value={v}>{t.types[v]}</option>
@@ -142,7 +142,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             </label>
             <select
               name="vehicle_type_id"
-              className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
             >
               <option value="">{t.anyType}</option>
               {vehicleTypes.map((vt) => (
@@ -164,7 +164,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             name="scheduled_at"
             required
             min={new Date().toISOString().slice(0, 16)}
-            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
           />
         </div>
 
@@ -177,6 +177,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             name="pickup"
             placeholder={t.pickupPlaceholder}
             required
+            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
           />
           <p className="mt-1 text-[11px] text-sl-on-surface-muted">
             {t.pickupHint}
@@ -203,6 +204,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             <AddressInput
               name={`stop_${i}`}
               placeholder={t.stopPlaceholder}
+              className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
             />
           </div>
         ))}
@@ -211,7 +213,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
           <button
             type="button"
             onClick={() => setStopCount((c) => c + 1)}
-            className="text-sm font-medium text-[#0071e3] hover:underline"
+            className="text-sm font-medium text-bronze hover:underline"
           >
             {t.addStop}
           </button>
@@ -226,6 +228,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             name="dropoff"
             placeholder={t.dropoffPlaceholder}
             required
+            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
           />
         </div>
 
@@ -238,7 +241,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             type="text"
             name="flight_number"
             placeholder="AA1234"
-            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
           />
         </div>
 
@@ -257,7 +260,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
         <button
           type="submit"
           disabled={isPending}
-          className="w-full py-3 bg-[#0071e3] text-white font-semibold rounded-xl hover:bg-[#0077ed] disabled:opacity-50 transition-colors"
+          className="w-full py-3 bg-gold text-gray-900 font-semibold rounded-xl hover:bg-gold/90 disabled:opacity-50 transition-colors"
         >
           {isPending ? t.calcLoading : t.calcCta}
         </button>
@@ -323,7 +326,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             name="passenger_name"
             required
             placeholder={t.namePlaceholder}
-            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
           />
         </div>
 
@@ -336,7 +339,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             type="tel"
             name="passenger_phone"
             placeholder="+1 809 000 0000"
-            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
           />
         </div>
 
@@ -349,7 +352,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             type="email"
             name="passenger_email"
             placeholder="juan@example.com"
-            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
           />
         </div>
 
@@ -364,7 +367,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             defaultValue={1}
             min={1}
             max={20}
-            className="w-28 rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+            className="w-28 rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
           />
         </div>
 
@@ -377,7 +380,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             <select
               name="corporate_account_id"
               defaultValue=""
-              className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
             >
               <option value="">{t.individualClient}</option>
               {corporateAccounts.map((acc) => (
@@ -396,7 +399,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             name="special_instructions"
             rows={2}
             placeholder={t.specialPlaceholder}
-            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 resize-none"
+            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20 resize-none"
           />
         </div>
 
@@ -409,7 +412,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             name="internal_notes"
             rows={2}
             placeholder={t.internalPlaceholder}
-            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 resize-none"
+            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20 resize-none"
           />
         </div>
 
@@ -419,7 +422,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
           <button
             type="button"
             onClick={() => { setPhase('route'); setError('') }}
-            className="px-5 py-3 border border-sl-outline-variant text-sm font-medium rounded-xl hover:border-[#0071e3] transition-colors text-sl-on-surface"
+            className="px-5 py-3 border border-sl-outline-variant text-sm font-medium rounded-xl hover:border-bronze transition-colors text-sl-on-surface"
           >
             {t.back}
           </button>
@@ -427,7 +430,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             type="submit"
             onClick={() => { asQuoteRef.current = true }}
             disabled={isPending}
-            className="px-5 py-3 border border-sl-outline-variant text-sm font-medium rounded-xl hover:border-[#0071e3] disabled:opacity-50 transition-colors text-sl-on-surface"
+            className="px-5 py-3 border border-sl-outline-variant text-sm font-medium rounded-xl hover:border-bronze disabled:opacity-50 transition-colors text-sl-on-surface"
           >
             {t.saveQuote}
           </button>
@@ -435,7 +438,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             type="submit"
             onClick={() => { asQuoteRef.current = false }}
             disabled={isPending}
-            className="flex-1 min-w-[140px] py-3 bg-[#0071e3] text-white font-semibold rounded-xl hover:bg-[#0077ed] disabled:opacity-50 transition-colors"
+            className="flex-1 min-w-[140px] py-3 bg-gold text-gray-900 font-semibold rounded-xl hover:bg-gold/90 disabled:opacity-50 transition-colors"
           >
             {isPending ? t.createLoading : t.createCta}
           </button>

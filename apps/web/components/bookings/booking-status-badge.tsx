@@ -12,7 +12,7 @@ interface Config {
 const STATUS_CONFIG: Record<BookingStatus, Config> = {
   quote:       { label: 'Cotización',  cls: 'bg-gray-100 text-gray-600' },
   pending:     { label: 'Pendiente',   cls: 'bg-yellow-100 text-yellow-700' },
-  assigned:    { label: 'Asignado',    cls: 'bg-blue-100 text-[#0071e3]' },
+  assigned:    { label: 'Asignado',    cls: 'bg-blue-100 text-blue-700' },
   en_route:    { label: 'En ruta',     cls: 'bg-indigo-100 text-indigo-700' },
   arrived:     { label: 'Llegó',       cls: 'bg-purple-100 text-purple-700' },
   in_progress: { label: 'En viaje',    cls: 'bg-orange-100 text-orange-700' },

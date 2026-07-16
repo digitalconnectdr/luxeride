@@ -165,7 +165,7 @@ export default async function BookingDetailPage({
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <Link href="/admin/bookings" className="text-sm text-sl-on-surface-muted hover:text-[#0071e3]">
+            <Link href="/admin/bookings" className="text-sm text-sl-on-surface-muted hover:text-bronze">
               {t.backToList}
             </Link>
           </div>

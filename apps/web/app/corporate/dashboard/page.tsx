@@ -124,7 +124,7 @@ export default async function CorporateDashboardPage() {
             {bookings.map((b) => (
               <div key={b.id} className="flex items-center justify-between px-6 py-3.5">
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-[#0071e3]">{b.booking_number}</span>
+                  <span className="font-mono text-xs text-bronze">{b.booking_number}</span>
                   <BookingStatusBadge status={b.status as BookingStatus} />
                 </div>
                 <div className="flex items-center gap-4 text-sm">

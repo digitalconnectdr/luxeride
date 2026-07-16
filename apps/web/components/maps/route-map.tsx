@@ -25,7 +25,7 @@ function DirectionsLayer({ origin, destination }: DirectionsRendererProps) {
       rendererRef.current = new routesLib.DirectionsRenderer({
         suppressMarkers: false,
         polylineOptions: {
-          strokeColor:   '#0071e3',  // Apple Blue
+          strokeColor:   '#8a6520',  // Bronce LuxeRide
           strokeWeight:  4,
           strokeOpacity: 0.85,
         },

@@ -140,7 +140,7 @@ export default async function DriverReportsPage({ searchParams }: PageProps) {
                     </td>
                     <td className="px-5 py-3">
                       {booking ? (
-                        <Link href={`/admin/bookings/${r.booking_id}`} className="font-mono text-xs text-[#0071e3] hover:underline">
+                        <Link href={`/admin/bookings/${r.booking_id}`} className="font-mono text-xs text-bronze hover:underline">
                           {booking.booking_number}
                         </Link>
                       ) : '—'}

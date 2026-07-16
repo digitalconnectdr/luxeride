@@ -143,7 +143,7 @@ export default async function AdminBookingsPage({
         </div>
         <Link
           href="/admin/bookings/new"
-          className="px-4 py-2 bg-[#0071e3] text-white text-sm font-medium rounded-xl hover:bg-[#0077ed] transition-colors"
+          className="px-4 py-2 bg-gold text-gray-900 text-sm font-medium rounded-xl hover:bg-gold/90 transition-colors"
         >
           {t.newBooking}
         </Link>
@@ -156,7 +156,7 @@ export default async function AdminBookingsPage({
           className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
             !filterStatus
               ? 'bg-[#1d1d1f] text-white'
-              : 'bg-sl-surface-high border border-sl-outline-variant text-sl-on-surface-muted hover:border-[#0071e3]'
+              : 'bg-sl-surface-high border border-sl-outline-variant text-sl-on-surface-muted hover:border-bronze'
           }`}
         >
           {t.all} ({totalCount})
@@ -169,7 +169,7 @@ export default async function AdminBookingsPage({
               className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                 filterStatus === s
                   ? 'bg-[#1d1d1f] text-white'
-                  : 'bg-sl-surface-high border border-sl-outline-variant text-sl-on-surface-muted hover:border-[#0071e3]'
+                  : 'bg-sl-surface-high border border-sl-outline-variant text-sl-on-surface-muted hover:border-bronze'
               }`}
             >
               {statusLabels[s]} ({counts[s]})
@@ -186,7 +186,7 @@ export default async function AdminBookingsPage({
           </p>
           <Link
             href="/admin/bookings/new"
-            className="mt-4 inline-block text-sm text-[#0071e3] hover:underline"
+            className="mt-4 inline-block text-sm text-bronze hover:underline"
           >
             {t.createFirst}
           </Link>
@@ -215,7 +215,7 @@ export default async function AdminBookingsPage({
                   className={`border-b border-sl-outline-variant last:border-0 hover:bg-sl-bg/50 transition-colors ${idx % 2 === 0 ? '' : 'bg-sl-bg/20'}`}
                 >
                   <td className="px-5 py-3">
-                    <Link href={`/admin/bookings/${b.id}`} className="font-mono text-xs text-[#0071e3] hover:underline">
+                    <Link href={`/admin/bookings/${b.id}`} className="font-mono text-xs text-bronze hover:underline">
                       {b.booking_number}
                     </Link>
                   </td>

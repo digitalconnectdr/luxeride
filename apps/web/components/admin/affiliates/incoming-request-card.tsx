@@ -141,7 +141,7 @@ export function IncomingRequestCard({ request, drivers, vehicles, localeTag, myC
             <label className="block text-xs text-sl-on-surface-muted mb-1">{t.requests.counterPriceLabel}</label>
             <input type="number" min={0} step="0.01" value={counterPrice} onChange={(e) => setCounterPrice(e.target.value)} className="w-32 rounded-lg border border-sl-outline-variant bg-white px-2.5 py-1.5 text-xs" />
           </div>
-          <button onClick={() => respond('counter')} disabled={isPending} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#0071e3] text-white hover:bg-[#0077ed] disabled:opacity-50">{t.requests.counterSubmit}</button>
+          <button onClick={() => respond('counter')} disabled={isPending} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gold text-gray-900 hover:bg-gold/90 disabled:opacity-50">{t.requests.counterSubmit}</button>
         </div>
       )}
 
@@ -160,14 +160,14 @@ export function IncomingRequestCard({ request, drivers, vehicles, localeTag, myC
               {vehicles.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
             </select>
           </div>
-          <button onClick={assign} disabled={isPending || !driverId || !vehicleId} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#0071e3] text-white hover:bg-[#0077ed] disabled:opacity-50">
+          <button onClick={assign} disabled={isPending || !driverId || !vehicleId} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gold text-gray-900 hover:bg-gold/90 disabled:opacity-50">
             {t.requests.assignSubmit}
           </button>
         </div>
       )}
 
       {hasDriverAssigned && isOperating(request.status as never) && next && (
-        <button onClick={advance} disabled={isPending} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#0071e3] text-white hover:bg-[#0077ed] disabled:opacity-50">
+        <button onClick={advance} disabled={isPending} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gold text-gray-900 hover:bg-gold/90 disabled:opacity-50">
           {t.requests.advance[next as keyof T['requests']['advance']]}
         </button>
       )}

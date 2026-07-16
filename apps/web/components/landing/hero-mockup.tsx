@@ -116,7 +116,7 @@ export function HeroMockup({ labels }: Props) {
           </div>
           <div className="min-w-0">
             <p className="text-[11px] text-gray-700 leading-snug">{labels.smsPreview}</p>
-            <p className="text-[10px] text-[#0071e3] font-medium mt-1 truncate">
+            <p className="text-[10px] text-bronze font-medium mt-1 truncate">
               luxeride.app/track/8f2a…
             </p>
           </div>

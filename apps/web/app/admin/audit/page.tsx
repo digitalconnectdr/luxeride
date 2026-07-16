@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 
 const ACTION_STYLES: Record<string, string> = {
   INSERT: 'bg-green-100 text-green-700',
-  UPDATE: 'bg-blue-100 text-[#0071e3]',
+  UPDATE: 'bg-blue-100 text-blue-700',
   DELETE: 'bg-red-100 text-red-600',
 }
 

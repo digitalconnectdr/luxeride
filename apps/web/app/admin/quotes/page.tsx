@@ -61,7 +61,7 @@ export default async function AdminQuotesPage() {
           <p className="text-sm text-sl-on-surface-muted mt-1">{t.subtitle.replace('{count}', String(quotes?.length ?? 0))}</p>
           <p className="text-xs text-sl-on-surface-muted/80 mt-1 max-w-xl">{t.hint}</p>
         </div>
-        <Link href="/admin/bookings/new" className="px-4 py-2 bg-[#0071e3] text-white text-sm font-medium rounded-xl hover:bg-[#0077ed] transition-colors whitespace-nowrap">
+        <Link href="/admin/bookings/new" className="px-4 py-2 bg-gold text-gray-900 text-sm font-medium rounded-xl hover:bg-gold/90 transition-colors whitespace-nowrap">
           {t.newQuote}
         </Link>
       </div>
@@ -97,7 +97,7 @@ export default async function AdminQuotesPage() {
               {quotes.map((q, idx) => (
                 <tr key={q.id} className={`border-b border-sl-outline-variant last:border-0 hover:bg-sl-bg/50 transition-colors ${idx % 2 === 0 ? '' : 'bg-sl-bg/20'}`}>
                   <td className="px-5 py-3">
-                    <Link href={`/admin/bookings/${q.id}`} className="font-mono text-xs text-[#0071e3] hover:underline">{q.booking_number}</Link>
+                    <Link href={`/admin/bookings/${q.id}`} className="font-mono text-xs text-bronze hover:underline">{q.booking_number}</Link>
                   </td>
                   <td className="px-5 py-3">
                     <p className="font-medium text-sl-on-surface">{q.passenger_name ?? '—'}</p>

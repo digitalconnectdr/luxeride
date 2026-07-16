@@ -80,7 +80,7 @@ export default async function CorporateAccountDetailPage({
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <Link href="/admin/corporate" className="text-sm text-sl-on-surface-muted hover:text-[#0071e3]">
+          <Link href="/admin/corporate" className="text-sm text-sl-on-surface-muted hover:text-bronze">
             {t.backToList}
           </Link>
           <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface mt-2">
@@ -238,7 +238,7 @@ export default async function CorporateAccountDetailPage({
                 className="flex items-center justify-between px-6 py-3.5 hover:bg-sl-bg/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-[#0071e3]">{b.booking_number}</span>
+                  <span className="font-mono text-xs text-bronze">{b.booking_number}</span>
                   <BookingStatusBadge status={b.status as BookingStatus} labels={dict.bookingStatuses} />
                 </div>
                 <div className="flex items-center gap-4 text-sm">

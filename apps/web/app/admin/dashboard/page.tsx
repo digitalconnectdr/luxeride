@@ -145,7 +145,7 @@ export default async function AdminDashboardPage() {
 
   const STATUS_COLORS: Record<string, string> = {
     pending:     'bg-yellow-100 text-yellow-700',
-    assigned:    'bg-blue-100 text-[#0071e3]',
+    assigned:    'bg-blue-100 text-blue-700',
     en_route:    'bg-indigo-100 text-indigo-700',
     arrived:     'bg-purple-100 text-purple-700',
     in_progress: 'bg-orange-100 text-orange-700',

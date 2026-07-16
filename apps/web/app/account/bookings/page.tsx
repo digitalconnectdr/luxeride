@@ -74,7 +74,7 @@ export default async function AccountBookingsPage() {
             return (
               <div key={b.id} className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs text-[#0071e3]">{b.booking_number}</span>
+                  <span className="font-mono text-xs text-bronze">{b.booking_number}</span>
                   <BookingStatusBadge status={b.status as BookingStatus} />
                 </div>
                 <p className="text-sm font-semibold text-sl-on-surface">

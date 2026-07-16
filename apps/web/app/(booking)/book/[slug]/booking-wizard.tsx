@@ -486,7 +486,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
         </div>
         <h2 className="font-semibold text-2xl text-[#1d1d1f]">{dict.confirmed}</h2>
         <p className="text-gray-500">{dict.yourNumber}</p>
-        <p className="font-mono text-2xl font-bold text-[#0071e3] bg-blue-50 rounded-2xl px-8 py-4 inline-block">
+        <p className="font-mono text-2xl font-bold text-[var(--brand)] bg-[var(--brand)]/10 rounded-2xl px-8 py-4 inline-block">
           {confirmation.bookingNumber}
         </p>
         <p className="text-sm text-gray-500 max-w-sm mx-auto">
@@ -495,7 +495,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
         <p className="text-sm">
           <a
             href={`/track/${confirmation.bookingId}`}
-            className="text-[#0071e3] hover:underline font-medium"
+            className="text-[var(--brand)] hover:underline font-medium"
           >
             {dict.trackTrip}
           </a>
@@ -611,7 +611,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
             <select
               name="booking_type"
               defaultValue="one_way"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
             >
               <option value="one_way">{dict.types.one_way}</option>
               <option value="airport_pickup">{dict.types.airport_pickup}</option>
@@ -631,7 +631,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
                 name="date"
                 required
                 min={todayStr}
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
               />
             </div>
             <div>
@@ -642,7 +642,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
                 name="time"
                 required
                 defaultValue=""
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
               >
                 <option value="" disabled>—:—</option>
                 {timeOptions.map((o) => (
@@ -660,6 +660,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               name="pickup"
               placeholder={dict.pickupPlaceholder}
               required
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
             />
           </div>
 
@@ -683,6 +684,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               <AddressInput
                 name={`stop_${i}`}
                 placeholder={dict.stopPlaceholder}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
               />
             </div>
           ))}
@@ -705,6 +707,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               name="dropoff"
               placeholder={dict.dropoffPlaceholder}
               required
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
             />
           </div>
 
@@ -793,7 +796,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
 
           <button
             onClick={() => { setStep(0); setError('') }}
-            className="text-sm text-gray-500 hover:text-[#0071e3] mt-2"
+            className="text-sm text-gray-500 hover:text-[var(--brand)] mt-2"
           >
             {dict.changeRoute}
           </button>
@@ -826,7 +829,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               value={passengerData.name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="Juan Pérez"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
             />
           </div>
 
@@ -841,7 +844,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               value={passengerData.phone}
               onChange={(e) => handlePhoneChange(e.target.value)}
               placeholder="+1 809 000 0000"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
             />
             {returningMatch && !returningDismissed && (
               <div className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-[var(--brand)]/30 bg-[var(--brand)]/5 px-3 py-2">
@@ -879,7 +882,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               value={passengerData.email}
               onChange={(e) => setPassengerData((p) => ({ ...p, email: e.target.value }))}
               placeholder="juan@example.com"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
             />
           </div>
 
@@ -893,7 +896,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               defaultValue={1}
               min={1}
               max={selectedQuote?.vehicleType.capacity ?? 20}
-              className="w-28 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+              className="w-28 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
             />
           </div>
 
@@ -906,7 +909,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
                 type="text"
                 name="flight_number"
                 placeholder="AA1234"
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20"
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
               />
             </div>
           )}
@@ -931,7 +934,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               name="instructions"
               rows={2}
               placeholder={dict.instructionsPlaceholder}
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 resize-none"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20 resize-none"
             />
           </div>
 

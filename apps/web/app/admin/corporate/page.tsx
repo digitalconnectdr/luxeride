@@ -65,7 +65,7 @@ export default async function CorporateAccountsPage() {
                     {acc.is_active ? t.active : t.inactive}
                   </span>
                   {acc.require_approval && (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-blue-100 text-[#0071e3]">
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-blue-100 text-blue-700">
                       {t.requiresApproval}
                     </span>
                   )}

@@ -20,7 +20,7 @@ export default function PaymentSuccessPage({
         </div>
         <h1 className="font-semibold text-2xl text-[#1d1d1f]">{t.successTitle}</h1>
         {bookingNumber && (
-          <p className="font-mono text-lg font-bold text-[#0071e3] bg-blue-50 rounded-2xl px-6 py-3 inline-block">
+          <p className="font-mono text-lg font-bold text-amber-800 bg-amber-50 rounded-2xl px-6 py-3 inline-block">
             {bookingNumber}
           </p>
         )}

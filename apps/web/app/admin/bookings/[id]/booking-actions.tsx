@@ -11,7 +11,7 @@ type TransitionKey = keyof Labels['transitions']
 
 // Transiciones válidas (replicadas en cliente solo para UI — la validación real es server-side)
 const NEXT_STATES: Record<BookingStatus, { status: BookingStatus; labelKey: TransitionKey; color: string }[]> = {
-  quote:       [{ status: 'pending',     labelKey: 'confirm',  color: 'bg-[#0071e3] text-white' }],
+  quote:       [{ status: 'pending',     labelKey: 'confirm',  color: 'bg-amber-100 text-amber-700' }],
   pending:     [{ status: 'cancelled',   labelKey: 'cancel',   color: 'bg-red-100 text-red-700' }],
   assigned:    [
     { status: 'en_route',    labelKey: 'en_route',  color: 'bg-indigo-100 text-indigo-700' },
@@ -90,7 +90,7 @@ export function BookingActions({ bookingId, currentStatus, driverId, drivers, la
               value={selectedDriver}
               onChange={(e) => setSelectedDriver(e.target.value)}
               disabled={isPending}
-              className="w-full rounded-xl border border-sl-outline-variant bg-white px-3 py-2 text-sm text-sl-on-surface focus:border-[#0071e3] focus:outline-none"
+              className="w-full rounded-xl border border-sl-outline-variant bg-white px-3 py-2 text-sm text-sl-on-surface focus:border-bronze focus:outline-none"
             >
               <option value="">{t.selectPlaceholder}</option>
               {drivers.map((d) => (
@@ -103,7 +103,7 @@ export function BookingActions({ bookingId, currentStatus, driverId, drivers, la
           <button
             onClick={handleAssignDriver}
             disabled={isPending || !selectedDriver}
-            className="px-4 py-2 bg-[#0071e3] text-white text-sm font-medium rounded-xl hover:bg-[#0077ed] disabled:opacity-50 transition-colors whitespace-nowrap"
+            className="px-4 py-2 bg-gold text-gray-900 text-sm font-medium rounded-xl hover:bg-gold/90 disabled:opacity-50 transition-colors whitespace-nowrap"
           >
             {isPending ? '...' : t.assign}
           </button>

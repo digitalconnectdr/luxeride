@@ -109,7 +109,7 @@ export function AddressInput({
     className ??
     'w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm ' +
     'text-[#1d1d1f] placeholder:text-gray-400 ' +
-    'focus:border-[#0071e3] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/20 ' +
+    'focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20 ' +
     'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 ' +
     'transition-colors'
 
