@@ -3,6 +3,41 @@
 > Actualizado: 2026-07-16. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Audit trail de reservas ampliado + pestaña "Booking Trail" (2026-07-16)
+
+El usuario preguntó qué tan a fondo se puede rastrear una reserva (quién la
+creó, despachó, canceló, cobró, reasignó, etc.). Auditoría del código +
+consulta directa a producción reveló un hallazgo real: el trigger genérico
+de `audit_logs` SÍ guarda el diff completo (old/new) de bookings/payments/
+refunds/user_profiles/companies, pero su `user_id` depende de `auth.uid()`,
+que queda `NULL` porque casi todas las mutaciones pasan por el cliente
+service-role — confirmado con una consulta a producción (los últimos 15
+audit_logs de bookings tenían `user_id: null`).
+
+En vez de reescribir ese trigger (exigiría cambiar cómo cada server action
+ejecuta sus escrituras), se amplió `booking_events` — que ya usaba un patrón
+confiable (actor_id explícito pasado desde la propia server action, que sí
+conoce a `user.id` vía `requireRole`) — con 3 tipos de evento nuevos:
+`created`, `driver_assigned` (antes la primera auto-asignación se
+etiquetaba por error como `driver_reassigned`, corregido), `payment_recorded`.
+
+Además: `bookings.created_by` / `dispatched_by` (nuevas columnas),
+`/admin/bookings/[id]` ahora muestra el vehículo específico asignado (antes
+solo el tipo) y quién creó/despachó/canceló cada reserva, y `/admin/audit`
+tiene una segunda pestaña "Booking Trail" con la bitácora ampliada,
+filtrable por tipo de evento. Verificado end-to-end en navegador (reserva
+de prueba con conductor, vehículo y pago simulados — los 3 se vieron
+correctamente en el detalle de reserva y en la nueva pestaña). Migración
+`20260716000053` aplicada por el usuario en Supabase Studio. Typecheck,
+170 tests y build de producción limpios.
+
+**Pendiente conocido, no cerrado**: número de permiso del vehículo
+("for-hire permit") vive en JSONB sin estructurar (`vehicles.compliance`),
+no en una columna propia, y no se muestra en el detalle de la reserva —
+solo en la pantalla de cumplimiento del vehículo. Igual que "quién aceptó
+el viaje" (el conductor solo puede *rechazar*, no hay paso explícito de
+aceptación) — ninguno de los dos se abordó en esta ronda.
+
 ## ✅ Auditoría responsive/móvil de las 71 pantallas (2026-07-16)
 
 Revisión sistemática de todas las rutas de `apps/web/app` (públicas,
