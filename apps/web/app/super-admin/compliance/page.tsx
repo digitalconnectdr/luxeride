@@ -78,7 +78,7 @@ export default async function ComplianceReviewQueuePage() {
         ) : (
           <div className="space-y-1.5">
             {companiesToShow.map((c) => (
-              <div key={c.id} className="flex items-center justify-between gap-3 text-sm bg-sl-bg/40 border border-sl-outline-variant rounded-lg px-3 py-2.5">
+              <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 text-sm bg-sl-bg/40 border border-sl-outline-variant rounded-lg px-3 py-2.5">
                 <div className="flex items-center gap-3 min-w-0">
                   <Link href={`/super-admin/companies/${c.id}`} className="text-sl-on-surface hover:text-bronze transition-colors truncate">
                     {c.name}
@@ -104,7 +104,7 @@ export default async function ComplianceReviewQueuePage() {
         ) : (
           <div className="space-y-1.5">
             {driversToShow.map((d) => (
-              <div key={d.id} className="flex items-center justify-between gap-3 text-sm bg-sl-bg/40 border border-sl-outline-variant rounded-lg px-3 py-2.5">
+              <div key={d.id} className="flex flex-wrap items-center justify-between gap-3 text-sm bg-sl-bg/40 border border-sl-outline-variant rounded-lg px-3 py-2.5">
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="text-sl-on-surface truncate">
                     {d.user_profiles.first_name} {d.user_profiles.last_name}
@@ -132,7 +132,7 @@ export default async function ComplianceReviewQueuePage() {
         ) : (
           <div className="space-y-1.5">
             {vehiclesToShow.map((v) => (
-              <div key={v.id} className="flex items-center justify-between gap-3 text-sm bg-sl-bg/40 border border-sl-outline-variant rounded-lg px-3 py-2.5">
+              <div key={v.id} className="flex flex-wrap items-center justify-between gap-3 text-sm bg-sl-bg/40 border border-sl-outline-variant rounded-lg px-3 py-2.5">
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="text-sl-on-surface truncate">
                     {v.make} {v.model} · {v.plate_number}

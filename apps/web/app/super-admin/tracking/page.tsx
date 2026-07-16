@@ -69,9 +69,9 @@ export default async function TrackingUsagePage() {
         </div>
         <div className="divide-y divide-[#f0ede5]">
           {PLAN_ORDER.map((plan) => (
-            <div key={plan} className="px-6 py-4 flex items-center justify-between gap-6">
+            <div key={plan} className="px-6 py-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
               <span className="text-sm font-medium text-[#1d1b18]">{PLAN_LABEL[plan]}</span>
-              <div className="flex items-center gap-6">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                 <div className="flex items-center">
                   <PriceInput plan={plan} current={priceByPlan.get(plan) ?? 0} />
                   <InfoTip text="Lo que le cobras a una empresa por mes en este plan. Se usa para calcular el MRR (ingreso recurrente) en el cuadro de mando | cambia el precio aquí y el MRR se recalcula solo." />
