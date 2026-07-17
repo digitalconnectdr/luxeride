@@ -27,7 +27,8 @@ export default async function PromoCodesPage() {
   if (!active) {
     return (
       <div className="p-8 max-w-[1400px] mx-auto">
-        <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface mb-6">{t.title}</h1>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-6 rounded-full" />
         <AddonUpsellCard
           title={t.addonTitle}
           body={t.addonBody}
@@ -46,39 +47,40 @@ export default async function PromoCodesPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
       <div>
-        <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface">{t.title}</h1>
-        <p className="mt-1 text-sm text-sl-on-surface-muted">{t.subtitle}</p>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+        <p className="text-sm text-sl-on-surface-muted">{t.subtitle}</p>
       </div>
 
       <PromoCodeForm t={t} />
 
-      <div className="bg-sl-surface border border-sl-outline-variant rounded-xl overflow-hidden">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
         {!codes?.length ? (
           <p className="p-6 text-sm text-sl-on-surface-muted">{t.noCodes}</p>
         ) : (
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-sl-outline-variant text-left text-xs text-sl-on-surface-muted">
-                <th className="px-4 py-3 font-medium">{t.code}</th>
-                <th className="px-4 py-3 font-medium">{t.discountType}</th>
-                <th className="px-4 py-3 font-medium">{t.uses}</th>
-                <th className="px-4 py-3 font-medium"></th>
+              <tr className="border-b border-gold/20 text-left text-[10px] uppercase tracking-widest text-sl-on-surface-muted">
+                <th className="px-6 py-4 font-semibold">{t.code}</th>
+                <th className="px-6 py-4 font-semibold">{t.discountType}</th>
+                <th className="px-6 py-4 font-semibold">{t.uses}</th>
+                <th className="px-6 py-4 font-semibold"></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-sl-outline-variant/50">
               {codes.map((c) => (
-                <tr key={c.id} className="border-b border-sl-outline-variant last:border-0">
-                  <td className="px-4 py-3 font-mono text-sl-on-surface">{c.code}</td>
-                  <td className="px-4 py-3 text-sl-on-surface">
+                <tr key={c.id} className="hover:bg-sl-bg/40 transition-colors">
+                  <td className="px-6 py-4 font-mono text-sl-on-surface">{c.code}</td>
+                  <td className="px-6 py-4 text-sl-on-surface">
                     {c.discount_type === 'percentage' ? `${c.discount_value}%` : `$${c.discount_value}`}
                   </td>
-                  <td className="px-4 py-3 text-sl-on-surface-muted">
+                  <td className="px-6 py-4 text-sl-on-surface-muted">
                     {c.uses_count}{c.max_uses ? ` / ${c.max_uses}` : ''}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-6 py-4 text-right">
                     <PromoCodeActiveToggle
                       promoCodeId={c.id}
                       isActive={c.is_active}

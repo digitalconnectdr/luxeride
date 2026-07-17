@@ -29,8 +29,8 @@ function TabLink({ href, active, children }: { href: string; active: boolean; ch
   return (
     <Link
       href={href}
-      className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
-        active ? 'bg-gold text-gray-900 border-bronze' : 'border-sl-outline-variant text-sl-on-surface-muted hover:border-bronze'
+      className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+        active ? 'bg-gold text-gray-900 shadow-sm' : 'text-sl-on-surface-muted hover:text-sl-on-surface'
       }`}
     >
       {children}
@@ -112,21 +112,22 @@ export default async function AuditLogPage({
   const admin = createAdminClient()
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
-      <div className="flex items-start justify-between">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.title}</h1>
+          <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+          <div className="w-10 h-[3px] bg-gold mt-2 rounded-full" />
         </div>
         <Link
           href="/admin/reports"
-          className="px-3 py-2 text-xs font-medium border border-sl-outline-variant text-sl-on-surface rounded-lg hover:border-bronze transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold bg-white border border-bronze/40 text-sl-on-surface rounded-xl hover:border-bronze hover:bg-bronze/5 transition-colors"
         >
           {t.backToReports}
         </Link>
       </div>
 
       {/* Pestañas */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 bg-white border border-sl-outline-variant rounded-full p-1.5 w-fit">
         <TabLink href="/admin/audit" active={view === 'logs'}>{t.tabLogs}</TabLink>
         <TabLink href="/admin/audit?view=trail" active={view === 'trail'}>{t.tabTrail}</TabLink>
       </div>
@@ -186,37 +187,37 @@ async function AuditLogsView({
         ))}
       </div>
 
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
         {!logs?.length ? (
           <p className="p-8 text-sm text-sl-on-surface-muted text-center">{t.empty}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-sl-outline-variant">
-                  <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDate}</th>
-                  <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colUser}</th>
-                  <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colAction}</th>
-                  <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colTable}</th>
-                  <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colRecord}</th>
+                <tr className="border-b border-gold/20">
+                  <th className="px-6 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDate}</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colUser}</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colAction}</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colTable}</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colRecord}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-sl-outline-variant">
+              <tbody className="divide-y divide-sl-outline-variant/50">
                 {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-sl-bg/50">
-                    <td className="px-5 py-3 text-xs text-sl-on-surface-muted whitespace-nowrap">
+                  <tr key={log.id} className="hover:bg-sl-bg/40 transition-colors">
+                    <td className="px-6 py-4 text-xs text-sl-on-surface-muted whitespace-nowrap">
                       {new Date(log.created_at).toLocaleString(localeTag, { dateStyle: 'short', timeStyle: 'medium' })}
                     </td>
-                    <td className="px-5 py-3 text-xs text-sl-on-surface">
+                    <td className="px-6 py-4 text-xs text-sl-on-surface">
                       {log.user_id ? namesById.get(log.user_id) ?? log.user_id.slice(0, 8) : t.system}
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-6 py-4">
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${ACTION_STYLES[log.action] ?? 'bg-gray-100 text-gray-600'}`}>
                         {log.action}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-xs font-mono text-sl-on-surface">{log.table_name ?? '—'}</td>
-                    <td className="px-5 py-3 text-xs font-mono text-sl-on-surface-muted">
+                    <td className="px-6 py-4 text-xs font-mono text-sl-on-surface">{log.table_name ?? '—'}</td>
+                    <td className="px-6 py-4 text-xs font-mono text-sl-on-surface-muted">
                       {(log.metadata as { booking_number?: string } | null)?.booking_number ?? (log.record_id ? `${log.record_id.slice(0, 8)}…` : '—')}
                     </td>
                   </tr>
@@ -312,37 +313,37 @@ async function BookingTrailView({
         ))}
       </div>
 
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
         {!events.length ? (
           <p className="p-8 text-sm text-sl-on-surface-muted text-center">{t.trailEmpty}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-sl-outline-variant">
-                  <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDate}</th>
-                  <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colBooking}</th>
-                  <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colEvent}</th>
-                  <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colActor}</th>
-                  <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDetail}</th>
+                <tr className="border-b border-gold/20">
+                  <th className="px-6 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDate}</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colBooking}</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colEvent}</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colActor}</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDetail}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-sl-outline-variant">
+              <tbody className="divide-y divide-sl-outline-variant/50">
                 {events.map((ev) => (
-                  <tr key={ev.id} className="hover:bg-sl-bg/50">
-                    <td className="px-5 py-3 text-xs text-sl-on-surface-muted whitespace-nowrap">
+                  <tr key={ev.id} className="hover:bg-sl-bg/40 transition-colors">
+                    <td className="px-6 py-4 text-xs text-sl-on-surface-muted whitespace-nowrap">
                       {new Date(ev.created_at).toLocaleString(localeTag, { dateStyle: 'short', timeStyle: 'medium' })}
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-6 py-4">
                       <Link href={`/admin/bookings/${ev.booking_id}`} className="font-mono text-xs text-bronze hover:underline">
                         {bookingNumber(ev)}
                       </Link>
                     </td>
-                    <td className="px-5 py-3 text-xs text-sl-on-surface">{eventTypeLabels[ev.type] ?? ev.type}</td>
-                    <td className="px-5 py-3 text-xs text-sl-on-surface">
+                    <td className="px-6 py-4 text-xs text-sl-on-surface">{eventTypeLabels[ev.type] ?? ev.type}</td>
+                    <td className="px-6 py-4 text-xs text-sl-on-surface">
                       {ev.actor_id ? namesById.get(ev.actor_id) ?? ev.actor_id.slice(0, 8) : (eventActorLabels[ev.actor] ?? ev.actor)}
                     </td>
-                    <td className="px-5 py-3 text-xs text-sl-on-surface-muted">{detailFor(ev)}</td>
+                    <td className="px-6 py-4 text-xs text-sl-on-surface-muted">{detailFor(ev)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -36,7 +36,8 @@ export default async function PayrollPage({ searchParams }: { searchParams: { fr
   if (!active) {
     return (
       <div className="p-8 max-w-[1400px] mx-auto">
-        <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface mb-6">{t.title}</h1>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-6 rounded-full" />
         <AddonUpsellCard
           title={t.addonTitle}
           body={t.addonBody}
@@ -91,13 +92,14 @@ export default async function PayrollPage({ searchParams }: { searchParams: { fr
   }
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
       <div>
-        <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface">{t.title}</h1>
-        <p className="mt-1 text-sm text-sl-on-surface-muted">{t.subtitle}</p>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+        <p className="text-sm text-sl-on-surface-muted">{t.subtitle}</p>
       </div>
 
-      <form className="flex items-end gap-3 bg-sl-surface border border-sl-outline-variant rounded-xl p-4">
+      <form className="flex items-end gap-3 bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-4">
         <div>
           <label className="block text-xs text-sl-on-surface-muted mb-1">{t.from}</label>
           <input
@@ -121,22 +123,22 @@ export default async function PayrollPage({ searchParams }: { searchParams: { fr
         </button>
       </form>
 
-      <div className="bg-sl-surface border border-sl-outline-variant rounded-xl overflow-hidden">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
         {!profiles?.length ? (
           <p className="p-6 text-sm text-sl-on-surface-muted">{t.noDrivers}</p>
         ) : (
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-sl-outline-variant text-left text-xs text-sl-on-surface-muted">
-                <th className="px-4 py-3 font-medium">{t.driver}</th>
-                <th className="px-4 py-3 font-medium">{t.payModel}</th>
-                <th className="px-4 py-3 font-medium">{t.trips}</th>
-                <th className="px-4 py-3 font-medium">{t.earnings}</th>
-                <th className="px-4 py-3 font-medium"></th>
+              <tr className="border-b border-gold/20 text-left text-[10px] uppercase tracking-widest text-sl-on-surface-muted">
+                <th className="px-6 py-4 font-semibold">{t.driver}</th>
+                <th className="px-6 py-4 font-semibold">{t.payModel}</th>
+                <th className="px-6 py-4 font-semibold">{t.trips}</th>
+                <th className="px-6 py-4 font-semibold">{t.earnings}</th>
+                <th className="px-6 py-4 font-semibold"></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-sl-outline-variant/50">
               {profiles.map((p) => {
                 const driver = driverById.get(p.id)
                 const trips = tripsByDriver.get(p.id) ?? []
@@ -147,11 +149,11 @@ export default async function PayrollPage({ searchParams }: { searchParams: { fr
                 const isPaid = paidDriverIds.has(p.id)
 
                 return (
-                  <tr key={p.id} className="border-b border-sl-outline-variant last:border-0 align-top">
-                    <td className="px-4 py-3 text-sl-on-surface whitespace-nowrap">
+                  <tr key={p.id} className="align-top hover:bg-sl-bg/40 transition-colors">
+                    <td className="px-6 py-4 text-sl-on-surface whitespace-nowrap">
                       {p.first_name} {p.last_name}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-4">
                       <DriverPayrollSettingsForm
                         driverId={p.id}
                         initialType={(driver?.payroll_type as PayrollType) ?? null}
@@ -159,11 +161,11 @@ export default async function PayrollPage({ searchParams }: { searchParams: { fr
                         t={t}
                       />
                     </td>
-                    <td className="px-4 py-3 text-sl-on-surface-muted">{trips.length}</td>
-                    <td className="px-4 py-3 font-semibold text-sl-on-surface">
+                    <td className="px-6 py-4 text-sl-on-surface-muted">{trips.length}</td>
+                    <td className="px-6 py-4 font-semibold text-sl-on-surface">
                       {driver?.payroll_type ? `$${earnings.toFixed(2)}` : t.notConfigured}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-6 py-4 text-right">
                       {driver?.payroll_type && trips.length > 0 && (
                         isPaid ? (
                           <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-700">

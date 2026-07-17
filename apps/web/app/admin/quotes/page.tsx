@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Plus } from 'lucide-react'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getDict, getLocale } from '@/lib/i18n/server'
@@ -47,21 +48,23 @@ export default async function AdminQuotesPage() {
   const potentialValue = list.reduce((sum, q) => sum + Number(q.total_amount ?? 0), 0)
   const staleCount = list.filter((q) => ageDays(q.created_at) > 3).length
   const metric = (label: string, value: string, warn = false) => (
-    <div className="rounded-2xl bg-sl-surface-high border border-sl-outline-variant p-5">
+    <div className="rounded-2xl bg-white border border-sl-outline-variant shadow-sm p-5">
       <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{label}</p>
       <p className={`text-2xl font-playfair font-semibold mt-1 ${warn && staleCount > 0 ? 'text-amber-500' : 'text-sl-on-surface'}`}>{value}</p>
     </div>
   )
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.title}</h1>
-          <p className="text-sm text-sl-on-surface-muted mt-1">{t.subtitle.replace('{count}', String(quotes?.length ?? 0))}</p>
+          <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+          <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+          <p className="text-sm text-sl-on-surface-muted">{t.subtitle.replace('{count}', String(quotes?.length ?? 0))}</p>
           <p className="text-xs text-sl-on-surface-muted/80 mt-1 max-w-xl">{t.hint}</p>
         </div>
-        <Link href="/admin/bookings/new" className="px-4 py-2 bg-gold text-gray-900 text-sm font-medium rounded-xl hover:bg-gold/90 transition-colors whitespace-nowrap">
+        <Link href="/admin/bookings/new" className="inline-flex items-center gap-2 px-4 py-2.5 bg-gold text-gray-900 text-sm font-semibold rounded-xl hover:bg-gold/90 shadow-sm transition-colors whitespace-nowrap">
+          <Plus size={16} strokeWidth={2.25} />
           {t.newQuote}
         </Link>
       </div>
@@ -76,41 +79,41 @@ export default async function AdminQuotesPage() {
       )}
 
       {!quotes?.length ? (
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-12 text-center">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-12 text-center">
           <p className="text-sm text-sl-on-surface-muted">{t.empty}</p>
         </div>
       ) : (
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-sl-outline-variant">
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colNumber}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPassenger}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colScheduled}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colRoute}</th>
-                <th className="text-right px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colTotal}</th>
-                <th className="text-right px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colAge}</th>
+              <tr className="border-b border-gold/20">
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colNumber}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPassenger}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colScheduled}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colRoute}</th>
+                <th className="text-right px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colTotal}</th>
+                <th className="text-right px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colAge}</th>
               </tr>
             </thead>
-            <tbody>
-              {quotes.map((q, idx) => (
-                <tr key={q.id} className={`border-b border-sl-outline-variant last:border-0 hover:bg-sl-bg/50 transition-colors ${idx % 2 === 0 ? '' : 'bg-sl-bg/20'}`}>
-                  <td className="px-5 py-3">
+            <tbody className="divide-y divide-sl-outline-variant/50">
+              {quotes.map((q) => (
+                <tr key={q.id} className="hover:bg-sl-bg/40 transition-colors">
+                  <td className="px-6 py-4">
                     <Link href={`/admin/bookings/${q.id}`} className="font-mono text-xs text-bronze hover:underline">{q.booking_number}</Link>
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-6 py-4">
                     <p className="font-medium text-sl-on-surface">{q.passenger_name ?? '—'}</p>
                     {q.passenger_phone && <p className="text-[11px] text-sl-on-surface-muted">{q.passenger_phone}</p>}
                   </td>
-                  <td className="px-5 py-3 text-sl-on-surface-muted whitespace-nowrap">{fmt(q.scheduled_at)}</td>
-                  <td className="px-5 py-3 text-sl-on-surface max-w-[260px] truncate">
+                  <td className="px-6 py-4 text-sl-on-surface-muted whitespace-nowrap">{fmt(q.scheduled_at)}</td>
+                  <td className="px-6 py-4 text-sl-on-surface max-w-[260px] truncate">
                     {shortAddress(q.pickup_location)} → {shortAddress(q.dropoff_location)}
                   </td>
-                  <td className="px-5 py-3 text-right font-semibold text-sl-on-surface">
+                  <td className="px-6 py-4 text-right font-semibold text-sl-on-surface">
                     {q.total_amount != null ? `$${Number(q.total_amount).toFixed(2)}` : '—'}
                   </td>
-                  <td className="px-5 py-3 text-right text-sl-on-surface-muted">{ageLabel(q.created_at)}</td>
+                  <td className="px-6 py-4 text-right text-sl-on-surface-muted">{ageLabel(q.created_at)}</td>
                 </tr>
               ))}
             </tbody>

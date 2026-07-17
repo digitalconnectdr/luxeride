@@ -27,7 +27,8 @@ export default async function ESignaturePage() {
   if (!active) {
     return (
       <div className="p-8 max-w-[1400px] mx-auto">
-        <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface mb-6">{t.title}</h1>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-6 rounded-full" />
         <AddonUpsellCard
           title={t.addonTitle}
           body={t.addonBody}
@@ -74,10 +75,11 @@ export default async function ESignaturePage() {
   }))
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-8">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface">{t.title}</h1>
-        <p className="mt-1 text-sm text-sl-on-surface-muted">{t.subtitle}</p>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+        <p className="text-sm text-sl-on-surface-muted">{t.subtitle}</p>
       </div>
 
       <div>

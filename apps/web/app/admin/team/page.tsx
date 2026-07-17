@@ -28,13 +28,14 @@ export default async function TeamPage() {
   const t = getDict().admin.team
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface">{t.title}</h1>
-          <p className="mt-1 text-sm text-sl-on-surface-muted">
+          <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+          <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+          <p className="text-sm text-sl-on-surface-muted">
             {t.subtitle}
           </p>
         </div>
@@ -48,7 +49,7 @@ export default async function TeamPage() {
 
       {/* Members Table */}
       {!members || members.length === 0 ? (
-        <div className="bg-sl-surface border border-sl-outline-variant rounded-xl p-12 text-center">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-12 text-center">
           <p className="text-sm text-sl-on-surface-muted">{t.empty}</p>
         </div>
       ) : (
@@ -60,7 +61,7 @@ export default async function TeamPage() {
               const isOwnerRole = member.role === 'company_owner'
 
               return (
-                <div key={member.id} className="bg-sl-surface border border-sl-outline-variant rounded-xl p-4 space-y-3">
+                <div key={member.id} className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-4 space-y-3">
                   <div>
                     <p className="font-medium text-sl-on-surface">
                       {member.first_name} {member.last_name}
@@ -124,25 +125,25 @@ export default async function TeamPage() {
           </div>
 
           {/* Desktop/tablet: tabla completa */}
-          <div className="hidden md:block bg-sl-surface border border-sl-outline-variant rounded-xl overflow-hidden">
+          <div className="hidden md:block bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-sl-outline-variant">
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thMember}</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thRole}</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thStatus}</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thActions}</th>
+                <tr className="border-b border-gold/20">
+                  <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thMember}</th>
+                  <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thRole}</th>
+                  <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thStatus}</th>
+                  <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thActions}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-sl-outline-variant/40">
+              <tbody className="divide-y divide-sl-outline-variant/50">
                 {members.map((member) => {
                   const isSelf  = member.id === user.id
                   const isOwnerRole = member.role === 'company_owner'
 
                   return (
                     <tr key={member.id} className="hover:bg-sl-bg/40 transition-colors">
-                      <td className="px-5 py-3.5">
+                      <td className="px-6 py-4">
                         <p className="font-medium text-sl-on-surface">
                           {member.first_name} {member.last_name}
                           {isSelf && (
@@ -153,7 +154,7 @@ export default async function TeamPage() {
                           <p className="text-xs text-sl-on-surface-muted mt-0.5">{member.phone}</p>
                         )}
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-6 py-4">
                         {isOwnerRole || isSelf ? (
                           <span className={`inline-flex text-xs font-medium px-2 py-0.5 rounded-full border ${ROLE_BADGE[member.role] ?? ''}`}>
                             {member.role.replace(/_/g, ' ')}
@@ -167,7 +168,7 @@ export default async function TeamPage() {
                           />
                         )}
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-6 py-4">
                         {isOwnerRole || isSelf ? (
                           <span className={`text-xs font-medium ${member.is_active ? 'text-green-700' : 'text-gray-400'}`}>
                             {member.is_active ? t.active : t.inactive}
@@ -180,7 +181,7 @@ export default async function TeamPage() {
                           />
                         )}
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-6 py-4">
                         {!isOwnerRole && !isSelf && (
                           <TeamMemberResetPasswordButton
                             memberId={member.id}

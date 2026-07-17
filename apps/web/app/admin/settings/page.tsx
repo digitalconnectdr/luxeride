@@ -216,15 +216,16 @@ export default async function SettingsPage({
     .filter((p): p is { plan: typeof p.plan; url: string } => !!p.url)
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-8">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
 
       <div>
-        <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface">{t.title}</h1>
-        <p className="mt-1 text-sm text-sl-on-surface-muted">{t.subtitle}</p>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+        <p className="text-sm text-sl-on-surface-muted">{t.subtitle}</p>
       </div>
 
       {/* ── Suscripción a la plataforma (Whop) ── */}
-      <section id="subscription" className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6 scroll-mt-6">
+      <section id="subscription" className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6 scroll-mt-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold text-sl-on-surface">{t.subscriptionTitle}</h2>
@@ -337,7 +338,7 @@ export default async function SettingsPage({
       )}
 
       {/* ── Company Information ── */}
-      <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
         <h2 className="text-sm font-semibold text-sl-on-surface mb-5">{t.companyInfo}</h2>
         <form action={infoAction} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -417,7 +418,7 @@ export default async function SettingsPage({
       <ServicesManager t={t} actions={actions} services={services} />
 
       {/* ── Booking Settings ── */}
-      <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
         <h2 className="text-sm font-semibold text-sl-on-surface mb-5">{t.bookingSettings}</h2>
         <form action={bookingAction} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -529,7 +530,7 @@ export default async function SettingsPage({
       </section>
 
       {/* ── Cancellation Policy (F1.10) ── */}
-      <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
         <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.policyTitle}</h2>
         <p className="text-xs text-sl-on-surface-muted mb-5">
           {t.policyDesc}
@@ -592,7 +593,7 @@ export default async function SettingsPage({
       </section>
 
       {/* ── Cargos extra en viaje (pasajero/equipaje adicional) ── */}
-      <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
         <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.extraFeesTitle}</h2>
         <p className="text-xs text-sl-on-surface-muted mb-5">
           {t.extraFeesDesc}
@@ -635,7 +636,7 @@ export default async function SettingsPage({
 
       {/* ── Payments / Stripe Connect (oculto — ver STRIPE_CONNECT_ENABLED) ── */}
       {STRIPE_CONNECT_ENABLED && (
-      <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
         <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.paymentsTitle}</h2>
 
         {searchParams.stripe_error && (
@@ -713,7 +714,7 @@ export default async function SettingsPage({
       )}
 
       {/* ── Payments / Whop Connect ── */}
-      <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
         <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.whopPaymentsTitle}</h2>
 
         {searchParams.whop_error && (
@@ -805,7 +806,7 @@ export default async function SettingsPage({
       </section>
 
       {/* ── QuickBooks Online ── */}
-      <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
         <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.quickbooksTitle}</h2>
 
         {searchParams.quickbooks_error && (
@@ -900,7 +901,7 @@ export default async function SettingsPage({
       </section>
 
       {/* ── Gratuity Settings ── */}
-      <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
         <h2 className="text-sm font-semibold text-sl-on-surface mb-5">{t.gratuityTitle}</h2>
         {booking.require_deposit && (
           <p className="mb-4 text-xs text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">

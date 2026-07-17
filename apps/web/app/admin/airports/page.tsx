@@ -43,13 +43,14 @@ export default async function AirportsPage() {
     'placeholder:text-sl-on-surface-muted/50 focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze'
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface">{t.title}</h1>
-          <p className="mt-1 text-sm text-sl-on-surface-muted">
+          <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+          <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+          <p className="text-sm text-sl-on-surface-muted">
             {t.subtitle}
           </p>
         </div>
@@ -62,7 +63,7 @@ export default async function AirportsPage() {
 
       {/* Add Airport Form */}
       {isAdmin && notAddedAirports.length > 0 && (
-        <div className="bg-sl-surface border border-sl-outline-variant rounded-xl p-5 mb-6">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5">
           <h2 className="text-sm font-semibold text-sl-on-surface mb-4">{t.addTitle}</h2>
           <form action={airportAction} className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[200px]">
@@ -114,7 +115,7 @@ export default async function AirportsPage() {
 
       {/* Crear aeropuerto fuera del catálogo */}
       {isAdmin && (
-        <details className="bg-sl-surface border border-sl-outline-variant rounded-xl mb-6 group">
+        <details className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm group">
           <summary className="px-5 py-4 text-sm font-medium text-bronze cursor-pointer list-none hover:text-bronze/80 transition-colors">
             ✈ {t.custom.toggle}
           </summary>
@@ -158,28 +159,28 @@ export default async function AirportsPage() {
 
       {/* Airports Table */}
       {!companyAirports || companyAirports.length === 0 ? (
-        <div className="bg-sl-surface border border-sl-outline-variant rounded-xl p-12 text-center">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-12 text-center">
           <p className="text-sm text-sl-on-surface-muted">{t.empty}</p>
           {isAdmin && (
             <p className="mt-1 text-xs text-sl-on-surface-muted">{t.emptyHint}</p>
           )}
         </div>
       ) : (
-        <div className="bg-sl-surface border border-sl-outline-variant rounded-xl overflow-hidden">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-sl-outline-variant">
-                <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thAirport}</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thPickup}</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thDropoff}</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thStatus}</th>
+              <tr className="border-b border-gold/20">
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thAirport}</th>
+                <th className="text-right px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thPickup}</th>
+                <th className="text-right px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thDropoff}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thStatus}</th>
                 {isAdmin && (
-                  <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thActions}</th>
+                  <th className="text-right px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thActions}</th>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-sl-outline-variant/40">
+            <tbody className="divide-y divide-sl-outline-variant/50">
               {companyAirports.map((ca) => (
                 <AirportRow
                   key={ca.id}

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Plus } from 'lucide-react'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { BookingStatusBadge } from '@/components/bookings/booking-status-badge'
@@ -131,32 +132,32 @@ export default async function AdminBookingsPage({
     (counts['en_route'] ?? 0) + (counts['arrived'] ?? 0) + (counts['in_progress'] ?? 0)
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.title}</h1>
-          <p className="text-sm text-sl-on-surface-muted mt-1">
+          <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+          <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+          <p className="text-sm text-sl-on-surface-muted">
             {t.summary.replace('{total}', String(totalCount)).replace('{active}', String(totalActive))}
           </p>
         </div>
         <Link
           href="/admin/bookings/new"
-          className="px-4 py-2 bg-gold text-gray-900 text-sm font-medium rounded-xl hover:bg-gold/90 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-gold text-gray-900 text-sm font-semibold rounded-xl hover:bg-gold/90 shadow-sm transition-colors"
         >
+          <Plus size={16} strokeWidth={2.25} />
           {t.newBooking}
         </Link>
       </div>
 
       {/* Stat pills por estado */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-1 bg-white border border-sl-outline-variant rounded-full p-1.5 w-fit">
         <Link
           href="/admin/bookings"
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-            !filterStatus
-              ? 'bg-[#1d1d1f] text-white'
-              : 'bg-sl-surface-high border border-sl-outline-variant text-sl-on-surface-muted hover:border-bronze'
+          className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+            !filterStatus ? 'bg-gold text-gray-900 shadow-sm' : 'text-sl-on-surface-muted hover:text-sl-on-surface'
           }`}
         >
           {t.all} ({totalCount})
@@ -166,10 +167,8 @@ export default async function AdminBookingsPage({
             <Link
               key={s}
               href={`/admin/bookings?status=${s}`}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                filterStatus === s
-                  ? 'bg-[#1d1d1f] text-white'
-                  : 'bg-sl-surface-high border border-sl-outline-variant text-sl-on-surface-muted hover:border-bronze'
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                filterStatus === s ? 'bg-gold text-gray-900 shadow-sm' : 'text-sl-on-surface-muted hover:text-sl-on-surface'
               }`}
             >
               {statusLabels[s]} ({counts[s]})
@@ -180,7 +179,7 @@ export default async function AdminBookingsPage({
 
       {/* Tabla */}
       {!bookings?.length ? (
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-12 text-center">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-12 text-center">
           <p className="text-sm text-sl-on-surface-muted">
             {filterStatus ? t.emptyFiltered.replace('{status}', statusLabels[filterStatus]) : t.empty}
           </p>
@@ -192,57 +191,54 @@ export default async function AdminBookingsPage({
           </Link>
         </div>
       ) : (
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-sl-outline-variant">
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colNumber}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPassenger}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colStatus}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDateTime}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPickup}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDropoff}</th>
-                <th className="text-right px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colTotal}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPayment}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colRating}</th>
+              <tr className="border-b border-gold/20">
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colNumber}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPassenger}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colStatus}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDateTime}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPickup}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDropoff}</th>
+                <th className="text-right px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colTotal}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPayment}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colRating}</th>
               </tr>
             </thead>
-            <tbody>
-              {bookings.map((b, idx) => (
-                <tr
-                  key={b.id}
-                  className={`border-b border-sl-outline-variant last:border-0 hover:bg-sl-bg/50 transition-colors ${idx % 2 === 0 ? '' : 'bg-sl-bg/20'}`}
-                >
-                  <td className="px-5 py-3">
+            <tbody className="divide-y divide-sl-outline-variant/50">
+              {bookings.map((b) => (
+                <tr key={b.id} className="hover:bg-sl-bg/40 transition-colors">
+                  <td className="px-6 py-4">
                     <Link href={`/admin/bookings/${b.id}`} className="font-mono text-xs text-bronze hover:underline">
                       {b.booking_number}
                     </Link>
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-6 py-4">
                     <p className="font-medium text-sl-on-surface">{b.passenger_name ?? '—'}</p>
                     {b.passenger_phone && (
                       <p className="text-[11px] text-sl-on-surface-muted">{b.passenger_phone}</p>
                     )}
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-6 py-4">
                     <BookingStatusBadge status={b.status as BookingStatus} labels={statusLabels} />
                   </td>
-                  <td className="px-5 py-3 text-sl-on-surface-muted">
+                  <td className="px-6 py-4 text-sl-on-surface-muted">
                     {formatDate(b.scheduled_at, localeTag)}
                   </td>
-                  <td className="px-5 py-3 text-sl-on-surface max-w-[180px] truncate">
+                  <td className="px-6 py-4 text-sl-on-surface max-w-[180px] truncate">
                     {shortAddress(b.pickup_location)}
                   </td>
-                  <td className="px-5 py-3 text-sl-on-surface max-w-[180px] truncate">
+                  <td className="px-6 py-4 text-sl-on-surface max-w-[180px] truncate">
                     {shortAddress(b.dropoff_location)}
                   </td>
-                  <td className="px-5 py-3 text-right font-semibold text-sl-on-surface">
+                  <td className="px-6 py-4 text-right font-semibold text-sl-on-surface">
                     {b.total_amount != null
                       ? `$${Number(b.total_amount).toFixed(2)}`
                       : '—'}
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-6 py-4">
                     {(() => {
                       const payment = paymentInfo(b.id)
                       const badgeCls = payment.kind === 'cash'
@@ -257,7 +253,7 @@ export default async function AdminBookingsPage({
                       )
                     })()}
                   </td>
-                  <td className="px-5 py-3 text-sl-on-surface-muted">
+                  <td className="px-6 py-4 text-sl-on-surface-muted">
                     {b.rating != null ? (
                       <span className="text-bronze font-medium">★ {b.rating}</span>
                     ) : '—'}

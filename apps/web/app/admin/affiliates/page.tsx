@@ -80,10 +80,11 @@ export default async function AffiliatesPage() {
   })
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
       <div>
-        <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface">{t.pageTitle}</h1>
-        <p className="mt-1 text-sm text-sl-on-surface-muted">{t.pageSubtitle}</p>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.pageTitle}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+        <p className="text-sm text-sl-on-surface-muted">{t.pageSubtitle}</p>
       </div>
 
       {!enabled ? (
@@ -93,7 +94,7 @@ export default async function AffiliatesPage() {
           <InviteAffiliateForm t={t.relationships} />
           <InviteExternalAffiliateCard t={t.externalInvite} />
 
-          <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
+          <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.relationships.listTitle}</p>
               <Link href="/admin/affiliates/requests" className="text-xs text-bronze hover:underline">{t.requests.title} →</Link>

@@ -46,10 +46,11 @@ export default async function ReferralsPage() {
   const nextTier = REFERRAL_TIERS.find((tier) => tier.min > activeCount)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.pageTitle}</h1>
-        <p className="text-sm text-sl-on-surface-muted mt-1 max-w-2xl">{t.pageDesc}</p>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.pageTitle}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+        <p className="text-sm text-sl-on-surface-muted max-w-2xl">{t.pageDesc}</p>
       </div>
 
       <ReferralLinkCard
@@ -60,7 +61,7 @@ export default async function ReferralsPage() {
         copiedLabel={t.copiedLink}
       />
 
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
           {t.yourTierLabel}
         </p>
@@ -83,25 +84,25 @@ export default async function ReferralsPage() {
         )}
       </div>
 
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
         {!rows.length ? (
           <p className="p-6 text-sm text-sl-on-surface-muted text-center">{t.empty}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-sl-outline-variant text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-                  <th className="px-6 py-3 font-semibold">{t.tableReferred}</th>
-                  <th className="px-6 py-3 font-semibold">{t.tableTier}</th>
-                  <th className="px-6 py-3 font-semibold">{t.tableDate}</th>
-                  <th className="px-6 py-3 font-semibold">{t.tableExpires}</th>
+                <tr className="border-b border-gold/20 text-left text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+                  <th className="px-6 py-4 font-semibold">{t.tableReferred}</th>
+                  <th className="px-6 py-4 font-semibold">{t.tableTier}</th>
+                  <th className="px-6 py-4 font-semibold">{t.tableDate}</th>
+                  <th className="px-6 py-4 font-semibold">{t.tableExpires}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-sl-outline-variant">
+              <tbody className="divide-y divide-sl-outline-variant/50">
                 {rows.map((r) => {
                   const expired = new Date(r.expires_at).getTime() <= now
                   return (
-                    <tr key={r.referred_company_id}>
+                    <tr key={r.referred_company_id} className="hover:bg-sl-bg/40 transition-colors">
                       <td className="px-6 py-3.5 text-sl-on-surface whitespace-nowrap">
                         {nameById.get(r.referred_company_id) ?? '—'}
                       </td>

@@ -37,10 +37,11 @@ export default async function GrowthAssistantPage() {
 
   if (!tier) {
     return (
-      <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+      <div className="p-8 max-w-[1400px] mx-auto space-y-5">
         <div>
-          <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface">{t.title}</h1>
-          <p className="mt-1 text-sm text-sl-on-surface-muted">{t.subtitle}</p>
+          <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+          <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+          <p className="text-sm text-sl-on-surface-muted">{t.subtitle}</p>
         </div>
         <div className="grid sm:grid-cols-2 gap-6 max-w-3xl">
           <AddonUpsellCard
@@ -74,13 +75,14 @@ export default async function GrowthAssistantPage() {
   const pct = Math.min(100, Math.round((used / quota) * 100))
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-8">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface">{t.title}</h1>
-        <p className="mt-1 text-sm text-sl-on-surface-muted">{t.subtitle}</p>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+        <p className="text-sm text-sl-on-surface-muted">{t.subtitle}</p>
       </div>
 
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6 max-w-lg space-y-4">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6 max-w-lg space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-sm text-sl-on-surface-muted">{t.activeTier}</p>
           <span className="text-sm font-semibold text-sl-on-surface capitalize">

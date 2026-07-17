@@ -72,33 +72,34 @@ export default async function DriverReportsPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
       <div>
-        <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.title}</h1>
-        <p className="text-sm text-sl-on-surface-muted mt-1">{t.subtitle}</p>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+        <p className="text-sm text-sl-on-surface-muted">{t.subtitle}</p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex items-center gap-1 bg-white border border-sl-outline-variant rounded-full p-1.5 w-fit">
         <Link
           href={tabHref(undefined)}
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-            !filter ? 'bg-[#1d1d1f] text-white' : 'bg-sl-surface-high border border-sl-outline-variant text-sl-on-surface-muted hover:border-bronze'
+          className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+            !filter ? 'bg-gold text-gray-900 shadow-sm' : 'text-sl-on-surface-muted hover:text-sl-on-surface'
           }`}
         >
           {t.all} ({rows.length})
         </Link>
         <Link
           href={tabHref('pending')}
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-            filter === 'pending' ? 'bg-[#1d1d1f] text-white' : 'bg-sl-surface-high border border-sl-outline-variant text-sl-on-surface-muted hover:border-bronze'
+          className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+            filter === 'pending' ? 'bg-gold text-gray-900 shadow-sm' : 'text-sl-on-surface-muted hover:text-sl-on-surface'
           }`}
         >
           {t.pending} ({pendingCount})
         </Link>
         <Link
           href={tabHref('resolved')}
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-            filter === 'resolved' ? 'bg-[#1d1d1f] text-white' : 'bg-sl-surface-high border border-sl-outline-variant text-sl-on-surface-muted hover:border-bronze'
+          className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+            filter === 'resolved' ? 'bg-gold text-gray-900 shadow-sm' : 'text-sl-on-surface-muted hover:text-sl-on-surface'
           }`}
         >
           {t.resolved} ({resolvedCount})
@@ -106,39 +107,36 @@ export default async function DriverReportsPage({ searchParams }: PageProps) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-12 text-center">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-12 text-center">
           <p className="text-sm text-sl-on-surface-muted">
             {filter ? t.emptyFiltered.replace('{status}', filter === 'pending' ? t.pending.toLowerCase() : t.resolved.toLowerCase()) : t.empty}
           </p>
         </div>
       ) : (
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-sl-outline-variant">
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thDate}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thBooking}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thDriver}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thCategory}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thReason}</th>
-                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thStatus}</th>
-                <th className="text-right px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thActions}</th>
+              <tr className="border-b border-gold/20">
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thDate}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thBooking}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thDriver}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thCategory}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thReason}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thStatus}</th>
+                <th className="text-right px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thActions}</th>
               </tr>
             </thead>
-            <tbody>
-              {filtered.map((r, idx) => {
+            <tbody className="divide-y divide-sl-outline-variant/50">
+              {filtered.map((r) => {
                 const booking = bookingById.get(r.booking_id)
                 const driverName = r.driver_id ? driverById.get(r.driver_id) : null
                 return (
-                  <tr
-                    key={r.id}
-                    className={`border-b border-sl-outline-variant last:border-0 hover:bg-sl-bg/50 transition-colors ${idx % 2 === 0 ? '' : 'bg-sl-bg/20'}`}
-                  >
-                    <td className="px-5 py-3 text-sl-on-surface-muted whitespace-nowrap">
+                  <tr key={r.id} className="hover:bg-sl-bg/40 transition-colors">
+                    <td className="px-6 py-4 text-sl-on-surface-muted whitespace-nowrap">
                       {new Date(r.created_at).toLocaleString(localeTag, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-6 py-4">
                       {booking ? (
                         <Link href={`/admin/bookings/${r.booking_id}`} className="font-mono text-xs text-bronze hover:underline">
                           {booking.booking_number}
@@ -148,25 +146,25 @@ export default async function DriverReportsPage({ searchParams }: PageProps) {
                         <p className="text-[11px] text-sl-on-surface-muted mt-0.5">{booking.passenger_name}</p>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-sl-on-surface">
+                    <td className="px-6 py-4 text-sl-on-surface">
                       {driverName ?? t.unassignedDriver}
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-6 py-4">
                       <span className={`inline-flex text-xs font-medium px-2 py-0.5 rounded-full border ${CATEGORY_BADGE[r.category] ?? CATEGORY_BADGE.other}`}>
                         {t.categories[r.category as keyof typeof t.categories] ?? r.category}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-sl-on-surface max-w-[260px]">
+                    <td className="px-6 py-4 text-sl-on-surface max-w-[260px]">
                       {r.reason}
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-6 py-4">
                       {r.resolved_at ? (
                         <span className="text-xs font-medium text-green-700">{t.statusResolved}</span>
                       ) : (
                         <span className="text-xs font-medium text-amber-600">{t.statusPending}</span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-right">
+                    <td className="px-6 py-4 text-right">
                       {!r.resolved_at && (
                         <DriverReportResolveButton reportId={r.id} label={t.markResolved} resolving={t.resolving} />
                       )}

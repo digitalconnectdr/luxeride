@@ -24,51 +24,52 @@ export default async function PartnersPage() {
   const t = getDict().admin.partners
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
       <div>
-        <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface">{t.title}</h1>
-        <p className="mt-1 text-sm text-sl-on-surface-muted">{t.subtitle}</p>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+        <p className="text-sm text-sl-on-surface-muted">{t.subtitle}</p>
       </div>
 
       <PartnerForm t={t} />
 
-      <div className="bg-sl-surface border border-sl-outline-variant rounded-xl overflow-hidden">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
         {!partners?.length ? (
           <p className="p-6 text-sm text-sl-on-surface-muted">{t.noPartners}</p>
         ) : (
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-sl-outline-variant text-left text-xs text-sl-on-surface-muted">
-                <th className="px-4 py-3 font-medium">{t.name}</th>
-                <th className="px-4 py-3 font-medium">{t.privateLink}</th>
-                <th className="px-4 py-3 font-medium">{t.rateAdjustment}</th>
-                <th className="px-4 py-3 font-medium">{t.commission}</th>
-                <th className="px-4 py-3 font-medium"></th>
-                <th className="px-4 py-3 font-medium"></th>
+              <tr className="border-b border-gold/20 text-left text-[10px] uppercase tracking-widest text-sl-on-surface-muted">
+                <th className="px-6 py-4 font-semibold">{t.name}</th>
+                <th className="px-6 py-4 font-semibold">{t.privateLink}</th>
+                <th className="px-6 py-4 font-semibold">{t.rateAdjustment}</th>
+                <th className="px-6 py-4 font-semibold">{t.commission}</th>
+                <th className="px-6 py-4 font-semibold"></th>
+                <th className="px-6 py-4 font-semibold"></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-sl-outline-variant/50">
               {partners.map((p) => {
                 const url = `${getAppUrl()}/book/${company.slug}/partners/${p.slug}`
                 return (
-                  <tr key={p.id} className="border-b border-sl-outline-variant last:border-0">
-                    <td className="px-4 py-3 text-sl-on-surface">
+                  <tr key={p.id} className="hover:bg-sl-bg/40 transition-colors">
+                    <td className="px-6 py-4 text-sl-on-surface">
                       <Link href={`/admin/partners/${p.id}`} className="hover:text-bronze transition-colors">{p.name}</Link>
                     </td>
-                    <td className="px-4 py-3 text-sl-on-surface-muted">
+                    <td className="px-6 py-4 text-sl-on-surface-muted">
                       <div className="flex items-center gap-2 max-w-xs">
                         <span className="truncate font-mono text-xs">{url}</span>
                         <CopyButton text={url} label={t.copyLink} copiedLabel={t.copied} light />
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sl-on-surface-muted">
+                    <td className="px-6 py-4 text-sl-on-surface-muted">
                       {Number(p.rate_adjustment_pct) > 0 ? '+' : ''}{p.rate_adjustment_pct}%
                     </td>
-                    <td className="px-4 py-3 text-sl-on-surface-muted">
+                    <td className="px-6 py-4 text-sl-on-surface-muted">
                       {p.commission_type === 'percentage' ? `${p.commission_value}%` : `$${p.commission_value}`}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-6 py-4 text-right">
                       <PartnerActiveToggle
                         partnerId={p.id}
                         isActive={p.is_active}
@@ -76,8 +77,11 @@ export default async function PartnersPage() {
                         inactiveLabel={t.inactive}
                       />
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link href={`/admin/partners/${p.id}`} className="text-xs font-medium text-bronze hover:opacity-80">
+                    <td className="px-6 py-4 text-right">
+                      <Link
+                        href={`/admin/partners/${p.id}`}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-bronze border border-bronze/30 rounded-lg hover:bg-bronze/5 hover:border-bronze transition-colors"
+                      >
                         {t.viewReport}
                       </Link>
                     </td>

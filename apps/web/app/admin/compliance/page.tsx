@@ -68,14 +68,15 @@ export default async function CompliancePage() {
   const vehicles = (blockedVehicles ?? []) as unknown as BlockedVehicleRow[]
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
       <div>
-        <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.title}</h1>
-        <p className="text-sm text-sl-on-surface-muted mt-1">{t.subtitle}</p>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+        <p className="text-sm text-sl-on-surface-muted">{t.subtitle}</p>
       </div>
 
       {/* Company status */}
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.companyStatusTitle}</p>
           <div className="flex items-center gap-2">
@@ -94,7 +95,7 @@ export default async function CompliancePage() {
 
       {/* Fleet summary */}
       {(drivers.length > 0 || vehicles.length > 0) && (
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
           <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.fleetSummaryTitle}</p>
           {drivers.length > 0 && (
             <div className="space-y-1.5">
@@ -127,7 +128,7 @@ export default async function CompliancePage() {
         </div>
       )}
       {drivers.length === 0 && vehicles.length === 0 && (
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5">
           <p className="text-xs text-sl-on-surface-muted">{t.noIssues}</p>
         </div>
       )}

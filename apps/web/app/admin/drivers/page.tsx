@@ -112,12 +112,13 @@ export default async function DriversPage() {
   const today = new Date()
 
   return (
-    <div className="p-8 space-y-6 max-w-[1400px] mx-auto">
+    <div className="p-8 space-y-5 max-w-[1400px] mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">Conductores</h1>
-          <p className="text-sm text-sl-on-surface-muted mt-1">
+          <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">Conductores</h1>
+          <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+          <p className="text-sm text-sl-on-surface-muted">
             {allProfiles.length} conductor{allProfiles.length !== 1 ? 'es' : ''}
             {' · '}
             {(driversData ?? []).filter((d) => d.is_available).length} disponibles
@@ -127,7 +128,7 @@ export default async function DriversPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
         {allProfiles.length === 0 ? (
           <div className="px-6 py-16 text-center space-y-2">
             <p className="text-sm text-sl-on-surface-muted">No hay conductores registrados.</p>
@@ -137,9 +138,9 @@ export default async function DriversPage() {
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-sl-outline-variant">
+              <tr className="border-b border-gold/20">
                 {['Conductor', 'Licencia', 'Vehículo asignado', 'Viajes', 'Rating', 'Disponibilidad', ''].map((h) => (
-                  <th key={h} className="text-left px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+                  <th key={h} className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
                     {h}
                   </th>
                 ))}
@@ -157,7 +158,7 @@ export default async function DriversPage() {
                 return (
                   <tr key={p.id} className="hover:bg-sl-bg/40 transition-colors group">
                     {/* Name */}
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center shrink-0">
                           <span className="text-xs font-semibold text-bronze">
@@ -176,7 +177,7 @@ export default async function DriversPage() {
                     </td>
 
                     {/* License */}
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       {dr ? (
                         <div>
                           <p className="text-xs text-sl-on-surface">
@@ -197,7 +198,7 @@ export default async function DriversPage() {
 
                     {/* Vehículo asignado hoy — un conductor puede tener varios vehículos
                         disponibles pero solo uno current_vehicle_id a la vez. */}
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       {(() => {
                         const v = dr?.current_vehicle_id ? vehicleById[dr.current_vehicle_id] : null
                         if (!v) return <span className="text-xs text-sl-on-surface-muted">Sin asignar</span>
@@ -211,14 +212,14 @@ export default async function DriversPage() {
                     </td>
 
                     {/* Trips — conteo dinámico de viajes completados */}
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       <span className="text-xs text-sl-on-surface-muted">
                         {tripCounts[p.id] ?? 0}
                       </span>
                     </td>
 
                     {/* Rating */}
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       {dr?.rating != null ? (
                         <span className="text-xs text-bronze font-medium">
                           ★ {Number(dr.rating).toFixed(1)}
@@ -229,7 +230,7 @@ export default async function DriversPage() {
                     </td>
 
                     {/* Availability toggle */}
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       {dr && !isAccounting ? (
                         <DriverAvailabilityToggle
                           driverId={dr.id}
@@ -245,10 +246,10 @@ export default async function DriversPage() {
                     </td>
 
                     {/* Link */}
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-6 py-4 text-right">
                       <Link
                         href={`/admin/drivers/${p.id}`}
-                        className="text-xs font-medium text-bronze hover:text-bronze/80 hover:underline transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-bronze border border-bronze/30 rounded-lg hover:bg-bronze/5 hover:border-bronze transition-colors"
                       >
                         Perfil →
                       </Link>

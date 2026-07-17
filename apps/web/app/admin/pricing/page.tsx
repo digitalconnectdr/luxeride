@@ -42,13 +42,14 @@ export default async function PricingPage() {
   const actions = dict.actions
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface">{t.title}</h1>
-          <p className="mt-1 text-sm text-sl-on-surface-muted">
+          <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+          <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+          <p className="text-sm text-sl-on-surface-muted">
             {t.subtitle}
           </p>
         </div>
@@ -58,7 +59,7 @@ export default async function PricingPage() {
       </div>
 
       {/* Add Rule Form */}
-      <div className="bg-sl-surface border border-sl-outline-variant rounded-xl p-5 mb-6">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5">
         <h2 className="text-sm font-semibold text-sl-on-surface mb-4">{t.addTitle}</h2>
         <form action={pricingAction}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -209,26 +210,26 @@ export default async function PricingPage() {
 
       {/* Rules Table */}
       {!rules || rules.length === 0 ? (
-        <div className="bg-sl-surface border border-sl-outline-variant rounded-xl p-12 text-center">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-12 text-center">
           <p className="text-sm text-sl-on-surface-muted">{t.empty}</p>
           <p className="mt-1 text-xs text-sl-on-surface-muted">{t.emptyHint}</p>
         </div>
       ) : (
-        <div className="bg-sl-surface border border-sl-outline-variant rounded-xl overflow-hidden">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-sl-outline-variant">
-                <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thRule}</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thModel}</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thBase}</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">Min Fare</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thPriority}</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thStatus}</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wider text-sl-on-surface-muted">{t.thActions}</th>
+              <tr className="border-b border-gold/20">
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thRule}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thModel}</th>
+                <th className="text-right px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thBase}</th>
+                <th className="text-right px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">Min Fare</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thPriority}</th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thStatus}</th>
+                <th className="text-right px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thActions}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-sl-outline-variant/40">
+            <tbody className="divide-y divide-sl-outline-variant/50">
               {rules.map((rule) => (
                 <PricingRuleRow
                   key={rule.id}

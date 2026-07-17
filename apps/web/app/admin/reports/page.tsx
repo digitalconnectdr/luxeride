@@ -94,24 +94,25 @@ export default async function ReportsPage({
   }
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
-      <div className="flex items-start justify-between">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">Reportes</h1>
-          <p className="text-sm text-sl-on-surface-muted mt-1">
+          <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">Reportes</h1>
+          <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+          <p className="text-sm text-sl-on-surface-muted">
             Ingresos y operación del {from.toLocaleDateString('es-DO')} al {to.toLocaleDateString('es-DO')}.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <Link
             href="/admin/audit"
-            className="px-3 py-2 text-xs font-medium border border-sl-outline-variant text-sl-on-surface rounded-lg hover:border-bronze transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold bg-white border border-bronze/40 text-sl-on-surface rounded-xl hover:border-bronze hover:bg-bronze/5 transition-colors"
           >
             Audit Log
           </Link>
           <a
             href={csvUrl}
-            className="px-3 py-2 text-xs font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold bg-gold text-gray-900 rounded-xl hover:bg-gold/90 shadow-sm transition-colors"
           >
             ↓ Exportar CSV
           </a>
@@ -119,7 +120,7 @@ export default async function ReportsPage({
       </div>
 
       {/* Filtro de fechas */}
-      <form method="get" className="flex items-end gap-3 bg-sl-surface border border-sl-outline-variant rounded-xl p-4">
+      <form method="get" className="flex items-end gap-3 bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-4">
         <div>
           <label className="block text-xs text-sl-on-surface-muted mb-1">Desde</label>
           <input type="date" name="from" defaultValue={fmtDate(from)} className={inputCls} />
@@ -144,7 +145,7 @@ export default async function ReportsPage({
           { label: 'Tarifa promedio', value: `$${avgFare.toFixed(2)}` },
           { label: 'Tasa de cancelación', value: `${cancelRate.toFixed(1)}%` },
         ].map((c) => (
-          <div key={c.label} className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
+          <div key={c.label} className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
               {c.label}
             </p>
@@ -154,15 +155,15 @@ export default async function ReportsPage({
       </div>
 
       {/* Por estado */}
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-sl-outline-variant">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gold/20">
           <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
             Reservaciones por estado ({all.length} total)
           </p>
         </div>
         <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <tbody className="divide-y divide-sl-outline-variant">
+          <tbody className="divide-y divide-sl-outline-variant/50">
             {[...byStatus.entries()]
               .sort((a, b) => b[1].count - a[1].count)
               .map(([status, e]) => (
@@ -187,8 +188,8 @@ export default async function ReportsPage({
       </div>
 
       {/* Top conductores */}
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-sl-outline-variant">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gold/20">
           <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
             Top conductores (por ingresos)
           </p>
@@ -200,7 +201,7 @@ export default async function ReportsPage({
         ) : (
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <tbody className="divide-y divide-sl-outline-variant">
+            <tbody className="divide-y divide-sl-outline-variant/50">
               {topDriverIds.map(([driverId, e], i) => (
                 <tr key={driverId}>
                   <td className="px-6 py-3 text-sl-on-surface">

@@ -114,10 +114,11 @@ export default async function AdminMessagesPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
       <div>
-        <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.title}</h1>
-        <p className="text-sm text-sl-on-surface-muted mt-1">{t.subtitle}</p>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+        <p className="text-sm text-sl-on-surface-muted">{t.subtitle}</p>
       </div>
 
       {/* Filtros — GET form, sin JS, resetea a página 1 al enviar */}
@@ -160,11 +161,11 @@ export default async function AdminMessagesPage({ searchParams }: PageProps) {
         )}
       </form>
 
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
         {rows.length === 0 ? (
           <p className="p-8 text-sm text-sl-on-surface-muted text-center">{hasFilters ? t.noResults : t.empty}</p>
         ) : (
-          <div className="divide-y divide-sl-outline-variant">
+          <div className="divide-y divide-sl-outline-variant/50">
             {pagedRows.map((th) => {
               const b = bookingById.get(th.bookingId)!
               const driverName = b.driver_id ? driverNameById.get(b.driver_id) : null
@@ -172,7 +173,7 @@ export default async function AdminMessagesPage({ searchParams }: PageProps) {
                 <Link
                   key={th.bookingId}
                   href={`/admin/messages/${th.bookingId}`}
-                  className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-sl-bg/60 transition-colors"
+                  className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-sl-bg/40 transition-colors"
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
