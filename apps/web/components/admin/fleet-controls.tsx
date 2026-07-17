@@ -1,6 +1,7 @@
 'use client'
 
 import { useTransition } from 'react'
+import { ChevronDown } from 'lucide-react'
 import {
   updateVehicleStatus,
   assignDriverToVehicle,
@@ -15,9 +16,19 @@ type FleetDict = Dictionary['admin']['fleet']
 const EN_STATUSES = { available: 'Available', on_trip: 'On trip', maintenance: 'Maintenance', offline: 'Offline', retired: 'Retired' }
 
 const selectCls =
-  'text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-1.5 text-sl-on-surface ' +
+  'text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2.5 text-sl-on-surface min-w-[9rem] ' +
   'focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze ' +
   'disabled:opacity-60 disabled:cursor-not-allowed transition-all'
+
+// Estilo de píldora por estado — verde suave para "Disponible" (semántico,
+// no ligado al dorado de marca), tonos neutros para el resto.
+const STATUS_PILL: Record<VehicleStatus, { pill: string; dot: string }> = {
+  available:   { pill: 'bg-green-50 border-green-200 text-green-800', dot: 'bg-green-500' },
+  on_trip:     { pill: 'bg-blue-50 border-blue-200 text-blue-800',    dot: 'bg-blue-500' },
+  maintenance: { pill: 'bg-amber-50 border-amber-200 text-amber-800', dot: 'bg-amber-500' },
+  offline:     { pill: 'bg-gray-100 border-gray-200 text-gray-600',   dot: 'bg-gray-400' },
+  retired:     { pill: 'bg-gray-100 border-gray-200 text-gray-500',   dot: 'bg-gray-400' },
+}
 
 // ── Vehicle Status Select ─────────────────────────────────────────────────────
 
@@ -33,25 +44,30 @@ export function VehicleStatusSelect({
   saving?: string
 }) {
   const [isPending, startTransition] = useTransition()
+  const style = STATUS_PILL[current]
 
   return (
     <div className="flex items-center gap-2">
-      <select
-        defaultValue={current}
-        disabled={isPending}
-        onChange={(e) =>
-          startTransition(async () => {
-            await updateVehicleStatus(vehicleId, e.target.value as VehicleStatus)
-          })
-        }
-        className={selectCls}
-      >
-        <option value="available">{statuses.available}</option>
-        <option value="on_trip">{statuses.on_trip}</option>
-        <option value="maintenance">{statuses.maintenance}</option>
-        <option value="offline">{statuses.offline}</option>
-        <option value="retired">{statuses.retired}</option>
-      </select>
+      <div className={`relative inline-flex items-center gap-2 rounded-full border pl-3 pr-7 py-1.5 ${style.pill}`}>
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style.dot}`} />
+        <select
+          defaultValue={current}
+          disabled={isPending}
+          onChange={(e) =>
+            startTransition(async () => {
+              await updateVehicleStatus(vehicleId, e.target.value as VehicleStatus)
+            })
+          }
+          className="bg-transparent text-xs font-medium focus:outline-none cursor-pointer appearance-none disabled:cursor-not-allowed"
+        >
+          <option value="available">{statuses.available}</option>
+          <option value="on_trip">{statuses.on_trip}</option>
+          <option value="maintenance">{statuses.maintenance}</option>
+          <option value="offline">{statuses.offline}</option>
+          <option value="retired">{statuses.retired}</option>
+        </select>
+        <ChevronDown size={12} className="absolute right-2.5 opacity-50 pointer-events-none" />
+      </div>
       {isPending && <span className="text-xs text-sl-on-surface-muted animate-pulse">Saving…</span>}
     </div>
   )

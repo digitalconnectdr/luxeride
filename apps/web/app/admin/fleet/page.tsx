@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Plus, Info } from 'lucide-react'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { VehicleStatusSelect, DriverAssignSelect } from '@/components/admin/fleet-controls'
@@ -74,24 +75,26 @@ export default async function FleetPage({ searchParams }: PageProps) {
   ]
 
   return (
-    <div className="p-8 space-y-6 max-w-[1400px] mx-auto">
+    <div className="p-8 space-y-5 max-w-[1400px] mx-auto">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.title}</h1>
-          <p className="text-sm text-sl-on-surface-muted mt-1">
+          <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+          <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+          <p className="text-sm text-sl-on-surface-muted">
             {allVehicles.length} {t.vehicles}
             {' · '}
             {allVehicles.filter((v) => v.status === 'available').length} {t.available}
           </p>
         </div>
         {tab === 'vehicles' && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <ImportVehiclesCsv labels={t.importCsv} />
             <Link
               href="/admin/fleet/new"
-              className="px-4 py-2 text-sm font-semibold bg-gold text-gray-900 rounded-xl hover:bg-gold/90 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold bg-gold text-gray-900 rounded-xl hover:bg-gold/90 shadow-sm transition-colors"
             >
+              <Plus size={16} strokeWidth={2.25} />
               {t.addVehicle}
             </Link>
           </div>
@@ -99,15 +102,15 @@ export default async function FleetPage({ searchParams }: PageProps) {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-0.5 bg-sl-surface-high border border-sl-outline-variant rounded-xl p-1 w-fit">
+      <div className="flex items-center gap-1 bg-white border border-sl-outline-variant rounded-full p-1.5 w-fit">
         {tabs.map((tb) => (
           <Link
             key={tb.value}
             href={`/admin/fleet${tb.value !== 'vehicles' ? `?tab=${tb.value}` : ''}`}
             className={[
-              'px-4 py-1.5 rounded-lg text-xs font-medium transition-all',
+              'px-5 py-2 rounded-full text-sm font-medium transition-all',
               tab === tb.value
-                ? 'bg-gold text-gray-900'
+                ? 'bg-gold text-gray-900 shadow-sm'
                 : 'text-sl-on-surface-muted hover:text-sl-on-surface',
             ].join(' ')}
           >
@@ -117,14 +120,14 @@ export default async function FleetPage({ searchParams }: PageProps) {
       </div>
 
       {/* Aclaración de la pestaña activa (tipos ≠ vehículos) */}
-      <p className="flex items-start gap-2 text-xs text-sl-on-surface-muted -mt-2 max-w-2xl">
-        <span className="text-bronze shrink-0">ⓘ</span>
+      <p className="flex items-center gap-2 text-xs text-sl-on-surface-muted max-w-2xl">
+        <Info size={14} className="text-bronze shrink-0" strokeWidth={1.75} />
         {tab === 'types' ? t.tabTypesHelp : t.tabVehiclesHelp}
       </p>
 
       {/* ── VEHICLES TAB ── */}
       {tab === 'vehicles' && (
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
           {allVehicles.length === 0 ? (
             <div className="px-6 py-16 text-center space-y-3">
               <p className="text-sm text-sl-on-surface-muted">No hay vehículos registrados.</p>
@@ -136,9 +139,9 @@ export default async function FleetPage({ searchParams }: PageProps) {
             <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-sl-outline-variant">
+                <tr className="border-b border-gold/20">
                   {['Vehículo', 'Tipo', 'Estado', 'Conductor', ''].map((h) => (
-                    <th key={h} className="text-left px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+                    <th key={h} className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
                       {h}
                     </th>
                   ))}
@@ -149,31 +152,45 @@ export default async function FleetPage({ searchParams }: PageProps) {
                   const type = v.vehicle_type_id ? typeMap[v.vehicle_type_id] : null
                   return (
                     <tr key={v.id} className="hover:bg-sl-bg/40 transition-colors group">
-                      <td className="px-5 py-4">
-                        <p className="font-medium text-sl-on-surface flex items-center gap-2">
-                          {v.year} {v.make} {v.model}
-                          {maintenanceAlert(v.next_maintenance_at, v.insurance_expires_at) && (
-                            <span
-                              title={t.maintenanceDue}
-                              className="text-[10px] font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5"
-                            >
-                              ⚠ {t.maintenanceDue}
-                            </span>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {type?.base_image_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={type.base_image_url}
+                              alt={type.name}
+                              className="h-11 w-16 object-cover rounded-lg border border-sl-outline-variant shrink-0"
+                            />
+                          ) : (
+                            <div className="h-11 w-16 rounded-lg bg-sl-bg border border-sl-outline-variant shrink-0" />
                           )}
-                        </p>
-                        <p className="text-xs text-sl-on-surface-muted mt-0.5">
-                          {v.plate_number}{v.color ? ` · ${v.color}` : ''}
-                        </p>
+                          <div>
+                            <p className="font-semibold text-sl-on-surface flex items-center gap-2">
+                              {v.year} {v.make} {v.model}
+                              {maintenanceAlert(v.next_maintenance_at, v.insurance_expires_at) && (
+                                <span
+                                  title={t.maintenanceDue}
+                                  className="text-[10px] font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5"
+                                >
+                                  ⚠ {t.maintenanceDue}
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-xs text-sl-on-surface-muted mt-0.5">
+                              {v.plate_number}{v.color ? ` · ${v.color}` : ''}
+                            </p>
+                          </div>
+                        </div>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-6 py-4">
                         <span className="text-xs text-sl-on-surface-muted">
                           {type?.name ?? '—'}
                         </span>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-6 py-4">
                         <VehicleStatusSelect vehicleId={v.id} current={v.status} statuses={t.statuses} saving={t.saving} />
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-6 py-4">
                         <DriverAssignSelect
                           vehicleId={v.id}
                           currentDriverId={v.current_driver_id}
@@ -181,10 +198,10 @@ export default async function FleetPage({ searchParams }: PageProps) {
                           unassigned={t.unassigned}
                         />
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-6 py-4 text-right">
                         <Link
                           href={`/admin/fleet/${v.id}`}
-                          className="text-xs font-medium text-bronze hover:text-bronze/80 hover:underline transition-colors"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-bronze border border-bronze/30 rounded-lg hover:bg-bronze/5 hover:border-bronze transition-colors"
                         >
                           Detalles →
                         </Link>
@@ -203,19 +220,19 @@ export default async function FleetPage({ searchParams }: PageProps) {
       {tab === 'types' && (
         <div className="space-y-4">
           {allTypes.length === 0 && (
-            <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl px-6 py-12 text-center text-sm text-sl-on-surface-muted">
+            <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm px-6 py-12 text-center text-sm text-sl-on-surface-muted">
               Aún no hay tipos de vehículo. Agrega uno a continuación.
             </div>
           )}
 
           {allTypes.length > 0 && (
-            <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+            <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-sl-outline-variant">
+                  <tr className="border-b border-gold/20">
                     {['Tipo', 'Clase', 'Capacidad', 'Amenidades', 'Estado'].map((h) => (
-                      <th key={h} className="text-left px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+                      <th key={h} className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
                         {h}
                       </th>
                     ))}

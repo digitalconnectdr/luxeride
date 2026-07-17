@@ -129,7 +129,15 @@ export function VehicleTypeRow({
   return (
     <tr className="hover:bg-sl-bg/40 transition-colors">
       <td className="px-5 py-4">
-        <p className="font-medium text-sl-on-surface">{vt.name}</p>
+        <div className="flex items-center gap-3">
+          {vt.base_image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={vt.base_image_url} alt={vt.name} className="h-9 w-12 object-cover rounded-md border border-sl-outline-variant shrink-0" />
+          ) : (
+            <div className="h-9 w-12 rounded-md bg-sl-bg border border-sl-outline-variant shrink-0" />
+          )}
+          <p className="font-medium text-sl-on-surface">{vt.name}</p>
+        </div>
       </td>
       <td className="px-5 py-4">
         <span className="text-xs text-sl-on-surface-muted">

@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
+import { Upload } from 'lucide-react'
 import { importVehiclesCsvAction } from '@/app/actions/fleet'
 import { ActionErrorBanner } from '@/components/admin/action-error-banner'
 
@@ -54,8 +55,9 @@ export function ImportVehiclesCsv({ labels: t }: { labels: ImportVehiclesCsvLabe
     return (
       <button
         onClick={() => setOpen(true)}
-        className="px-4 py-2 text-sm font-semibold border border-sl-outline-variant text-sl-on-surface rounded-xl hover:border-bronze transition-colors"
+        className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold bg-white border border-bronze/40 text-sl-on-surface rounded-xl hover:border-bronze hover:bg-bronze/5 transition-colors"
       >
+        <Upload size={15} className="text-bronze" strokeWidth={1.75} />
         {t.trigger}
       </button>
     )
