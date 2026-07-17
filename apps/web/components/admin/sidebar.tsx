@@ -374,16 +374,16 @@ export function AdminSidebar({
             </div>
           ) : (
             <>
-              <div className="bg-white rounded-xl p-3 flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 px-1">
                 <div
                   title={roleLabel}
-                  className="w-8 h-8 rounded-full bg-gold/15 flex items-center justify-center shrink-0"
+                  className="w-8 h-8 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0"
                 >
-                  <span className="text-[11px] font-semibold text-bronze">{initials || 'U'}</span>
+                  <span className="text-[11px] font-semibold text-gold">{initials || 'U'}</span>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-sl-on-surface truncate">{userName}</p>
-                  <p className="text-[11px] text-sl-on-surface-muted truncate">{userEmail}</p>
+                  <p className="text-xs font-medium text-white truncate">{userName}</p>
+                  <p className="text-[11px] text-white/40 truncate">{userEmail}</p>
                 </div>
               </div>
               <div className="mt-3 px-1">
