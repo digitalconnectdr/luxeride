@@ -244,29 +244,32 @@ export default async function AdminDashboardPage() {
             href={card.href}
             className="bg-white border border-[#e5e1d8] rounded-xl px-3.5 py-3 shadow-sm hover:shadow-md hover:border-[#8a6520]/50 transition-all group"
           >
-            <card.icon size={14} className="mb-1.5 text-[#75716a]" strokeWidth={1.75} />
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-[#75716a]">
-              {card.label}
-            </p>
-            <p className="text-lg font-playfair font-semibold mt-0.5 text-[#1d1b18] transition-colors group-hover:text-[#8a6520]">
+            <div className="flex items-center gap-1.5 mb-1">
+              <card.icon size={13} className="text-[#75716a] shrink-0" strokeWidth={1.75} />
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-[#75716a] truncate">
+                {card.label}
+              </p>
+            </div>
+            <p className="text-lg font-playfair font-semibold text-[#1d1b18] transition-colors group-hover:text-[#8a6520]">
               {companyId ? card.value : '—'}
             </p>
           </Link>
         ))}
       </div>
 
-      {/* Ingresos — el centro visual financiero del panel: cuadro de acento oscuro
-          + cifras sobre fondo claro (no toda la tarjeta en negro). */}
+      {/* Ingresos — el centro visual financiero del panel: cuadro de acento claro
+          + cifras sobre fondo claro (nada de negro, la cifra mensual destaca por
+          tamaño moderado, no desproporcionado frente a las cifras secundarias). */}
       <div className="bg-white border border-[#e5e1d8] rounded-2xl shadow-sm overflow-hidden flex items-stretch">
-        <div className="w-[96px] sm:w-[130px] shrink-0 bg-[#1d1b18] flex items-center justify-center">
-          <TrendingUp size={26} className="text-gold" strokeWidth={1.75} />
+        <div className="w-[96px] sm:w-[130px] shrink-0 bg-[#f6f4ef] flex items-center justify-center">
+          <TrendingUp size={24} className="text-[#8a6520]" strokeWidth={1.75} />
         </div>
         <div className="flex-1 flex flex-wrap items-center gap-x-10 gap-y-4 px-6 py-5 sm:px-8">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520]">
               {t.revenueMonth}
             </p>
-            <p className="text-4xl sm:text-5xl font-playfair font-semibold text-[#8a6520] mt-1">
+            <p className="text-3xl font-playfair font-semibold text-[#8a6520] mt-1">
               ${revenue.month.toFixed(2)}
             </p>
           </div>
