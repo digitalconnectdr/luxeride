@@ -869,6 +869,9 @@ export const en = {
     recent: 'Recent reservations',
     viewAll: 'View all →',
     noBookings: 'No reservations yet.',
+    statusLabel: 'Status',
+    passengerLabel: 'Passenger',
+    amountLabel: 'Amount',
     createFirst: 'Create your first reservation →',
     dayLabels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
     statuses: {

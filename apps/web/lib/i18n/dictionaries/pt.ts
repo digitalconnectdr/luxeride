@@ -870,6 +870,9 @@ export const pt: Dictionary = {
     recent: 'Reservas recentes',
     viewAll: 'Ver todas →',
     noBookings: 'Ainda não há reservas.',
+    statusLabel: 'Status',
+    passengerLabel: 'Passageiro',
+    amountLabel: 'Valor',
     createFirst: 'Criar primeira reserva →',
     dayLabels: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
     statuses: {

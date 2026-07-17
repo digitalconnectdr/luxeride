@@ -1,6 +1,17 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { CheckCircle2, Circle } from 'lucide-react'
+import {
+  CheckCircle2,
+  Circle,
+  CalendarDays,
+  Car,
+  CheckCircle,
+  Users,
+  Clock,
+  ShieldCheck,
+  TrendingUp,
+  ChevronRight,
+} from 'lucide-react'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getDict, getLocale } from '@/lib/i18n/server'
@@ -163,19 +174,22 @@ export default async function AdminDashboardPage() {
       <div className="max-w-[1400px] mx-auto space-y-5">
 
       {/* Header */}
-      <div className="flex items-end justify-between flex-wrap gap-2">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-playfair text-3xl font-semibold text-[#1d1b18]">{t.title}</h1>
-          <p className="text-sm text-[#75716a] mt-1">
+          <h1 className="font-playfair text-4xl font-semibold text-[#1d1b18] tracking-tight">{t.title}</h1>
+          <p className="text-sm text-[#75716a] mt-2">
             {t.welcome}, {user.profile.first_name} |{' '}
             <span className="text-[#8a6520] font-medium capitalize">{user.role.replace(/_/g, ' ')}</span>
           </p>
         </div>
-        <p className="text-xs font-medium text-[#8a6520] capitalize">
-          {new Date().toLocaleDateString(dateLocale, {
-            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-          })}
-        </p>
+        <div className="inline-flex items-center gap-2 rounded-full bg-white border border-[#e5e1d8] px-4 py-2 shadow-sm">
+          <CalendarDays size={14} className="text-[#8a6520] shrink-0" />
+          <span className="text-xs font-medium text-[#1d1b18] capitalize">
+            {new Date().toLocaleDateString(dateLocale, {
+              weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+            })}
+          </span>
+        </div>
       </div>
 
       {/* Onboarding — checklist de setup, visible mientras falte algo por configurar */}
@@ -189,24 +203,24 @@ export default async function AdminDashboardPage() {
                 .replace('{total}', String(onboardingProgress.total))}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
             {onboardingItems.map((item) => {
               const label = onboardingT[item.key]
               return item.done ? (
-                <span
+                <div
                   key={item.key}
-                  className="inline-flex items-center gap-1.5 text-xs text-[#75716a] px-3 py-1.5 rounded-lg bg-[#f6f4ef]"
+                  className="flex items-center gap-2.5 text-xs text-[#75716a] px-4 py-3 rounded-xl bg-[#f6f4ef] border border-transparent"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" strokeWidth={2} />
+                  <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" strokeWidth={2} />
                   <span className="line-through">{label}</span>
-                </span>
+                </div>
               ) : (
                 <Link
                   key={item.key}
                   href={item.href}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[#1d1b18] px-3 py-1.5 rounded-lg border border-[#e5e1d8] hover:border-[#8a6520]/50 hover:text-[#8a6520] transition-colors"
+                  className="flex items-center gap-2.5 text-xs font-medium text-[#1d1b18] px-4 py-3 rounded-xl border-2 border-[#8a6520]/40 hover:border-[#8a6520] hover:bg-[#8a6520]/[0.04] transition-colors"
                 >
-                  <Circle className="w-3.5 h-3.5 text-[#8a6520]" strokeWidth={2} />
+                  <Circle className="w-4 h-4 text-[#8a6520] shrink-0" strokeWidth={2} />
                   {label}
                 </Link>
               )
@@ -218,18 +232,23 @@ export default async function AdminDashboardPage() {
       {/* KPIs — fila compacta de 6 */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
         {[
-          { label: t.kpis.vehicles,  value: stats.vehicles,       href: '/admin/fleet' },
-          { label: t.kpis.available, value: stats.fleet,          href: '/admin/fleet' },
-          { label: t.kpis.drivers,   value: stats.driversAvail,   href: '/admin/drivers' },
-          { label: t.kpis.pending,   value: bookingStats.pending, href: '/admin/bookings?status=pending', accent: true },
-          { label: t.kpis.active,    value: bookingStats.active,  href: '/admin/bookings' },
-          { label: t.kpis.today,     value: bookingStats.today,   href: '/admin/bookings' },
+          { label: t.kpis.vehicles,  value: stats.vehicles,       href: '/admin/fleet', icon: Car },
+          { label: t.kpis.available, value: stats.fleet,          href: '/admin/fleet', icon: CheckCircle },
+          { label: t.kpis.drivers,   value: stats.driversAvail,   href: '/admin/drivers', icon: Users },
+          { label: t.kpis.pending,   value: bookingStats.pending, href: '/admin/bookings?status=pending', accent: true, icon: Clock },
+          { label: t.kpis.active,    value: bookingStats.active,  href: '/admin/bookings', icon: ShieldCheck },
+          { label: t.kpis.today,     value: bookingStats.today,   href: '/admin/bookings', icon: CalendarDays },
         ].map((card) => (
           <Link
             key={card.label}
             href={card.href}
-            className="bg-white border border-[#e5e1d8] rounded-xl px-4 py-3.5 hover:border-[#8a6520]/50 transition-colors group"
+            className="bg-white border border-[#e5e1d8] rounded-2xl px-4 py-4 shadow-sm hover:shadow-md hover:border-[#8a6520]/50 transition-all group"
           >
+            <card.icon
+              size={16}
+              className={`mb-2 ${'accent' in card && card.accent ? 'text-[#8a6520]' : 'text-[#75716a]'}`}
+              strokeWidth={1.75}
+            />
             <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
               {card.label}
             </p>
@@ -240,31 +259,36 @@ export default async function AdminDashboardPage() {
         ))}
       </div>
 
-      {/* Ingresos — tarjeta hero con acento bronce */}
-      <div className="bg-white border border-[#e5e1d8] border-l-[3px] border-l-[#8a6520] rounded-r-xl px-6 py-5 flex flex-wrap items-center gap-x-10 gap-y-4">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520]">
-            {t.revenueMonth}
-          </p>
-          <p className="text-4xl font-playfair font-semibold text-[#1d1b18] mt-1">
-            ${revenue.month.toFixed(2)}
-          </p>
+      {/* Ingresos — bloque destacado oscuro, el centro visual financiero del panel */}
+      <div className="bg-[#1d1b18] rounded-2xl px-6 py-6 sm:px-8 sm:py-7 flex flex-wrap items-center gap-x-10 gap-y-5">
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex w-11 h-11 rounded-xl bg-gold/10 items-center justify-center shrink-0">
+            <TrendingUp size={20} className="text-gold" strokeWidth={1.75} />
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-gold/80">
+              {t.revenueMonth}
+            </p>
+            <p className="text-4xl sm:text-5xl font-playfair font-semibold text-gold mt-1">
+              ${revenue.month.toFixed(2)}
+            </p>
+          </div>
         </div>
-        <div className="h-10 w-px bg-[#e5e1d8] hidden sm:block" />
+        <div className="h-10 w-px bg-white/10 hidden sm:block" />
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40">
             {t.revenueToday}
           </p>
-          <p className="text-2xl font-playfair font-semibold text-[#1d1b18] mt-1">
+          <p className="text-2xl font-playfair font-semibold text-white mt-1">
             ${revenue.today.toFixed(2)}
           </p>
         </div>
-        <div className="h-10 w-px bg-[#e5e1d8] hidden sm:block" />
+        <div className="h-10 w-px bg-white/10 hidden sm:block" />
         <Link href="/admin/bookings?status=completed" className="group">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40">
             {t.completedMonth}
           </p>
-          <p className="text-2xl font-playfair font-semibold text-[#1d1b18] mt-1 group-hover:text-[#8a6520] transition-colors">
+          <p className="text-2xl font-playfair font-semibold text-white mt-1 group-hover:text-gold transition-colors">
             {companyId ? bookingStats.completedMonth : '—'}
           </p>
         </Link>
@@ -273,10 +297,13 @@ export default async function AdminDashboardPage() {
       {/* Tendencia 7 días + Próximos viajes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Tendencia */}
-        <div className="bg-white border border-[#e5e1d8] rounded-xl p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] mb-4">
-            {t.trendWeek}
-          </p>
+        <div className="bg-white border border-[#e5e1d8] rounded-2xl shadow-sm p-6">
+          <div className="flex items-center gap-2 mb-5">
+            <CalendarDays size={14} className="text-[#8a6520]" strokeWidth={1.75} />
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
+              {t.trendWeek}
+            </p>
+          </div>
           <div className="flex items-end justify-between gap-2">
             {weekTrend.map((d, i) => {
               const max = Math.max(1, ...weekTrend.map((x) => x.count))
@@ -299,16 +326,21 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* Próximos viajes */}
-        <div className="bg-white border border-[#e5e1d8] rounded-xl overflow-hidden">
+        <div className="bg-white border border-[#e5e1d8] rounded-2xl shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-[#f0ede5]">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
               {t.next24h}
             </p>
           </div>
           {upcomingBookings.length === 0 ? (
-            <p className="p-6 text-sm text-[#75716a] text-center">
-              {t.noUpcoming}
-            </p>
+            <div className="py-10 px-6 flex flex-col items-center gap-3 text-center">
+              <div className="w-11 h-11 rounded-full bg-[#f6f4ef] flex items-center justify-center">
+                <Clock size={18} className="text-[#75716a]" strokeWidth={1.75} />
+              </div>
+              <p className="text-sm text-[#75716a]">
+                {t.noUpcoming}
+              </p>
+            </div>
           ) : (
             <div className="divide-y divide-[#f0ede5]">
               {upcomingBookings.map((b) => (
@@ -332,7 +364,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Reservaciones recientes */}
-      <div className="bg-white border border-[#e5e1d8] rounded-xl overflow-hidden">
+      <div className="bg-white border border-[#e5e1d8] rounded-2xl shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#f0ede5]">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#75716a]">
             {t.recent}
@@ -353,27 +385,51 @@ export default async function AdminDashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="divide-y divide-[#f0ede5]">
-            {recentBookings.map((b) => (
-              <Link
-                key={b.id}
-                href={`/admin/bookings/${b.id}`}
-                className="flex items-center justify-between px-6 py-3.5 hover:bg-[#faf8f3] transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-[#8a6520]">{b.booking_number}</span>
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[b.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                    {STATUS_LABELS[b.status] ?? b.status}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="text-[#75716a]">{b.passenger_name ?? '—'}</span>
-                  <span className="font-semibold text-[#1d1b18]">
-                    {b.total_amount != null ? `$${Number(b.total_amount).toFixed(2)}` : '—'}
-                  </span>
-                </div>
-              </Link>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#f0ede5]">
+                  <th className="text-left font-semibold text-[10px] uppercase tracking-widest text-[#75716a] px-6 py-2.5">
+                    {t.recent}
+                  </th>
+                  <th className="text-left font-semibold text-[10px] uppercase tracking-widest text-[#75716a] px-3 py-2.5">
+                    {t.statusLabel}
+                  </th>
+                  <th className="text-left font-semibold text-[10px] uppercase tracking-widest text-[#75716a] px-3 py-2.5">
+                    {t.passengerLabel}
+                  </th>
+                  <th className="text-right font-semibold text-[10px] uppercase tracking-widest text-[#75716a] px-3 py-2.5">
+                    {t.amountLabel}
+                  </th>
+                  <th className="w-10 px-3 py-2.5" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#f0ede5]">
+                {recentBookings.map((b) => (
+                  <tr key={b.id} className="group hover:bg-[#faf8f3] transition-colors">
+                    <td className="px-6 py-3">
+                      <Link href={`/admin/bookings/${b.id}`} className="font-mono text-xs text-[#8a6520]">
+                        {b.booking_number}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[b.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {STATUS_LABELS[b.status] ?? b.status}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-[#75716a]">{b.passenger_name ?? '—'}</td>
+                    <td className="px-3 py-3 text-right font-semibold text-[#1d1b18]">
+                      {b.total_amount != null ? `$${Number(b.total_amount).toFixed(2)}` : '—'}
+                    </td>
+                    <td className="px-3 py-3">
+                      <Link href={`/admin/bookings/${b.id}`} className="flex justify-end text-[#75716a] group-hover:text-[#8a6520] transition-colors">
+                        <ChevronRight size={16} strokeWidth={1.75} />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

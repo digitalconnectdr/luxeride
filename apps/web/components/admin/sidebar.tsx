@@ -237,12 +237,12 @@ export function AdminSidebar({
   return (
     <>
       {/* Barra móvil (< md) — el aside completo vive fuera de pantalla */}
-      <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-sl-surface-high border-b border-sl-outline-variant">
+      <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-sl-on-surface">
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
           aria-label="Open menu"
-          className="p-3 -ml-3 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors"
+          className="p-3 -ml-3 rounded-lg text-white/50 hover:text-gold hover:bg-white/5 transition-colors"
         >
           <Menu size={20} />
         </button>
@@ -256,7 +256,7 @@ export function AdminSidebar({
             </span>
           </div>
         )}
-        <span className="font-playfair text-sm font-semibold text-sl-on-surface truncate">
+        <span className="font-playfair text-sm font-semibold text-white truncate">
           {companyName}
         </span>
       </div>
@@ -273,8 +273,8 @@ export function AdminSidebar({
       <aside
         className={`fixed md:static inset-y-0 left-0 z-50 w-72 ${effectiveCollapsed ? 'md:w-16' : 'md:w-56'} bg-sl-surface-high border-r border-sl-outline-variant flex flex-col shrink-0 transition-transform md:transition-[width] duration-200 ease-out transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        {/* Wordmark + toggle */}
-        <div className={`py-5 border-b border-sl-outline-variant ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
+        {/* Wordmark + toggle — bloque de marca oscuro, distinto del resto del sidebar */}
+        <div className={`py-5 bg-sl-on-surface ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
           <div className={`flex items-center ${effectiveCollapsed ? 'flex-col gap-3' : 'justify-between gap-2'}`}>
             <Link
               href="/admin/dashboard"
@@ -284,16 +284,16 @@ export function AdminSidebar({
             >
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt={companyName} className="w-6 h-6 rounded-full object-cover shrink-0" />
+                <img src={logoUrl} alt={companyName} className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-white/10" />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-gold flex items-center justify-center shrink-0">
-                  <span className="text-gray-900 font-bold text-[10px] leading-none">
+                <div className="w-8 h-8 rounded-full bg-gold flex items-center justify-center shrink-0">
+                  <span className="text-gray-900 font-bold text-xs leading-none">
                     {companyName.trim().charAt(0).toUpperCase() || 'L'}
                   </span>
                 </div>
               )}
               {!effectiveCollapsed && (
-                <span className="font-playfair text-sm font-semibold text-sl-on-surface truncate">
+                <span className="font-playfair text-base font-semibold text-white truncate">
                   {companyName}
                 </span>
               )}
@@ -304,7 +304,7 @@ export function AdminSidebar({
               onClick={toggle}
               aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
               title={collapsed ? 'Expandir' : 'Minimizar'}
-              className="hidden md:block p-1 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors shrink-0"
+              className="hidden md:block p-1 rounded-lg text-white/40 hover:text-gold hover:bg-white/5 transition-colors shrink-0"
             >
               {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
             </button>
@@ -313,70 +313,77 @@ export function AdminSidebar({
               type="button"
               onClick={() => setMobileOpen(false)}
               aria-label="Close menu"
-              className="md:hidden p-3 -mr-3 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors shrink-0"
+              className="md:hidden p-3 -mr-3 rounded-lg text-white/40 hover:text-gold hover:bg-white/5 transition-colors shrink-0"
             >
               <X size={18} />
             </button>
           </div>
           {!effectiveCollapsed && (
-            <p className="mt-1 text-[10px] text-sl-on-surface-muted capitalize pl-8">{roleLabel}</p>
-          )}
-          {!effectiveCollapsed && referralTier && referralsDict && (
-            <div className="mt-2 pl-8">
-              <div
-                title={`${referralTier.count} ${referralsDict.countLabel}`}
-                className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1"
-              >
-                <Award size={11} className="text-bronze shrink-0" />
-                <span className="text-[10px] font-semibold text-bronze">
-                  {referralsDict[REFERRAL_TIER_LABEL_KEY[referralTier.key as ReferralTierKey]]}
-                </span>
-                <span className="text-[9px] text-sl-on-surface-muted">
-                  · {referralTier.count} {referralsDict.countLabel}
-                </span>
-              </div>
-            </div>
+            <>
+              <p className="mt-1.5 text-[10px] text-white/40 capitalize pl-[42px]">{roleLabel}</p>
+              <p className="mt-0.5 text-[9px] uppercase tracking-[0.16em] text-white/25 pl-[42px]">
+                by {brand.poweredBy}
+              </p>
+            </>
           )}
         </div>
 
+        {!effectiveCollapsed && referralTier && referralsDict && (
+          <div className="px-5 py-2.5 border-b border-sl-outline-variant">
+            <div
+              title={`${referralTier.count} ${referralsDict.countLabel}`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1"
+            >
+              <Award size={11} className="text-bronze shrink-0" />
+              <span className="text-[10px] font-semibold text-bronze">
+                {referralsDict[REFERRAL_TIER_LABEL_KEY[referralTier.key as ReferralTierKey]]}
+              </span>
+              <span className="text-[9px] text-sl-on-surface-muted">
+                · {referralTier.count} {referralsDict.countLabel}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Nav */}
         <nav className={`flex-1 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden ${effectiveCollapsed ? 'px-2' : 'px-3'}`}>
-          {sections.map((section) =>
-            !section.show ? null : (
-              <div key={section.header}>
-                {!effectiveCollapsed ? (
-                  <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted first:pt-1">
-                    {section.header}
-                  </p>
-                ) : (
-                  <div className="my-3 mx-2 h-px bg-sl-outline-variant first:hidden" />
-                )}
-                {section.items.map((item) => {
-                  const active =
-                    pathname === item.href || pathname.startsWith(`${item.href}/`)
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      prefetch={false}
-                      title={effectiveCollapsed ? item.label : undefined}
-                      className={[
-                        'flex items-center gap-2.5 rounded-lg text-[13px] transition-colors',
-                        effectiveCollapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2',
-                        active
-                          ? 'bg-sl-bg text-bronze font-medium'
-                          : 'text-sl-on-surface-muted hover:text-sl-on-surface hover:bg-sl-bg/60',
-                      ].join(' ')}
-                    >
-                      <Icon size={16} className="shrink-0" />
-                      {!effectiveCollapsed && <span className="truncate">{item.label}</span>}
-                    </Link>
-                  )
-                })}
-              </div>
-            ),
-          )}
+          {sections.filter((s) => s.show).map((section, idx) => (
+            <div
+              key={section.header}
+              className={!effectiveCollapsed && idx > 0 ? 'mt-2 pt-3 border-t border-sl-outline-variant/70' : undefined}
+            >
+              {!effectiveCollapsed ? (
+                <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-variant">
+                  {section.header}
+                </p>
+              ) : (
+                <div className="my-3 mx-2 h-px bg-sl-outline-variant first:hidden" />
+              )}
+              {section.items.map((item) => {
+                const active =
+                  pathname === item.href || pathname.startsWith(`${item.href}/`)
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    prefetch={false}
+                    title={effectiveCollapsed ? item.label : undefined}
+                    className={[
+                      'flex items-center gap-2.5 rounded-lg text-[13px] transition-colors',
+                      effectiveCollapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2',
+                      active
+                        ? 'bg-gold/15 text-bronze font-medium'
+                        : 'text-sl-on-surface-muted hover:text-sl-on-surface hover:bg-sl-bg/60',
+                    ].join(' ')}
+                  >
+                    <Icon size={16} className="shrink-0" />
+                    {!effectiveCollapsed && <span className="truncate">{item.label}</span>}
+                  </Link>
+                )
+              })}
+            </div>
+          ))}
         </nav>
 
         {/* User + logout */}
