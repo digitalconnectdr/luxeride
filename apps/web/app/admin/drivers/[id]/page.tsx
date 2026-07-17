@@ -141,7 +141,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
     : false
 
   return (
-    <div className="p-8 max-w-[1100px] mx-auto space-y-6">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
 
       {/* Header */}
       <div>

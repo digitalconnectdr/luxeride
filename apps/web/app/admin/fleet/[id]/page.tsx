@@ -79,7 +79,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
   const maintenanceAction: (fd: FormData) => void = updateVehicleMaintenanceAction.bind(null, vehicle.id)
 
   return (
-    <div className="p-8 max-w-[1100px] mx-auto space-y-6">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
       {/* Breadcrumb + Header */}
       <div>
         <nav className="text-xs text-sl-on-surface-muted mb-2">
