@@ -118,41 +118,42 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
     return (
       <form onSubmit={handleCalculatePrice} className="space-y-5">
 
-        {/* Tipo de reservación */}
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            {t.serviceType}
-          </label>
-          <select
-            name="booking_type"
-            defaultValue="one_way"
-            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
-          >
-            {BOOKING_TYPE_VALUES.map((v) => (
-              <option key={v} value={v}>{t.types[v]}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Vehículo */}
-        {vehicleTypes.length > 0 && (
-          <div>
+        {/* Tipo de reservación + vehículo */}
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className={vehicleTypes.length > 0 ? undefined : 'sm:col-span-2'}>
             <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-              {t.vehicleType}
+              {t.serviceType}
             </label>
             <select
-              name="vehicle_type_id"
+              name="booking_type"
+              defaultValue="one_way"
               className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
             >
-              <option value="">{t.anyType}</option>
-              {vehicleTypes.map((vt) => (
-                <option key={vt.id} value={vt.id}>
-                  {vt.name} ({vt.class}, {vt.capacity} {t.pax})
-                </option>
+              {BOOKING_TYPE_VALUES.map((v) => (
+                <option key={v} value={v}>{t.types[v]}</option>
               ))}
             </select>
           </div>
-        )}
+
+          {vehicleTypes.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
+                {t.vehicleType}
+              </label>
+              <select
+                name="vehicle_type_id"
+                className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
+              >
+                <option value="">{t.anyType}</option>
+                {vehicleTypes.map((vt) => (
+                  <option key={vt.id} value={vt.id}>
+                    {vt.name} ({vt.class}, {vt.capacity} {t.pax})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
 
         {/* Fecha y hora */}
         <div>
@@ -232,28 +233,30 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
           />
         </div>
 
-        {/* Número de vuelo (solo para airport) */}
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            {t.flightNumber} <span className="font-normal normal-case">{t.optional}</span>
-          </label>
-          <input
-            type="text"
-            name="flight_number"
-            placeholder="AA1234"
-            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
-          />
-        </div>
+        {/* Número de vuelo + meet & greet */}
+        <div className="grid sm:grid-cols-2 gap-4 sm:items-end">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
+              {t.flightNumber} <span className="font-normal normal-case">{t.optional}</span>
+            </label>
+            <input
+              type="text"
+              name="flight_number"
+              placeholder="AA1234"
+              className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
+            />
+          </div>
 
-        <label className="flex items-center gap-3 cursor-pointer rounded-xl border border-sl-outline-variant px-4 py-3">
-          <input
-            type="checkbox"
-            name="meet_and_greet"
-            value="true"
-            className="w-4 h-4 rounded accent-bronze"
-          />
-          <span className="text-sm text-sl-on-surface">{t.meetAndGreet}</span>
-        </label>
+          <label className="flex items-center gap-3 cursor-pointer rounded-xl border border-sl-outline-variant px-4 py-3 h-[42px]">
+            <input
+              type="checkbox"
+              name="meet_and_greet"
+              value="true"
+              className="w-4 h-4 rounded accent-bronze"
+            />
+            <span className="text-sm text-sl-on-surface">{t.meetAndGreet}</span>
+          </label>
+        </div>
 
         {error && <ActionErrorBanner error={error} />}
 
@@ -316,59 +319,61 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
 
       <form onSubmit={handleCreateBooking} className="space-y-5">
 
-        {/* Nombre */}
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            {t.passengerName} <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            name="passenger_name"
-            required
-            placeholder={t.namePlaceholder}
-            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
-          />
+        {/* Nombre + teléfono */}
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
+              {t.passengerName} <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="passenger_name"
+              required
+              placeholder={t.namePlaceholder}
+              className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
+              {t.phone}
+            </label>
+            <input
+              type="tel"
+              name="passenger_phone"
+              placeholder="+1 809 000 0000"
+              className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
+            />
+          </div>
         </div>
 
-        {/* Teléfono */}
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            {t.phone}
-          </label>
-          <input
-            type="tel"
-            name="passenger_phone"
-            placeholder="+1 809 000 0000"
-            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
-          />
-        </div>
+        {/* Email + pasajeros */}
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
+              {t.email} <span className="font-normal normal-case">{t.optional}</span>
+            </label>
+            <input
+              type="email"
+              name="passenger_email"
+              placeholder="juan@example.com"
+              className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
+            />
+          </div>
 
-        {/* Email */}
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            {t.email} <span className="font-normal normal-case">{t.optional}</span>
-          </label>
-          <input
-            type="email"
-            name="passenger_email"
-            placeholder="juan@example.com"
-            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
-          />
-        </div>
-
-        {/* Pasajeros */}
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            {t.passengerCount}
-          </label>
-          <input
-            type="number"
-            name="passenger_count"
-            defaultValue={1}
-            min={1}
-            max={20}
-            className="w-28 rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
-          />
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
+              {t.passengerCount}
+            </label>
+            <input
+              type="number"
+              name="passenger_count"
+              defaultValue={1}
+              min={1}
+              max={20}
+              className="w-28 rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
+            />
+          </div>
         </div>
 
         {/* Cuenta corporativa (F1.11) */}
