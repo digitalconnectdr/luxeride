@@ -24,7 +24,7 @@ export default async function NewVehiclePage() {
     .order('sort_order', { ascending: true })
 
   return (
-    <div className="p-8 max-w-2xl mx-auto space-y-6">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
       {/* Header */}
       <div>
         <nav className="text-xs text-sl-on-surface-muted mb-1">
@@ -37,7 +37,9 @@ export default async function NewVehiclePage() {
         <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.heading}</h1>
       </div>
 
-      <NewVehicleForm types={types ?? []} labels={t} />
+      <div className="max-w-2xl">
+        <NewVehicleForm types={types ?? []} labels={t} />
+      </div>
     </div>
   )
 }

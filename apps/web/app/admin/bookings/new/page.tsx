@@ -45,19 +45,21 @@ export default async function NewBookingPage() {
   ])
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
+    <div className="p-8 max-w-[1400px] mx-auto">
       <div className="mb-6">
         <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.title}</h1>
         <p className="text-sm text-sl-on-surface-muted mt-1">
           {t.subtitle}
         </p>
       </div>
-      <NewBookingForm
-        vehicleTypes={vehicleTypes ?? []}
-        drivers={drivers ?? []}
-        corporateAccounts={corporateAccounts ?? []}
-        labels={t}
-      />
+      <div className="max-w-2xl">
+        <NewBookingForm
+          vehicleTypes={vehicleTypes ?? []}
+          drivers={drivers ?? []}
+          corporateAccounts={corporateAccounts ?? []}
+          labels={t}
+        />
+      </div>
     </div>
   )
 }
