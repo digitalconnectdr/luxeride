@@ -42,7 +42,7 @@ export function InviteAffiliateForm({ t }: { t: T }) {
   }
 
   return (
-    <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
+    <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
       <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.inviteTitle}</p>
       <p className="text-xs text-sl-on-surface-muted">{t.inviteHint}</p>
 

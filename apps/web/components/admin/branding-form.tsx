@@ -38,7 +38,7 @@ export function BrandingForm({
   const shownLogo = preview ?? (removing ? null : state?.logoUrl ?? currentLogo)
 
   return (
-    <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+    <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
       <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.brandingTitle}</h2>
       <p className="text-xs text-sl-on-surface-muted mb-5">{t.brandingDesc}</p>
 

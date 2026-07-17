@@ -59,7 +59,7 @@ export function CreateCorporateAccountForm({ labels: t }: { labels: FormLabels }
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-sl-surface border border-sl-outline-variant rounded-xl p-5 space-y-4 w-full"
+      className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-4 w-full"
     >
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-sl-on-surface">{t.newAccountTitle}</h3>

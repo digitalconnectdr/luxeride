@@ -64,7 +64,7 @@ export function ImportVehiclesCsv({ labels: t }: { labels: ImportVehiclesCsvLabe
   }
 
   return (
-    <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-4">
+    <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-4">
       <div>
         <p className="text-sm font-semibold text-sl-on-surface">{t.title}</p>
         <p className="text-xs text-sl-on-surface-muted mt-1">{t.desc}</p>

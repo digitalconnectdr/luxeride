@@ -29,7 +29,7 @@ export function ReferralLinkCard({
   }
 
   return (
-    <section className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6">
+    <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
       <h2 className="text-sm font-semibold text-sl-on-surface mb-1">{title}</h2>
       <p className="text-xs text-sl-on-surface-muted mb-4">{desc}</p>
       <div className="flex flex-wrap items-center gap-3">

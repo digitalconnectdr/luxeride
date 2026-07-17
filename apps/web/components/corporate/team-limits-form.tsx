@@ -105,7 +105,7 @@ export function TeamLimitsForm({
   const available = Math.max(0, creditLimit - assignedTotal)
 
   return (
-    <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+    <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
       <div className="px-4 py-4 border-b border-sl-outline-variant">
         <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-1">Mi equipo</p>
         {creditLimit > 0 ? (

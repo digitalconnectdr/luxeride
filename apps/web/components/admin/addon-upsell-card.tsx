@@ -18,7 +18,7 @@ export function AddonUpsellCard({
   companyEmail?: string | null
 }) {
   return (
-    <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6 space-y-3 max-w-lg">
+    <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6 space-y-3 max-w-lg">
       <p className="font-playfair text-lg font-semibold text-sl-on-surface">{title}</p>
       <p className="text-sm text-sl-on-surface-muted">{body}</p>
       <p className="text-2xl font-bold text-sl-on-surface">

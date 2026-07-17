@@ -31,7 +31,7 @@ export function ContentGenerator({ t }: { t: T }) {
   }
 
   return (
-    <div className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6 space-y-4">
+    <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6 space-y-4">
       <h2 className="text-sm font-semibold text-sl-on-surface">{t.generatorTitle}</h2>
       <form onSubmit={handleSubmit} className="space-y-3">
         <textarea

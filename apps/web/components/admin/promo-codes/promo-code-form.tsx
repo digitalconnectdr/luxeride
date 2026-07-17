@@ -32,7 +32,7 @@ export function PromoCodeForm({ t }: { t: T }) {
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6 space-y-4">
+    <form ref={formRef} onSubmit={handleSubmit} className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6 space-y-4">
       <h2 className="text-sm font-semibold text-sl-on-surface">{t.newCode}</h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

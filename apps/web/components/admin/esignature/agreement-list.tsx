@@ -28,7 +28,7 @@ export function AgreementList({
   const [signing, setSigning] = useState<AgreementSubject | null>(null)
 
   return (
-    <div className="bg-sl-surface border border-sl-outline-variant rounded-xl overflow-hidden">
+    <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
       {!subjects.length ? (
         <p className="p-6 text-sm text-sl-on-surface-muted">{noneLabel}</p>
       ) : (

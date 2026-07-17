@@ -29,7 +29,7 @@ export function NewVehicleForm({ types, labels: t }: Props) {
   }, [state, router])
 
   return (
-    <form action={action} className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6 space-y-6">
+    <form action={action} className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6 space-y-6">
 
       {state && !state.success && state.error && <ActionErrorBanner error={state.error} />}
 

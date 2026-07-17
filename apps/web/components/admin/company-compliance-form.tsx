@@ -42,7 +42,7 @@ export function CompanyComplianceForm({ current, labels: t }: Props) {
   const [state, formAction] = useFormState(updateCompanyComplianceAction, null)
 
   return (
-    <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6 space-y-6">
+    <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6 space-y-6">
       {state && !state.success && (
         <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-2.5">
           <p className="text-xs text-red-400">{state.error}</p>

@@ -35,14 +35,14 @@ export function AffiliateNetworkUpsell({ companyName, companyEmail, t, checkoutU
 
   if (sent) {
     return (
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6 text-center">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6 text-center">
         <p className="text-sm text-green-600">{t.requestAccessSent}</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6 space-y-3">
+    <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6 space-y-3">
       <p className="font-playfair text-lg font-semibold text-sl-on-surface">{t.notEnabledTitle}</p>
       <p className="text-sm text-sl-on-surface-muted">{t.notEnabledBody}</p>
 

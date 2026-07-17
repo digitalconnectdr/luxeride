@@ -45,7 +45,7 @@ export function ActiveDriversPanel({
   const onDuty = drivers.filter((d) => d.isAvailable).length
 
   return (
-    <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+    <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-sl-outline-variant flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
           {labels.title}

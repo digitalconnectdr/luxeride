@@ -43,7 +43,7 @@ export function TeamInviteForm({ t, isOwner }: { t: TeamDict; isOwner: boolean }
   }
 
   return (
-    <div className="bg-sl-surface border border-sl-outline-variant rounded-xl p-5 mb-6">
+    <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 mb-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-sl-on-surface">{t.inviteTitle}</h2>
         {!open && (

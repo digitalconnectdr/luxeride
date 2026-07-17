@@ -21,7 +21,7 @@ export function BookingLinkCard({ t, url }: { t: SettingsDict; url: string }) {
   }
 
   return (
-    <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+    <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
       <h2 className="text-sm font-semibold text-sl-on-surface mb-1">{t.bookingLinkTitle}</h2>
       <p className="text-xs text-sl-on-surface-muted mb-4">{t.bookingLinkDesc}</p>
       <div className="flex flex-wrap items-center gap-3">

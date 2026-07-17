@@ -25,7 +25,7 @@ export function AddVehicleTypeForm({
   const [state, action, isPending] = useFormState(createVehicleTypeAction, null)
 
   return (
-    <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6">
+    <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
       <h2 className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-4">
         {labels.title}
       </h2>
