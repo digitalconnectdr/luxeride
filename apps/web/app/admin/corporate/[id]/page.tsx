@@ -86,7 +86,8 @@ export default async function CorporateAccountDetailPage({
           <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface mt-2">
             {account.name}
           </h1>
-          <p className="text-xs text-sl-on-surface-muted mt-1">
+          <div className="w-8 h-[3px] bg-gold mt-2 mb-1 rounded-full" />
+          <p className="text-xs text-sl-on-surface-muted">
             {t.createdOn.replace('{date}', new Date(account.created_at).toLocaleDateString(localeTag, { dateStyle: 'medium' }))}
           </p>
         </div>
@@ -102,7 +103,7 @@ export default async function CorporateAccountDetailPage({
           { label: t.creditLimit, value: `$${Number(account.credit_limit ?? 0).toFixed(0)}` },
           { label: t.paymentTerms, value: `Net ${account.payment_terms ?? 30}` },
         ].map((c) => (
-          <div key={c.label} className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
+          <div key={c.label} className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
               {c.label}
             </p>
@@ -113,7 +114,7 @@ export default async function CorporateAccountDetailPage({
 
       {/* Editar cuenta */}
       {canManage && (
-        <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6">
+        <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
           <h2 className="text-sm font-semibold text-sl-on-surface mb-5">{t.accountInfo}</h2>
           <form action={updateAction} className="space-y-4">
             <input type="hidden" name="account_id" value={account.id} />
@@ -171,7 +172,7 @@ export default async function CorporateAccountDetailPage({
       )}
 
       {/* Miembros */}
-      <section className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6 space-y-5">
+      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6 space-y-5">
         <h2 className="text-sm font-semibold text-sl-on-surface">
           {t.members.replace('{n}', String(members?.length ?? 0))}
         </h2>
@@ -179,7 +180,7 @@ export default async function CorporateAccountDetailPage({
         {!members?.length ? (
           <p className="text-sm text-sl-on-surface-muted">{t.noMembers}</p>
         ) : (
-          <div className="divide-y divide-sl-outline-variant">
+          <div className="divide-y divide-sl-outline-variant/50">
             {members.map((m) => {
               const profile = profilesById.get(m.user_id)
               return (
@@ -219,7 +220,7 @@ export default async function CorporateAccountDetailPage({
       </section>
 
       {/* Reservaciones recientes */}
-      <section className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-sl-outline-variant">
           <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
             {t.accountBookings}
@@ -230,12 +231,12 @@ export default async function CorporateAccountDetailPage({
             {t.noBookings}
           </p>
         ) : (
-          <div className="divide-y divide-sl-outline-variant">
+          <div className="divide-y divide-sl-outline-variant/50">
             {bookings.map((b) => (
               <Link
                 key={b.id}
                 href={`/admin/bookings/${b.id}`}
-                className="flex items-center justify-between px-6 py-3.5 hover:bg-sl-bg/50 transition-colors"
+                className="flex items-center justify-between px-6 py-3.5 hover:bg-sl-bg/40 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-xs text-bronze">{b.booking_number}</span>

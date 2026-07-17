@@ -82,8 +82,9 @@ export default async function PartnerDetailPage({
     <div className="p-8 max-w-[1400px] mx-auto space-y-6">
       <div>
         <Link href="/admin/partners" className="text-xs text-sl-on-surface-muted hover:text-sl-on-surface transition-colors">← {t.title}</Link>
-        <h1 className="text-2xl font-playfair font-semibold text-sl-on-surface mt-1">{partner.name}</h1>
-        <div className="flex items-center gap-2 mt-1">
+        <h1 className="text-3xl font-playfair font-semibold text-sl-on-surface mt-2">{partner.name}</h1>
+        <div className="w-8 h-[3px] bg-gold mt-2 mb-2 rounded-full" />
+        <div className="flex items-center gap-2">
           <span className="text-xs font-mono text-sl-on-surface-muted truncate max-w-md">{portalUrl}</span>
           <CopyButton text={portalUrl} label={t.copyLink} copiedLabel={t.copied} light />
         </div>
@@ -93,7 +94,7 @@ export default async function PartnerDetailPage({
 
       <div>
         <h2 className="text-sm font-semibold text-sl-on-surface mb-3">{t.commissionReport}</h2>
-        <form className="flex items-end gap-3 bg-sl-surface border border-sl-outline-variant rounded-xl p-4 mb-4">
+        <form className="flex items-end gap-3 bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-4 mb-4">
           <div>
             <label className="block text-xs text-sl-on-surface-muted mb-1">{t.from}</label>
             <input type="date" name="from" defaultValue={periodStart} className="text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-2 py-1.5" />
@@ -107,7 +108,7 @@ export default async function PartnerDetailPage({
           </button>
         </form>
 
-        <div className="bg-sl-surface border border-sl-outline-variant rounded-xl p-6 flex items-center justify-between">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6 flex items-center justify-between">
           <div>
             <p className="text-xs text-sl-on-surface-muted">{t.tripsInPeriod}</p>
             <p className="text-2xl font-playfair font-semibold text-sl-on-surface mt-1">{tripRows.length}</p>

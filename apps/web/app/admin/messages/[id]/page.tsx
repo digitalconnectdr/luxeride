@@ -54,17 +54,18 @@ export default async function AdminMessageThreadPage({ params }: { params: { id:
           ← {t.title}
         </Link>
         <div className="flex items-center gap-3 mt-2">
-          <h1 className="font-playfair text-2xl font-semibold text-sl-on-surface">
+          <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">
             {booking.passenger_name ?? t.unnamedPassenger}
           </h1>
           <span className="text-xs font-mono text-sl-on-surface-muted">{booking.booking_number}</span>
         </div>
-        <p className="text-xs text-sl-on-surface-muted mt-1">
+        <div className="w-8 h-[3px] bg-gold mt-2 mb-2 rounded-full" />
+        <p className="text-xs text-sl-on-surface-muted">
           {t.driverLabel}: {driverName ?? t.unassignedDriver}
         </p>
       </div>
 
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-4 max-h-[65vh] overflow-y-auto">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-4 max-h-[65vh] overflow-y-auto">
         {!messages?.length ? (
           <p className="text-sm text-sl-on-surface-muted text-center py-8">{t.emptyThread}</p>
         ) : (

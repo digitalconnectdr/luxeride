@@ -198,17 +198,16 @@ export default async function BookingDetailPage({
     <div className="p-8 max-w-[1400px] mx-auto space-y-6">
 
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <div className="flex items-center gap-3">
-            <Link href="/admin/bookings" className="text-sm text-sl-on-surface-muted hover:text-bronze">
-              {t.backToList}
-            </Link>
-          </div>
+          <Link href="/admin/bookings" className="text-sm text-sl-on-surface-muted hover:text-bronze">
+            {t.backToList}
+          </Link>
           <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface mt-2">
             {booking.booking_number}
           </h1>
-          <div className="flex items-center gap-3 mt-2">
+          <div className="w-8 h-[3px] bg-gold mt-2 mb-2 rounded-full" />
+          <div className="flex items-center gap-3">
             <BookingStatusBadge status={booking.status as BookingStatus} size="md" labels={statusLabels} />
             <span className="text-sm text-sl-on-surface-muted">
               {(t.types as Record<string, string>)[booking.type] ?? booking.type}
@@ -238,7 +237,7 @@ export default async function BookingDetailPage({
 
       {/* Pipeline: link público de la cotización para enviar al cliente */}
       {isStaff && booking.status === 'quote' && (
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.quoteLinkTitle}</p>
           <p className="text-xs text-sl-on-surface-muted mt-1 mb-3">{t.quoteLinkHint}</p>
           <div className="flex flex-wrap items-center gap-3">
@@ -251,7 +250,7 @@ export default async function BookingDetailPage({
       )}
 
       {/* Detalles de la ruta */}
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-4">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-4">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
           {t.routeTitle}
         </p>
@@ -330,7 +329,7 @@ export default async function BookingDetailPage({
       </div>
 
       {/* Pasajero */}
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
           {t.passengerTitle}
         </p>
@@ -370,7 +369,7 @@ export default async function BookingDetailPage({
       </div>
 
       {/* Vehículo + conductor */}
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
           {t.vehicleDriverTitle}
         </p>
@@ -410,7 +409,7 @@ export default async function BookingDetailPage({
 
       {/* Fees */}
       {fees && fees.length > 0 && (
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-3">
             {t.feesTitle}
           </p>
@@ -445,7 +444,7 @@ export default async function BookingDetailPage({
       />
 
       {/* Timestamps */}
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-3">
           {t.timelineTitle}
         </p>
@@ -479,7 +478,7 @@ export default async function BookingDetailPage({
 
       {/* Bitácora de eventos: rechazos, incidentes, reasignaciones */}
       {!!events?.length && (
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-3">
             {t.eventsTitle}
           </p>
@@ -515,7 +514,7 @@ export default async function BookingDetailPage({
 
       {/* Calificación del cliente (review post-viaje) */}
       {booking.rating != null && (
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
             {t.ratingTitle}
           </p>

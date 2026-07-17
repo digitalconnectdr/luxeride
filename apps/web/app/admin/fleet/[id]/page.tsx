@@ -95,7 +95,8 @@ export default async function VehicleDetailPage({ params }: PageProps) {
             {badgeLabel}
           </span>
         </div>
-        <p className="text-sm text-sl-on-surface-muted mt-1">
+        <div className="w-8 h-[3px] bg-gold mt-2 mb-1 rounded-full" />
+        <p className="text-sm text-sl-on-surface-muted">
           {vehicle.plate_number}{vehicle.color ? ` · ${vehicle.color}` : ''}
         </p>
       </div>
@@ -107,13 +108,13 @@ export default async function VehicleDetailPage({ params }: PageProps) {
           <div className="lg:col-span-2 space-y-4">
 
             {/* Status */}
-            <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
+            <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.statusLabel}</p>
               <VehicleStatusSelect vehicleId={vehicle.id} current={vehicle.status} statuses={fleetDict.statuses} saving={fleetDict.saving} />
             </div>
 
             {/* Driver assignment */}
-            <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
+            <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
                 {t.assignedDriver}
               </p>
@@ -137,7 +138,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
 
         {/* ── Vehicle info card ── */}
         <div className={isAccounting ? 'lg:col-span-3' : ''}>
-          <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3 h-full">
+          <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3 h-full">
             <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
               {t.vehicleInfo}
             </p>
@@ -161,7 +162,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
       </div>
 
       {/* ── Maintenance & Insurance ── */}
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5">
         <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-4">
           {t.maintenanceInsurance}
         </p>
@@ -232,7 +233,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
       </div>
 
       {/* ── Compliance (Sección J) ── */}
-      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-4">
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
             {t.complianceTitle}
@@ -271,7 +272,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
 
       {/* ── Notes ── */}
       {vehicle.notes && (
-        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5">
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5">
           <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">{t.notes}</p>
           <p className="text-sm text-sl-on-surface whitespace-pre-line">{vehicle.notes}</p>
         </div>

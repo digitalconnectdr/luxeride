@@ -172,6 +172,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
             {profile.is_active ? t.active : t.inactive}
           </span>
         </div>
+        <div className="w-8 h-[3px] bg-gold mt-2 rounded-full" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -181,7 +182,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
 
           {/* Availability */}
           {dr && !isAccounting && (
-            <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
+            <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
                 {t.availability}
               </p>
@@ -191,7 +192,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
 
           {/* Stats */}
           {dr && (
-            <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
+            <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
                 {t.stats}
               </p>
@@ -221,7 +222,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
         <div className="lg:col-span-2 space-y-4">
 
           {/* Current Vehicle */}
-          <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-3">
+          <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
             <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
               {t.currentVehicle}
             </p>
@@ -246,7 +247,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
           </div>
 
           {/* License info */}
-          <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-4">
+          <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
                 {t.licenseTitle}
@@ -297,7 +298,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
 
           {/* Compliance (Sección J) */}
           {dr && (
-            <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-5 space-y-4">
+            <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
                   {t.complianceTitle}
