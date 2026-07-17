@@ -61,6 +61,12 @@ export default async function ReferralsPage() {
         copiedLabel={t.copiedLink}
       />
 
+      {!currentTier && rows.length === 0 ? (
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-8 text-center">
+          <p className="text-sm text-sl-on-surface-muted">{t.empty}</p>
+        </div>
+      ) : (
+      <>
       <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
           {t.yourTierLabel}
@@ -129,6 +135,8 @@ export default async function ReferralsPage() {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   )
 }

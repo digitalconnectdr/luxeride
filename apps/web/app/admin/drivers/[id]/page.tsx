@@ -175,23 +175,23 @@ export default async function DriverDetailPage({ params }: PageProps) {
         <div className="w-8 h-[3px] bg-gold mt-2 rounded-full" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${dr ? 'lg:grid-cols-3' : ''}`}>
 
-        {/* ── Availability + Stats ── */}
-        <div className="space-y-4">
+        {/* ── Availability + Stats — solo si existe registro de conductor ── */}
+        {dr && (
+          <div className="space-y-4">
 
-          {/* Availability */}
-          {dr && !isAccounting && (
-            <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-                {t.availability}
-              </p>
-              <DriverAvailabilityToggle driverId={dr.id} isAvailable={dr.is_available} labels={getDict().admin.fleet.availability} saving={getDict().admin.fleet.saving} />
-            </div>
-          )}
+            {/* Availability */}
+            {!isAccounting && (
+              <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+                  {t.availability}
+                </p>
+                <DriverAvailabilityToggle driverId={dr.id} isAvailable={dr.is_available} labels={getDict().admin.fleet.availability} saving={getDict().admin.fleet.saving} />
+              </div>
+            )}
 
-          {/* Stats */}
-          {dr && (
+            {/* Stats */}
             <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
                 {t.stats}
@@ -215,11 +215,11 @@ export default async function DriverDetailPage({ params }: PageProps) {
                 ))}
               </dl>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* ── License + Vehicle ── */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className={dr ? 'lg:col-span-2 space-y-4' : 'space-y-4'}>
 
           {/* Current Vehicle */}
           <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
