@@ -273,8 +273,10 @@ export function AdminSidebar({
       <aside
         className={`fixed md:static inset-y-0 left-0 z-50 w-72 ${effectiveCollapsed ? 'md:w-16' : 'md:w-56'} bg-sl-surface-high border-r border-sl-outline-variant flex flex-col shrink-0 transition-transform md:transition-[width] duration-200 ease-out transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        {/* Wordmark + toggle — bloque de marca oscuro, distinto del resto del sidebar */}
-        <div className={`py-5 bg-sl-on-surface ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
+        {/* Wordmark + toggle — bloque de marca oscuro, distinto del resto del sidebar.
+            Solo identidad de marca aquí (logo + nombre + atribución); el usuario/rol
+            vive en su propia tarjeta al pie del sidebar. */}
+        <div className={`py-6 bg-sl-on-surface ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
           <div className={`flex items-center ${effectiveCollapsed ? 'flex-col gap-3' : 'justify-between gap-2'}`}>
             <Link
               href="/admin/dashboard"
@@ -284,16 +286,16 @@ export function AdminSidebar({
             >
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt={companyName} className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-white/10" />
+                <img src={logoUrl} alt={companyName} className="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-white/10" />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-gold flex items-center justify-center shrink-0">
-                  <span className="text-gray-900 font-bold text-xs leading-none">
+                <div className="w-9 h-9 rounded-full bg-gold flex items-center justify-center shrink-0">
+                  <span className="text-gray-900 font-bold text-sm leading-none">
                     {companyName.trim().charAt(0).toUpperCase() || 'L'}
                   </span>
                 </div>
               )}
               {!effectiveCollapsed && (
-                <span className="font-playfair text-base font-semibold text-white truncate">
+                <span className="font-playfair text-lg font-semibold text-white truncate leading-tight">
                   {companyName}
                 </span>
               )}
@@ -319,12 +321,9 @@ export function AdminSidebar({
             </button>
           </div>
           {!effectiveCollapsed && (
-            <>
-              <p className="mt-1.5 text-[10px] text-white/40 capitalize pl-[42px]">{roleLabel}</p>
-              <p className="mt-0.5 text-[9px] uppercase tracking-[0.16em] text-white/25 pl-[42px]">
-                by {brand.poweredBy}
-              </p>
-            </>
+            <p className="mt-1.5 text-[9px] uppercase tracking-[0.16em] text-white/30 pl-[46px]">
+              by {brand.poweredBy}
+            </p>
           )}
         </div>
 
@@ -386,8 +385,8 @@ export function AdminSidebar({
           ))}
         </nav>
 
-        {/* User + logout */}
-        <div className={`py-4 border-t border-sl-outline-variant ${effectiveCollapsed ? 'px-2' : 'px-4'}`}>
+        {/* Tarjeta de perfil del usuario — identidad + sesión, al pie del sidebar */}
+        <div className={`py-4 border-t border-sl-outline-variant bg-sl-surface-bright/60 ${effectiveCollapsed ? 'px-2' : 'px-4'}`}>
           {effectiveCollapsed ? (
             <div className="flex flex-col items-center gap-3">
               <div
@@ -409,9 +408,19 @@ export function AdminSidebar({
             </div>
           ) : (
             <>
-              <p className="text-xs font-medium text-sl-on-surface truncate">{userName}</p>
-              <p className="text-[11px] text-sl-on-surface-muted truncate mt-0.5">{userEmail}</p>
-              <div className="mt-2">
+              <div className="flex items-center gap-2.5">
+                <div
+                  title={roleLabel}
+                  className="w-8 h-8 rounded-full bg-gold/15 flex items-center justify-center shrink-0"
+                >
+                  <span className="text-[11px] font-semibold text-bronze">{initials || 'U'}</span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-sl-on-surface truncate">{userName}</p>
+                  <p className="text-[11px] text-sl-on-surface-muted truncate">{userEmail}</p>
+                </div>
+              </div>
+              <div className="mt-3">
                 <LanguageSwitcher current={locale} variant="light" />
               </div>
               <form action={logoutAction} className="mt-2">

@@ -209,10 +209,10 @@ export default async function AdminDashboardPage() {
               return item.done ? (
                 <div
                   key={item.key}
-                  className="flex items-center gap-2.5 text-xs text-[#75716a] px-4 py-3 rounded-xl bg-[#f6f4ef] border border-transparent"
+                  className="flex items-center gap-2.5 text-xs text-[#1d1b18] px-4 py-3 rounded-xl bg-white border border-[#e5e1d8]"
                 >
                   <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" strokeWidth={2} />
-                  <span className="line-through">{label}</span>
+                  <span>{label}</span>
                 </div>
               ) : (
                 <Link
@@ -235,7 +235,7 @@ export default async function AdminDashboardPage() {
           { label: t.kpis.vehicles,  value: stats.vehicles,       href: '/admin/fleet', icon: Car },
           { label: t.kpis.available, value: stats.fleet,          href: '/admin/fleet', icon: CheckCircle },
           { label: t.kpis.drivers,   value: stats.driversAvail,   href: '/admin/drivers', icon: Users },
-          { label: t.kpis.pending,   value: bookingStats.pending, href: '/admin/bookings?status=pending', accent: true, icon: Clock },
+          { label: t.kpis.pending,   value: bookingStats.pending, href: '/admin/bookings?status=pending', icon: Clock },
           { label: t.kpis.active,    value: bookingStats.active,  href: '/admin/bookings', icon: ShieldCheck },
           { label: t.kpis.today,     value: bookingStats.today,   href: '/admin/bookings', icon: CalendarDays },
         ].map((card) => (
@@ -244,85 +244,102 @@ export default async function AdminDashboardPage() {
             href={card.href}
             className="bg-white border border-[#e5e1d8] rounded-2xl px-4 py-4 shadow-sm hover:shadow-md hover:border-[#8a6520]/50 transition-all group"
           >
-            <card.icon
-              size={16}
-              className={`mb-2 ${'accent' in card && card.accent ? 'text-[#8a6520]' : 'text-[#75716a]'}`}
-              strokeWidth={1.75}
-            />
+            <card.icon size={16} className="mb-2 text-[#75716a]" strokeWidth={1.75} />
             <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
               {card.label}
             </p>
-            <p className={`text-2xl font-playfair font-semibold mt-1 transition-colors group-hover:text-[#8a6520] ${'accent' in card && card.accent ? 'text-[#8a6520]' : 'text-[#1d1b18]'}`}>
+            <p className="text-2xl font-playfair font-semibold mt-1 text-[#1d1b18] transition-colors group-hover:text-[#8a6520]">
               {companyId ? card.value : '—'}
             </p>
           </Link>
         ))}
       </div>
 
-      {/* Ingresos — bloque destacado oscuro, el centro visual financiero del panel */}
-      <div className="bg-[#1d1b18] rounded-2xl px-6 py-6 sm:px-8 sm:py-7 flex flex-wrap items-center gap-x-10 gap-y-5">
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex w-11 h-11 rounded-xl bg-gold/10 items-center justify-center shrink-0">
-            <TrendingUp size={20} className="text-gold" strokeWidth={1.75} />
-          </div>
+      {/* Ingresos — el centro visual financiero del panel: cuadro de acento oscuro
+          + cifras sobre fondo claro (no toda la tarjeta en negro). */}
+      <div className="bg-white border border-[#e5e1d8] rounded-2xl shadow-sm overflow-hidden flex items-stretch">
+        <div className="w-[96px] sm:w-[130px] shrink-0 bg-[#1d1b18] flex items-center justify-center">
+          <TrendingUp size={26} className="text-gold" strokeWidth={1.75} />
+        </div>
+        <div className="flex-1 flex flex-wrap items-center gap-x-10 gap-y-4 px-6 py-5 sm:px-8">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-gold/80">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520]">
               {t.revenueMonth}
             </p>
-            <p className="text-4xl sm:text-5xl font-playfair font-semibold text-gold mt-1">
+            <p className="text-4xl sm:text-5xl font-playfair font-semibold text-[#8a6520] mt-1">
               ${revenue.month.toFixed(2)}
             </p>
           </div>
+          <div className="h-10 w-px bg-[#e5e1d8] hidden sm:block" />
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
+              {t.revenueToday}
+            </p>
+            <p className="text-2xl font-playfair font-semibold text-[#1d1b18] mt-1">
+              ${revenue.today.toFixed(2)}
+            </p>
+          </div>
+          <div className="h-10 w-px bg-[#e5e1d8] hidden sm:block" />
+          <Link href="/admin/bookings?status=completed" className="group">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
+              {t.completedMonth}
+            </p>
+            <p className="text-2xl font-playfair font-semibold text-[#1d1b18] mt-1 group-hover:text-[#8a6520] transition-colors">
+              {companyId ? bookingStats.completedMonth : '—'}
+            </p>
+          </Link>
         </div>
-        <div className="h-10 w-px bg-white/10 hidden sm:block" />
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40">
-            {t.revenueToday}
-          </p>
-          <p className="text-2xl font-playfair font-semibold text-white mt-1">
-            ${revenue.today.toFixed(2)}
-          </p>
-        </div>
-        <div className="h-10 w-px bg-white/10 hidden sm:block" />
-        <Link href="/admin/bookings?status=completed" className="group">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40">
-            {t.completedMonth}
-          </p>
-          <p className="text-2xl font-playfair font-semibold text-white mt-1 group-hover:text-gold transition-colors">
-            {companyId ? bookingStats.completedMonth : '—'}
-          </p>
-        </Link>
       </div>
 
       {/* Tendencia 7 días + Próximos viajes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Tendencia */}
+        {/* Tendencia — gráfica de línea con puntos, alimentada con datos reales */}
         <div className="bg-white border border-[#e5e1d8] rounded-2xl shadow-sm p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <CalendarDays size={14} className="text-[#8a6520]" strokeWidth={1.75} />
+          <div className="flex items-center justify-between mb-5">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
               {t.trendWeek}
             </p>
+            <div className="w-7 h-7 rounded-lg bg-[#f6f4ef] flex items-center justify-center shrink-0">
+              <CalendarDays size={14} className="text-[#8a6520]" strokeWidth={1.75} />
+            </div>
           </div>
-          <div className="flex items-end justify-between gap-2">
-            {weekTrend.map((d, i) => {
-              const max = Math.max(1, ...weekTrend.map((x) => x.count))
-              const h = (d.count / max) * 100
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                  <span className="text-[10px] font-medium text-[#8a6520] h-3">{d.count || ''}</span>
-                  {/* Pista de altura fija: el % de la barra resuelve contra ella */}
-                  <div className="w-full h-20 flex items-end">
-                    <div
-                      className="w-full rounded-t-md bg-[#8a6520]/70 transition-all"
-                      style={{ height: d.count ? `${Math.max(8, h)}%` : '0%' }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-[#75716a]">{d.day}</span>
+          {(() => {
+            const max = Math.max(1, ...weekTrend.map((d) => d.count))
+            const chartW = 320
+            const chartH = 96
+            const stepX = weekTrend.length > 1 ? chartW / (weekTrend.length - 1) : 0
+            const points = weekTrend.map((d, i) => ({
+              x: i * stepX,
+              y: chartH - (d.count / max) * chartH,
+              count: d.count,
+            }))
+            const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+            return (
+              <div className="flex gap-3">
+                <div className="flex flex-col justify-between text-[10px] text-[#75716a] py-0.5" style={{ height: chartH }}>
+                  <span>{max}</span>
+                  <span>{Math.round(max / 2)}</span>
+                  <span>0</span>
                 </div>
-              )
-            })}
-          </div>
+                <div className="flex-1 min-w-0">
+                  <svg viewBox={`0 0 ${chartW} ${chartH}`} className="w-full" style={{ height: chartH }} preserveAspectRatio="none">
+                    <line x1="0" y1="0" x2={chartW} y2="0" stroke="#e5e1d8" strokeWidth="1" />
+                    <line x1="0" y1={chartH / 2} x2={chartW} y2={chartH / 2} stroke="#e5e1d8" strokeWidth="1" />
+                    <line x1="0" y1={chartH} x2={chartW} y2={chartH} stroke="#e5e1d8" strokeWidth="1" />
+                    <path d={pathD} fill="none" stroke="#8a6520" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    {points.map((p, i) => (
+                      <circle key={i} cx={p.x} cy={p.y} r="3" fill="#8a6520" />
+                    ))}
+                  </svg>
+                  <div className="flex justify-between mt-1.5">
+                    {weekTrend.map((d, i) => (
+                      <span key={i} className="text-[10px] text-[#75716a]">{d.day}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
         </div>
 
         {/* Próximos viajes */}
@@ -335,7 +352,7 @@ export default async function AdminDashboardPage() {
           {upcomingBookings.length === 0 ? (
             <div className="py-10 px-6 flex flex-col items-center gap-3 text-center">
               <div className="w-11 h-11 rounded-full bg-[#f6f4ef] flex items-center justify-center">
-                <Clock size={18} className="text-[#75716a]" strokeWidth={1.75} />
+                <CalendarDays size={18} className="text-[#75716a]" strokeWidth={1.75} />
               </div>
               <p className="text-sm text-[#75716a]">
                 {t.noUpcoming}
