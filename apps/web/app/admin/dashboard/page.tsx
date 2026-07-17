@@ -242,13 +242,13 @@ export default async function AdminDashboardPage() {
           <Link
             key={card.label}
             href={card.href}
-            className="bg-white border border-[#e5e1d8] rounded-2xl px-4 py-4 shadow-sm hover:shadow-md hover:border-[#8a6520]/50 transition-all group"
+            className="bg-white border border-[#e5e1d8] rounded-xl px-3.5 py-3 shadow-sm hover:shadow-md hover:border-[#8a6520]/50 transition-all group"
           >
-            <card.icon size={16} className="mb-2 text-[#75716a]" strokeWidth={1.75} />
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
+            <card.icon size={14} className="mb-1.5 text-[#75716a]" strokeWidth={1.75} />
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-[#75716a]">
               {card.label}
             </p>
-            <p className="text-2xl font-playfair font-semibold mt-1 text-[#1d1b18] transition-colors group-hover:text-[#8a6520]">
+            <p className="text-lg font-playfair font-semibold mt-0.5 text-[#1d1b18] transition-colors group-hover:text-[#8a6520]">
               {companyId ? card.value : '—'}
             </p>
           </Link>

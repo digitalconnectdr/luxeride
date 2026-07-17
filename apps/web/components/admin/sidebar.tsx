@@ -237,7 +237,7 @@ export function AdminSidebar({
   return (
     <>
       {/* Barra móvil (< md) — el aside completo vive fuera de pantalla */}
-      <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-sl-on-surface">
+      <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-[#241a10]">
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
@@ -276,7 +276,7 @@ export function AdminSidebar({
         {/* Wordmark + toggle — bloque de marca oscuro, distinto del resto del sidebar.
             Solo identidad de marca aquí (logo + nombre + atribución); el usuario/rol
             vive en su propia tarjeta al pie del sidebar. */}
-        <div className={`py-6 bg-sl-on-surface ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
+        <div className={`py-6 bg-[#241a10] ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
           <div className={`flex items-center ${effectiveCollapsed ? 'flex-col gap-3' : 'justify-between gap-2'}`}>
             <Link
               href="/admin/dashboard"
