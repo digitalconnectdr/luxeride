@@ -52,7 +52,7 @@ export default async function NewBookingPage() {
           {t.subtitle}
         </p>
       </div>
-      <div className="max-w-2xl">
+      <div className="max-w-4xl">
         <NewBookingForm
           vehicleTypes={vehicleTypes ?? []}
           drivers={drivers ?? []}

@@ -118,8 +118,8 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
     return (
       <form onSubmit={handleCalculatePrice} className="space-y-5">
 
-        {/* Tipo de reservación + vehículo */}
-        <div className="grid sm:grid-cols-2 gap-4">
+        {/* Tipo de reservación + vehículo + fecha/hora */}
+        <div className="grid sm:grid-cols-3 gap-4">
           <div className={vehicleTypes.length > 0 ? undefined : 'sm:col-span-2'}>
             <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
               {t.serviceType}
@@ -153,20 +153,19 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
               </select>
             </div>
           )}
-        </div>
 
-        {/* Fecha y hora */}
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-            {t.dateTime}
-          </label>
-          <input
-            type="datetime-local"
-            name="scheduled_at"
-            required
-            min={new Date().toISOString().slice(0, 16)}
-            className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
-          />
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
+              {t.dateTime}
+            </label>
+            <input
+              type="datetime-local"
+              name="scheduled_at"
+              required
+              min={new Date().toISOString().slice(0, 16)}
+              className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
+            />
+          </div>
         </div>
 
         {/* Pickup */}
@@ -319,8 +318,8 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
 
       <form onSubmit={handleCreateBooking} className="space-y-5">
 
-        {/* Nombre + teléfono */}
-        <div className="grid sm:grid-cols-2 gap-4">
+        {/* Nombre + teléfono + email */}
+        <div className="grid sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
               {t.passengerName} <span className="text-red-500">*</span>
@@ -345,10 +344,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
               className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
             />
           </div>
-        </div>
 
-        {/* Email + pasajeros */}
-        <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
               {t.email} <span className="font-normal normal-case">{t.optional}</span>
@@ -360,7 +356,10 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
               className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
             />
           </div>
+        </div>
 
+        {/* Pasajeros + cuenta corporativa */}
+        <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
               {t.passengerCount}
@@ -374,26 +373,25 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
               className="w-28 rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
             />
           </div>
-        </div>
 
-        {/* Cuenta corporativa (F1.11) */}
-        {corporateAccounts.length > 0 && (
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
-              {t.corporateAccount} <span className="font-normal normal-case">{t.corporateHint}</span>
-            </label>
-            <select
-              name="corporate_account_id"
-              defaultValue=""
-              className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
-            >
-              <option value="">{t.individualClient}</option>
-              {corporateAccounts.map((acc) => (
-                <option key={acc.id} value={acc.id}>{acc.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
+          {corporateAccounts.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
+                {t.corporateAccount} <span className="font-normal normal-case">{t.corporateHint}</span>
+              </label>
+              <select
+                name="corporate_account_id"
+                defaultValue=""
+                className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
+              >
+                <option value="">{t.individualClient}</option>
+                {corporateAccounts.map((acc) => (
+                  <option key={acc.id} value={acc.id}>{acc.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
 
         {/* Instrucciones especiales */}
         <div>
