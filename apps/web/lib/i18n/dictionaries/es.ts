@@ -1121,6 +1121,7 @@ export const es: Dictionary = {
       overallNote: 'Promedia solo las áreas con datos suficientes — un área sin actividad (ej. sin red de afiliados) nunca juega en tu contra.',
       noData: 'Todavía no hay datos suficientes.',
       methodNote: 'Basado en tus últimos 30 días vs. los 30 días anteriores a esos. Se actualiza solo — no requiere ninguna acción.',
+      periodLabel: 'Últimos 30 días',
       areas: {
         revenueHealth: { label: 'Salud de ingresos', desc: 'Tendencia de ingresos vs. los 30 días anteriores.' },
         dispatchEfficiency: { label: 'Eficiencia de despacho', desc: 'Porcentaje de reservas asignadas rápido.' },

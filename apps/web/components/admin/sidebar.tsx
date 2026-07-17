@@ -1,11 +1,11 @@
 'use client'
 // ── Sidebar del admin — colapsable (solo íconos) para ganar espacio ───────────
-// El estado se persiste en localStorage. Cada item tiene ícono (lucide) y en
-// modo colapsado muestra tooltip nativo con el nombre. En móvil (< md) el
-// sidebar completo vive fuera de pantalla y se abre como drawer con una
-// barra superior + botón hamburguesa (ver Props.mobile en el layout).
+// Fondo negro carbón de principio a fin (identidad premium): logo, nav y
+// perfil de usuario viven todos sobre el mismo fondo oscuro. El estado de
+// colapso/drawer móvil vive en SidebarContext (compartido con el TopBar).
+// En modo colapsado se muestra tooltip nativo con el nombre de cada item.
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -46,11 +46,10 @@ import {
 import { logoutAction } from '@/app/actions/auth'
 import { brand } from '@/lib/brand'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
+import { useSidebarState } from '@/components/admin/sidebar-context'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 import type { ReferralTierKey } from '@/lib/referrals/tiers'
-
-const STORAGE_KEY = 'luxeride_sidebar_collapsed'
 
 interface NavItem {
   href: string
@@ -104,45 +103,12 @@ export function AdminSidebar({
   referralsDict,
 }: Props) {
   const pathname = usePathname()
-  const [collapsed, setCollapsed] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [isDesktop, setIsDesktop] = useState(true)
-
-  // Restaurar preferencia (después del mount — evita hydration mismatch)
-  useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem(STORAGE_KEY) === '1') {
-      setCollapsed(true)
-    }
-  }, [])
-
-  // El modo "colapsado a íconos" solo aplica en desktop — en móvil el drawer
-  // siempre muestra las etiquetas completas, sin importar esa preferencia.
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)')
-    setIsDesktop(mq.matches)
-    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
+  const { collapsed, toggleCollapsed, mobileOpen, setMobileOpen } = useSidebarState()
 
   // Cerrar el drawer móvil al navegar a otra página
   useEffect(() => {
     setMobileOpen(false)
-  }, [pathname])
-
-  const effectiveCollapsed = collapsed && isDesktop
-
-  function toggle() {
-    setCollapsed((v) => {
-      const next = !v
-      try {
-        localStorage.setItem(STORAGE_KEY, next ? '1' : '0')
-      } catch {
-        // localStorage no disponible — solo estado en memoria
-      }
-      return next
-    })
-  }
+  }, [pathname, setMobileOpen])
 
   // Afiliado externo (Sección G, Fase 2): solo participa de la Red de
   // Afiliados de quien lo invitó — no es cliente de LuxeRide, así que no
@@ -234,15 +200,17 @@ export function AdminSidebar({
     .join('')
     .toUpperCase()
 
+  const effectiveCollapsed = collapsed
+
   return (
     <>
       {/* Barra móvil (< md) — el aside completo vive fuera de pantalla */}
-      <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-sl-surface-high border-b border-sl-outline-variant">
+      <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-[#1a1613]">
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
           aria-label="Open menu"
-          className="p-3 -ml-3 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors"
+          className="p-3 -ml-3 rounded-lg text-white/50 hover:text-gold hover:bg-white/5 transition-colors"
         >
           <Menu size={20} />
         </button>
@@ -256,7 +224,7 @@ export function AdminSidebar({
             </span>
           </div>
         )}
-        <span className="font-playfair text-sm font-semibold text-sl-on-surface truncate">
+        <span className="font-playfair text-sm font-semibold text-white truncate">
           {companyName}
         </span>
       </div>
@@ -271,11 +239,10 @@ export function AdminSidebar({
       )}
 
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-50 w-72 ${effectiveCollapsed ? 'md:w-16' : 'md:w-56'} bg-sl-surface-high border-r border-sl-outline-variant flex flex-col shrink-0 transition-transform md:transition-[width] duration-200 ease-out transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed md:static inset-y-0 left-0 z-50 w-72 ${effectiveCollapsed ? 'md:w-16' : 'md:w-56'} bg-[#1a1613] flex flex-col shrink-0 transition-transform md:transition-[width] duration-200 ease-out transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        {/* Wordmark + toggle — identidad de marca (logo + nombre + atribución);
-            el usuario/rol vive en su propia tarjeta al pie del sidebar. */}
-        <div className={`py-6 bg-sl-surface-high border-b border-sl-outline-variant ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
+        {/* Wordmark + toggle — identidad de marca (logo + nombre + atribución) */}
+        <div className={`py-6 border-b border-white/10 ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
           <div className={`flex items-center ${effectiveCollapsed ? 'flex-col gap-3' : 'justify-between gap-2'}`}>
             <Link
               href="/admin/dashboard"
@@ -285,7 +252,7 @@ export function AdminSidebar({
             >
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt={companyName} className="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-sl-outline-variant" />
+                <img src={logoUrl} alt={companyName} className="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-white/10" />
               ) : (
                 <div className="w-9 h-9 rounded-full bg-gold flex items-center justify-center shrink-0">
                   <span className="text-gray-900 font-bold text-sm leading-none">
@@ -294,7 +261,7 @@ export function AdminSidebar({
                 </div>
               )}
               {!effectiveCollapsed && (
-                <span className="font-playfair text-lg font-semibold text-sl-on-surface truncate leading-tight">
+                <span className="font-playfair text-lg font-semibold text-white truncate leading-tight">
                   {companyName}
                 </span>
               )}
@@ -302,10 +269,10 @@ export function AdminSidebar({
             {/* Colapsar a íconos — solo desktop */}
             <button
               type="button"
-              onClick={toggle}
+              onClick={toggleCollapsed}
               aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
               title={collapsed ? 'Expandir' : 'Minimizar'}
-              className="hidden md:block p-1 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors shrink-0"
+              className="hidden md:block p-1 rounded-lg text-white/40 hover:text-gold hover:bg-white/5 transition-colors shrink-0"
             >
               {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
             </button>
@@ -314,29 +281,29 @@ export function AdminSidebar({
               type="button"
               onClick={() => setMobileOpen(false)}
               aria-label="Close menu"
-              className="md:hidden p-3 -mr-3 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors shrink-0"
+              className="md:hidden p-3 -mr-3 rounded-lg text-white/40 hover:text-gold hover:bg-white/5 transition-colors shrink-0"
             >
               <X size={18} />
             </button>
           </div>
           {!effectiveCollapsed && (
-            <p className="mt-1.5 text-[9px] uppercase tracking-[0.16em] text-sl-on-surface-muted/70 pl-[46px]">
+            <p className="mt-1.5 text-[9px] uppercase tracking-[0.16em] text-white/25 pl-[46px]">
               by {brand.poweredBy}
             </p>
           )}
         </div>
 
         {!effectiveCollapsed && referralTier && referralsDict && (
-          <div className="px-5 py-2.5 border-b border-sl-outline-variant">
+          <div className="px-5 py-2.5 border-b border-white/10">
             <div
               title={`${referralTier.count} ${referralsDict.countLabel}`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1"
+              className="inline-flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/10 px-2.5 py-1"
             >
-              <Award size={11} className="text-bronze shrink-0" />
-              <span className="text-[10px] font-semibold text-bronze">
+              <Award size={11} className="text-gold shrink-0" />
+              <span className="text-[10px] font-semibold text-gold">
                 {referralsDict[REFERRAL_TIER_LABEL_KEY[referralTier.key as ReferralTierKey]]}
               </span>
-              <span className="text-[9px] text-sl-on-surface-muted">
+              <span className="text-[9px] text-white/40">
                 · {referralTier.count} {referralsDict.countLabel}
               </span>
             </div>
@@ -348,14 +315,14 @@ export function AdminSidebar({
           {sections.filter((s) => s.show).map((section, idx) => (
             <div
               key={section.header}
-              className={!effectiveCollapsed && idx > 0 ? 'mt-2 pt-3 border-t border-sl-outline-variant/70' : undefined}
+              className={!effectiveCollapsed && idx > 0 ? 'mt-2 pt-3 border-t border-white/10' : undefined}
             >
               {!effectiveCollapsed ? (
-                <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-variant">
+                <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/30">
                   {section.header}
                 </p>
               ) : (
-                <div className="my-3 mx-2 h-px bg-sl-outline-variant first:hidden" />
+                <div className="my-3 mx-2 h-px bg-white/10 first:hidden" />
               )}
               {section.items.map((item) => {
                 const active =
@@ -371,8 +338,8 @@ export function AdminSidebar({
                       'flex items-center gap-2.5 rounded-lg text-[13px] transition-colors',
                       effectiveCollapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2',
                       active
-                        ? 'bg-gold/15 text-bronze font-medium'
-                        : 'text-sl-on-surface-muted hover:text-sl-on-surface hover:bg-sl-bg/60',
+                        ? 'bg-gold/15 text-gold font-medium border border-gold/30'
+                        : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent',
                     ].join(' ')}
                   >
                     <Icon size={16} className="shrink-0" />
@@ -385,21 +352,21 @@ export function AdminSidebar({
         </nav>
 
         {/* Tarjeta de perfil del usuario — identidad + sesión, al pie del sidebar */}
-        <div className={`py-4 border-t border-sl-outline-variant bg-sl-surface-bright/60 ${effectiveCollapsed ? 'px-2' : 'px-4'}`}>
+        <div className={`py-4 border-t border-white/10 ${effectiveCollapsed ? 'px-2' : 'px-3'}`}>
           {effectiveCollapsed ? (
             <div className="flex flex-col items-center gap-3">
               <div
                 title={`${userName} · ${userEmail}`}
                 className="w-8 h-8 rounded-full bg-gold/15 flex items-center justify-center"
               >
-                <span className="text-[10px] font-semibold text-bronze">{initials || 'U'}</span>
+                <span className="text-[10px] font-semibold text-gold">{initials || 'U'}</span>
               </div>
               <form action={logoutAction}>
                 <button
                   type="submit"
                   title="Sign out"
                   aria-label="Sign out"
-                  className="p-1.5 rounded-lg text-sl-on-surface-muted hover:text-red-400 hover:bg-sl-bg transition-colors"
+                  className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-white/5 transition-colors"
                 >
                   <LogOut size={15} />
                 </button>
@@ -407,7 +374,7 @@ export function AdminSidebar({
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-2.5">
+              <div className="bg-white rounded-xl p-3 flex items-center gap-2.5">
                 <div
                   title={roleLabel}
                   className="w-8 h-8 rounded-full bg-gold/15 flex items-center justify-center shrink-0"
@@ -419,21 +386,21 @@ export function AdminSidebar({
                   <p className="text-[11px] text-sl-on-surface-muted truncate">{userEmail}</p>
                 </div>
               </div>
-              <div className="mt-3">
-                <LanguageSwitcher current={locale} variant="light" />
+              <div className="mt-3 px-1">
+                <LanguageSwitcher current={locale} variant="dark" />
               </div>
-              <form action={logoutAction} className="mt-2">
+              <form action={logoutAction} className="mt-2 px-1">
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 text-[11px] text-sl-on-surface-muted hover:text-red-400 transition-colors"
+                  className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-red-400 transition-colors"
                 >
                   <LogOut size={12} />
                   Sign out
                 </button>
               </form>
-              <p className="mt-3 pt-3 border-t border-sl-outline-variant text-[9px] uppercase tracking-[0.18em] text-sl-on-surface-muted/70">
+              <p className="mt-3 pt-3 border-t border-white/10 text-[9px] uppercase tracking-[0.18em] text-white/25 px-1">
                 {brand.name} · Powered by
-                <span className="block text-bronze/80">{brand.poweredBy}</span>
+                <span className="block text-gold/60">{brand.poweredBy}</span>
               </p>
             </>
           )}

@@ -1120,6 +1120,7 @@ export const en = {
       overallNote: 'Averages only the areas with enough data — a quiet area (like no affiliate activity) never counts against you.',
       noData: 'Not enough data yet.',
       methodNote: 'Based on your last 30 days vs. the 30 days before that. Updates automatically — no action needed.',
+      periodLabel: 'Last 30 days',
       areas: {
         revenueHealth: { label: 'Revenue Health', desc: 'Revenue trend vs. the prior 30 days.' },
         dispatchEfficiency: { label: 'Dispatch Efficiency', desc: 'Share of bookings assigned quickly.' },

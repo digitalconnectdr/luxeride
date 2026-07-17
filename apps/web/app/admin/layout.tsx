@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { MapsProvider } from '@/components/maps/maps-provider'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { AdminSidebar } from '@/components/admin/sidebar'
+import { AdminTopBar } from '@/components/admin/topbar'
+import { SidebarProvider } from '@/components/admin/sidebar-context'
 import { SubscriptionExpiryPopup } from '@/components/admin/subscription-expiry-popup'
 import { getTierForCount } from '@/lib/referrals/tiers'
 
@@ -106,29 +108,43 @@ export default async function AdminLayout({
     isOwner &&
     (isSuspended || (subscriptionDaysLeft !== null && subscriptionDaysLeft <= SUBSCRIPTION_WARNING_DAYS))
 
+  const userName = `${user.profile.first_name} ${user.profile.last_name}`
+  const userInitials = userName
+    .split(' ')
+    .map((p) => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+
   return (
     <div
       className="min-h-screen bg-sl-bg flex flex-col md:flex-row"
       style={primaryColor ? ({ '--color-bronze': primaryColor } as React.CSSProperties) : undefined}
     >
-      {/* ── Sidebar colapsable (client) ── */}
-      <AdminSidebar
-        companyName={companyName}
-        logoUrl={logoUrl}
-        roleLabel={user.role.replace(/_/g, ' ')}
-        userName={`${user.profile.first_name} ${user.profile.last_name}`}
-        userEmail={user.email}
-        locale={locale}
-        nav={nav}
-        flags={{ isOwner, isOwnerOrAdmin, isDispatcher, isAccounting, affiliateNetworkEnabled, isExternalAffiliate }}
-        referralTier={referralTier}
-        referralsDict={referralsDict}
-      />
+      <SidebarProvider>
+        {/* ── Sidebar colapsable (client) ── */}
+        <AdminSidebar
+          companyName={companyName}
+          logoUrl={logoUrl}
+          roleLabel={user.role.replace(/_/g, ' ')}
+          userName={userName}
+          userEmail={user.email}
+          locale={locale}
+          nav={nav}
+          flags={{ isOwner, isOwnerOrAdmin, isDispatcher, isAccounting, affiliateNetworkEnabled, isExternalAffiliate }}
+          referralTier={referralTier}
+          referralsDict={referralsDict}
+        />
 
-      {/* ── Main — envuelto en MapsProvider para toda la sección admin ── */}
-      <main className="flex-1 overflow-auto">
-        <MapsProvider>{children}</MapsProvider>
-      </main>
+        {/* ── Main — barra superior + contenido, envuelto en MapsProvider ── */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <AdminTopBar userName={userName} userInitials={userInitials} />
+          <main className="flex-1 overflow-auto">
+            <MapsProvider>{children}</MapsProvider>
+          </main>
+        </div>
+      </SidebarProvider>
 
       {showSubscriptionPopup && user.company_id && (
         <SubscriptionExpiryPopup

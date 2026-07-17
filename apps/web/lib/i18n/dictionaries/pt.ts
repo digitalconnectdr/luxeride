@@ -1121,6 +1121,7 @@ export const pt: Dictionary = {
       overallNote: 'Faz a média apenas das áreas com dados suficientes — uma área sem atividade (ex. sem rede de afiliados) nunca conta contra você.',
       noData: 'Ainda não há dados suficientes.',
       methodNote: 'Baseado nos seus últimos 30 dias vs. os 30 dias anteriores. Atualiza sozinho — não requer nenhuma ação.',
+      periodLabel: 'Últimos 30 dias',
       areas: {
         revenueHealth: { label: 'Saúde da receita', desc: 'Tendência de receita vs. os 30 dias anteriores.' },
         dispatchEfficiency: { label: 'Eficiência de despacho', desc: 'Porcentagem de reservas atribuídas rapidamente.' },
