@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { UserPlus } from 'lucide-react'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getDict, getLocale } from '@/lib/i18n/server'
@@ -62,8 +63,11 @@ export default async function ReferralsPage() {
       />
 
       {!currentTier && rows.length === 0 ? (
-        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-8 text-center">
-          <p className="text-sm text-sl-on-surface-muted">{t.empty}</p>
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm py-12 px-6 flex flex-col items-center gap-3 text-center">
+          <div className="w-11 h-11 rounded-full bg-sl-bg flex items-center justify-center">
+            <UserPlus size={18} className="text-sl-on-surface-muted" strokeWidth={1.75} />
+          </div>
+          <p className="text-sm text-sl-on-surface-muted max-w-sm">{t.empty}</p>
         </div>
       ) : (
       <>
