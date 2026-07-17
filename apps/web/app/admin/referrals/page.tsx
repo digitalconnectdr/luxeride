@@ -47,7 +47,7 @@ export default async function ReferralsPage() {
   const nextTier = REFERRAL_TIERS.find((tier) => tier.min > activeCount)
 
   return (
-    <div className="space-y-5">
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
       <div>
         <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.pageTitle}</h1>
         <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
