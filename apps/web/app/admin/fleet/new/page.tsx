@@ -37,7 +37,7 @@ export default async function NewVehiclePage() {
         <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">{t.heading}</h1>
       </div>
 
-      <div className="max-w-2xl">
+      <div className="max-w-4xl">
         <NewVehicleForm types={types ?? []} labels={t} />
       </div>
     </div>

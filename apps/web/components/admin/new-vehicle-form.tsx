@@ -38,7 +38,7 @@ export function NewVehicleForm({ types, labels: t }: Props) {
         <h2 className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
           {t.identification}
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1.5">
             <label className="text-xs text-sl-on-surface-muted">{t.make} *</label>
             <input name="make" type="text" required placeholder="Mercedes-Benz" className={inputCls} />
@@ -73,16 +73,14 @@ export function NewVehicleForm({ types, labels: t }: Props) {
         <h2 className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
           {t.classification}
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-xs text-sl-on-surface-muted">{t.vehicleType}</label>
-            <select name="vehicle_type_id" className={inputCls}>
-              <option value="">{t.noType}</option>
-              {types.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          </div>
+        <div className="space-y-1.5 max-w-xs">
+          <label className="text-xs text-sl-on-surface-muted">{t.vehicleType}</label>
+          <select name="vehicle_type_id" className={inputCls}>
+            <option value="">{t.noType}</option>
+            {types.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
         </div>
       </section>
 
