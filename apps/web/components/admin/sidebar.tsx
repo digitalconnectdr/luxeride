@@ -237,12 +237,12 @@ export function AdminSidebar({
   return (
     <>
       {/* Barra móvil (< md) — el aside completo vive fuera de pantalla */}
-      <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-[#241a10]">
+      <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-sl-surface-high border-b border-sl-outline-variant">
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
           aria-label="Open menu"
-          className="p-3 -ml-3 rounded-lg text-white/50 hover:text-gold hover:bg-white/5 transition-colors"
+          className="p-3 -ml-3 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors"
         >
           <Menu size={20} />
         </button>
@@ -256,7 +256,7 @@ export function AdminSidebar({
             </span>
           </div>
         )}
-        <span className="font-playfair text-sm font-semibold text-white truncate">
+        <span className="font-playfair text-sm font-semibold text-sl-on-surface truncate">
           {companyName}
         </span>
       </div>
@@ -273,10 +273,9 @@ export function AdminSidebar({
       <aside
         className={`fixed md:static inset-y-0 left-0 z-50 w-72 ${effectiveCollapsed ? 'md:w-16' : 'md:w-56'} bg-sl-surface-high border-r border-sl-outline-variant flex flex-col shrink-0 transition-transform md:transition-[width] duration-200 ease-out transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        {/* Wordmark + toggle — bloque de marca oscuro, distinto del resto del sidebar.
-            Solo identidad de marca aquí (logo + nombre + atribución); el usuario/rol
-            vive en su propia tarjeta al pie del sidebar. */}
-        <div className={`py-6 bg-[#241a10] ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
+        {/* Wordmark + toggle — identidad de marca (logo + nombre + atribución);
+            el usuario/rol vive en su propia tarjeta al pie del sidebar. */}
+        <div className={`py-6 bg-sl-surface-high border-b border-sl-outline-variant ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
           <div className={`flex items-center ${effectiveCollapsed ? 'flex-col gap-3' : 'justify-between gap-2'}`}>
             <Link
               href="/admin/dashboard"
@@ -286,7 +285,7 @@ export function AdminSidebar({
             >
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt={companyName} className="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-white/10" />
+                <img src={logoUrl} alt={companyName} className="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-sl-outline-variant" />
               ) : (
                 <div className="w-9 h-9 rounded-full bg-gold flex items-center justify-center shrink-0">
                   <span className="text-gray-900 font-bold text-sm leading-none">
@@ -295,7 +294,7 @@ export function AdminSidebar({
                 </div>
               )}
               {!effectiveCollapsed && (
-                <span className="font-playfair text-lg font-semibold text-white truncate leading-tight">
+                <span className="font-playfair text-lg font-semibold text-sl-on-surface truncate leading-tight">
                   {companyName}
                 </span>
               )}
@@ -306,7 +305,7 @@ export function AdminSidebar({
               onClick={toggle}
               aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
               title={collapsed ? 'Expandir' : 'Minimizar'}
-              className="hidden md:block p-1 rounded-lg text-white/40 hover:text-gold hover:bg-white/5 transition-colors shrink-0"
+              className="hidden md:block p-1 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors shrink-0"
             >
               {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
             </button>
@@ -315,13 +314,13 @@ export function AdminSidebar({
               type="button"
               onClick={() => setMobileOpen(false)}
               aria-label="Close menu"
-              className="md:hidden p-3 -mr-3 rounded-lg text-white/40 hover:text-gold hover:bg-white/5 transition-colors shrink-0"
+              className="md:hidden p-3 -mr-3 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors shrink-0"
             >
               <X size={18} />
             </button>
           </div>
           {!effectiveCollapsed && (
-            <p className="mt-1.5 text-[9px] uppercase tracking-[0.16em] text-white/30 pl-[46px]">
+            <p className="mt-1.5 text-[9px] uppercase tracking-[0.16em] text-sl-on-surface-muted/70 pl-[46px]">
               by {brand.poweredBy}
             </p>
           )}

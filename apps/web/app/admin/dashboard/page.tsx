@@ -171,7 +171,7 @@ export default async function AdminDashboardPage() {
   // blancas con borde fino, ancho completo y KPIs compactos en una fila.
   return (
     <div className="min-h-full bg-[#f6f4ef] p-6 lg:p-8">
-      <div className="max-w-[1400px] mx-auto space-y-5">
+      <div className="max-w-[1400px] mx-auto space-y-3">
 
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
@@ -295,7 +295,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Tendencia 7 días + Próximos viajes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Tendencia — gráfica de línea con puntos, alimentada con datos reales */}
         <div className="bg-white border border-[#e5e1d8] rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-5">
