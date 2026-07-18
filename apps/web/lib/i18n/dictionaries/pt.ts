@@ -1173,6 +1173,46 @@ export const pt: Dictionary = {
         },
       },
     },
+    help: {
+      title: 'Central de ajuda',
+      subtitle: 'Respostas rápidas sobre como funciona o seu painel LuxeRide.',
+      categories: [
+        {
+          heading: 'Primeiros passos',
+          items: [
+            { q: 'Como adiciono minha frota e meus motoristas?', a: 'Vá em Frota para adicionar veículos, e em Motoristas para convidar chóferes. Cada motorista recebe um link para completar seu próprio perfil pelo celular.' },
+            { q: 'Como defino meus preços?', a: 'Em Regras de preço você configura tarifas por tipo de veículo, distância, ou por zona (veja Zonas de serviço). Também pode definir uma regra específica para um par exato de zonas.' },
+            { q: 'Como convido minha equipe?', a: 'Em Equipe você adiciona membros com uma função: administrador, despachante ou financeiro. Cada um vê apenas o que sua função precisa.' },
+          ],
+        },
+        {
+          heading: 'Operação diária',
+          items: [
+            { q: 'Como as viagens são atribuídas a um motorista?', a: 'Em Dispatch (Live) você vê as reservas pendentes e as atribui manualmente, ou ativa a atribuição automática (justa, por disponibilidade e zona) no mesmo painel.' },
+            { q: 'Onde vejo minhas reservas e cotações?', a: 'Reservas lista cada reserva; Cotações mostra as solicitações que ainda não foram reservadas. Mensagens guarda cada conversa com um passageiro ou motorista.' },
+            { q: 'O que é o Operator Score?', a: 'Uma pontuação única de 0-100 construída com os seus últimos 30 dias em 8 áreas (receita, velocidade de despacho, qualidade dos motoristas, e mais), para você ver de relance como vai a sua operação.' },
+          ],
+        },
+        {
+          heading: 'Pagamentos e assinatura',
+          items: [
+            { q: 'Como recebo pagamento dos passageiros?', a: 'Em Configurações → Métodos de pagamento você conecta sua conta Stripe. Também pode registrar dinheiro, Zelle ou transferência manualmente em qualquer reserva.' },
+            { q: 'O que inclui o meu plano?', a: 'Configurações → Assinatura mostra seu plano atual e o que está incluído. Você pode solicitar uma mudança de plano por lá.' },
+            { q: 'O que é a Loja de serviços adicionais?', a: 'É onde você ativa serviços opcionais pagos um por um — Folha de pagamento dos motoristas, Assinatura eletrônica, Códigos promocionais, Assistente IA, AI Growth Assistant, Rede de afiliados — pagando apenas pelo que sua operação realmente precisa. Encontra-se em Serviços adicionais.' },
+          ],
+        },
+        {
+          heading: 'Compliance e crescimento',
+          items: [
+            { q: 'O que é Compliance?', a: 'É onde você acompanha licenças, permissões e seguros de cada motorista e veículo, para que sua operação esteja sempre em conformidade.' },
+            { q: 'O que é o Programa de Indicações?', a: 'Cada empresa tem seu próprio link de indicação. Quando outra empresa se cadastra pelo seu link e se torna cliente, você sobe de nível e desbloqueia benefícios. Gerencie em Indicações.' },
+          ],
+        },
+      ],
+      feedbackHint: 'Encontrou um problema ou tem uma ideia? Use o ícone de lâmpada na barra superior (ao lado deste ícone de Ajuda) para reportar um problema ou recomendar uma nova função. Nossa equipe revisa cada solicitação.',
+      stillNeedHelp: 'Ainda precisa de ajuda? Escreva para',
+      contactEmail: 'luxeride@digitalconnectdr.com',
+    },
     featureRequest: {
       triggerLabel: 'Recomendar uma função ou reportar um problema',
       modalTitle: 'Tem uma ideia ou encontrou um problema?',

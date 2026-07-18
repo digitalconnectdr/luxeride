@@ -44,12 +44,13 @@ export function AdminTopBar({ userName, userInitials, featureRequestLabels }: Pr
       >
         <ShieldCheck size={18} />
       </Link>
-      <span
+      <Link
+        href="/admin/help"
         title="Ayuda"
-        className="p-2 rounded-lg text-sl-on-surface-muted/60 cursor-default"
+        className="p-2 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors"
       >
         <HelpCircle size={18} />
-      </span>
+      </Link>
       <FeatureRequestButton labels={featureRequestLabels} />
       <Link
         href="/admin/settings"

@@ -1172,6 +1172,46 @@ export const en = {
         },
       },
     },
+    help: {
+      title: 'Help Center',
+      subtitle: 'Quick answers to how things work in your LuxeRide panel.',
+      categories: [
+        {
+          heading: 'Getting started',
+          items: [
+            { q: 'How do I add my fleet and drivers?', a: 'Go to Fleet to add vehicles, and Drivers to invite chauffeurs. Each driver gets a link to finish their own profile from their phone.' },
+            { q: 'How do I set my pricing?', a: 'In Pricing Rules you set rates by vehicle type, distance, or by zone (see Service Zones). You can also define a specific rule for an exact zone pair.' },
+            { q: 'How do I invite my team?', a: 'From Team you add members with a role: admin, dispatcher, or accounting. Each one only sees what their role needs.' },
+          ],
+        },
+        {
+          heading: 'Day-to-day operations',
+          items: [
+            { q: 'How do trips get assigned to a driver?', a: 'From Dispatch (Live) you see pending bookings and assign them by hand, or turn on auto-assign (fair, by availability and zone) from the same board.' },
+            { q: 'Where do I see reservations and quotes?', a: 'Reservations lists every booking; Quotes shows requests that haven\'t been booked yet. Messages holds every conversation with a passenger or driver.' },
+            { q: 'What is Operator Score?', a: 'A single 0-100 score built from your last 30 days across 8 areas (revenue, dispatch speed, driver quality, and more), so you can see how the operation is doing at a glance.' },
+          ],
+        },
+        {
+          heading: 'Payments & subscription',
+          items: [
+            { q: 'How do I get paid by passengers?', a: 'In Settings → Payment methods you connect your Stripe account. You can also record cash, Zelle, or bank transfer manually on any booking.' },
+            { q: 'What does my plan include?', a: 'Settings → Subscription shows your current plan and what\'s included. You can request a plan change from there.' },
+            { q: 'What is the Add-ons Marketplace?', a: 'It\'s where you turn on optional paid services one at a time — Driver Payroll, E-Signature, Promo Codes, AI Assistant, AI Growth Assistant, Affiliate Network — only paying for what your operation actually needs. Find it under Add-ons.' },
+          ],
+        },
+        {
+          heading: 'Compliance & growth',
+          items: [
+            { q: 'What is Compliance?', a: 'It\'s where you track license, permit, and insurance status for every driver and vehicle, so your operation stays road-legal at all times.' },
+            { q: 'What is the Referral Program?', a: 'Every company gets its own referral link. When another company signs up through it and becomes a paying customer, you level up and unlock benefits. Manage it from Referrals.' },
+          ],
+        },
+      ],
+      feedbackHint: 'Found a bug or have an idea? Use the lightbulb icon in the top bar (next to this Help icon) to report a problem or suggest a new feature. Our team reviews every submission.',
+      stillNeedHelp: 'Still need help? Write to us at',
+      contactEmail: 'luxeride@digitalconnectdr.com',
+    },
     featureRequest: {
       triggerLabel: 'Suggest a feature or report a problem',
       modalTitle: 'Have an idea or found a problem?',
