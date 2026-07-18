@@ -22,6 +22,19 @@ const PLAN_LABEL: Record<CompanyPlan, string> = {
 const TREND_DAYS = 14
 const ACTIVE_BOOKING_STATUSES: BookingStatus[] = ['pending', 'assigned', 'en_route', 'arrived', 'in_progress']
 
+// Etiquetas legibles para company_addons.addon_key -- mismo criterio que
+// app/super-admin/layout.tsx (campana de notificaciones).
+const ADDON_LABELS: Record<string, string> = {
+  driver_payroll: 'Nómina de conductores',
+  esignature: 'Firma electrónica',
+  promo_codes: 'Códigos promocionales',
+  affiliate_network: 'Red de afiliados',
+  ai_chat_basic: 'Asistente IA · Básico',
+  ai_chat_plus: 'Asistente IA · Plus',
+  ai_growth_basic: 'AI Growth Assistant · Básico',
+  ai_growth_plus: 'AI Growth Assistant · Plus',
+}
+
 function StatusBadge({ status }: { status: CompanyStatus }) {
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${STATUS_BADGE[status]}`}>
@@ -59,10 +72,11 @@ export default async function SuperAdminDashboardPage() {
     { count: totalVehicles },
     { data: driverCompanyRows },
     { data: vehicleCompanyRows },
+    { data: activeAddonRows },
   ] = await Promise.all([
     admin
       .from('companies')
-      .select('id, name, slug, status, plan, created_at, city, country, stripe_connect_onboarded, trial_ends_at, subscription_ends_at')
+      .select('id, name, slug, status, plan, created_at, city, country, stripe_connect_onboarded, whop_connect_onboarded, trial_ends_at, subscription_ends_at')
       .order('created_at', { ascending: false }),
     admin.from('plan_quotas').select('plan, monthly_price'),
     admin
@@ -81,6 +95,7 @@ export default async function SuperAdminDashboardPage() {
     admin.from('vehicles').select('id', { count: 'exact', head: true }),
     admin.from('drivers').select('company_id, is_available'),
     admin.from('vehicles').select('company_id'),
+    admin.from('company_addons').select('company_id, addon_key').eq('enabled', true),
   ])
 
   const companies = companiesRaw ?? []
@@ -149,7 +164,26 @@ export default async function SuperAdminDashboardPage() {
   const failureRate = payments.length ? failedPayments.length / payments.length : 0
   const methodCounts = new Map<string, number>()
   for (const p of succeededPayments) methodCounts.set(p.payment_method, (methodCounts.get(p.payment_method) ?? 0) + 1)
-  const companiesWithoutConnect = active.filter((c) => !c.stripe_connect_onboarded)
+  // Una empresa puede cobrar con tarjeta vía Stripe Connect O Whop Connect --
+  // solo cuenta como "sin proveedor conectado" si no tiene ninguno de los dos.
+  const companiesWithoutConnect = active.filter((c) => !c.stripe_connect_onboarded && !c.whop_connect_onboarded)
+
+  // ── D2. Add-ons por empresa (adopción + oportunidades de upsell) ───────────
+  const addonsByCompany = new Map<string, string[]>()
+  for (const row of activeAddonRows ?? []) {
+    const list = addonsByCompany.get(row.company_id) ?? []
+    list.push(row.addon_key)
+    addonsByCompany.set(row.company_id, list)
+  }
+  const addonAdoptionCounts = new Map<string, number>()
+  for (const keys of addonsByCompany.values()) {
+    for (const key of keys) addonAdoptionCounts.set(key, (addonAdoptionCounts.get(key) ?? 0) + 1)
+  }
+  const companiesWithAddons = [...active, ...trial]
+    .map((c) => ({ company: c, addonKeys: addonsByCompany.get(c.id) ?? [] }))
+    .filter((r) => r.addonKeys.length > 0)
+    .sort((a, b) => b.addonKeys.length - a.addonKeys.length)
+  const activeCompaniesWithoutAddons = active.filter((c) => (addonsByCompany.get(c.id) ?? []).length === 0)
 
   // ── E. Flota y conductores (plataforma + detalle por empresa) ──────────────
   const driverCountByCompany = new Map<string, number>()
@@ -376,21 +410,21 @@ export default async function SuperAdminDashboardPage() {
           </div>
         </section>
 
-        {/* ── D. Pagos (Stripe) últimos 30 días ── */}
+        {/* ── D. Pagos con tarjeta (Stripe o Whop Connect) últimos 30 días ── */}
         <section className="space-y-3">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520]">Pagos (Stripe) | últimos 30 días</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520]">Pagos con tarjeta | últimos 30 días</p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className={`${card} px-4 py-3.5`}>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
                 Volumen exitoso
-                <InfoTip text="Suma de los pagos con Stripe que se cobraron con éxito en los últimos 30 días, en todas las empresas. No incluye pagos en efectivo/Zelle/transferencia (esos no pasan por Stripe)." />
+                <InfoTip text="Suma de los pagos con tarjeta (vía Stripe o Whop Connect, según el proveedor de cada empresa) que se cobraron con éxito en los últimos 30 días, en todas las empresas. No incluye pagos en efectivo/Zelle/transferencia." />
               </p>
               <p className="text-2xl font-playfair font-semibold mt-1 text-[#1d1b18]">{money(succeededVolume)}</p>
             </div>
             <div className={`${card} px-4 py-3.5`}>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] flex items-center">
                 Pagos fallidos
-                <InfoTip text="Intentos de cobro con Stripe que fallaron (tarjeta rechazada, fondos insuficientes, etc.) en los últimos 30 días. Arriba de 10% se resalta en rojo." />
+                <InfoTip text="Intentos de cobro con tarjeta que fallaron (tarjeta rechazada, fondos insuficientes, etc.) en los últimos 30 días. Arriba de 10% se resalta en rojo." />
               </p>
               <p className={`text-2xl font-playfair font-semibold mt-1 ${failureRate > 0.1 ? 'text-red-500' : 'text-[#1d1b18]'}`}>
                 {failedPayments.length} <span className="text-sm font-normal text-[#75716a]">({(failureRate * 100).toFixed(1)}%)</span>
@@ -399,7 +433,7 @@ export default async function SuperAdminDashboardPage() {
             <div className={`${card} px-4 py-3.5 col-span-2`}>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] mb-1.5 flex items-center">
                 Método de pago (exitosos)
-                <InfoTip text="Cómo pagaron los pasajeros en los pagos exitosos de los últimos 30 días: tarjeta (Stripe), efectivo, cuenta corporativa o transferencia bancaria." />
+                <InfoTip text="Cómo pagaron los pasajeros en los pagos exitosos de los últimos 30 días: tarjeta, efectivo, cuenta corporativa o transferencia bancaria." />
               </p>
               {methodCounts.size === 0 ? (
                 <p className="text-xs text-[#75716a]">Sin pagos en este período.</p>
@@ -417,7 +451,7 @@ export default async function SuperAdminDashboardPage() {
           {companiesWithoutConnect.length > 0 && (
             <div className={`${card} px-5 py-4`}>
               <p className="text-xs text-[#75716a]">
-                <span className="font-semibold text-[#1d1b18]">{companiesWithoutConnect.length}</span> empresa{companiesWithoutConnect.length === 1 ? '' : 's'} activa{companiesWithoutConnect.length === 1 ? '' : 's'} sin Stripe Connect conectado (no pueden cobrar con tarjeta directamente):{' '}
+                <span className="font-semibold text-[#1d1b18]">{companiesWithoutConnect.length}</span> empresa{companiesWithoutConnect.length === 1 ? '' : 's'} activa{companiesWithoutConnect.length === 1 ? '' : 's'} sin proveedor de pagos con tarjeta conectado (ni Stripe Connect ni Whop Connect; no pueden cobrar con tarjeta directamente):{' '}
                 {companiesWithoutConnect.slice(0, 6).map((c, i) => (
                   <span key={c.id}>
                     {i > 0 && ', '}
@@ -425,6 +459,83 @@ export default async function SuperAdminDashboardPage() {
                   </span>
                 ))}
                 {companiesWithoutConnect.length > 6 && ` +${companiesWithoutConnect.length - 6} más`}
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* ── D2. Add-ons por empresa (adopción + oportunidades de upsell) ── */}
+        <section className="space-y-3">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520] flex items-center">
+            Add-ons | adopción por empresa
+            <InfoTip text="Servicios adicionales de pago (marketplace) activos por empresa. Útil para ver qué add-ons tienen más tracción y a cuáles operadores ofrecerles mejoras o seguimiento para subir su uso." />
+          </p>
+
+          {addonAdoptionCounts.size > 0 && (
+            <div className={`${card} px-5 py-4 flex flex-wrap gap-x-6 gap-y-2`}>
+              {Array.from(addonAdoptionCounts.entries())
+                .sort((a, b) => b[1] - a[1])
+                .map(([key, count]) => (
+                  <p key={key} className="text-xs text-[#1d1b18]">
+                    <span className="font-semibold">{count}</span>{' '}
+                    <span className="text-[#75716a]">{ADDON_LABELS[key] ?? key}</span>
+                  </p>
+                ))}
+            </div>
+          )}
+
+          {companiesWithAddons.length === 0 ? (
+            <div className={`${card} px-5 py-6 text-center`}>
+              <p className="text-xs text-[#75716a]">Ninguna empresa tiene add-ons activos todavía.</p>
+            </div>
+          ) : (
+            <div className={`${card} overflow-hidden`}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[#e5e1d8]">
+                      {['Empresa', 'Plan', 'Add-ons activos'].map((h) => (
+                        <th key={h} className="text-left px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#e5e1d8]">
+                    {companiesWithAddons.map(({ company, addonKeys }) => (
+                      <tr key={company.id} className="hover:bg-[#f6f4ef] transition-colors">
+                        <td className="px-5 py-3">
+                          <Link href={`/super-admin/companies/${company.id}`} className="font-medium text-[#1d1b18] hover:text-[#8a6520] transition-colors">
+                            {company.name}
+                          </Link>
+                        </td>
+                        <td className="px-5 py-3 text-xs text-[#75716a]">{PLAN_LABEL[company.plan]}</td>
+                        <td className="px-5 py-3">
+                          <div className="flex flex-wrap gap-1.5">
+                            {addonKeys.map((key) => (
+                              <span key={key} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#8a6520]/10 text-[#8a6520] border border-[#8a6520]/20">
+                                {ADDON_LABELS[key] ?? key}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeCompaniesWithoutAddons.length > 0 && (
+            <div className={`${card} px-5 py-4`}>
+              <p className="text-xs text-[#75716a]">
+                <span className="font-semibold text-[#1d1b18]">{activeCompaniesWithoutAddons.length}</span> empresa{activeCompaniesWithoutAddons.length === 1 ? '' : 's'} activa{activeCompaniesWithoutAddons.length === 1 ? '' : 's'} sin ningún add-on activo -- oportunidad de upsell:{' '}
+                {activeCompaniesWithoutAddons.slice(0, 6).map((c, i) => (
+                  <span key={c.id}>
+                    {i > 0 && ', '}
+                    <Link href={`/super-admin/companies/${c.id}`} className="text-[#8a6520] hover:underline">{c.name}</Link>
+                  </span>
+                ))}
+                {activeCompaniesWithoutAddons.length > 6 && ` +${activeCompaniesWithoutAddons.length - 6} más`}
               </p>
             </div>
           )}
