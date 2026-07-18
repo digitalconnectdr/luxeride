@@ -48,6 +48,7 @@ import { logoutAction } from '@/app/actions/auth'
 import { brand } from '@/lib/brand'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { useSidebarState } from '@/components/admin/sidebar-context'
+import { FeatureRequestButton, type FeatureRequestLabels } from '@/components/admin/feature-request-modal'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 import type { ReferralTierKey } from '@/lib/referrals/tiers'
@@ -85,6 +86,8 @@ interface Props {
   referralsDict?: Dictionary['admin']['referrals']
   /** Servicios de pago activos para esta empresa — ver lib/billing/catalog.ts. Los que faltan aquí se ocultan del menú hasta comprarse en la tienda. */
   visibleMarketplaceKeys: MarketplaceItemKey[]
+  /** Recomendar función / reportar problema — el trigger vive en AdminTopBar (solo desktop), así que se repite aquí para la barra móvil. */
+  featureRequestLabels: FeatureRequestLabels
 }
 
 const REFERRAL_TIER_LABEL_KEY: Record<ReferralTierKey, keyof Dictionary['admin']['referrals']> = {
@@ -106,6 +109,7 @@ export function AdminSidebar({
   referralTier,
   referralsDict,
   visibleMarketplaceKeys,
+  featureRequestLabels,
 }: Props) {
   const pathname = usePathname()
   const { collapsed, toggleCollapsed, mobileOpen, setMobileOpen } = useSidebarState()
@@ -236,6 +240,9 @@ export function AdminSidebar({
         <span className="font-playfair text-sm font-semibold text-white truncate">
           {companyName}
         </span>
+        <div className="ml-auto shrink-0">
+          <FeatureRequestButton labels={featureRequestLabels} variant="dark" />
+        </div>
       </div>
 
       {/* Fondo oscuro del drawer móvil */}
@@ -248,15 +255,17 @@ export function AdminSidebar({
       )}
 
       <aside
-        className={`fixed md:sticky md:top-0 inset-y-0 md:inset-y-auto left-0 z-50 md:z-auto w-72 md:h-screen ${effectiveCollapsed ? 'md:w-16' : 'md:w-64'} bg-[#1a1613] flex flex-col shrink-0 transition-transform md:transition-[width] duration-200 ease-out transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed md:sticky md:top-0 inset-y-0 md:inset-y-auto left-0 z-50 md:z-auto w-72 md:h-screen ${effectiveCollapsed ? 'md:w-16' : 'md:w-72'} bg-[#1a1613] flex flex-col shrink-0 transition-transform md:transition-[width] duration-200 ease-out transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        {/* Wordmark + toggle — identidad de marca (logo + nombre + atribución) */}
+        {/* Wordmark + toggle — identidad de marca (logo + nombre + atribución).
+        El nombre nunca se trunca con "…" (se ve poco profesional) — envuelve
+        hasta 2 líneas en su lugar, por eso el toggle va alineado arriba. */}
         <div className={`py-6 border-b border-white/10 ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
-          <div className={`flex items-center ${effectiveCollapsed ? 'flex-col gap-3' : 'justify-between gap-2'}`}>
+          <div className={`flex ${effectiveCollapsed ? 'flex-col items-center gap-3' : 'items-start justify-between gap-2'}`}>
             <Link
               href="/admin/dashboard"
               prefetch={false}
-              title={nav.dashboard}
+              title={companyName}
               className={`flex items-center gap-2.5 min-w-0 hover:opacity-80 transition-opacity ${effectiveCollapsed ? 'justify-center' : ''}`}
             >
               {logoUrl ? (
@@ -270,7 +279,7 @@ export function AdminSidebar({
                 </div>
               )}
               {!effectiveCollapsed && (
-                <span className="font-playfair text-lg font-semibold text-white truncate leading-tight">
+                <span className="font-playfair text-base font-semibold text-white leading-snug line-clamp-2 break-words">
                   {companyName}
                 </span>
               )}

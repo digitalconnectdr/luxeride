@@ -155,6 +155,7 @@ export default async function AdminLayout({
           referralTier={referralTier}
           referralsDict={referralsDict}
           visibleMarketplaceKeys={visibleMarketplaceKeys}
+          featureRequestLabels={dict.admin.featureRequest}
         />
 
         {/* ── Main — barra superior + contenido, envuelto en MapsProvider ── */}

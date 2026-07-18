@@ -32,7 +32,14 @@ const inputCls =
   'text-sl-on-surface placeholder:text-sl-on-surface-muted/50 ' +
   'focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze'
 
-export function FeatureRequestButton({ labels }: { labels: FeatureRequestLabels }) {
+export function FeatureRequestButton({
+  labels,
+  variant = 'light',
+}: {
+  labels: FeatureRequestLabels
+  /** 'dark' para colocarlo sobre la barra oscura móvil del sidebar. */
+  variant?: 'light' | 'dark'
+}) {
   const [open, setOpen] = useState(false)
   const [type, setType] = useState<'feature' | 'bug'>('feature')
   const [isPending, startTransition] = useTransition()
@@ -74,7 +81,11 @@ export function FeatureRequestButton({ labels }: { labels: FeatureRequestLabels 
         onClick={() => setOpen(true)}
         title={labels.triggerLabel}
         aria-label={labels.triggerLabel}
-        className="p-2 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors"
+        className={
+          variant === 'dark'
+            ? 'p-2 rounded-lg text-white/50 hover:text-gold hover:bg-white/5 transition-colors'
+            : 'p-2 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors'
+        }
       >
         <Lightbulb size={18} />
       </button>

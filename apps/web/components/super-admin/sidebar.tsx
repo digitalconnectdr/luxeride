@@ -161,20 +161,20 @@ export function SuperAdminSidebar({
       )}
 
       <aside
-        className={`fixed md:sticky md:top-0 inset-y-0 md:inset-y-auto left-0 z-50 md:z-auto w-72 md:h-screen ${effectiveCollapsed ? 'md:w-16' : 'md:w-64'} bg-[#1a1613] flex flex-col shrink-0 transition-transform md:transition-[width] duration-200 ease-out transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed md:sticky md:top-0 inset-y-0 md:inset-y-auto left-0 z-50 md:z-auto w-72 md:h-screen ${effectiveCollapsed ? 'md:w-16' : 'md:w-72'} bg-[#1a1613] flex flex-col shrink-0 transition-transform md:transition-[width] duration-200 ease-out transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        {/* Wordmark + toggle */}
+        {/* Wordmark + toggle — el nombre nunca se trunca con "…", envuelve en su lugar. */}
         <div className={`py-6 border-b border-white/10 ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
-          <div className={`flex items-center ${effectiveCollapsed ? 'flex-col gap-3' : 'gap-2.5'}`}>
+          <div className={`flex ${effectiveCollapsed ? 'flex-col items-center gap-3' : 'items-start gap-2.5'}`}>
             <div className="w-9 h-9 rounded-full bg-gold flex items-center justify-center shrink-0">
               <span className="text-gray-900 font-bold text-sm leading-none">{brand.name.charAt(0)}</span>
             </div>
             {!effectiveCollapsed && (
               <>
-                <span className="font-playfair text-lg font-semibold text-white truncate leading-tight">
+                <span className="font-playfair text-base font-semibold text-white leading-snug line-clamp-2 break-words min-w-0">
                   {brand.name}
                 </span>
-                <span className="ml-auto text-[9px] font-bold tracking-wider text-gold border border-gold/40 rounded px-1.5 py-0.5">
+                <span className="ml-auto shrink-0 text-[9px] font-bold tracking-wider text-gold border border-gold/40 rounded px-1.5 py-0.5">
                   SA
                 </span>
               </>
