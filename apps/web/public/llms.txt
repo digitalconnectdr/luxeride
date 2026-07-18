@@ -59,6 +59,7 @@ No setup fees on any plan.
 - [Home / pricing](/) | product overview, pricing plans, FAQ
 - [Privacy Policy](/privacy)
 - [Terms of Service](/terms)
+- Each active operator gets a public, branded booking page at getluxeride.vercel.app/<operator-slug> (short link) or /book/<operator-slug> | these are independent transportation businesses running on LuxeRide, not part of LuxeRide itself
 
 ## Contact
 

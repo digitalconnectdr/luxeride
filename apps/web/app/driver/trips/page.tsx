@@ -24,6 +24,7 @@ import { DriverSelfAvailabilityToggle } from '@/components/driver/availability-t
 import { DriverChannelChat } from '@/components/shared/driver-channel-chat'
 import { ShareMenu } from '@/components/share/share-menu'
 import { getAppUrl } from '@/lib/app-url'
+import { FeatureRequestButton } from '@/components/admin/feature-request-modal'
 
 export const dynamic = 'force-dynamic'
 
@@ -255,6 +256,7 @@ export default async function DriverTripsPage() {
             </div>
           )}
           <LanguageSwitcher current={locale} variant="light" />
+          <FeatureRequestButton labels={getDict(locale).admin.featureRequest} />
           <form action={logoutAction}>
             <button type="submit" className="text-xs text-[#75716a] hover:text-red-500 transition-colors">{dt.signOut} →</button>
           </form>

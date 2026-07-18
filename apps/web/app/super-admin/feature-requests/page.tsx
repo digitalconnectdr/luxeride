@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Lightbulb, Bug } from 'lucide-react'
+import { Lightbulb, Bug, ShieldCheck, Car, UserRound } from 'lucide-react'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { FeatureRequestStatusSelect } from '@/components/super-admin/feature-request-controls'
-import type { FeatureRequestStatus } from '@/lib/supabase/database.types'
+import type { FeatureRequestSource, FeatureRequestStatus } from '@/lib/supabase/database.types'
 
 export const metadata: Metadata = { title: 'Solicitudes' }
 export const dynamic = 'force-dynamic'
@@ -14,6 +14,12 @@ const STATUS_LABEL: Record<FeatureRequestStatus, string> = {
   pending: 'Pendiente',
   in_progress: 'En trabajo',
   resolved: 'Solucionada',
+}
+
+const SOURCE_META: Record<FeatureRequestSource, { label: string; icon: typeof ShieldCheck; cls: string }> = {
+  admin: { label: 'Admin', icon: ShieldCheck, cls: 'bg-gray-100 text-gray-600 border-gray-200' },
+  driver: { label: 'Conductor', icon: Car, cls: 'bg-blue-50 text-blue-600 border-blue-200' },
+  customer: { label: 'Cliente', icon: UserRound, cls: 'bg-purple-50 text-purple-600 border-purple-200' },
 }
 
 function fmtDate(iso: string): string {
@@ -30,7 +36,7 @@ export default async function FeatureRequestsPage({ searchParams }: PageProps) {
   const admin = createAdminClient()
   const { data: requestsData } = await admin
     .from('feature_requests')
-    .select('id, company_id, type, title, description, status, created_at, companies(name), user_profiles(first_name, last_name)')
+    .select('id, company_id, type, title, description, status, source, created_at, companies(name), user_profiles(first_name, last_name)')
     .order('created_at', { ascending: false })
 
   type Row = {
@@ -40,6 +46,7 @@ export default async function FeatureRequestsPage({ searchParams }: PageProps) {
     title: string
     description: string
     status: FeatureRequestStatus
+    source: FeatureRequestSource
     created_at: string
     companies: { name: string } | null
     user_profiles: { first_name: string; last_name: string } | null
@@ -99,7 +106,7 @@ export default async function FeatureRequestsPage({ searchParams }: PageProps) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-sl-outline-variant/60">
-                  {['Fecha', 'Tipo', 'Empresa', 'Enviado por', 'Solicitud', 'Estado'].map((h) => (
+                  {['Fecha', 'Tipo', 'Origen', 'Empresa', 'Enviado por', 'Solicitud', 'Estado'].map((h) => (
                     <th key={h} className="text-left px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
                       {h}
                     </th>
@@ -120,6 +127,17 @@ export default async function FeatureRequestsPage({ searchParams }: PageProps) {
                           <Bug size={11} /> Problema
                         </span>
                       )}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      {(() => {
+                        const meta = SOURCE_META[req.source] ?? SOURCE_META.admin
+                        const SourceIcon = meta.icon
+                        return (
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${meta.cls}`}>
+                            <SourceIcon size={11} /> {meta.label}
+                          </span>
+                        )
+                      })()}
                     </td>
                     <td className="px-5 py-3.5">
                       {req.company_id ? (

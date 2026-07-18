@@ -1,19 +1,20 @@
 'use client'
 // ── Campana de notificaciones (super-admin) — mezcla solicitudes recientes de
-// feature_requests y activaciones recientes de company_addons en una sola
-// lista, ya resuelta y ordenada por el server component que la invoca (ver
-// app/super-admin/layout.tsx). El punto rojo animado marca cuántas
-// solicitudes siguen sin triar (status='submitted') -- se "limpia" solo
-// cuando el super-admin cambia el estado desde /super-admin/feature-requests,
-// sin necesidad de una tabla de "leído/no leído" aparte.
+// feature_requests, activaciones recientes de company_addons y empresas
+// nuevas registradas en una sola lista, ya resuelta y ordenada por el server
+// component que la invoca (ver app/super-admin/layout.tsx). El punto rojo
+// animado marca cuántas solicitudes siguen sin triar (status='submitted') --
+// se "limpia" solo cuando el super-admin cambia el estado desde
+// /super-admin/feature-requests, sin necesidad de una tabla de
+// "leído/no leído" aparte.
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Bell, Lightbulb, ShoppingBag } from 'lucide-react'
+import { Bell, Lightbulb, ShoppingBag, Building2 } from 'lucide-react'
 
 export interface NotificationItem {
   id: string
-  kind: 'feature_request' | 'addon_purchase'
+  kind: 'feature_request' | 'addon_purchase' | 'company_signup'
   title: string
   companyName: string | null
   companyId: string | null
@@ -91,8 +92,10 @@ export function NotificationsBell({ items, pendingCount }: { items: Notification
                   >
                     {item.kind === 'feature_request' ? (
                       <Lightbulb size={14} className="text-bronze shrink-0 mt-0.5" />
-                    ) : (
+                    ) : item.kind === 'addon_purchase' ? (
                       <ShoppingBag size={14} className="text-green-600 shrink-0 mt-0.5" />
+                    ) : (
+                      <Building2 size={14} className="text-blue-600 shrink-0 mt-0.5" />
                     )}
                     <div className="min-w-0">
                       <p className="text-sm text-sl-on-surface truncate">{item.title}</p>

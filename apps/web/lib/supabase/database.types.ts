@@ -37,6 +37,7 @@ export type CompanyPlan = 'free' | 'starter' | 'professional' | 'elite' | 'enter
 export type EnterpriseLeadStatus = 'new' | 'contacted' | 'converted' | 'rejected'
 export type FeatureRequestType = 'feature' | 'bug'
 export type FeatureRequestStatus = 'submitted' | 'pending' | 'in_progress' | 'resolved'
+export type FeatureRequestSource = 'admin' | 'driver' | 'customer'
 export type VehicleClass = 'sedan' | 'suv' | 'van' | 'limousine' | 'sprinter' | 'bus' | 'exotic'
 export type VehicleStatus = 'available' | 'on_trip' | 'maintenance' | 'offline' | 'retired'
 export type BookingStatus =
@@ -788,6 +789,7 @@ export type Database = {
           title: string
           description: string
           status: FeatureRequestStatus
+          source: FeatureRequestSource
           created_at: string
           updated_at: string
         }
@@ -799,6 +801,7 @@ export type Database = {
           title: string
           description: string
           status?: FeatureRequestStatus | undefined
+          source?: FeatureRequestSource | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -810,6 +813,7 @@ export type Database = {
           title?: string | undefined
           description?: string | undefined
           status?: FeatureRequestStatus | undefined
+          source?: FeatureRequestSource | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getAppUrl } from '@/lib/app-url'
+import { SEO_EXCLUDED_SLUGS } from '@/lib/seo/excluded-slugs'
 
 const BASE = getAppUrl()
 
@@ -57,7 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       admin.from('vehicle_types').select('company_id').eq('is_active', true),
     ])
     const servicedIds = new Set((servicedTypes ?? []).map((v) => v.company_id))
-    const companies = (companiesRaw ?? []).filter((c) => servicedIds.has(c.id))
+    const companies = (companiesRaw ?? []).filter((c) => servicedIds.has(c.id) && !SEO_EXCLUDED_SLUGS.has(c.slug))
 
     for (const c of companies) {
       entries.push({

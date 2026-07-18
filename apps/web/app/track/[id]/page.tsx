@@ -12,6 +12,7 @@ import { InteractiveLiveMap } from '@/components/trip/interactive-live-map'
 import { buildTripStaticMapUrl, tripDirectionsHref } from '@/lib/tracking/static-map-url'
 import { ShareButton } from '@/components/trip/share-button'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
+import { TrackFeedbackButton } from '@/components/trip/track-feedback-button'
 import { MapsProvider } from '@/components/maps/maps-provider'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -234,6 +235,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
               <span className="font-mono text-xs" style={{ color: brandColor }}>{booking.booking_number}</span>
             </div>
             <LanguageSwitcher current={locale} variant="dark" />
+            <TrackFeedbackButton bookingId={booking.id} brandColor={brandColor} labels={getDict(locale).admin.featureRequest} />
           </div>
         </header>
 

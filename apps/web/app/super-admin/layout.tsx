@@ -36,6 +36,12 @@ type AddonRow = {
   companies: { name: string } | null
 }
 
+type CompanyRow = {
+  id: string
+  name: string
+  created_at: string
+}
+
 export default async function SuperAdminLayout({
   children,
 }: {
@@ -45,7 +51,7 @@ export default async function SuperAdminLayout({
   const locale = getLocale()
 
   const admin = createAdminClient()
-  const [{ data: frData }, { data: addonData }, { count: pendingCount }] = await Promise.all([
+  const [{ data: frData }, { data: addonData }, { data: companyData }, { count: pendingCount }] = await Promise.all([
     admin
       .from('feature_requests')
       .select('id, type, title, created_at, companies(name)')
@@ -56,6 +62,11 @@ export default async function SuperAdminLayout({
       .select('id, addon_key, enabled_at, company_id, companies(name)')
       .eq('enabled', true)
       .order('enabled_at', { ascending: false })
+      .limit(8),
+    admin
+      .from('companies')
+      .select('id, name, created_at')
+      .order('created_at', { ascending: false })
       .limit(8),
     admin
       .from('feature_requests')
@@ -83,19 +94,41 @@ export default async function SuperAdminLayout({
       timestamp: r.enabled_at,
     }))
 
-  const notifications = [...frItems, ...addonItems]
+  const companyItems: NotificationItem[] = ((companyData ?? []) as unknown as CompanyRow[]).map((c) => ({
+    id: c.id,
+    kind: 'company_signup',
+    title: `Nueva empresa: ${c.name}`,
+    companyName: c.name,
+    companyId: c.id,
+    timestamp: c.created_at,
+  }))
+
+  const notifications = [...frItems, ...addonItems, ...companyItems]
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, 8)
+
+  const userName = `${user.profile.first_name} ${user.profile.last_name}`
+  const userInitials = [user.profile.first_name, user.profile.last_name]
+    .map((p) => p?.[0])
+    .filter(Boolean)
+    .join('')
+    .toUpperCase()
 
   return (
     <div className="min-h-screen bg-sl-bg flex flex-col md:flex-row">
       <SuperAdminSidebar
-        userName={`${user.profile.first_name} ${user.profile.last_name}`}
+        userName={userName}
         userEmail={user.email}
         locale={locale}
       />
       <div className="flex-1 flex flex-col min-w-0">
-        <SuperAdminTopBar locale={locale} notifications={notifications} pendingCount={pendingCount ?? 0} />
+        <SuperAdminTopBar
+          locale={locale}
+          notifications={notifications}
+          pendingCount={pendingCount ?? 0}
+          userName={userName}
+          userInitials={userInitials || 'SA'}
+        />
         <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>

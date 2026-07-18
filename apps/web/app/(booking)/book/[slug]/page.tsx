@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { resolveLocalizedField, type SiteI18n, type ServiceI18n } from '@/lib/i18n/site-content'
 import { getAppUrl } from '@/lib/app-url'
+import { SEO_EXCLUDED_SLUGS } from '@/lib/seo/excluded-slugs'
 import { brand } from '@/lib/brand'
 import { fetchGoogleReviews } from '@/lib/reviews/google'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
@@ -62,7 +63,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: { absolute: title },
     description,
     alternates: { canonical: url },
-    robots: { index: true, follow: true },
+    robots: SEO_EXCLUDED_SLUGS.has(params.slug) ? { index: false, follow: false } : { index: true, follow: true },
     openGraph: { title, description, url, type: 'website', siteName: company.name, images: company.logo_url ? [{ url: company.logo_url }] : undefined },
     // PWA branded: manifest dinámico + ícono/título de la "app" del operador (iOS).
     manifest: `/manifest/${params.slug}`,
