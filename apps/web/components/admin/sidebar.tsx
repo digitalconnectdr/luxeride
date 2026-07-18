@@ -41,6 +41,7 @@ import {
   X,
   Award,
   Gift,
+  ShoppingBag,
   type LucideIcon,
 } from 'lucide-react'
 import { logoutAction } from '@/app/actions/auth'
@@ -50,6 +51,7 @@ import { useSidebarState } from '@/components/admin/sidebar-context'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 import type { ReferralTierKey } from '@/lib/referrals/tiers'
+import type { MarketplaceItemKey } from '@/lib/billing/catalog'
 
 interface NavItem {
   href: string
@@ -81,6 +83,8 @@ interface Props {
   }
   referralTier?: { key: string; count: number } | null
   referralsDict?: Dictionary['admin']['referrals']
+  /** Servicios de pago activos para esta empresa — ver lib/billing/catalog.ts. Los que faltan aquí se ocultan del menú hasta comprarse en la tienda. */
+  visibleMarketplaceKeys: MarketplaceItemKey[]
 }
 
 const REFERRAL_TIER_LABEL_KEY: Record<ReferralTierKey, keyof Dictionary['admin']['referrals']> = {
@@ -101,6 +105,7 @@ export function AdminSidebar({
   flags,
   referralTier,
   referralsDict,
+  visibleMarketplaceKeys,
 }: Props) {
   const pathname = usePathname()
   const { collapsed, toggleCollapsed, mobileOpen, setMobileOpen } = useSidebarState()
@@ -116,6 +121,7 @@ export function AdminSidebar({
   // internos que gestionar. Solo Flota (para registrar su conductor/vehículo
   // real), Afiliados (solicitudes entrantes) y Configuración (Whop Connect).
   const ext = flags.isExternalAffiliate
+  const isAddonVisible = (key: MarketplaceItemKey) => visibleMarketplaceKeys.includes(key)
 
   const sections: NavSection[] = [
     {
@@ -133,7 +139,9 @@ export function AdminSidebar({
         ...(ext ? [] : [{ href: '/dispatcher/dashboard', label: nav.dispatch, icon: RadioTower }]),
         { href: '/admin/fleet', label: nav.fleet, icon: Car },
         { href: '/admin/drivers', label: nav.drivers, icon: Users },
-        { href: '/admin/affiliates', label: nav.affiliates, icon: Handshake },
+        ...(ext || isAddonVisible('affiliate_network')
+          ? [{ href: '/admin/affiliates', label: nav.affiliates, icon: Handshake }]
+          : []),
       ],
     },
     {
@@ -157,7 +165,7 @@ export function AdminSidebar({
         { href: '/admin/quotes', label: nav.quotes, icon: FileText },
         { href: '/admin/messages', label: nav.messages, icon: MessageSquare },
         { href: '/admin/driver-reports', label: nav.driverReports, icon: AlertTriangle },
-        ...(ext ? [] : [{ href: '/admin/promo-codes', label: nav.promoCodes, icon: Percent }]),
+        ...(!ext && isAddonVisible('promo_codes') ? [{ href: '/admin/promo-codes', label: nav.promoCodes, icon: Percent }] : []),
       ],
     },
     {
@@ -166,7 +174,7 @@ export function AdminSidebar({
       items: [
         { href: '/admin/reports', label: nav.reports, icon: BarChart3 },
         { href: '/admin/audit', label: nav.auditLog, icon: ScrollText },
-        { href: '/admin/payroll', label: nav.payroll, icon: Wallet },
+        ...(isAddonVisible('driver_payroll') ? [{ href: '/admin/payroll', label: nav.payroll, icon: Wallet }] : []),
       ],
     },
     {
@@ -178,9 +186,10 @@ export function AdminSidebar({
           { href: '/admin/compliance', label: nav.compliance, icon: ShieldCheck },
         ]),
         { href: '/admin/team', label: nav.team, icon: UserCog },
-        { href: '/admin/esignature', label: nav.esignature, icon: FileSignature },
-        { href: '/admin/assistant', label: nav.assistant, icon: Bot },
-        { href: '/admin/growth-assistant', label: nav.growthAssistant, icon: TrendingUp },
+        { href: '/admin/marketplace', label: nav.marketplace, icon: ShoppingBag },
+        ...(isAddonVisible('esignature') ? [{ href: '/admin/esignature', label: nav.esignature, icon: FileSignature }] : []),
+        ...(isAddonVisible('ai_chat') ? [{ href: '/admin/assistant', label: nav.assistant, icon: Bot }] : []),
+        ...(isAddonVisible('ai_growth') ? [{ href: '/admin/growth-assistant', label: nav.growthAssistant, icon: TrendingUp }] : []),
         { href: '/admin/partners', label: nav.partners, icon: Store },
         ...(flags.isOwner
           ? [

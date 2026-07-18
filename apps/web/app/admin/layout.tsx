@@ -8,6 +8,8 @@ import { AdminTopBar } from '@/components/admin/topbar'
 import { SidebarProvider } from '@/components/admin/sidebar-context'
 import { SubscriptionExpiryPopup } from '@/components/admin/subscription-expiry-popup'
 import { getTierForCount } from '@/lib/referrals/tiers'
+import { getMarketplaceItems, type MarketplaceItemKey } from '@/lib/billing/catalog'
+import type { CompanyPlan } from '@/lib/supabase/database.types'
 
 const SUBSCRIPTION_WARNING_DAYS = 5
 
@@ -53,14 +55,23 @@ export default async function AdminLayout({
   let affiliateNetworkEnabled = false
   let isExternalAffiliate = false
   let primaryColor: string | null = null
+  let companyPlan: CompanyPlan = 'starter'
+  let visibleMarketplaceKeys: MarketplaceItemKey[] = []
   if (user.company_id) {
     try {
       const admin = createAdminClient()
-      const { data, error } = await admin
-        .from('companies')
-        .select('name, logo_url, status, subscription_ends_at, affiliate_network_enabled, is_external_affiliate, primary_color')
-        .eq('id', user.company_id)
-        .single()
+      const [{ data, error }, { data: addonRows }] = await Promise.all([
+        admin
+          .from('companies')
+          .select('name, logo_url, status, subscription_ends_at, affiliate_network_enabled, is_external_affiliate, primary_color, plan')
+          .eq('id', user.company_id)
+          .single(),
+        admin
+          .from('company_addons')
+          .select('addon_key')
+          .eq('company_id', user.company_id)
+          .eq('enabled', true),
+      ])
       if (error) {
         console.error('[admin/layout] companies query error:', JSON.stringify(error))
       } else if (data) {
@@ -70,10 +81,18 @@ export default async function AdminLayout({
         isExternalAffiliate = data.is_external_affiliate
         primaryColor = data.primary_color
         companyStatus = data.status
+        companyPlan = data.plan
         if (data.subscription_ends_at) {
           const msLeft = new Date(data.subscription_ends_at).getTime() - Date.now()
           subscriptionDaysLeft = Math.floor(msLeft / 86_400_000)
         }
+
+        // ── Servicios adicionales activos — para ocultar del menu lo que la
+        // empresa aun no ha comprado (ver lib/billing/catalog.ts). ──────────
+        const enabledAddonKeys = new Set((addonRows ?? []).map((r) => r.addon_key))
+        visibleMarketplaceKeys = getMarketplaceItems()
+          .filter((item) => item.isActive({ plan: companyPlan, enabledAddonKeys, affiliateNetworkEnabled }))
+          .map((item) => item.key)
       }
     } catch (err) {
       console.error('[admin/layout] companies query THREW:', err)
@@ -135,6 +154,7 @@ export default async function AdminLayout({
           flags={{ isOwner, isOwnerOrAdmin, isDispatcher, isAccounting, affiliateNetworkEnabled, isExternalAffiliate }}
           referralTier={referralTier}
           referralsDict={referralsDict}
+          visibleMarketplaceKeys={visibleMarketplaceKeys}
         />
 
         {/* ── Main — barra superior + contenido, envuelto en MapsProvider ── */}
