@@ -8,14 +8,17 @@ import Link from 'next/link'
 import { Menu, Bell, ShieldCheck, HelpCircle } from 'lucide-react'
 import { useSidebarState } from '@/components/admin/sidebar-context'
 import { FeatureRequestButton, type FeatureRequestLabels } from '@/components/admin/feature-request-modal'
+import { LanguageSwitcher } from '@/components/i18n/language-switcher'
+import type { Locale } from '@/lib/i18n/config'
 
 interface Props {
   userName: string
   userInitials: string
   featureRequestLabels: FeatureRequestLabels
+  locale: Locale
 }
 
-export function AdminTopBar({ userName, userInitials, featureRequestLabels }: Props) {
+export function AdminTopBar({ userName, userInitials, featureRequestLabels, locale }: Props) {
   const { toggleCollapsed } = useSidebarState()
 
   return (
@@ -51,6 +54,7 @@ export function AdminTopBar({ userName, userInitials, featureRequestLabels }: Pr
       >
         <HelpCircle size={18} />
       </Link>
+      <LanguageSwitcher current={locale} variant="light" />
       <FeatureRequestButton labels={featureRequestLabels} />
       <Link
         href="/admin/settings"

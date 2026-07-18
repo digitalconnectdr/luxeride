@@ -146,9 +146,12 @@ export function SuperAdminSidebar({
           <span className="text-gray-900 font-bold text-[10px] leading-none">{brand.name.charAt(0)}</span>
         </div>
         <span className="font-playfair text-sm font-semibold text-white truncate">{brand.name}</span>
-        <span className="ml-auto text-[9px] font-bold tracking-wider text-gold border border-gold/40 rounded px-1.5 py-0.5">
-          SA
-        </span>
+        <div className="ml-auto shrink-0 flex items-center gap-2">
+          <LanguageSwitcher current={locale} variant="dark" />
+          <span className="text-[9px] font-bold tracking-wider text-gold border border-gold/40 rounded px-1.5 py-0.5">
+            SA
+          </span>
+        </div>
       </div>
 
       {/* Fondo oscuro del drawer móvil */}
@@ -257,8 +260,10 @@ export function SuperAdminSidebar({
                   <p className="text-[11px] text-white/40 truncate">{userEmail}</p>
                 </div>
               </div>
-              <div className="mt-3 px-1 flex items-center justify-between gap-2">
-                <LanguageSwitcher current={locale} variant="dark" openUp />
+              {/* El selector de idioma vive en la barra móvil superior y en
+              SuperAdminTopBar (desktop) — nunca aquí, en el pie de un sidebar
+              angosto, donde el dropdown se recorta contra el borde izquierdo. */}
+              <div className="mt-3 px-1">
                 <form action={logoutAction}>
                   <button
                     type="submit"

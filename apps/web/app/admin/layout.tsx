@@ -160,7 +160,7 @@ export default async function AdminLayout({
 
         {/* ── Main — barra superior + contenido, envuelto en MapsProvider ── */}
         <div className="flex-1 flex flex-col min-w-0">
-          <AdminTopBar userName={userName} userInitials={userInitials} featureRequestLabels={dict.admin.featureRequest} />
+          <AdminTopBar userName={userName} userInitials={userInitials} featureRequestLabels={dict.admin.featureRequest} locale={locale} />
           <main className="flex-1 overflow-auto">
             <MapsProvider>{children}</MapsProvider>
           </main>

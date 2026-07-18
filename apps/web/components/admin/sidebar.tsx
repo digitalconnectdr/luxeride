@@ -240,7 +240,8 @@ export function AdminSidebar({
         <span className="font-playfair text-sm font-semibold text-white truncate">
           {companyName}
         </span>
-        <div className="ml-auto shrink-0">
+        <div className="ml-auto shrink-0 flex items-center gap-1">
+          <LanguageSwitcher current={locale} variant="dark" />
           <FeatureRequestButton labels={featureRequestLabels} variant="dark" />
         </div>
       </div>
@@ -399,8 +400,10 @@ export function AdminSidebar({
                   <p className="text-[11px] text-white/40 truncate">{userEmail}</p>
                 </div>
               </div>
-              <div className="mt-3 px-1 flex items-center justify-between gap-2">
-                <LanguageSwitcher current={locale} variant="dark" openUp />
+              {/* El selector de idioma vive en la barra móvil superior y en
+              AdminTopBar (desktop) — nunca aquí, en el pie de un sidebar
+              angosto, donde el dropdown se recorta contra el borde izquierdo. */}
+              <div className="mt-3 px-1">
                 <form action={logoutAction}>
                   <button
                     type="submit"
