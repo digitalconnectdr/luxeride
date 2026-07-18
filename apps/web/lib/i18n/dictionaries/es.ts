@@ -1082,6 +1082,7 @@ export const es: Dictionary = {
       subtitle: 'Servicios opcionales que puedes activar para tu operación, cada uno con su propio costo | actívalos cuando quieras, cancélalos cuando quieras.',
       activeBadge: 'Activo',
       availableBadge: 'Disponible',
+      bestValueLabel: 'Mejor valor',
       perMonth: '/mes',
       startingAt: 'desde',
       viewDetails: 'Ver detalles',
@@ -1100,7 +1101,7 @@ export const es: Dictionary = {
       items: {
         driver_payroll: {
           name: 'Nómina de conductores',
-          shortDesc: 'Cálculo automático de las ganancias de cada conductor — comisión o tarifa fija por viaje.',
+          shortDesc: 'Calcula lo que le debes a cada conductor automáticamente | comisión o tarifa fija, sin hojas de cálculo.',
           features: [
             'Define el modelo de pago de cada conductor: comisión porcentual o tarifa fija por viaje.',
             'Totales calculados automáticamente a partir de los viajes completados en cualquier rango de fechas.',
@@ -1110,17 +1111,17 @@ export const es: Dictionary = {
         },
         esignature: {
           name: 'Firma electrónica',
-          shortDesc: 'Captura una firma real de conductores y cuentas corporativas, guardada con fecha y hora.',
+          shortDesc: 'Firma electrónica real de conductores y cuentas corporativas, con fecha y hora | cero papeleo.',
           features: [
             'Acuerdo de conductor, firmado en cualquier dispositivo, sin papeleo.',
             'Acuerdo de cuenta corporativa, el mismo flujo para tus clientes B2B.',
             'Cada firma queda guardada con el nombre de quien firmó, fecha y hora — siempre disponible para revisar.',
           ],
-          usage: 'Una vez activo, aparece una nueva página "Firma electrónica" bajo Administración con dos pestañas: Conductores y Cuentas corporativas. Envía el enlace del acuerdo, y la firma queda registrada en el momento en que se firma | nada que imprimir, escanear o archivar.',
+          usage: 'Una vez activo, aparece una nueva página "Firma electrónica" bajo Administración con dos pestañas: **Conductores y Cuentas corporativas**. Envía el enlace del acuerdo, y la firma queda registrada en el momento en que se firma | nada que imprimir, escanear o archivar.',
         },
         promo_codes: {
           name: 'Códigos promocionales',
-          shortDesc: 'Códigos de descuento que tus pasajeros pueden canjear al pagar.',
+          shortDesc: 'Códigos de descuento que tus pasajeros canjean al pagar | más reservas, tú decides el margen.',
           features: [
             'Descuentos por porcentaje o monto fijo, tú eliges por cada código.',
             'Límites de uso: total de canjes y límite por cliente.',
@@ -1130,7 +1131,7 @@ export const es: Dictionary = {
         },
         ai_chat: {
           name: 'Asistente IA',
-          shortDesc: 'Un chat en tu página de reserva que responde las preguntas de los pasajeros, automáticamente.',
+          shortDesc: 'Un chat en tu página de reserva que responde preguntas de pasajeros al instante, a cualquier hora | menos llamadas, más reservas.',
           features: [
             'Responde preguntas sobre tu flota, zona de cobertura, precios y política de cancelación — al instante, a cualquier hora.',
             'Entrenado únicamente con los datos de tu propia empresa — nunca inventa respuestas ni menciona otros operadores.',
@@ -1138,10 +1139,15 @@ export const es: Dictionary = {
           ],
           usage: 'Una vez activo, el widget de chat aparece en vivo en tu página pública de reserva para cada visitante. No requiere configuración además de activar el servicio | lee tus servicios, precios y políticas automáticamente.',
           quotaUnit: 'conversaciones/mes',
+          perUnitNoun: 'por conversación',
+          tierBestFor: {
+            basic: 'Ideal para flotas pequeñas o medianas que reciben consultas todos los días.',
+            plus: 'Para temporada alta o varios micrositios — el doble de margen y el costo más bajo por conversación.',
+          },
         },
         ai_growth: {
           name: 'AI Growth Assistant',
-          shortDesc: 'Seguimiento de cotizaciones personalizado por IA y contenido de marketing bajo demanda.',
+          shortDesc: 'Recupera cotizaciones abandonadas y genera contenido de marketing bajo demanda | crecimiento en piloto automático.',
           features: [
             'Las cotizaciones abandonadas reciben un email de seguimiento personalizado, redactado y enviado automáticamente.',
             'Generador de contenido de marketing bajo demanda — captions para redes, promociones, anuncios para tu flota y ciudad.',
@@ -1149,10 +1155,15 @@ export const es: Dictionary = {
           ],
           usage: 'Una vez activo, aparece una nueva página "AI Growth Assistant" bajo Administración. El seguimiento de cotizaciones corre automáticamente en segundo plano | para contenido de marketing, describe lo que necesitas en una frase y obtén un borrador listo para publicar.',
           quotaUnit: 'generaciones/mes',
+          perUnitNoun: 'por generación',
+          tierBestFor: {
+            basic: 'Suficiente para dar seguimiento a cada cotización y publicar contenido cada semana.',
+            plus: 'Para más volumen de cotizaciones y presencia activa en redes — más margen, menor costo por generación.',
+          },
         },
         affiliate_network: {
           name: 'Red de afiliados',
-          shortDesc: 'Envía viajes que no puedes cubrir a empresas socias de confianza, y recibe los suyos.',
+          shortDesc: 'Envía viajes que no puedes cubrir a empresas socias de confianza, y recibe los suyos | ingreso extra sin esfuerzo extra.',
           features: [
             'Envía un viaje que no puedes cubrir (sin conductor, fuera de zona, sobrecapacidad) a una empresa socia de confianza en vez de perderlo.',
             'Recibe viajes de empresas socias también — ingreso extra sin marketing extra.',

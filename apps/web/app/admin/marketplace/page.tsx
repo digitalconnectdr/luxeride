@@ -34,6 +34,8 @@ export default async function MarketplacePage() {
   const cards: MarketplaceCardData[] = getMarketplaceItems().map((item) => {
     const copy = t.items[item.key]
     const quotaUnit = 'quotaUnit' in copy ? copy.quotaUnit : undefined
+    const perUnitNoun = 'perUnitNoun' in copy ? copy.perUnitNoun : undefined
+    const tierBestFor = 'tierBestFor' in copy ? copy.tierBestFor : undefined
     return {
       key: item.key,
       route: item.route,
@@ -45,6 +47,7 @@ export default async function MarketplacePage() {
       features: copy.features,
       usage: copy.usage,
       quotaUnit,
+      perUnitNoun,
       tiers: item.tiers
         ? item.tiers.map((tier) => ({
             addonKey: tier.addonKey,
@@ -58,6 +61,7 @@ export default async function MarketplacePage() {
             price: tier.price,
             quota: tier.quota,
             checkoutUrl: tier.checkoutUrl,
+            bestFor: tierBestFor && (tier.tierLabel === 'basic' || tier.tierLabel === 'plus') ? tierBestFor[tier.tierLabel] : undefined,
           }))
         : null,
     }

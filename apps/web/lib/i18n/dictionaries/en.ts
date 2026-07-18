@@ -1081,6 +1081,7 @@ export const en = {
       subtitle: 'Optional services you can turn on for your operation, each billed on its own | activate anytime, cancel anytime.',
       activeBadge: 'Active',
       availableBadge: 'Available',
+      bestValueLabel: 'Best value',
       perMonth: '/mo',
       startingAt: 'from',
       viewDetails: 'View details',
@@ -1099,7 +1100,7 @@ export const en = {
       items: {
         driver_payroll: {
           name: 'Driver Payroll',
-          shortDesc: 'Automatic earnings calculation per driver — commission or flat rate per trip.',
+          shortDesc: 'Automatically calculates what you owe each driver | commission or flat rate, no spreadsheets.',
           features: [
             'Set each driver\'s pay model: percentage commission or a flat rate per trip.',
             'Totals calculated automatically from completed trips in any date range.',
@@ -1109,17 +1110,17 @@ export const en = {
         },
         esignature: {
           name: 'E-Signature',
-          shortDesc: 'Capture a real signature from drivers and corporate accounts, stored with a timestamp.',
+          shortDesc: 'Real e-signatures from drivers and corporate accounts, timestamped | zero paperwork.',
           features: [
             'Chauffeur agreement, signed on any device, no paperwork.',
             'Corporate account agreement, same flow for your B2B clients.',
             'Every signature stored with the signer\'s name, date and time — always available to review.',
           ],
-          usage: 'Once active, a new "E-Signature" page appears under Management with two tabs: Chauffeurs and Corporate Accounts. Send the agreement link, and the signature appears on file the moment it\'s signed | nothing to print, scan, or file away.',
+          usage: 'Once active, a new "E-Signature" page appears under Management with two tabs: **Chauffeurs and Corporate Accounts**. Send the agreement link, and the signature appears on file the moment it\'s signed | nothing to print, scan, or file away.',
         },
         promo_codes: {
           name: 'Promo Codes',
-          shortDesc: 'Discount codes your passengers can redeem at checkout.',
+          shortDesc: 'Discount codes your passengers redeem at checkout | more bookings, you set the margin.',
           features: [
             'Percentage or fixed-amount discounts, your choice per code.',
             'Usage limits: total redemptions and per-customer limits.',
@@ -1129,7 +1130,7 @@ export const en = {
         },
         ai_chat: {
           name: 'AI Assistant',
-          shortDesc: 'A chat widget on your booking page that answers passenger questions, automatically.',
+          shortDesc: 'A chat widget on your booking page that answers passenger questions instantly, any hour | fewer calls, more bookings.',
           features: [
             'Answers questions about your fleet, coverage area, pricing and cancellation policy — instantly, any hour.',
             'Trained only on your own company\'s data — it never invents answers or mentions other operators.',
@@ -1137,10 +1138,15 @@ export const en = {
           ],
           usage: 'Once active, the chat widget appears live on your public booking page for every visitor. No setup needed beyond activating the add-on | it reads your services, pricing and policies automatically.',
           quotaUnit: 'conversations/mo',
+          perUnitNoun: 'per conversation',
+          tierBestFor: {
+            basic: 'Great for small to mid-size fleets fielding daily passenger questions.',
+            plus: 'Built for peak season or multiple microsites — double the room, lowest cost per conversation.',
+          },
         },
         ai_growth: {
           name: 'AI Growth Assistant',
-          shortDesc: 'AI-personalized quote follow-ups and on-demand marketing content.',
+          shortDesc: 'Recovers abandoned quotes and generates marketing content on demand | growth on autopilot.',
           features: [
             'Abandoned quotes get a personalized follow-up email, written and sent automatically.',
             'On-demand marketing content generator — social captions, promos, announcements for your fleet and city.',
@@ -1148,10 +1154,15 @@ export const en = {
           ],
           usage: 'Once active, a new "AI Growth Assistant" page appears under Management. Quote follow-ups run automatically in the background | for marketing content, describe what you need in a sentence and get a ready-to-post draft.',
           quotaUnit: 'generations/mo',
+          perUnitNoun: 'per generation',
+          tierBestFor: {
+            basic: 'Enough to follow up on every quote and post fresh content weekly.',
+            plus: 'For higher quote volume and an active social presence — more room, lower cost per generation.',
+          },
         },
         affiliate_network: {
           name: 'Affiliate Network',
-          shortDesc: 'Send overflow trips to trusted partner companies, and receive theirs.',
+          shortDesc: 'Send overflow trips to trusted partner companies, and receive theirs | extra revenue, no extra effort.',
           features: [
             'Route a trip you can\'t cover (no driver, out of zone, overcapacity) to a trusted partner company instead of losing it.',
             'Receive trips from partner companies too — extra revenue with no extra marketing.',

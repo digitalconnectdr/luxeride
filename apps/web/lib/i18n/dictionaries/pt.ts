@@ -1082,6 +1082,7 @@ export const pt: Dictionary = {
       subtitle: 'Serviços opcionais que você pode ativar para sua operação, cada um cobrado separadamente | ative quando quiser, cancele quando quiser.',
       activeBadge: 'Ativo',
       availableBadge: 'Disponível',
+      bestValueLabel: 'Melhor custo-benefício',
       perMonth: '/mês',
       startingAt: 'a partir de',
       viewDetails: 'Ver detalhes',
@@ -1100,7 +1101,7 @@ export const pt: Dictionary = {
       items: {
         driver_payroll: {
           name: 'Folha de pagamento dos motoristas',
-          shortDesc: 'Cálculo automático dos ganhos de cada motorista — comissão ou valor fixo por viagem.',
+          shortDesc: 'Calcula automaticamente o que você deve a cada motorista | comissão ou valor fixo, sem planilhas.',
           features: [
             'Defina o modelo de pagamento de cada motorista: comissão percentual ou valor fixo por viagem.',
             'Totais calculados automaticamente a partir das viagens concluídas em qualquer período.',
@@ -1110,17 +1111,17 @@ export const pt: Dictionary = {
         },
         esignature: {
           name: 'Assinatura eletrônica',
-          shortDesc: 'Capture uma assinatura real de motoristas e contas corporativas, armazenada com data e hora.',
+          shortDesc: 'Assinatura eletrônica real de motoristas e contas corporativas, com data e hora | zero papelada.',
           features: [
             'Acordo do motorista, assinado em qualquer dispositivo, sem papelada.',
             'Acordo de conta corporativa, o mesmo fluxo para seus clientes B2B.',
             'Cada assinatura fica armazenada com o nome de quem assinou, data e hora — sempre disponível para consulta.',
           ],
-          usage: 'Uma vez ativo, uma nova página "Assinatura eletrônica" aparece em Administração com duas abas: Motoristas e Contas corporativas. Envie o link do acordo, e a assinatura fica registrada no momento em que é assinada | nada para imprimir, escanear ou arquivar.',
+          usage: 'Uma vez ativo, uma nova página "Assinatura eletrônica" aparece em Administração com duas abas: **Motoristas e Contas corporativas**. Envie o link do acordo, e a assinatura fica registrada no momento em que é assinada | nada para imprimir, escanear ou arquivar.',
         },
         promo_codes: {
           name: 'Códigos promocionais',
-          shortDesc: 'Códigos de desconto que seus passageiros podem resgatar no pagamento.',
+          shortDesc: 'Códigos de desconto que seus passageiros resgatam no pagamento | mais reservas, você define a margem.',
           features: [
             'Descontos por porcentagem ou valor fixo, você escolhe em cada código.',
             'Limites de uso: total de resgates e limite por cliente.',
@@ -1130,7 +1131,7 @@ export const pt: Dictionary = {
         },
         ai_chat: {
           name: 'Assistente IA',
-          shortDesc: 'Um chat na sua página de reserva que responde às perguntas dos passageiros, automaticamente.',
+          shortDesc: 'Um chat na sua página de reserva que responde perguntas de passageiros instantaneamente, a qualquer hora | menos ligações, mais reservas.',
           features: [
             'Responde perguntas sobre sua frota, área de cobertura, preços e política de cancelamento — instantaneamente, a qualquer hora.',
             'Treinado apenas com os dados da sua própria empresa — nunca inventa respostas nem menciona outros operadores.',
@@ -1138,10 +1139,15 @@ export const pt: Dictionary = {
           ],
           usage: 'Uma vez ativo, o widget de chat aparece ao vivo na sua página pública de reserva para cada visitante. Não requer configuração além de ativar o serviço | ele lê seus serviços, preços e políticas automaticamente.',
           quotaUnit: 'conversas/mês',
+          perUnitNoun: 'por conversa',
+          tierBestFor: {
+            basic: 'Ideal para frotas pequenas ou médias com perguntas diárias de passageiros.',
+            plus: 'Para alta temporada ou vários micrositios — o dobro de margem e o menor custo por conversa.',
+          },
         },
         ai_growth: {
           name: 'AI Growth Assistant',
-          shortDesc: 'Acompanhamento de cotações personalizado por IA e conteúdo de marketing sob demanda.',
+          shortDesc: 'Recupera cotações abandonadas e gera conteúdo de marketing sob demanda | crescimento no piloto automático.',
           features: [
             'Cotações abandonadas recebem um email de acompanhamento personalizado, escrito e enviado automaticamente.',
             'Gerador de conteúdo de marketing sob demanda — legendas para redes sociais, promoções, anúncios para sua frota e cidade.',
@@ -1149,10 +1155,15 @@ export const pt: Dictionary = {
           ],
           usage: 'Uma vez ativo, uma nova página "AI Growth Assistant" aparece em Administração. O acompanhamento de cotações roda automaticamente em segundo plano | para conteúdo de marketing, descreva o que você precisa em uma frase e receba um rascunho pronto para publicar.',
           quotaUnit: 'gerações/mês',
+          perUnitNoun: 'por geração',
+          tierBestFor: {
+            basic: 'Suficiente para acompanhar todas as cotações e publicar conteúdo semanalmente.',
+            plus: 'Para maior volume de cotações e presença ativa nas redes — mais margem, menor custo por geração.',
+          },
         },
         affiliate_network: {
           name: 'Rede de afiliados',
-          shortDesc: 'Envie viagens que você não pode cobrir para empresas parceiras de confiança, e receba as delas.',
+          shortDesc: 'Envie viagens que você não pode cobrir para empresas parceiras de confiança, e receba as delas | receita extra, sem esforço extra.',
           features: [
             'Envie uma viagem que você não pode cobrir (sem motorista, fora da zona, sobrecapacidade) para uma empresa parceira de confiança em vez de perdê-la.',
             'Receba viagens de empresas parceiras também — receita extra sem marketing extra.',

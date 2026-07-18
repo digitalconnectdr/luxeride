@@ -37,6 +37,7 @@ export interface MarketplaceTierData {
   price: number
   quota?: number
   checkoutUrl?: string
+  bestFor?: string
 }
 
 export interface MarketplaceCardData {
@@ -50,7 +51,49 @@ export interface MarketplaceCardData {
   features: string[]
   usage: string
   quotaUnit?: string
+  perUnitNoun?: string
   tiers: MarketplaceTierData[] | null
+}
+
+/** Interpreta **negrita** en texto de dict estatico (no HTML, sin dangerouslySetInnerHTML). */
+function renderRichText(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={i} className="font-semibold text-sl-on-surface">
+          {part.slice(2, -2)}
+        </strong>
+      )
+    }
+    return <span key={i}>{part}</span>
+  })
+}
+
+function StatusBadge({ active, t }: { active: boolean; t: T }) {
+  if (active) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-green-600 text-white">
+        <Check size={10} strokeWidth={3} />
+        {t.activeBadge}
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+      <span className="relative flex h-1.5 w-1.5">
+        <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
+        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+      </span>
+      {t.availableBadge}
+    </span>
+  )
+}
+
+/** Costo por unidad (precio / cuota) redondeado a centavos, para comparar tiers. */
+function unitCost(tier: MarketplaceTierData): number | null {
+  if (!tier.quota) return null
+  return tier.price / tier.quota
 }
 
 type T = Dictionary['admin']['marketplace']
@@ -91,6 +134,22 @@ export function MarketplaceGrid({
 
   const selectedTier = selected?.tiers?.[tierIdx] ?? null
 
+  const bestValueIdx = (() => {
+    const tiers = selected?.tiers
+    if (!tiers || tiers.length < 2) return -1
+    let best = -1
+    let bestCost = Infinity
+    tiers.forEach((tier, i) => {
+      const cost = unitCost(tier)
+      if (cost != null && cost < bestCost) {
+        bestCost = cost
+        best = i
+      }
+    })
+    return best
+  })()
+  const selectedUnitCost = selectedTier ? unitCost(selectedTier) : null
+
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -108,15 +167,7 @@ export function MarketplaceGrid({
                 <div className="w-11 h-11 rounded-full bg-sl-bg flex items-center justify-center shrink-0">
                   <Icon size={18} className="text-bronze" strokeWidth={1.75} />
                 </div>
-                <span
-                  className={`text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full border ${
-                    card.isActive
-                      ? 'bg-green-50 text-green-700 border-green-200'
-                      : 'bg-sl-bg text-sl-on-surface-muted border-sl-outline-variant'
-                  }`}
-                >
-                  {card.isActive ? t.activeBadge : t.availableBadge}
-                </span>
+                <StatusBadge active={card.isActive} t={t} />
               </div>
               <div>
                 <p className="font-playfair text-lg font-semibold text-sl-on-surface">{card.name}</p>
@@ -145,15 +196,7 @@ export function MarketplaceGrid({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-playfair text-xl font-semibold text-sl-on-surface">{selected.name}</h3>
-                      <span
-                        className={`text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full border ${
-                          selected.isActive
-                            ? 'bg-green-50 text-green-700 border-green-200'
-                            : 'bg-sl-bg text-sl-on-surface-muted border-sl-outline-variant'
-                        }`}
-                      >
-                        {selected.isActive ? t.activeBadge : t.availableBadge}
-                      </span>
+                      <StatusBadge active={selected.isActive} t={t} />
                     </div>
                     <p className="text-sm text-sl-on-surface-muted mt-1">{selected.shortDesc}</p>
                   </div>
@@ -187,7 +230,7 @@ export function MarketplaceGrid({
               <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
                 {t.usageTitle}
               </p>
-              <p className="text-sm text-sl-on-surface-muted">{selected.usage}</p>
+              <p className="text-sm text-sl-on-surface-muted">{renderRichText(selected.usage)}</p>
             </div>
 
             {selected.hasFixedPrice && selected.tiers && selected.tiers.length > 1 && (
@@ -201,14 +244,22 @@ export function MarketplaceGrid({
                       key={tier.addonKey}
                       type="button"
                       onClick={() => setTierIdx(idx)}
-                      className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                      className={`relative px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
                         idx === tierIdx ? 'bg-gold text-gray-900 shadow-sm' : 'text-sl-on-surface-muted hover:text-sl-on-surface'
                       }`}
                     >
                       {tier.tierName ?? tier.tierLabel}
+                      {idx === bestValueIdx && (
+                        <span className="absolute -top-2 -right-1.5 text-[8px] font-bold uppercase tracking-wide px-1.5 py-[1px] rounded-full bg-bronze text-white shadow-sm">
+                          {t.bestValueLabel}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
+                {selectedTier?.bestFor && (
+                  <p className="text-xs text-sl-on-surface-muted mt-3 italic">{selectedTier.bestFor}</p>
+                )}
               </div>
             )}
 
@@ -236,6 +287,11 @@ export function MarketplaceGrid({
                       </span>
                     )}
                   </div>
+                  {selectedUnitCost != null && selected.perUnitNoun && (
+                    <p className="text-xs text-sl-on-surface-muted">
+                      ${selectedUnitCost.toFixed(2)} {selected.perUnitNoun}
+                    </p>
+                  )}
                   {selected.isActive ? (
                     <Link
                       href={selected.route}
