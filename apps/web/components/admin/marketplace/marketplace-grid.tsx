@@ -73,17 +73,17 @@ function renderRichText(text: string) {
 function StatusBadge({ active, t }: { active: boolean; t: T }) {
   if (active) {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-green-600 text-white">
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
         <Check size={10} strokeWidth={3} />
         {t.activeBadge}
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-green-600 text-white">
       <span className="relative flex h-1.5 w-1.5">
-        <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
-        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+        <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
       </span>
       {t.availableBadge}
     </span>
@@ -244,13 +244,13 @@ export function MarketplaceGrid({
                       key={tier.addonKey}
                       type="button"
                       onClick={() => setTierIdx(idx)}
-                      className={`relative px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                      className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
                         idx === tierIdx ? 'bg-gold text-gray-900 shadow-sm' : 'text-sl-on-surface-muted hover:text-sl-on-surface'
                       }`}
                     >
                       {tier.tierName ?? tier.tierLabel}
                       {idx === bestValueIdx && (
-                        <span className="absolute -top-2 -right-1.5 text-[8px] font-bold uppercase tracking-wide px-1.5 py-[1px] rounded-full bg-bronze text-white shadow-sm">
+                        <span className="text-[8px] font-bold uppercase tracking-wide px-1.5 py-[1px] rounded-full bg-bronze text-white">
                           {t.bestValueLabel}
                         </span>
                       )}
@@ -276,33 +276,44 @@ export function MarketplaceGrid({
                 )
               ) : selectedTier ? (
                 <div className="space-y-3">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-playfair font-semibold text-sl-on-surface">
-                      ${selectedTier.price}
-                      <span className="text-sm font-sans font-normal text-sl-on-surface-muted">{t.perMonth}</span>
-                    </span>
-                    {selectedTier.quota != null && selected.quotaUnit && (
-                      <span className="text-xs text-sl-on-surface-muted">
-                        · {selectedTier.quota} {selected.quotaUnit}
-                      </span>
-                    )}
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-playfair font-semibold text-sl-on-surface">
+                          ${selectedTier.price}
+                          <span className="text-sm font-sans font-normal text-sl-on-surface-muted">{t.perMonth}</span>
+                        </span>
+                        {selectedTier.quota != null && selected.quotaUnit && (
+                          <span className="text-xs text-sl-on-surface-muted">
+                            · {selectedTier.quota} {selected.quotaUnit}
+                          </span>
+                        )}
+                      </div>
+                      {selectedUnitCost != null && selected.perUnitNoun && (
+                        <p className="text-xs text-sl-on-surface-muted mt-0.5">
+                          ${selectedUnitCost.toFixed(2)} {selected.perUnitNoun}
+                        </p>
+                      )}
+                    </div>
+                    <div className="shrink-0">
+                      {selected.isActive ? (
+                        <Link
+                          href={selected.route}
+                          className="inline-flex items-center gap-2 px-4 py-2.5 bg-gold text-gray-900 text-sm font-semibold rounded-xl hover:bg-gold/90 shadow-sm transition-colors"
+                        >
+                          {t.goToFeature.replace('{feature}', selected.name)}
+                        </Link>
+                      ) : selectedTier.checkoutUrl ? (
+                        <BuyLink checkoutUrl={selectedTier.checkoutUrl} t={t} />
+                      ) : null}
+                    </div>
                   </div>
-                  {selectedUnitCost != null && selected.perUnitNoun && (
-                    <p className="text-xs text-sl-on-surface-muted">
-                      ${selectedUnitCost.toFixed(2)} {selected.perUnitNoun}
-                    </p>
-                  )}
-                  {selected.isActive ? (
-                    <Link
-                      href={selected.route}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-gold text-gray-900 text-sm font-semibold rounded-xl hover:bg-gold/90 shadow-sm transition-colors"
-                    >
-                      {t.goToFeature.replace('{feature}', selected.name)}
-                    </Link>
-                  ) : selectedTier.checkoutUrl ? (
-                    <BuyAction checkoutUrl={selectedTier.checkoutUrl} companyEmail={companyEmail} t={t} />
-                  ) : (
-                    <ContactSupport t={t} />
+                  {!selected.isActive && (
+                    selectedTier.checkoutUrl ? (
+                      <EmailNote companyEmail={companyEmail} t={t} />
+                    ) : (
+                      <ContactSupport t={t} />
+                    )
                   )}
                 </div>
               ) : null}
@@ -315,24 +326,34 @@ export function MarketplaceGrid({
   )
 }
 
+function BuyLink({ checkoutUrl, t }: { checkoutUrl: string; t: T }) {
+  return (
+    <a
+      href={checkoutUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-2 px-4 py-2.5 bg-gold text-gray-900 text-sm font-semibold rounded-xl hover:bg-gold/90 shadow-sm transition-colors whitespace-nowrap"
+    >
+      {t.buyButton}
+    </a>
+  )
+}
+
+function EmailNote({ companyEmail, t }: { companyEmail?: string | null; t: T }) {
+  return companyEmail ? (
+    <p className="text-xs text-sl-on-surface-muted">{t.emailHint.replace('{email}', companyEmail)}</p>
+  ) : (
+    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+      {t.emailMissing}
+    </p>
+  )
+}
+
 function BuyAction({ checkoutUrl, companyEmail, t }: { checkoutUrl: string; companyEmail?: string | null; t: T }) {
   return (
     <div className="space-y-2">
-      <a
-        href={checkoutUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 px-4 py-2.5 bg-gold text-gray-900 text-sm font-semibold rounded-xl hover:bg-gold/90 shadow-sm transition-colors"
-      >
-        {t.buyButton}
-      </a>
-      {companyEmail ? (
-        <p className="text-xs text-sl-on-surface-muted">{t.emailHint.replace('{email}', companyEmail)}</p>
-      ) : (
-        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          {t.emailMissing}
-        </p>
-      )}
+      <BuyLink checkoutUrl={checkoutUrl} t={t} />
+      <EmailNote companyEmail={companyEmail} t={t} />
     </div>
   )
 }
