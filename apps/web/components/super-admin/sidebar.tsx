@@ -1,8 +1,9 @@
 'use client'
-// ── Sidebar del super-admin — mismo patrón que components/admin/sidebar.tsx:
-// colapsable a solo íconos en desktop (persistido en localStorage) y drawer
-// completo en móvil (< md) detrás de un botón hamburguesa, para que ambos
-// paneles del sistema se vean y se comporten igual.
+// ── Sidebar del super-admin — mismo diseño que components/admin/sidebar.tsx:
+// fondo negro carbón premium, nav con item activo dorado, scroll propio del
+// nav (sticky h-screen), footer con idioma + salir en una línea y atribución
+// centrada al pie. Colapsable a solo íconos en desktop (localStorage) y drawer
+// completo en móvil (< md), para que ambos paneles se vean y comporten igual.
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -24,6 +25,8 @@ import {
 } from 'lucide-react'
 import { logoutAction } from '@/app/actions/auth'
 import { brand } from '@/lib/brand'
+import { LanguageSwitcher } from '@/components/i18n/language-switcher'
+import type { Locale } from '@/lib/i18n/config'
 
 const STORAGE_KEY = 'luxeride_superadmin_sidebar_collapsed'
 
@@ -49,9 +52,11 @@ const MANAGEMENT_ITEMS: NavItem[] = [
 export function SuperAdminSidebar({
   userName,
   userEmail,
+  locale,
 }: {
   userName: string
   userEmail: string
+  locale: Locale
 }) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
@@ -113,8 +118,8 @@ export function SuperAdminSidebar({
           'flex items-center gap-2.5 rounded-lg text-[13px] transition-colors',
           effectiveCollapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2',
           active
-            ? 'bg-sl-bg text-bronze font-medium'
-            : 'text-sl-on-surface-muted hover:text-sl-on-surface hover:bg-sl-bg/60',
+            ? 'bg-gold/15 text-gold font-medium border border-gold/30'
+            : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent',
         ].join(' ')}
       >
         <Icon size={16} className="shrink-0" />
@@ -126,20 +131,20 @@ export function SuperAdminSidebar({
   return (
     <>
       {/* Barra móvil (< md) — el aside completo vive fuera de pantalla */}
-      <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-sl-surface-high border-b border-sl-outline-variant">
+      <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-[#1a1613]">
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
           aria-label="Open menu"
-          className="p-1.5 -ml-1.5 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors"
+          className="p-3 -ml-3 rounded-lg text-white/50 hover:text-gold hover:bg-white/5 transition-colors"
         >
           <Menu size={20} />
         </button>
         <div className="w-6 h-6 rounded-full bg-gold flex items-center justify-center shrink-0">
           <span className="text-gray-900 font-bold text-[10px] leading-none">{brand.name.charAt(0)}</span>
         </div>
-        <span className="font-playfair text-sm font-semibold text-sl-on-surface truncate">{brand.name}</span>
-        <span className="ml-auto text-[9px] font-bold tracking-wider text-bronze border border-bronze/40 rounded px-1.5 py-0.5">
+        <span className="font-playfair text-sm font-semibold text-white truncate">{brand.name}</span>
+        <span className="ml-auto text-[9px] font-bold tracking-wider text-gold border border-gold/40 rounded px-1.5 py-0.5">
           SA
         </span>
       </div>
@@ -154,20 +159,20 @@ export function SuperAdminSidebar({
       )}
 
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-50 w-72 ${effectiveCollapsed ? 'md:w-16' : 'md:w-56'} bg-sl-surface-high border-r border-sl-outline-variant flex flex-col shrink-0 transition-transform md:transition-[width] duration-200 ease-out transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed md:sticky md:top-0 inset-y-0 md:inset-y-auto left-0 z-50 md:z-auto w-72 md:h-screen ${effectiveCollapsed ? 'md:w-16' : 'md:w-64'} bg-[#1a1613] flex flex-col shrink-0 transition-transform md:transition-[width] duration-200 ease-out transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {/* Wordmark + toggle */}
-        <div className={`py-5 border-b border-sl-outline-variant ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
+        <div className={`py-6 border-b border-white/10 ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
           <div className={`flex items-center ${effectiveCollapsed ? 'flex-col gap-3' : 'gap-2.5'}`}>
-            <div className="w-6 h-6 rounded-full bg-gold flex items-center justify-center shrink-0">
-              <span className="text-gray-900 font-bold text-[10px] leading-none">{brand.name.charAt(0)}</span>
+            <div className="w-9 h-9 rounded-full bg-gold flex items-center justify-center shrink-0">
+              <span className="text-gray-900 font-bold text-sm leading-none">{brand.name.charAt(0)}</span>
             </div>
             {!effectiveCollapsed && (
               <>
-                <span className="font-playfair text-sm font-semibold text-sl-on-surface truncate">
+                <span className="font-playfair text-lg font-semibold text-white truncate leading-tight">
                   {brand.name}
                 </span>
-                <span className="ml-auto text-[9px] font-bold tracking-wider text-bronze border border-bronze/40 rounded px-1.5 py-0.5">
+                <span className="ml-auto text-[9px] font-bold tracking-wider text-gold border border-gold/40 rounded px-1.5 py-0.5">
                   SA
                 </span>
               </>
@@ -178,7 +183,7 @@ export function SuperAdminSidebar({
               onClick={toggle}
               aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
               title={collapsed ? 'Expandir' : 'Minimizar'}
-              className={`hidden md:block p-1 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors shrink-0 ${effectiveCollapsed ? '' : 'ml-auto'}`}
+              className={`hidden md:block p-1 rounded-lg text-white/40 hover:text-gold hover:bg-white/5 transition-colors shrink-0 ${effectiveCollapsed ? '' : 'ml-auto'}`}
             >
               {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
             </button>
@@ -187,7 +192,7 @@ export function SuperAdminSidebar({
               type="button"
               onClick={() => setMobileOpen(false)}
               aria-label="Close menu"
-              className="md:hidden ml-auto p-1 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors shrink-0"
+              className="md:hidden ml-auto p-3 -mr-3 rounded-lg text-white/40 hover:text-gold hover:bg-white/5 transition-colors shrink-0"
             >
               <X size={18} />
             </button>
@@ -198,42 +203,42 @@ export function SuperAdminSidebar({
         <nav className={`flex-1 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden ${effectiveCollapsed ? 'px-2' : 'px-3'}`}>
           <div>
             {!effectiveCollapsed ? (
-              <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+              <p className="px-3 pt-1 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/30">
                 Overview
               </p>
             ) : (
-              <div className="my-3 mx-2 h-px bg-sl-outline-variant first:hidden" />
+              <div className="my-3 mx-2 h-px bg-white/10 first:hidden" />
             )}
             {OVERVIEW_ITEMS.map(renderItem)}
           </div>
-          <div>
+          <div className="mt-2 pt-3 border-t border-white/10">
             {!effectiveCollapsed ? (
-              <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+              <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/30">
                 Management
               </p>
             ) : (
-              <div className="my-3 mx-2 h-px bg-sl-outline-variant" />
+              <div className="my-3 mx-2 h-px bg-white/10" />
             )}
             {MANAGEMENT_ITEMS.map(renderItem)}
           </div>
         </nav>
 
-        {/* User + logout */}
-        <div className={`py-4 border-t border-sl-outline-variant ${effectiveCollapsed ? 'px-2' : 'px-4'}`}>
+        {/* Perfil del usuario + sesión — al pie del sidebar */}
+        <div className={`py-4 border-t border-white/10 ${effectiveCollapsed ? 'px-2' : 'px-3'}`}>
           {effectiveCollapsed ? (
             <div className="flex flex-col items-center gap-3">
               <div
                 title={`${userName} · ${userEmail}`}
                 className="w-8 h-8 rounded-full bg-gold/15 flex items-center justify-center"
               >
-                <span className="text-[10px] font-semibold text-bronze">{initials || 'U'}</span>
+                <span className="text-[10px] font-semibold text-gold">{initials || 'U'}</span>
               </div>
               <form action={logoutAction}>
                 <button
                   type="submit"
                   title="Sign out"
                   aria-label="Sign out"
-                  className="p-1.5 rounded-lg text-sl-on-surface-muted hover:text-red-400 hover:bg-sl-bg transition-colors"
+                  className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-white/5 transition-colors"
                 >
                   <LogOut size={15} />
                 </button>
@@ -241,17 +246,38 @@ export function SuperAdminSidebar({
             </div>
           ) : (
             <>
-              <p className="text-xs font-medium text-sl-on-surface truncate">{userName}</p>
-              <p className="text-[11px] text-sl-on-surface-muted truncate mt-0.5">{userEmail}</p>
-              <form action={logoutAction} className="mt-2">
-                <button
-                  type="submit"
-                  className="flex items-center gap-1.5 text-[11px] text-sl-on-surface-muted hover:text-red-400 transition-colors"
+              <div className="flex items-center gap-2.5 px-1">
+                <div className="w-8 h-8 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0">
+                  <span className="text-[11px] font-semibold text-gold">{initials || 'U'}</span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-white truncate">{userName}</p>
+                  <p className="text-[11px] text-white/40 truncate">{userEmail}</p>
+                </div>
+              </div>
+              <div className="mt-3 px-1 flex items-center justify-between gap-2">
+                <LanguageSwitcher current={locale} variant="dark" openUp />
+                <form action={logoutAction}>
+                  <button
+                    type="submit"
+                    className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-red-400 transition-colors"
+                  >
+                    <LogOut size={12} />
+                    Sign out
+                  </button>
+                </form>
+              </div>
+              <p className="mt-3 pt-3 border-t border-white/10 text-[9px] uppercase tracking-[0.18em] text-white/25 text-center">
+                {brand.name} · Powered by
+                <a
+                  href="https://digitalconnectdr.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-gold/60 hover:text-gold transition-colors"
                 >
-                  <LogOut size={12} />
-                  Sign out
-                </button>
-              </form>
+                  {brand.poweredBy}
+                </a>
+              </p>
             </>
           )}
         </div>
