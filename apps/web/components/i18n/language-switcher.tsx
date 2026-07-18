@@ -12,6 +12,7 @@ export function LanguageSwitcher({
   current,
   variant = 'dark',
   localizedPaths,
+  openUp = false,
 }: {
   current: Locale
   variant?: 'dark' | 'light'
@@ -20,6 +21,10 @@ export function LanguageSwitcher({
   // página actual con la cookie nueva | necesario para que el switcher
   // funcione en esas páginas, que ignoran la cookie a propósito (SEO).
   localizedPaths?: Partial<Record<Locale, string>>
+  // Abre el menú hacia arriba en vez de hacia abajo | necesario cuando el
+  // switcher vive al pie de un contenedor (ej. footer del sidebar admin),
+  // donde un menú hacia abajo se saldría del viewport.
+  openUp?: boolean
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -97,7 +102,7 @@ export function LanguageSwitcher({
       {open && (
         <div
           role="listbox"
-          className={`absolute right-0 top-full mt-2 z-50 min-w-[150px] rounded-xl border p-1.5 ${menuCls}`}
+          className={`absolute right-0 z-50 min-w-[150px] rounded-xl border p-1.5 ${openUp ? 'bottom-full mb-2' : 'top-full mt-2'} ${menuCls}`}
         >
           {LOCALES.map((l) => (
             <button

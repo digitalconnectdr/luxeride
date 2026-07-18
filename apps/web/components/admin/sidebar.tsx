@@ -239,7 +239,7 @@ export function AdminSidebar({
       )}
 
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-50 w-72 ${effectiveCollapsed ? 'md:w-16' : 'md:w-56'} bg-[#1a1613] flex flex-col shrink-0 transition-transform md:transition-[width] duration-200 ease-out transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed md:sticky md:top-0 inset-y-0 md:inset-y-auto left-0 z-50 md:z-auto w-72 md:h-screen ${effectiveCollapsed ? 'md:w-16' : 'md:w-56'} bg-[#1a1613] flex flex-col shrink-0 transition-transform md:transition-[width] duration-200 ease-out transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {/* Wordmark + toggle — identidad de marca (logo + nombre + atribución) */}
         <div className={`py-6 border-b border-white/10 ${effectiveCollapsed ? 'px-0' : 'px-5'}`}>
@@ -286,11 +286,6 @@ export function AdminSidebar({
               <X size={18} />
             </button>
           </div>
-          {!effectiveCollapsed && (
-            <p className="mt-1.5 text-[9px] uppercase tracking-[0.16em] text-white/25 pl-[46px]">
-              by {brand.poweredBy}
-            </p>
-          )}
         </div>
 
         {!effectiveCollapsed && referralTier && referralsDict && (
@@ -386,21 +381,28 @@ export function AdminSidebar({
                   <p className="text-[11px] text-white/40 truncate">{userEmail}</p>
                 </div>
               </div>
-              <div className="mt-3 px-1">
-                <LanguageSwitcher current={locale} variant="dark" />
+              <div className="mt-3 px-1 flex items-center justify-between gap-2">
+                <LanguageSwitcher current={locale} variant="dark" openUp />
+                <form action={logoutAction}>
+                  <button
+                    type="submit"
+                    className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-red-400 transition-colors"
+                  >
+                    <LogOut size={12} />
+                    Sign out
+                  </button>
+                </form>
               </div>
-              <form action={logoutAction} className="mt-2 px-1">
-                <button
-                  type="submit"
-                  className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-red-400 transition-colors"
-                >
-                  <LogOut size={12} />
-                  Sign out
-                </button>
-              </form>
-              <p className="mt-3 pt-3 border-t border-white/10 text-[9px] uppercase tracking-[0.18em] text-white/25 px-1">
+              <p className="mt-3 pt-3 border-t border-white/10 text-[9px] uppercase tracking-[0.18em] text-white/25 text-center">
                 {brand.name} · Powered by
-                <span className="block text-gold/60">{brand.poweredBy}</span>
+                <a
+                  href="https://digitalconnectdr.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-gold/60 hover:text-gold transition-colors"
+                >
+                  {brand.poweredBy}
+                </a>
               </p>
             </>
           )}
