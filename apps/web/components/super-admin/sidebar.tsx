@@ -16,6 +16,7 @@ import {
   Handshake,
   RadioTower,
   ShieldCheck,
+  Lightbulb,
   LogOut,
   ChevronsLeft,
   ChevronsRight,
@@ -47,6 +48,7 @@ const MANAGEMENT_ITEMS: NavItem[] = [
   { href: '/super-admin/affiliate-leads', label: 'Leads Affiliate Network', icon: Handshake },
   { href: '/super-admin/tracking', label: 'Tracking en vivo', icon: RadioTower },
   { href: '/super-admin/compliance', label: 'Compliance', icon: ShieldCheck },
+  { href: '/super-admin/feature-requests', label: 'Solicitudes', icon: Lightbulb },
 ]
 
 export function SuperAdminSidebar({

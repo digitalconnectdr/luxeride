@@ -35,6 +35,8 @@ export type UserRole =
 export type CompanyStatus = 'active' | 'suspended' | 'trial' | 'cancelled'
 export type CompanyPlan = 'free' | 'starter' | 'professional' | 'elite' | 'enterprise'
 export type EnterpriseLeadStatus = 'new' | 'contacted' | 'converted' | 'rejected'
+export type FeatureRequestType = 'feature' | 'bug'
+export type FeatureRequestStatus = 'submitted' | 'pending' | 'in_progress' | 'resolved'
 export type VehicleClass = 'sedan' | 'suv' | 'van' | 'limousine' | 'sprinter' | 'bus' | 'exotic'
 export type VehicleStatus = 'available' | 'on_trip' | 'maintenance' | 'offline' | 'retired'
 export type BookingStatus =
@@ -770,6 +772,44 @@ export type Database = {
           fleet_size?: string | null | undefined
           message?: string | null | undefined
           status?: EnterpriseLeadStatus | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── feature_requests (recomendar función / reportar problema) ─────────────
+      feature_requests: {
+        Row: {
+          id: string
+          company_id: string | null
+          requested_by: string | null
+          type: FeatureRequestType
+          title: string
+          description: string
+          status: FeatureRequestStatus
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id?: string | null | undefined
+          requested_by?: string | null | undefined
+          type: FeatureRequestType
+          title: string
+          description: string
+          status?: FeatureRequestStatus | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | null | undefined
+          requested_by?: string | null | undefined
+          type?: FeatureRequestType | undefined
+          title?: string | undefined
+          description?: string | undefined
+          status?: FeatureRequestStatus | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }

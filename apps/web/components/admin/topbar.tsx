@@ -7,13 +7,15 @@
 import Link from 'next/link'
 import { Menu, Bell, ShieldCheck, HelpCircle } from 'lucide-react'
 import { useSidebarState } from '@/components/admin/sidebar-context'
+import { FeatureRequestButton, type FeatureRequestLabels } from '@/components/admin/feature-request-modal'
 
 interface Props {
   userName: string
   userInitials: string
+  featureRequestLabels: FeatureRequestLabels
 }
 
-export function AdminTopBar({ userName, userInitials }: Props) {
+export function AdminTopBar({ userName, userInitials, featureRequestLabels }: Props) {
   const { toggleCollapsed } = useSidebarState()
 
   return (
@@ -48,6 +50,7 @@ export function AdminTopBar({ userName, userInitials }: Props) {
       >
         <HelpCircle size={18} />
       </span>
+      <FeatureRequestButton labels={featureRequestLabels} />
       <Link
         href="/admin/settings"
         title={userName}
