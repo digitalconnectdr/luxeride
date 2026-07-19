@@ -437,7 +437,7 @@ export async function createBookingAction(
 
   // Flight tracking — consulta el vuelo en background si aplica
   if (flightNumber && ['airport_pickup', 'airport_dropoff'].includes(bookingType)) {
-    waitUntil(trackBookingFlight(booking.id, flightNumber))
+    waitUntil(trackBookingFlight(user.company_id, booking.id, flightNumber))
   }
 
   // F1.14 — confirmación al pasajero (email + SMS). Si es cotización aún NO se
@@ -1227,7 +1227,7 @@ export async function createPublicBookingAction(data: {
   // Flight tracking — consulta el vuelo en background si aplica
   const publicFlightNumber = data.flightNumber?.trim()
   if (publicFlightNumber && ['airport_pickup', 'airport_dropoff'].includes(data.bookingType)) {
-    waitUntil(trackBookingFlight(booking.id, publicFlightNumber))
+    waitUntil(trackBookingFlight(company.id, booking.id, publicFlightNumber))
   }
 
   // F1.14 — confirmación al pasajero (email + SMS)

@@ -1,7 +1,12 @@
-// ── Flight Tracking — proveedor intercambiable ────────────────────────────────
+// ── Flight Tracking — proveedores con failover automático ─────────────────────
 // FLIGHT_PROVIDER=aerodatabox (RapidAPI, tier gratis) | flightaware (AeroAPI)
-// Cambiar de proveedor = cambiar 1 env var. Placeholder-safe: sin keys,
-// isFlightTrackingConfigured() = false y el sistema opera sin tracking.
+// elige cuál va PRIMERO. Si ambas keys (RAPIDAPI_KEY y FLIGHTAWARE_API_KEY)
+// están configuradas, el otro proveedor queda como respaldo automático: si el
+// primero falla de verdad (error de red, HTTP 5xx/429), se reintenta con el
+// segundo antes de rendirse -- un vuelo genuinamente no encontrado (404/204)
+// NO dispara el respaldo, solo los fallos reales de la API. Placeholder-safe:
+// sin ninguna key, isFlightTrackingConfigured() = false y el sistema opera
+// sin tracking.
 
 export interface FlightStatus {
   flightNumber: string
@@ -17,17 +22,24 @@ export interface FlightStatus {
 
 type Provider = 'aerodatabox' | 'flightaware'
 
-function activeProvider(): Provider | null {
+/** Lanzada por los adapters cuando la API falla de verdad (red/5xx/429) --
+ * distinta de "vuelo no encontrado", que se representa con `null`. Solo este
+ * error dispara el intento con el proveedor de respaldo. */
+class FlightProviderError extends Error {}
+
+// Orden de proveedores a intentar: el preferido explícito primero (si tiene
+// key), luego cualquier otro proveedor configurado como respaldo.
+function configuredProviders(): Provider[] {
   const explicit = (process.env.FLIGHT_PROVIDER ?? '').toLowerCase()
   const hasRapid = isRealKey(process.env.RAPIDAPI_KEY)
   const hasFa = isRealKey(process.env.FLIGHTAWARE_API_KEY)
 
-  if (explicit === 'aerodatabox' && hasRapid) return 'aerodatabox'
-  if (explicit === 'flightaware' && hasFa) return 'flightaware'
-  // Sin FLIGHT_PROVIDER explícito: el que tenga key
-  if (hasRapid) return 'aerodatabox'
-  if (hasFa) return 'flightaware'
-  return null
+  const order: Provider[] = []
+  if (explicit === 'flightaware' && hasFa) order.push('flightaware')
+  if (explicit === 'aerodatabox' && hasRapid) order.push('aerodatabox')
+  if (!order.includes('aerodatabox') && hasRapid) order.push('aerodatabox')
+  if (!order.includes('flightaware') && hasFa) order.push('flightaware')
+  return order
 }
 
 function isRealKey(key: string | undefined): boolean {
@@ -35,7 +47,7 @@ function isRealKey(key: string | undefined): boolean {
 }
 
 export function isFlightTrackingConfigured(): boolean {
-  return activeProvider() !== null
+  return configuredProviders().length > 0
 }
 
 /** Normaliza "AA 1234" / "aa1234" → "AA1234" */
@@ -54,8 +66,8 @@ const CACHE_TTL_MS = 25 * 60_000
  * o la API falla — NUNCA lanza.
  */
 export async function getFlightStatus(rawFlightNumber: string): Promise<FlightStatus | null> {
-  const provider = activeProvider()
-  if (!provider) return null
+  const providers = configuredProviders()
+  if (providers.length === 0) return null
 
   const flightNumber = normalizeFlightNumber(rawFlightNumber)
   if (!/^[A-Z0-9]{2,3}\d{1,4}[A-Z]?$/.test(flightNumber)) return null
@@ -64,13 +76,17 @@ export async function getFlightStatus(rawFlightNumber: string): Promise<FlightSt
   if (cached && cached.expiresAt > Date.now()) return cached.data
 
   let result: FlightStatus | null = null
-  try {
-    result =
-      provider === 'aerodatabox'
-        ? await fetchAeroDataBox(flightNumber)
-        : await fetchFlightAware(flightNumber)
-  } catch (err) {
-    console.error(`[flights/${provider}] ${flightNumber}`, err)
+  for (const provider of providers) {
+    try {
+      result =
+        provider === 'aerodatabox'
+          ? await fetchAeroDataBox(flightNumber)
+          : await fetchFlightAware(flightNumber)
+      break // encontrado o genuinamente no encontrado -- no hace falta el respaldo
+    } catch (err) {
+      console.error(`[flights/${provider}] ${flightNumber} — falló, ¿probando respaldo?`, err)
+      // sigue al próximo proveedor configurado, si hay uno
+    }
   }
 
   cache.set(flightNumber, { data: result, expiresAt: Date.now() + CACHE_TTL_MS })
@@ -123,21 +139,26 @@ const ADB_STATUS: Record<string, string> = {
 }
 
 async function fetchAeroDataBox(flightNumber: string): Promise<FlightStatus | null> {
-  const res = await fetch(
-    `https://aerodatabox.p.rapidapi.com/flights/number/${encodeURIComponent(flightNumber)}?withAircraftImage=false&withLocation=false`,
-    {
-      headers: {
-        'x-rapidapi-key': process.env.RAPIDAPI_KEY!,
-        'x-rapidapi-host': 'aerodatabox.p.rapidapi.com',
+  let res: Response
+  try {
+    res = await fetch(
+      `https://aerodatabox.p.rapidapi.com/flights/number/${encodeURIComponent(flightNumber)}?withAircraftImage=false&withLocation=false`,
+      {
+        headers: {
+          'x-rapidapi-key': process.env.RAPIDAPI_KEY!,
+          'x-rapidapi-host': 'aerodatabox.p.rapidapi.com',
+        },
+        cache: 'no-store',
       },
-      cache: 'no-store',
-    },
-  )
+    )
+  } catch (err) {
+    throw new FlightProviderError(`network error: ${err}`)
+  }
 
   if (res.status === 404 || res.status === 204) return null
   if (!res.ok) {
-    console.error('[flights/aerodatabox] HTTP', res.status, await res.text().catch(() => ''))
-    return null
+    const body = await res.text().catch(() => '')
+    throw new FlightProviderError(`HTTP ${res.status}: ${body}`)
   }
 
   const legs = (await res.json()) as AdbLeg[]
@@ -185,18 +206,23 @@ interface FaFlight {
 }
 
 async function fetchFlightAware(flightNumber: string): Promise<FlightStatus | null> {
-  const res = await fetch(
-    `https://aeroapi.flightaware.com/aeroapi/flights/${encodeURIComponent(flightNumber)}`,
-    {
-      headers: { 'x-apikey': process.env.FLIGHTAWARE_API_KEY! },
-      cache: 'no-store',
-    },
-  )
+  let res: Response
+  try {
+    res = await fetch(
+      `https://aeroapi.flightaware.com/aeroapi/flights/${encodeURIComponent(flightNumber)}`,
+      {
+        headers: { 'x-apikey': process.env.FLIGHTAWARE_API_KEY! },
+        cache: 'no-store',
+      },
+    )
+  } catch (err) {
+    throw new FlightProviderError(`network error: ${err}`)
+  }
 
   if (res.status === 404) return null
   if (!res.ok) {
-    console.error('[flights/flightaware] HTTP', res.status, await res.text().catch(() => ''))
-    return null
+    const body = await res.text().catch(() => '')
+    throw new FlightProviderError(`HTTP ${res.status}: ${body}`)
   }
 
   const data = (await res.json()) as { flights?: FaFlight[] }

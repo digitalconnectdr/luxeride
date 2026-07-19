@@ -1231,6 +1231,7 @@ export type Database = {
         Row: {
           plan: CompanyPlan
           live_tracking_monthly_quota: number | null
+          flight_tracking_monthly_quota: number | null
           monthly_price: number
           max_vehicles: number | null
           max_drivers: number | null
@@ -1242,6 +1243,7 @@ export type Database = {
         Insert: {
           plan: CompanyPlan
           live_tracking_monthly_quota?: number | null | undefined
+          flight_tracking_monthly_quota?: number | null | undefined
           monthly_price?: number | undefined
           max_vehicles?: number | null | undefined
           max_drivers?: number | null | undefined
@@ -1253,6 +1255,7 @@ export type Database = {
         Update: {
           plan?: CompanyPlan | undefined
           live_tracking_monthly_quota?: number | null | undefined
+          flight_tracking_monthly_quota?: number | null | undefined
           monthly_price?: number | undefined
           max_vehicles?: number | null | undefined
           max_drivers?: number | null | undefined
@@ -1282,6 +1285,29 @@ export type Database = {
           company_id?: string | undefined
           year_month?: string | undefined
           refresh_count?: number | undefined
+          updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── flight_tracking_usage (consumo mensual de seguimiento de vuelos) ──────
+      flight_tracking_usage: {
+        Row: {
+          company_id: string
+          year_month: string
+          lookup_count: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          year_month: string
+          lookup_count?: number | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          company_id?: string | undefined
+          year_month?: string | undefined
+          lookup_count?: number | undefined
           updated_at?: string | undefined
         }
         Relationships: []

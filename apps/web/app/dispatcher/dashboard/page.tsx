@@ -72,7 +72,7 @@ export default async function DispatcherDashboardPage() {
 
   // Flight tracking: refrescar vuelos con datos viejos (>30 min, máx. 5 por carga)
   let bookings = initialRows ?? []
-  const refreshed = await refreshFlightsForBookings(bookings)
+  const refreshed = await refreshFlightsForBookings(user.company_id, bookings)
   if (refreshed.size > 0) {
     const { data: freshRows } = await admin
       .from('bookings')

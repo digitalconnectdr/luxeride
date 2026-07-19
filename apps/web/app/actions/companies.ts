@@ -118,6 +118,28 @@ export async function updatePlanQuotaAction(
   return { success: true }
 }
 
+// ─── Cuota de seguimiento de vuelos por plan (protege la cuenta compartida de
+// la API externa -- AeroDataBox/FlightAware) ───────────────────────────────
+
+export async function updateFlightTrackingQuotaAction(
+  plan: CompanyPlan,
+  quota: number | null,
+): Promise<CompanyActionResult> {
+  await requireRole('super_admin')
+
+  const safeQuota = quota === null ? null : Math.max(0, Math.floor(quota))
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('plan_quotas')
+    .update({ flight_tracking_monthly_quota: safeQuota })
+    .eq('plan', plan)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/super-admin/tracking')
+  return { success: true }
+}
+
 // ─── Precio mensual por plan (para calcular MRR real en el dashboard) ─────────
 
 export async function updatePlanPriceAction(

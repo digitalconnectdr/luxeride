@@ -4,6 +4,7 @@
 
 import { createAdminClient } from '@/lib/supabase/server'
 import { getFlightStatus, isFlightTrackingConfigured } from './index'
+import { consumeFlightTrackingQuota } from './quota'
 
 const STALE_AFTER_MS = 30 * 60_000
 const MAX_LOOKUPS_PER_CALL = 5 // protege el tier gratis de RapidAPI
@@ -16,10 +17,12 @@ interface FlightBookingRow {
 }
 
 /**
- * Refresca el estado del vuelo de los bookings con datos viejos (>30 min).
- * Devuelve los ids actualizados. NUNCA lanza.
+ * Refresca el estado del vuelo de los bookings con datos viejos (>30 min),
+ * todos de UNA misma empresa (`companyId`). Devuelve los ids actualizados.
+ * NUNCA lanza.
  */
 export async function refreshFlightsForBookings(
+  companyId: string,
   bookings: FlightBookingRow[],
 ): Promise<Set<string>> {
   const updated = new Set<string>()
@@ -42,6 +45,9 @@ export async function refreshFlightsForBookings(
 
   await Promise.allSettled(
     candidates.map(async (b) => {
+      const withinQuota = await consumeFlightTrackingQuota(companyId)
+      if (!withinQuota) return // cuota agotada este mes -- se reintenta el próximo mes
+
       const flight = await getFlightStatus(b.flight_number!)
       const patch: {
         flight_checked_at: string
@@ -68,9 +74,12 @@ export async function refreshFlightsForBookings(
  * Consulta y guarda el vuelo de UN booking (fire-and-forget al crear la
  * reservación de aeropuerto). NUNCA lanza.
  */
-export async function trackBookingFlight(bookingId: string, flightNumber: string): Promise<void> {
+export async function trackBookingFlight(companyId: string, bookingId: string, flightNumber: string): Promise<void> {
   try {
     if (!isFlightTrackingConfigured()) return
+    const withinQuota = await consumeFlightTrackingQuota(companyId)
+    if (!withinQuota) return // cuota agotada este mes
+
     const flight = await getFlightStatus(flightNumber)
     if (!flight) return
 
