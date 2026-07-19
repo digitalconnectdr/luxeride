@@ -805,13 +805,26 @@ export const es: Dictionary = {
   },
 
   auth: {
-    tagline: 'Plataforma de Transporte Premium',
     panelHeadline: 'Dispatch, pagos y cumplimiento | todo en un solo lugar.',
     panelPoints: [
       'Dispatch en tiempo real y asignación de conductores',
       'Pagos con tarjeta y facturación corporativa',
       'Tracking en vivo de cada viaje',
     ],
+    login: {
+      welcomeBack: 'Bienvenido de nuevo',
+      subtitle: 'Inicia sesión en tu panel de {brand}',
+      blockedMessage: 'Tu cuenta ha sido desactivada. Contacta al administrador de tu empresa.',
+      emailLabel: 'Correo electrónico',
+      emailPlaceholder: 'tu@empresa.com',
+      passwordLabel: 'Contraseña',
+      passwordPlaceholder: '••••••••',
+      forgotPassword: '¿Olvidaste tu contraseña?',
+      signIn: 'Iniciar sesión',
+      signingIn: 'Iniciando sesión…',
+      noAccount: '¿No tienes una cuenta?',
+      startFreeTrial: 'Comenzar prueba gratis',
+    },
   },
 
   adminNav: {

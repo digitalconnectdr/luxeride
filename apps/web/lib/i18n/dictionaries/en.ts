@@ -804,13 +804,26 @@ export const en = {
   },
 
   auth: {
-    tagline: 'Premium Transportation Platform',
     panelHeadline: 'Dispatch, payments and compliance | all in one place.',
     panelPoints: [
       'Real-time dispatch & driver assignment',
       'Card payments & corporate billing',
       'Live tracking for every trip',
     ],
+    login: {
+      welcomeBack: 'Welcome back',
+      subtitle: 'Sign in to your {brand} dashboard',
+      blockedMessage: 'Your account has been deactivated. Contact your company administrator.',
+      emailLabel: 'Email address',
+      emailPlaceholder: 'you@company.com',
+      passwordLabel: 'Password',
+      passwordPlaceholder: '••••••••',
+      forgotPassword: 'Forgot password?',
+      signIn: 'Sign in',
+      signingIn: 'Signing in…',
+      noAccount: "Don't have an account?",
+      startFreeTrial: 'Start free trial',
+    },
   },
 
   adminNav: {

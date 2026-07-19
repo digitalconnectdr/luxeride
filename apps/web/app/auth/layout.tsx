@@ -63,7 +63,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               {brand.name}
             </span>
           </Link>
-          <p className="hidden lg:block text-sm text-sl-on-surface-muted">{t.tagline}</p>
           <LanguageSwitcher current={locale} variant="light" />
         </header>
 
