@@ -850,6 +850,8 @@ export const es: Dictionary = {
       privacyLink: 'Política de privacidad',
       alreadyHaveAccount: '¿Ya tienes una cuenta?',
       signInLink: 'Iniciar sesión',
+      nextStep: 'Continuar',
+      backStep: '← Atrás',
     },
     resetPassword: {
       title: 'Restablece tu contraseña',

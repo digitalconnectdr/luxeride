@@ -849,6 +849,8 @@ export const en = {
       privacyLink: 'Privacy Policy',
       alreadyHaveAccount: 'Already have an account?',
       signInLink: 'Sign in',
+      nextStep: 'Continue',
+      backStep: '← Back',
     },
     resetPassword: {
       title: 'Reset your password',

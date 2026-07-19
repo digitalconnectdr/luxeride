@@ -850,6 +850,8 @@ export const pt: Dictionary = {
       privacyLink: 'Política de Privacidade',
       alreadyHaveAccount: 'Já tem uma conta?',
       signInLink: 'Entrar',
+      nextStep: 'Continuar',
+      backStep: '← Voltar',
     },
     resetPassword: {
       title: 'Redefina sua senha',
