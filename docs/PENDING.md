@@ -230,8 +230,20 @@ real de producción, una decisión aparte por tocar el sitio en vivo.
 2. **Variables de entorno del add-on de Red de Afiliados en Vercel** — el
    plan ID y el checkout URL de Whop ya existen, solo falta cargarlos (sin
    acceso a Vercel CLI desde este entorno).
-3. **Primer `eas build`** de la app nativa Android del conductor
-   (`apps/driver-mobile/`) — esqueleto ya armado, bloqueado en el usuario.
+3. **App nativa Android del conductor — EN PAUSA desde 2026-07-10**
+   (`apps/driver-mobile/`). No es un esqueleto: 6 pantallas completas
+   (login, viajes, viaje activo, ganancias, documentos, perfil), GPS en
+   vivo, presencia de flota, chat con el pasajero, push con sonido, cobro
+   en efectivo + firma, viajes de afiliados, rediseño premium tras 5+
+   rondas de prueba en dispositivo real — todo deployado en `main`,
+   typecheck limpio. Lo único que falta para retomar es que el usuario
+   corra su primer `eas build --profile development` (o el APK de
+   producción) desde `apps/driver-mobile` — sin eso no se puede confirmar
+   que el push con teléfono bloqueado funciona de verdad (Expo Go no lo
+   soporta bajo ninguna circunstancia desde el SDK 53). Detalle completo,
+   backlog explícito (mapa embebido, multi-stop, cola offline, i18n
+   diferido a propósito) y hallazgos de seguridad en la sección "Estado al
+   pausar (2026-07-10)" al final de `docs/PHASE-2-MOBILE.md`.
 4. **Google Search Console**: dar "Volver a probar/enviar" al sitemap — el
    error "Sitemap could not be read" no tiene causa técnica reproducible hoy
    (verificado 2026-07-19: 200, XML válido, funciona incluso con el
