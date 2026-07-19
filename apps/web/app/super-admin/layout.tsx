@@ -4,7 +4,11 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { SuperAdminSidebar } from '@/components/super-admin/sidebar'
 import { SuperAdminTopBar } from '@/components/super-admin/topbar'
 import type { NotificationItem } from '@/components/super-admin/notifications-bell'
-import type { FeatureRequestStatus } from '@/lib/supabase/database.types'
+
+// Ventana de historial de la campana -- más allá de esto ya no importa,
+// evita que la lista crezca sin límite. El punto rojo, en cambio, se basa en
+// last_seen_at (ver más abajo), no en esta ventana.
+const NOTIFICATION_HISTORY_DAYS = 7
 
 // Etiquetas legibles para company_addons.addon_key en la campana de
 // notificaciones -- el super-admin no usa el diccionario i18n (ver
@@ -51,28 +55,37 @@ export default async function SuperAdminLayout({
   const locale = getLocale()
 
   const admin = createAdminClient()
-  const [{ data: frData }, { data: addonData }, { data: companyData }, { count: pendingCount }] = await Promise.all([
+  const historySince = new Date(Date.now() - NOTIFICATION_HISTORY_DAYS * 86_400_000).toISOString()
+
+  const [{ data: frData }, { data: addonData }, { data: companyData }, { data: readRow }] = await Promise.all([
     admin
       .from('feature_requests')
       .select('id, type, title, created_at, companies(name)')
-      .order('created_at', { ascending: false })
-      .limit(8),
+      .gte('created_at', historySince)
+      .order('created_at', { ascending: false }),
     admin
       .from('company_addons')
       .select('id, addon_key, enabled_at, company_id, companies(name)')
       .eq('enabled', true)
-      .order('enabled_at', { ascending: false })
-      .limit(8),
+      .gte('enabled_at', historySince)
+      .order('enabled_at', { ascending: false }),
     admin
       .from('companies')
       .select('id, name, created_at')
-      .order('created_at', { ascending: false })
-      .limit(8),
+      .gte('created_at', historySince)
+      .order('created_at', { ascending: false }),
     admin
-      .from('feature_requests')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'submitted' satisfies FeatureRequestStatus),
+      .from('super_admin_notification_reads')
+      .select('last_seen_at')
+      .eq('user_id', user.id)
+      .maybeSingle(),
   ])
+
+  // Sin fila todavía (primera vez que este super-admin usa la campana): todo
+  // el historial de 7 días cuenta como "nuevo" hasta que la abra una vez.
+  const lastSeenAt = readRow?.last_seen_at ? new Date(readRow.last_seen_at).getTime() : 0
+
+  const isNew = (timestamp: string) => new Date(timestamp).getTime() > lastSeenAt
 
   const frItems: NotificationItem[] = ((frData ?? []) as unknown as FrRow[]).map((r) => ({
     id: r.id,
@@ -81,6 +94,7 @@ export default async function SuperAdminLayout({
     companyName: r.companies?.name ?? null,
     companyId: null,
     timestamp: r.created_at,
+    isNew: isNew(r.created_at),
   }))
 
   const addonItems: NotificationItem[] = ((addonData ?? []) as unknown as AddonRow[])
@@ -92,6 +106,7 @@ export default async function SuperAdminLayout({
       companyName: r.companies?.name ?? null,
       companyId: r.company_id,
       timestamp: r.enabled_at,
+      isNew: isNew(r.enabled_at),
     }))
 
   const companyItems: NotificationItem[] = ((companyData ?? []) as unknown as CompanyRow[]).map((c) => ({
@@ -101,11 +116,15 @@ export default async function SuperAdminLayout({
     companyName: c.name,
     companyId: c.id,
     timestamp: c.created_at,
+    isNew: isNew(c.created_at),
   }))
 
+  // Sin límite fijo de cantidad -- ya viene acotado por la ventana de 7 días
+  // arriba; este tope es solo un resguardo ante un pico inusual de actividad.
   const notifications = [...frItems, ...addonItems, ...companyItems]
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, 8)
+    .slice(0, 30)
+  const pendingCount = notifications.filter((n) => n.isNew).length
 
   const userName = `${user.profile.first_name} ${user.profile.last_name}`
   const userInitials = [user.profile.first_name, user.profile.last_name]
@@ -125,7 +144,7 @@ export default async function SuperAdminLayout({
         <SuperAdminTopBar
           locale={locale}
           notifications={notifications}
-          pendingCount={pendingCount ?? 0}
+          pendingCount={pendingCount}
           userName={userName}
           userInitials={userInitials || 'SA'}
         />

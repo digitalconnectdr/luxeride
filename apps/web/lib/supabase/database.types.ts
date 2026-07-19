@@ -1313,6 +1313,23 @@ export type Database = {
         Relationships: []
       }
 
+      // ── super_admin_notification_reads (última vez que se abrió la campana) ──
+      super_admin_notification_reads: {
+        Row: {
+          user_id: string
+          last_seen_at: string
+        }
+        Insert: {
+          user_id: string
+          last_seen_at?: string | undefined
+        }
+        Update: {
+          user_id?: string | undefined
+          last_seen_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── live_tracking_usage_by_booking (consumo de mapa por viaje) ────────────
       live_tracking_usage_by_booking: {
         Row: {
