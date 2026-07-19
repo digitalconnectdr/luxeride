@@ -1,7 +1,51 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-07-16. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-07-19. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## ✅ Marketplace de add-ons + feedback con origen + notificaciones/cuenta super-admin + limpieza de datos + fixes SEO (2026-07-17/19)
+
+Ronda de trabajo de 3 días, resumida (detalle completo en el historial de
+commits, no repetido aquí):
+
+- **Marketplace de add-ons** (`/admin/marketplace`): tienda unificada de los
+  6 add-ons de pago con modal de detalle/compra, tiers para AI Chat/AI
+  Growth, badges de estado (Activo/Disponible con intensidad de verde
+  corregida tras feedback), badge "Mejor valor" y botón Comprar reubicados
+  para no tapar el nombre del plan.
+- **Centro de ayuda** (`/admin/help`): el ícono de Ayuda del topbar, que
+  antes no hacía nada, ahora enlaza a un FAQ real por categorías.
+- **Recomendar función / reportar problema con origen**: el botón ya vivía
+  en el topbar del admin; se extendió a la PWA del conductor (`/driver/trips`)
+  y al tracking público del cliente (`/track/[id]`, sin sesión, resuelve la
+  empresa desde el `booking_id`). Cada solicitud queda etiquetada con su
+  canal (`feature_requests.source`: admin/driver/customer), visible como
+  columna en `/super-admin/feature-requests`. Migración 56 aplicada en
+  producción.
+- **Super-admin: topbar completo** — selector de idioma reubicado (arreglado
+  el recorte visual del dropdown), campana de notificaciones nueva (solicitudes,
+  compras de add-ons y ahora también empresas nuevas registradas), e ícono de
+  cuenta con iniciales (antes ausente vs. los demás roles) enlazando a la
+  nueva `/super-admin/settings` (datos de cuenta + cambio de contraseña).
+- **Dashboard super-admin**: el bloque de pagos ya no menciona solo Stripe
+  (ahora contempla Stripe Connect **o** Whop Connect, según el proveedor de
+  cada empresa) y se agregó una tabla de adopción de add-ons por empresa
+  (qué empresa tiene cuáles activos + lista de empresas activas sin ningún
+  add-on, para detectar oportunidades de upsell).
+- **SEO**: corregido el dominio equivocado en el header CORS de `vercel.json`
+  (apuntaba a `luxeride.vercel.app` en vez de `getluxeride.vercel.app`),
+  empresa demo excluida del sitemap público y marcada `noindex`, `llms.txt`
+  documentando el patrón de páginas por operador. El "Sitemap could not be
+  read" de Search Console se investigó a fondo (200, XML válido, funciona
+  hasta con el user-agent de Googlebot) — conclusión: reporte de un rastreo
+  viejo, sin causa técnica reproducible hoy; pendiente que el usuario le dé
+  "Volver a probar" en Search Console.
+- **Limpieza de datos de producción**: se auditaron las ~40 tablas que
+  referencian `company_id` y se borraron 25 empresas de prueba (creadas
+  durante verificaciones de UI de esta misma semana, todas con 0 reservas/
+  conductores/vehículos/usuarios) + sus 87 registros huérfanos en
+  `audit_logs`. Quedan exactamente 3 empresas en producción: LuxeRide
+  Platform, LuxeRide y Revival Transportation Group (cliente real).
 
 ## ✅ Portal corporativo: facturas + autogestión de crédito del equipo (2026-07-16)
 
@@ -176,21 +220,30 @@ restringida por dominio (rechaza `localhost`, correctamente) — para
 probar ese flujo de punta a punta haría falta correrlo contra el dominio
 real de producción, una decisión aparte por tocar el sitio en vivo.
 
-## 🔑 TL;DR — pendientes activos ahora mismo (2026-07-12)
+## 🔑 TL;DR — pendientes activos ahora mismo (2026-07-19)
 
 **Del usuario (acción externa, no depende de código):**
 1. **`OPENAI_API_KEY`** — pendiente A PROPÓSITO hasta el primer cliente real de
    cualquiera de los dos asistentes de IA (Chat Assistant o Growth Assistant).
    Sin ella, ambos add-ons responden con un error controlado si alguien los
    activa por Whop — no rompen nada, solo no generan texto todavía.
-2. **Decisión de negocio, sin fecha**: ¿construir una API pública real para
+2. **Variables de entorno del add-on de Red de Afiliados en Vercel** — el
+   plan ID y el checkout URL de Whop ya existen, solo falta cargarlos (sin
+   acceso a Vercel CLI desde este entorno).
+3. **Primer `eas build`** de la app nativa Android del conductor
+   (`apps/driver-mobile/`) — esqueleto ya armado, bloqueado en el usuario.
+4. **Google Search Console**: dar "Volver a probar/enviar" al sitemap — el
+   error "Sitemap could not be read" no tiene causa técnica reproducible hoy
+   (verificado 2026-07-19: 200, XML válido, funciona incluso con el
+   user-agent de Googlebot); todo indica que es un reporte de un rastreo
+   anterior a los últimos fixes.
+5. **Decisión de negocio, sin fecha**: ¿construir una API pública real para
    Enterprise, o ajustar el copy? Hoy "Integraciones a medida y API" es una
    promesa sin nada detrás (ver sección F2 más abajo).
-3. Gaps de infraestructura ya conocidos, sin apuro: WhatsApp Business
+6. Gaps de infraestructura ya conocidos, sin apuro: WhatsApp Business
    (pospuesto), Intuit Development→Production para QuickBooks (investigado,
-   sin construir), primer `eas build` de la app nativa del conductor
-   (bloqueado en el usuario), Stripe con keys reales cuando haya clientes,
-   Twilio para SMS cuando se quiera activar.
+   sin construir), Stripe con keys reales cuando haya clientes, Twilio para
+   SMS cuando se quiera activar.
 
 **Ideas evaluadas, no construidas (esperando que el usuario pida avanzar):**
 - **Chauffeur Quality System** — evaluado, valor real pero menor prioridad;
@@ -203,9 +256,19 @@ real de producción, una decisión aparte por tocar el sitio en vivo.
   Detalle completo, orden recomendado y hallazgos técnicos en la sección
   "📋 A+Drive vs LuxeRide" más abajo.
 
-**Todo lo demás de esta ronda (2026-07-11/12) ya está construido y
-desplegado en producción**: AI Chat Assistant, AI Growth Assistant, Partner
-Portals, LuxeRide Operator Score (fase 1), y sus reflejos en landing/SEO —
+**Trabajo construido pero con una pieza real sin cerrar:**
+- **Programa de referidos entre empresas**: atribución, niveles y expiración
+  a 12 meses funcionan completos, pero el pago real de la comisión vía API
+  de Whop (`affiliate`/`override`) no está construido — falta confirmar
+  cómo Whop permite cortar selectivamente la comisión de un solo referido
+  sin afectar a los demás del mismo referrer. Mientras tanto un cron diario
+  solo avisa por email cuando algo vence (ver sección "Programa de
+  referidos" más abajo).
+
+**Todo lo demás ya está construido y desplegado en producción**: AI Chat
+Assistant, AI Growth Assistant, Partner Portals, LuxeRide Operator Score,
+marketplace de add-ons, feedback con origen (admin/conductor/cliente),
+notificaciones + cuenta de super-admin, y los fixes de SEO de esta semana —
 ver el detalle completo de cada uno en las secciones de abajo.
 
 ## 📋 A+Drive vs LuxeRide + 3 iniciativas evaluadas, NO construir aún (2026-07-12)
