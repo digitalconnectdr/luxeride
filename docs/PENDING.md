@@ -3,6 +3,72 @@
 > Actualizado: 2026-07-19. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ i18n de /auth/* + signup wizard + auditoría completa de notificaciones/alertas (2026-07-19)
+
+- **i18n de /auth/***: las 5 páginas (login, signup, reset-password,
+  update-password, verify-email) estaban 100% en inglés pese a que el
+  selector de idioma ya funcionaba en el resto del sitio — solo
+  `auth/layout.tsx` (panel lateral) estaba traducido, ningún `page.tsx`
+  debajo. Convertidas a Server Component (trae el diccionario) + Client
+  Component de formulario (`labels` por props), mismo patrón que
+  `FeatureRequestButton`. Se quitó además un tagline redundante
+  ("Plataforma de Transporte Premium").
+- **Signup como wizard de 2 pasos** (Empresa → Tu cuenta): el formulario de
+  6 campos desbordaba el viewport incluso en desktop (medido con DOM real,
+  no supuesto) — el usuario eligió el wizard sobre solo comprimir espacios.
+  Los campos del paso inactivo viajan como `<input type="hidden">` (no
+  `display:none`, que exime la validación `required` de HTML5) para que la
+  única submission final incluya los 6 campos sin importar el paso visible.
+- **Campana de notificaciones del super-admin — estado leído/no-leído
+  real**: antes el badge rojo se basaba solo en `feature_requests.status`
+  (estado de negocio), así que reaparecía como "nuevo" aunque el super-admin
+  ya lo hubiera visto varias veces. Ahora hay una tabla
+  `super_admin_notification_reads` (migración 58, aplicada en producción)
+  con `last_seen_at` por usuario, actualizada al abrir el panel; la lista
+  además quedó acotada a un historial rodante de 7 días en vez de un top-8
+  fijo. Alcance confirmado con el usuario: solo la campana de super-admin
+  (el panel admin normal no tiene una campana equivalente).
+- **Auditoría completa del sistema de notificaciones/alertas**, pedida
+  explícitamente por el usuario ("antes de seguir construyendo, analiza
+  todo el sistema") cubriendo super-admin, empresas (admin regular) y
+  conductores. Gaps confirmados y corregidos en el momento:
+  - **Dispatch Board + portal web del conductor**: no había ninguna señal
+    (sonido/toast) ante una reserva o viaje nuevo, solo polling silencioso.
+    Se agregó un chime de dos tonos (Web Audio API, sin asset de audio —
+    no existía ningún patrón de sonido previo en la app web) + toast
+    (`sonner`, ya estaba instalado) al detectar un ID nuevo entre renders.
+    En el portal del conductor el auto-refresh dejó de depender de tener
+    viajes activos (si no, un conductor sin viajes nunca se enteraría de
+    uno recién asignado).
+  - **Suscripción por vencer**: `subscription-alerts` solo le avisaba por
+    email al super-admin (digest de todas las empresas); la empresa misma
+    no recibía ningún correo sobre su propia suscripción. Ahora también se
+    le emaila directo. *Corrección sobre mi propio hallazgo*: el popup
+    in-app de suscripción por vencer (≤5 días o suspendida) **ya existía**
+    en todo el panel admin (`app/admin/layout.tsx`), no solo en Settings —
+    no se construyó nada duplicado ahí.
+  - **Cliente reporta a un conductor**: `reportDriverAction` insertaba en
+    `trip_reports` sin ningún aviso — el admin solo se enteraba si entraba
+    a `/admin/driver-reports` por su cuenta. Ahora notifica por email al
+    contacto de la empresa (conductor, motivo, detalle, link al reporte).
+  - **Crons de vencimientos duplicados**: `document-alerts` (11am) y
+    `compliance-alerts` (2pm) eran dos crons separados que podían mandarle
+    al mismo conductor dos avisos de "algo vence" el mismo día. Se
+    fusionaron en uno solo (`compliance-alerts`): un email por conductor
+    con todo lo que venza (documentos genéricos, licencia, permiso
+    chauffeur/for-hire) en vez de correos repartidos en dos horarios.
+  - **Pendiente, marcado como secundario** (no construido en esta ronda):
+    badge de Compliance visible fuera de `/admin/compliance` — hoy el
+    aviso in-app (banner ámbar) solo se ve entrando a esa página
+    específica, no hay indicador en el sidebar ni en el dashboard.
+
+Verificación de esta ronda: typecheck, 170/170 tests y build de producción
+limpios en cada entrega; el toast/sonido de reserva-nueva se verificó por
+código (patrón de diffing + `sonner` ya usado en otra parte del proyecto)
+pero no se pudo ejercitar en vivo con una reserva real por falta de
+credenciales de prueba en este entorno — queda como verificación pendiente
+del usuario si quiere confirmarlo con una cuenta real.
+
 ## ✅ Marketplace de add-ons + feedback con origen + notificaciones/cuenta super-admin + limpieza de datos + fixes SEO (2026-07-17/19)
 
 Ronda de trabajo de 3 días, resumida (detalle completo en el historial de
