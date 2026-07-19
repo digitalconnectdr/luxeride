@@ -14,6 +14,8 @@ import { calculateRoute } from '@/lib/maps/routes'
 import { getStripe } from '@/lib/stripe/server'
 import { createWhopCheckout } from '@/lib/whop/checkout'
 import { getAppUrl } from '@/lib/app-url'
+import { sendOperatorEmail } from '@/lib/notifications'
+import { waitUntil } from '@vercel/functions'
 import type { BookingStatus, BookingType, Json } from '@/lib/supabase/database.types'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -601,11 +603,17 @@ export async function reportDriverAction(
 
   const allowedCats = ['false_arrival', 'no_contact', 'unsafe', 'other']
   const cat = allowedCats.includes(category) ? category : 'other'
+  const CATEGORY_LABELS: Record<string, string> = {
+    false_arrival: 'Llegada falsa',
+    no_contact: 'No hizo contacto',
+    unsafe: 'Conducción o comportamiento inseguro',
+    other: 'Otro',
+  }
 
   const admin = createAdminClient()
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, company_id, driver_id')
+    .select('id, company_id, driver_id, booking_number')
     .eq('id', bookingId)
     .single()
 
@@ -623,6 +631,25 @@ export async function reportDriverAction(
     console.error('[reportDriverAction]', error)
     return { success: false, error: 'No se pudo enviar el reporte. Intenta de nuevo.' }
   }
+
+  // Antes esto se guardaba en trip_reports sin ningún aviso — el admin solo
+  // se enteraba si visitaba /admin/driver-reports por su cuenta.
+  let driverName = 'el conductor'
+  if (booking.driver_id) {
+    const { data: profile } = await admin
+      .from('user_profiles')
+      .select('first_name, last_name')
+      .eq('id', booking.driver_id)
+      .maybeSingle()
+    if (profile) driverName = `${profile.first_name} ${profile.last_name}`
+  }
+  waitUntil(
+    sendOperatorEmail(
+      booking.company_id,
+      `Reporte de conductor | Reserva ${booking.booking_number}`,
+      `Un pasajero reportó a ${driverName} en la reserva ${booking.booking_number}.\n\nMotivo: ${CATEGORY_LABELS[cat]}\nDetalle: ${cleanReason.slice(0, 2000)}\n\nVer todos los reportes en: ${getAppUrl()}/admin/driver-reports`,
+    ),
+  )
 
   return { success: true }
 }

@@ -1,11 +1,14 @@
 // ── Cron diario: suscripciones/pruebas por vencer ─────────────────────────────
-// Avisa por email al super-admin de las empresas cuya suscripción
-// (subscription_ends_at) o prueba (trial_ends_at) vence dentro de 7 días.
+// Avisa por email al super-admin (digest de todas las empresas) Y a cada
+// empresa afectada directamente (antes solo se enteraba el super-admin — la
+// propia empresa no recibía ningún aviso de su propia suscripción/prueba por
+// vencer; el popup en el panel ya existe pero solo dispara ≤5 días, ver
+// app/admin/layout.tsx). Ventana: 7 días para ambos.
 // Protegido con CRON_SECRET. Programado en vercel.json.
 
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
-import { sendSuperAdminEmail } from '@/lib/notifications'
+import { sendSuperAdminEmail, sendOperatorEmail } from '@/lib/notifications'
 import { getAppUrl } from '@/lib/app-url'
 
 export const runtime = 'nodejs'
@@ -36,7 +39,7 @@ export async function GET(request: Request) {
   // Suscripciones activas por vencer
   const { data: subs } = await admin
     .from('companies')
-    .select('name, slug, subscription_ends_at')
+    .select('id, name, slug, subscription_ends_at')
     .eq('status', 'active')
     .not('subscription_ends_at', 'is', null)
     .gte('subscription_ends_at', today)
@@ -46,7 +49,7 @@ export async function GET(request: Request) {
   // Pruebas (trials) por vencer
   const { data: trials } = await admin
     .from('companies')
-    .select('name, slug, trial_ends_at')
+    .select('id, name, slug, trial_ends_at')
     .eq('status', 'trial')
     .not('trial_ends_at', 'is', null)
     .gte('trial_ends_at', today)
@@ -74,5 +77,25 @@ export async function GET(request: Request) {
     body,
   )
 
-  return NextResponse.json({ ok: true, total, sent })
+  // ── Aviso directo a cada empresa afectada (antes solo se enteraba el
+  // super-admin) — un email por empresa con su propio vencimiento. ──────────
+  let companyEmailsSent = 0
+  for (const c of subs ?? []) {
+    const result = await sendOperatorEmail(
+      c.id,
+      `Tu suscripción vence en ${daysUntil(c.subscription_ends_at!)} día(s)`,
+      `Tu suscripción a la plataforma vence el ${new Date(c.subscription_ends_at!).toLocaleDateString('es-DO')}.\n\nRenuévala en: ${appUrl}/admin/settings#subscription`,
+    )
+    if (result.sent) companyEmailsSent += 1
+  }
+  for (const c of trials ?? []) {
+    const result = await sendOperatorEmail(
+      c.id,
+      `Tu período de prueba termina en ${daysUntil(c.trial_ends_at!)} día(s)`,
+      `Tu período de prueba termina el ${new Date(c.trial_ends_at!).toLocaleDateString('es-DO')}.\n\nElige un plan en: ${appUrl}/admin/settings#subscription`,
+    )
+    if (result.sent) companyEmailsSent += 1
+  }
+
+  return NextResponse.json({ ok: true, total, sent, companyEmailsSent })
 }

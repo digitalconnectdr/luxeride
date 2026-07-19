@@ -1,11 +1,16 @@
-// ── Cron diario: Compliance Center (Sección J) ─────────────────────────────────
+// ── Cron diario: Compliance Center (Sección J) + vencimientos generales ────────
 // 1. Recalcula compliance_status/score/bloqueo para todos los conductores,
 //    vehículos y empresas — captura vencimientos puros por el paso del tiempo
 //    (nadie tocó el registro, pero la fecha ya pasó). Mismo cálculo que se
 //    corre al editar un campo (lib/compliance/recompute.ts).
-// 2. Avisa por email lo que vence dentro de 30 días: conductor (permiso
-//    chauffeur), operador (permiso for-hire/seguro de vehículo, licencia
-//    operativa/seguro de la empresa).
+// 2. Conductor: UN solo email por conductor con TODO lo que venza dentro de
+//    30 días (documentos genéricos de la tabla `documents`, licencia de
+//    conducir, permiso chauffeur/for-hire) — antes esto vivía repartido en dos
+//    crons separados (document-alerts a las 11am + compliance-alerts a las
+//    2pm), lo que podía mandarle al mismo conductor dos avisos de "algo vence"
+//    el mismo día. Se fusionó aquí; document-alerts se eliminó.
+// 3. Vehículo/empresa: permiso for-hire/seguro y licencia operativa/seguro
+//    comercial por vencer (sin cambios).
 // Protegido con CRON_SECRET. Programado en vercel.json.
 
 import { NextResponse } from 'next/server'
@@ -66,33 +71,68 @@ export async function GET(request: Request) {
     }
   }
 
-  // ── 2a. Permiso chauffeur del conductor por vencer ─────────────────────────
+  // ── 2. Vencimientos de conductor: un email por conductor con todo lo que
+  // venza (documentos genéricos + licencia + permiso chauffeur/for-hire) ─────
+  const expiringByDriver = new Map<string, { companyId: string; items: { label: string; date: string }[] }>()
+
+  function addDriverItem(driverId: string, companyId: string, label: string, date: string) {
+    const entry = expiringByDriver.get(driverId) ?? { companyId, items: [] }
+    entry.items.push({ label, date })
+    expiringByDriver.set(driverId, entry)
+  }
+
+  const { data: genericDocs } = await admin
+    .from('documents')
+    .select('driver_id, company_id, type, expires_at')
+    .not('driver_id', 'is', null)
+    .gte('expires_at', today)
+    .lte('expires_at', limit)
+    .limit(BATCH_LIMIT)
+
+  for (const doc of genericDocs ?? []) {
+    if (!doc.driver_id || !doc.expires_at) continue
+    addDriverItem(doc.driver_id, doc.company_id, doc.type.replace(/_/g, ' '), doc.expires_at)
+  }
+
   const { data: expiringDrivers } = await admin
     .from('drivers')
-    .select('id, company_id, chauffeur_permit_expires_at')
-    .gte('chauffeur_permit_expires_at', today)
-    .lte('chauffeur_permit_expires_at', limit)
+    .select('id, company_id, license_expiry, chauffeur_permit_expires_at')
+    .or(
+      `and(license_expiry.gte.${today},license_expiry.lte.${limit}),and(chauffeur_permit_expires_at.gte.${today},chauffeur_permit_expires_at.lte.${limit})`,
+    )
     .limit(BATCH_LIMIT)
 
   for (const d of expiringDrivers ?? []) {
-    if (!d.chauffeur_permit_expires_at) continue
-    const email = await driverEmail(d.id)
+    if (d.license_expiry && d.license_expiry >= today && d.license_expiry <= limit) {
+      addDriverItem(d.id, d.company_id, 'licencia de conducir', d.license_expiry)
+    }
+    if (d.chauffeur_permit_expires_at && d.chauffeur_permit_expires_at >= today && d.chauffeur_permit_expires_at <= limit) {
+      addDriverItem(d.id, d.company_id, 'permiso chauffeur/for-hire', d.chauffeur_permit_expires_at)
+    }
+  }
+
+  for (const [driverId, { companyId, items }] of expiringByDriver) {
+    const email = await driverEmail(driverId)
     if (!email) continue
+    const sorted = items.slice().sort((a, b) => a.date.localeCompare(b.date))
+    const documentType = sorted
+      .map((i) => `${i.label} (vence ${new Date(i.date).toLocaleDateString('es-DO')})`)
+      .join('; ')
     const result = await notify({
-      companyId: d.company_id,
+      companyId,
       channel: 'email',
       type: 'driver_document_expiring',
       recipient: email,
-      userId: d.id,
+      userId: driverId,
       vars: {
-        document_type: 'permiso chauffeur/for-hire',
-        expiry_date: new Date(d.chauffeur_permit_expires_at).toLocaleDateString('es-DO'),
+        document_type: documentType,
+        expiry_date: new Date(sorted[0].date).toLocaleDateString('es-DO'),
       },
     })
     if (result.sent) emailsSent += 1
   }
 
-  // ── 2b. Permiso for-hire / seguro del vehículo por vencer ──────────────────
+  // ── 3. Permiso for-hire / seguro del vehículo por vencer ──────────────────
   const { data: expiringVehicles } = await admin
     .from('vehicles')
     .select('id, company_id, make, model, plate_number, forhire_permit_expires_at, insurance_expires_at')
@@ -118,7 +158,7 @@ export async function GET(request: Request) {
     if (result.sent) emailsSent += 1
   }
 
-  // ── 2c. Licencia operativa / seguro comercial de la empresa por vencer ─────
+  // ── 4. Licencia operativa / seguro comercial de la empresa por vencer ─────
   const { data: expiringCompanies } = await admin
     .from('companies')
     .select('id, name, operating_license_expires_at, commercial_insurance_expires_at')
@@ -149,6 +189,7 @@ export async function GET(request: Request) {
     driversRecomputed: driverIds?.length ?? 0,
     vehiclesRecomputed: vehicleIds?.length ?? 0,
     companiesRecomputed: companyIds?.length ?? 0,
+    driversNotified: expiringByDriver.size,
     emailsSent,
   })
 }
