@@ -4,13 +4,15 @@
 // Las mutaciones usan las server actions existentes (máquina de estados +
 // notificaciones incluidas). Realtime → router.refresh() para re-fetch server.
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { updateBookingStatusAction, assignDriverAction } from '@/app/actions/bookings'
 import { DispatchLiveMap } from './dispatch-live-map'
 import { ActiveDriversPanel, type DriverStatusRow } from './active-drivers-panel'
 import { AutoAssignToggle } from './auto-assign-toggle'
+import { playAlertChime } from '@/lib/notifications/chime'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 import type { Dictionary, Locale } from '@/lib/i18n/server'
 
@@ -120,6 +122,23 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
     const id = setInterval(() => router.refresh(), 12000)
     return () => clearInterval(id)
   }, [router])
+
+  // ── Alerta de reserva nueva: toast + sonido cuando aparece una reserva
+  // pendiente que no estaba en el render anterior. `null` en el ref = primer
+  // render, para no alertar retroactivamente por lo que ya existía al cargar.
+  const seenPendingIds = useRef<Set<string> | null>(null)
+  useEffect(() => {
+    const pendingNow = initialBookings.filter((b) => b.status === 'pending')
+    const pendingIds = new Set(pendingNow.map((b) => b.id))
+
+    if (seenPendingIds.current) {
+      const fresh = pendingNow.filter((b) => !seenPendingIds.current!.has(b.id))
+      fresh.forEach((b) => toast(t.newBookingToast.replace('{number}', b.booking_number)))
+      if (fresh.length > 0) playAlertChime()
+    }
+
+    seenPendingIds.current = pendingIds
+  }, [initialBookings, t.newBookingToast])
 
   // ── Acciones ────────────────────────────────────────────────────────────────
 

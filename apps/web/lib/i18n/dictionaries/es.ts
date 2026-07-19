@@ -519,6 +519,7 @@ export const es: Dictionary = {
     noVehicleAssigned: 'Sin vehículo asignado',
     signOut: 'Cerrar sesión',
     noTrips: 'No tienes viajes asignados ahora.',
+    newTripToast: 'Nueva reserva asignada: {number}',
     currentStatus: 'Estado actual',
     scheduled: 'Programado',
     progress: 'Progreso del servicio',
@@ -660,6 +661,7 @@ export const es: Dictionary = {
     liveUpdate: 'Actualización en tiempo real',
     lastChange: '· último cambio {time}',
     saving: 'Guardando…',
+    newBookingToast: 'Nueva reserva: {number}',
     liveMap: {
       title: 'Mapa en vivo de la flota',
       empty: 'Sin conductores en viaje ni recogidas pendientes con ubicación ahora mismo.',

@@ -518,6 +518,7 @@ export const en = {
     offDuty: 'Off duty',
     signOut: 'Sign out',
     noTrips: 'You have no assigned trips right now.',
+    newTripToast: 'New trip assigned: {number}',
     currentStatus: 'Current status',
     scheduled: 'Scheduled',
     progress: 'Service progress',
@@ -659,6 +660,7 @@ export const en = {
     liveUpdate: 'Live updates',
     lastChange: '· last change {time}',
     saving: 'Saving…',
+    newBookingToast: 'New booking: {number}',
     liveMap: {
       title: 'Live fleet map',
       empty: 'No drivers en route or pending pickups with a location right now.',

@@ -7,6 +7,7 @@ import { getLocale, getDict } from '@/lib/i18n/server'
 import { brand } from '@/lib/brand'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { AutoRefresh } from '@/app/track/[id]/auto-refresh'
+import { NewTripAlert } from '@/components/driver/new-trip-alert'
 import { DriverTripActions } from '@/components/driver/trip-actions'
 import { DriverAddStop } from '@/components/driver/driver-add-stop'
 import { DriverAddCharge } from '@/components/driver/driver-add-charge'
@@ -207,8 +208,13 @@ export default async function DriverTripsPage() {
     <MapsProvider>
     <div className="min-h-screen bg-[#f6f4ef] text-[#1d1b18] antialiased">
       <ServiceWorkerRegister />
-      {/* Auto-refresh mientras hay viajes activos (capta cambios del dispatcher) */}
-      {!!trips?.length && <AutoRefresh seconds={15} />}
+      {/* Auto-refresh siempre activo (no solo con viajes en curso) — si no, un
+          conductor sin viajes nunca se enteraría de uno recién asignado. */}
+      <AutoRefresh seconds={15} />
+      <NewTripAlert
+        trips={(trips ?? []).map((t) => ({ id: t.id, bookingNumber: t.booking_number }))}
+        newTripLabel={dt.newTripToast}
+      />
       <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent, ${brandColor}, transparent)` }} />
 
       {/* ── Header ── */}
