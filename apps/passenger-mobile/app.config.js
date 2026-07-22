@@ -48,5 +48,13 @@ module.exports = {
       favicon: './assets/favicon.png',
     },
     plugins: ['expo-font'],
+    extra: {
+      eas: {
+        // Proyecto EAS creado por `npx eas-cli credentials` (2026-07-22),
+        // necesario porque este monorepo usa config dinámica (app.config.js)
+        // y el CLI no puede escribirlo ahí automáticamente.
+        projectId: 'bee568a5-ac4b-4ae4-880d-ad746937e472',
+      },
+    },
   },
 }
