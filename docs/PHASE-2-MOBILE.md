@@ -372,14 +372,19 @@ con mala recepción), 100% sin entrenamiento (4 botones).
 
 ## Sprint 3-4 — Passenger App (white-label)
 
-> **Actualizado 2026-07-22 — arrancada.** El usuario compartió un mockup de
-> referencia (17 pantallas) y decidió explícitamente: **cuenta real**
-> (signup/login, no guest) y **mapa interactivo nativo**
+> **Actualizado 2026-07-22 — Sprint 0-2 construidos.** El usuario compartió
+> un mockup de referencia (17 pantallas) y decidió explícitamente: **cuenta
+> real** (signup/login, no guest) y **mapa interactivo nativo**
 > (`react-native-maps`, no imagen estática). Sprint 0+1 (fundaciones +
-> vertical slice signup→login→cotizar→reservar) ya está construido y
-> verificado — ver detalle en `docs/PENDING.md`. Lo de abajo es el plan
-> original, mantenido como referencia de las pantallas restantes
-> (Sprint 2-5), con dos correcciones importantes marcadas en negrita.
+> vertical slice signup→login→cotizar→reservar) y Sprint 2 (mapa en vivo
+> del conductor + autocomplete de direcciones con Google Places) ya están
+> construidos y verificados — ver detalle en `docs/PENDING.md`. Pendiente
+> del usuario: generar la API key nativa de Google Maps para Android
+> (`.env.example` de `apps/passenger-mobile` tiene las instrucciones) — sin
+> ella el mapa no renderiza, el resto de la app funciona igual. Lo de abajo
+> es el plan original, mantenido como referencia de las pantallas
+> restantes (Sprint 3-5), con dos correcciones importantes marcadas en
+> negrita.
 
 Modelo: **una app "LuxeRide"** en las stores donde el pasajero entra al
 espacio de su empresa (`EXPO_PUBLIC_COMPANY_SLUG` fija la empresa del build
@@ -390,16 +395,19 @@ build de EAS por operador para eso — un build de marca propia (nombre/ícono
 en la store) SÍ sigue siendo upsell Enterprise, eso no cambió.
 
 Pantallas:
-- **Reservar**: ✅ wizard nativo construido (Sprint 1) — origen/destino
-  (geocodificados con `expo-location`), fecha/hora por chips rápidos,
-  selección de vehículo, confirmar. Falta (Sprint 2): mapa interactivo real
-  en el paso de origen/destino con autocomplete de Places.
-- **Mi viaje / tracking en vivo (Sprint 2)**: mapa interactivo
-  (`react-native-maps`) con la posición del conductor — la tabla ya existe
-  (`trip_locations`, con Realtime habilitado desde antes) y ya tiene la
-  policy RLS `customers_select_own_trip_locations` (migración 62) para que
-  el pasajero autenticado la lea directo por Supabase sin pasar por
-  service-role, a diferencia del guest anónimo de hoy.
+- **Reservar**: ✅ wizard nativo construido (Sprint 1) + autocomplete real
+  de direcciones con Google Places (Sprint 2, vía proxy server-side
+  `/api/mobile/passenger/places-autocomplete`/`places-details`, sin exponer
+  ninguna key de Places a la app) — fecha/hora por chips rápidos, selección
+  de vehículo, confirmar.
+- **Mi viaje / tracking en vivo**: ✅ construido (Sprint 2) —
+  `TripTrackingScreen`, mapa interactivo (`react-native-maps`) con la
+  posición del conductor en Realtime (RLS
+  `customers_select_own_trip_locations`, migración 62) + ruta decodificada
+  de `bookings.route_polyline`. Pendiente del usuario: generar la API key
+  nativa de Google Maps Android (ver `.env.example`) — sin ella el mapa no
+  renderiza. Fuera de alcance a propósito: el pasajero solo VE al
+  conductor, no comparte su propia ubicación (no lo pide el mockup).
 - **Pago (Sprint 3) — CORRECCIÓN: es vía Whop, NO Stripe.** El plan
   original decía "Apple/Google Pay vía Stripe checkout sheet" — eso no
   aplica a este proyecto. El pago aquí siempre ha sido Whop

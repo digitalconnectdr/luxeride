@@ -44,9 +44,13 @@ export interface BookingDraft {
   pickupAddress: string
   pickupLat: number
   pickupLng: number
+  pickupPlaceId?: string
+  pickupPostalCode?: string
   dropoffAddress: string
   dropoffLat: number
   dropoffLng: number
+  dropoffPlaceId?: string
+  dropoffPostalCode?: string
   scheduledAt: string
   passengerCount: number
 }
@@ -61,7 +65,8 @@ export type BookingStackParamList = {
   NewBooking: undefined
   VehicleSelect: { draft: BookingDraft }
   BookingConfirm: { draft: BookingDraft; quote: VehicleQuote }
-  BookingSuccess: { bookingNumber: string }
+  BookingSuccess: { bookingId: string; bookingNumber: string }
+  TripTracking: { bookingId: string }
 }
 
 export type RootTabParamList = {

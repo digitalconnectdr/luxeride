@@ -36,9 +36,11 @@ export function VehicleSelectScreen({ route, navigation }: Props) {
         pickupLat: draft.pickupLat,
         pickupLng: draft.pickupLng,
         pickupAddress: draft.pickupAddress,
+        pickupPostalCode: draft.pickupPostalCode,
         dropoffLat: draft.dropoffLat,
         dropoffLng: draft.dropoffLng,
         dropoffAddress: draft.dropoffAddress,
+        dropoffPostalCode: draft.dropoffPostalCode,
         scheduledAt: draft.scheduledAt,
       })
       if (cancelled) return

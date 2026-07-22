@@ -58,7 +58,7 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
     }
     setLoading(true)
     const companySlug = process.env.EXPO_PUBLIC_COMPANY_SLUG ?? ''
-    const result = await callPassengerApi<{ data?: { bookingNumber: string } }>('book', {
+    const result = await callPassengerApi<{ data?: { bookingId: string; bookingNumber: string } }>('book', {
       quoteId: quote.quoteId,
       companySlug,
       passengerName: passengerName.trim(),
@@ -77,7 +77,7 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
       setError(result.error ?? 'No se pudo crear la reserva')
       return
     }
-    navigation.replace('BookingSuccess', { bookingNumber: result.data.bookingNumber })
+    navigation.replace('BookingSuccess', { bookingId: result.data.bookingId, bookingNumber: result.data.bookingNumber })
   }
 
   return (

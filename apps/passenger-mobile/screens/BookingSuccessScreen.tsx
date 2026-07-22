@@ -8,7 +8,7 @@ import type { BookingStackParamList } from '../lib/types'
 type Props = NativeStackScreenProps<BookingStackParamList, 'BookingSuccess'>
 
 export function BookingSuccessScreen({ route, navigation }: Props) {
-  const { bookingNumber } = route.params
+  const { bookingId, bookingNumber } = route.params
 
   return (
     <View style={styles.container}>
@@ -19,7 +19,14 @@ export function BookingSuccessScreen({ route, navigation }: Props) {
       <Text style={styles.number}>{bookingNumber}</Text>
       <Text style={styles.body}>Te avisaremos apenas un conductor sea asignado a tu viaje.</Text>
       <Button
+        label="Ver mi viaje"
+        icon="map-outline"
+        onPress={() => navigation.navigate('TripTracking', { bookingId })}
+        style={styles.button}
+      />
+      <Button
         label="Volver al inicio"
+        variant="secondary"
         onPress={() => navigation.popToTop()}
         style={styles.button}
       />

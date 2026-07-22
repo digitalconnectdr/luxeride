@@ -3,6 +3,59 @@
 > Actualizado: 2026-07-22. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## 🚧 App nativa de pasajero — Sprint 2 (mapa en vivo + autocomplete) (2026-07-22)
+
+Continuación del Sprint 0+1 de abajo, mismo día. El usuario pidió proceder
+con Sprint 2 (mapa interactivo + autocomplete de direcciones), ya
+documentado en `docs/PHASE-2-MOBILE.md`.
+
+- **Bloqueo real, ya comunicado y aceptado por el usuario**: `react-native-maps`
+  en Android necesita su PROPIA API key de Google Maps SDK, restringida por
+  package name (`com.jprsdigitalconnect.luxeride.passenger`) + huella SHA-1
+  del keystore de firma — algo que solo el usuario puede generar en su
+  Google Cloud Console (requiere haber corrido `eas credentials` para tener
+  el SHA-1). Se construyó todo el código de todas formas; sin esa key el
+  mapa simplemente no renderiza, el resto de la app sigue funcionando.
+  Instrucciones completas en `apps/passenger-mobile/.env.example`.
+- `app.json` → `app.config.js` (necesario para leer la key desde el entorno
+  en vez de comprometerla en un JSON estático versionado).
+- **Autocomplete de direcciones sin exponer una key de Places a la app**:
+  nuevo `apps/web/lib/maps/places-autocomplete.ts` + rutas
+  `/api/mobile/passenger/places-autocomplete` y `/places-details` — proxy
+  server-side reusando `GOOGLE_MAPS_SERVER_KEY` (ya configurada en
+  producción), igual principio que `lib/maps/routes.ts`
+  ("nunca exponer este módulo al cliente"). **Pendiente del usuario**:
+  confirmar que "Places API" esté habilitada para esa key en Google Cloud
+  Console (es un toggle, no una key nueva).
+- `NewBookingScreen` ahora usa `AddressAutocomplete` (debounce 300ms +
+  dropdown) en vez de texto libre — mantiene el fallback a
+  `Location.geocodeAsync` del Sprint 1 si el usuario escribe sin
+  seleccionar una sugerencia. El código postal resuelto por Places ahora
+  se manda a `/quote` para mejorar la resolución de zona de precio.
+- **Mapa en vivo (`TripTrackingScreen`, nuevo)**: se llega ahí con un botón
+  "Ver mi viaje" desde `BookingSuccessScreen`. El pasajero autenticado lee
+  `trip_locations` directo por Supabase Realtime (RLS
+  `customers_select_own_trip_locations`, migración 62, ya aplicada) —
+  mismo patrón que `apps/driver-mobile/screens/ChatScreen.tsx` (payload.new
+  directo, sin side-channel de refetch como hace la web para el guest
+  anónimo). La ruta se dibuja decodificando `bookings.route_polyline`
+  (ya existente, sin volver a llamar la Routes API). Alcance de este
+  sprint: el pasajero SOLO ve al conductor, no comparte su propia
+  ubicación (eso requeriría una policy RLS de INSERT nueva + permiso de
+  ubicación — no lo pide el mockup de referencia, queda fuera).
+- **Verificado**: `tsc --noEmit` limpio (app y web), `npx expo export
+  --platform android` compila con `react-native-maps` (3.35 MB, bundle
+  sano), `npm run build` de `apps/web` compila con las 2 rutas nuevas de
+  Places, 170/170 tests de Vitest.
+- **Pendiente del usuario**: generar la key de Google Maps Android
+  (ver `.env.example`), confirmar Places API habilitada para
+  `GOOGLE_MAPS_SERVER_KEY`, y probar el mapa en un build real cuando
+  ambas estén listas.
+- **Backlog explícito, sin empezar** (Sprint 3-5, ver
+  `docs/PHASE-2-MOBILE.md`): pago vía **Whop** (corregido — no Stripe, ver
+  sección de abajo), chat con el conductor, viaje en curso, calificar,
+  historial de viajes, perfil completo, i18n, primer `eas build`.
+
 ## 🚧 App nativa de pasajero — Sprint 0+1 (vertical slice) (2026-07-22)
 
 A partir de un mockup de referencia de 17 pantallas (11 pasajero + 6

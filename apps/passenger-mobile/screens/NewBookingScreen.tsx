@@ -1,21 +1,31 @@
 // ── Paso 1: origen, destino, fecha/hora, pasajeros ─────────────────────────
-// Sprint 1: direcciones en texto libre + geocodificación con el geocoder
-// nativo del dispositivo (expo-location, gratis, sin API key propia) — el
-// autocomplete real con Google Places llega en el Sprint 2 junto con el
-// mapa interactivo (ver plan). Selector de fecha/hora por chips rápidos en
-// vez de un date picker nativo, para no arrastrar una dependencia nueva
-// solo para esto.
+// Sprint 2: autocomplete de direcciones con Google Places (vía proxy
+// server-side, ver components/AddressAutocomplete.tsx) — si el usuario
+// selecciona una sugerencia, se usan sus coordenadas exactas + código
+// postal (mejora la resolución de zona de precio). Si escribe sin
+// seleccionar nada, se mantiene el fallback del Sprint 1: geocodificación
+// con el geocoder nativo del dispositivo (expo-location, gratis).
+// Selector de fecha/hora por chips rápidos en vez de un date picker
+// nativo, para no arrastrar una dependencia nueva solo para esto.
 
 import { useState } from 'react'
-import { View, Text, TextInput, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { AddressAutocomplete } from '../components/AddressAutocomplete'
 import { Button, Card, SectionLabel } from '../components/ui'
 import { color, font, radius, space } from '../lib/theme'
 import type { BookingStackParamList } from '../lib/types'
 
 type Props = NativeStackScreenProps<BookingStackParamList, 'NewBooking'>
+
+interface ResolvedPlace {
+  lat: number
+  lng: number
+  placeId: string
+  postalCode: string | null
+}
 
 const TIME_OPTIONS = [
   { label: 'En 30 min', minutesFromNow: 30 },
@@ -38,7 +48,9 @@ function resolveScheduledAt(optionIndex: number): Date {
 
 export function NewBookingScreen({ navigation }: Props) {
   const [pickupAddress, setPickupAddress] = useState('')
+  const [pickupResolved, setPickupResolved] = useState<ResolvedPlace | null>(null)
   const [dropoffAddress, setDropoffAddress] = useState('')
+  const [dropoffResolved, setDropoffResolved] = useState<ResolvedPlace | null>(null)
   const [timeOption, setTimeOption] = useState(0)
   const [passengerCount, setPassengerCount] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -55,6 +67,15 @@ export function NewBookingScreen({ navigation }: Props) {
     }
   }
 
+  async function resolveAddress(
+    address: string,
+    resolved: ResolvedPlace | null,
+  ): Promise<{ lat: number; lng: number; placeId?: string; postalCode?: string | null } | null> {
+    if (resolved) return resolved
+    const geocoded = await geocode(address)
+    return geocoded
+  }
+
   async function handleContinue() {
     setError('')
     if (!pickupAddress.trim() || !dropoffAddress.trim()) {
@@ -62,7 +83,10 @@ export function NewBookingScreen({ navigation }: Props) {
       return
     }
     setLoading(true)
-    const [pickup, dropoff] = await Promise.all([geocode(pickupAddress), geocode(dropoffAddress)])
+    const [pickup, dropoff] = await Promise.all([
+      resolveAddress(pickupAddress, pickupResolved),
+      resolveAddress(dropoffAddress, dropoffResolved),
+    ])
     setLoading(false)
 
     if (!pickup) {
@@ -79,9 +103,13 @@ export function NewBookingScreen({ navigation }: Props) {
         pickupAddress: pickupAddress.trim(),
         pickupLat: pickup.lat,
         pickupLng: pickup.lng,
+        pickupPlaceId: pickup.placeId,
+        pickupPostalCode: pickup.postalCode ?? undefined,
         dropoffAddress: dropoffAddress.trim(),
         dropoffLat: dropoff.lat,
         dropoffLng: dropoff.lng,
+        dropoffPlaceId: dropoff.placeId,
+        dropoffPostalCode: dropoff.postalCode ?? undefined,
         scheduledAt: resolveScheduledAt(timeOption).toISOString(),
         passengerCount,
       },
@@ -91,32 +119,38 @@ export function NewBookingScreen({ navigation }: Props) {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Card>
+        <Card style={styles.addressCard}>
           <SectionLabel>Origen</SectionLabel>
-          <View style={styles.inputWrap}>
-            <Ionicons name="ellipse" size={10} color={color.gold} />
-            <TextInput
-              style={styles.input}
-              placeholder="Dirección de recogida"
-              placeholderTextColor={color.inkFaint}
-              value={pickupAddress}
-              onChangeText={setPickupAddress}
-            />
-          </View>
+          <AddressAutocomplete
+            icon="ellipse"
+            iconColor={color.gold}
+            placeholder="Dirección de recogida"
+            value={pickupAddress}
+            onChangeText={(text) => {
+              setPickupAddress(text)
+              setPickupResolved(null)
+            }}
+            onSelect={(details) =>
+              setPickupResolved({ lat: details.lat, lng: details.lng, placeId: details.placeId, postalCode: details.postalCode })
+            }
+          />
 
           <View style={styles.divider} />
 
           <SectionLabel>Destino</SectionLabel>
-          <View style={styles.inputWrap}>
-            <Ionicons name="location" size={14} color={color.danger} />
-            <TextInput
-              style={styles.input}
-              placeholder="Dirección de destino"
-              placeholderTextColor={color.inkFaint}
-              value={dropoffAddress}
-              onChangeText={setDropoffAddress}
-            />
-          </View>
+          <AddressAutocomplete
+            icon="location"
+            iconColor={color.danger}
+            placeholder="Dirección de destino"
+            value={dropoffAddress}
+            onChangeText={(text) => {
+              setDropoffAddress(text)
+              setDropoffResolved(null)
+            }}
+            onSelect={(details) =>
+              setDropoffResolved({ lat: details.lat, lng: details.lng, placeId: details.placeId, postalCode: details.postalCode })
+            }
+          />
         </Card>
 
         <View style={styles.section}>
@@ -163,14 +197,8 @@ export function NewBookingScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.bg },
   scroll: { padding: space.lg, gap: space.lg },
-  inputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    paddingVertical: space.sm,
-  },
+  addressCard: { zIndex: 10, overflow: 'visible' },
   divider: { height: 1, backgroundColor: color.border, marginVertical: space.sm },
-  input: { flex: 1, color: color.ink, fontFamily: font.body, fontSize: 15, paddingVertical: 4 },
   section: { gap: space.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {
