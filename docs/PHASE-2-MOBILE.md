@@ -372,22 +372,55 @@ con mala recepción), 100% sin entrenamiento (4 botones).
 
 ## Sprint 3-4 — Passenger App (white-label)
 
+> **Actualizado 2026-07-22 — arrancada.** El usuario compartió un mockup de
+> referencia (17 pantallas) y decidió explícitamente: **cuenta real**
+> (signup/login, no guest) y **mapa interactivo nativo**
+> (`react-native-maps`, no imagen estática). Sprint 0+1 (fundaciones +
+> vertical slice signup→login→cotizar→reservar) ya está construido y
+> verificado — ver detalle en `docs/PENDING.md`. Lo de abajo es el plan
+> original, mantenido como referencia de las pantallas restantes
+> (Sprint 2-5), con dos correcciones importantes marcadas en negrita.
+
 Modelo: **una app "LuxeRide"** en las stores donde el pasajero entra al
-espacio de su empresa (deep link /book/[slug] → marca, colores y flota de
-esa empresa). Build dedicado con marca propia = upsell Enterprise (EAS lo
-permite por config).
+espacio de su empresa (`EXPO_PUBLIC_COMPANY_SLUG` fija la empresa del build
+— ver Sprint 0). **Corrección**: el logo/nombre/color que se ven DENTRO de
+la app ya son dinámicos en runtime desde el Sprint 0
+(`/api/mobile/passenger/branding` + `lib/branding.tsx`), no hace falta un
+build de EAS por operador para eso — un build de marca propia (nombre/ícono
+en la store) SÍ sigue siendo upsell Enterprise, eso no cambió.
 
 Pantallas:
-- **Reservar**: el wizard actual nativo (4 pasos, propina, Apple/Google Pay
-  vía Stripe checkout sheet).
-- **Mi viaje**: tracking en vivo en mapa (posición del driver — requiere
-  agregar update de ubicación del driver app cada 30s a una tabla
-  `driver_positions` con Realtime).
-- **Historial + recibos** (datos ya existen) y re-reservar en 1 toque.
+- **Reservar**: ✅ wizard nativo construido (Sprint 1) — origen/destino
+  (geocodificados con `expo-location`), fecha/hora por chips rápidos,
+  selección de vehículo, confirmar. Falta (Sprint 2): mapa interactivo real
+  en el paso de origen/destino con autocomplete de Places.
+- **Mi viaje / tracking en vivo (Sprint 2)**: mapa interactivo
+  (`react-native-maps`) con la posición del conductor — la tabla ya existe
+  (`trip_locations`, con Realtime habilitado desde antes) y ya tiene la
+  policy RLS `customers_select_own_trip_locations` (migración 62) para que
+  el pasajero autenticado la lea directo por Supabase sin pasar por
+  service-role, a diferencia del guest anónimo de hoy.
+- **Pago (Sprint 3) — CORRECCIÓN: es vía Whop, NO Stripe.** El plan
+  original decía "Apple/Google Pay vía Stripe checkout sheet" — eso no
+  aplica a este proyecto. El pago aquí siempre ha sido Whop
+  (`getSavedWhopCardAction`/`chargeWithSavedWhopCardAction`,
+  `passenger_whop_members`, ya construidos en
+  `apps/web/app/actions/payments.ts` para el checkout público). El Sprint 3
+  debe adaptar ESE flujo (buscar member de Whop guardado por
+  teléfono/empresa, cobrar sin checkout nuevo) a la app nativa, no construir
+  un `PaymentIntent`/Payment Sheet de Stripe desde cero. La columna
+  `user_profiles.stripe_customer_id` agregada en la migración 62 quedó mal
+  nombrada por este motivo — replantear antes de usarla, o eliminarla y
+  usar el mismo modelo de `passenger_whop_members`.
+- **Historial + recibos**: RLS ya lista (`customers_select_own_bookings`,
+  confirmada en Sprint 1) — solo falta la UI nativa (Sprint 4, hoy es un
+  stub "Próximamente" en `MyTripsScreen`). Re-reservar en 1 toque queda
+  pendiente.
 - **Post-viaje**: calificación + propina post-pago (bookings.rating ya
-  existe; cierra otro gap competitivo: reviews).
+  existe; cierra otro gap competitivo: reviews) — Sprint 4.
 - **Corporativo**: si el usuario es corporate_user, reserva contra su cuenta
-  con sus límites (lógica ya construida).
+  con sus límites (lógica ya construida) — no contemplado todavía en la app
+  nativa (el signup de Sprint 1 solo soporta rol `customer`).
 
 ## Sprint 5 — Pulido + lanzamiento
 

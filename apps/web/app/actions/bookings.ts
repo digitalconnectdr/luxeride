@@ -1013,6 +1013,12 @@ export async function createPublicBookingAction(data: {
   stops?: StopInput[]
   promoCode?: string
   partnerSlug?: string
+  // App nativa de pasajero (Sprint 1) — cuando la reserva viene de un
+  // pasajero autenticado (rol 'customer'), se asocia a su cuenta para que
+  // Historial/Mis viajes pueda leerla vía `customers_select_own_bookings`.
+  // El guest checkout público (web) nunca manda esto — queda NULL igual que
+  // siempre.
+  customerId?: string | null
 }): Promise<{ success: boolean; error?: string; data?: BookingResult }> {
   // F1.17 — rate limit por IP
   if (!(await checkRateLimit('public_booking', 5))) {
@@ -1157,6 +1163,7 @@ export async function createPublicBookingAction(data: {
       type:             data.bookingType,
       vehicle_type_id:  quote.vehicle_type_id,
       partner_id:       partnerId,
+      customer_id:      data.customerId ?? null,
       passenger_count:  passengerCount,
       passenger_name:   name,
       passenger_phone:  phone,

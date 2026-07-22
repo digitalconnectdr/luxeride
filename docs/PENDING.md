@@ -1,7 +1,71 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-07-21. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-07-22. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## 🚧 App nativa de pasajero — Sprint 0+1 (vertical slice) (2026-07-22)
+
+A partir de un mockup de referencia de 17 pantallas (11 pasajero + 6
+conductor) que el usuario compartió, se decidió arrancar `apps/passenger-mobile`
+desde cero. El usuario confirmó dos decisiones de arquitectura antes de
+construir: **cuenta real** (signup/login, no guest) y **mapa interactivo
+nativo** (`react-native-maps`, Sprint 2 — no construido todavía). Plan
+completo en `docs/PHASE-2-MOBILE.md` (Sprint 3-4, actualizado).
+
+Siguiendo el mismo criterio que `apps/driver-mobile` (probar el pipeline
+completo con una porción vertical antes de construir las 11 pantallas de
+golpe), este pase cubre: **signup → login → cotizar → reservar**, sin pago
+todavía.
+
+- **Modelo de identidad**: el rol `customer` y el modelo de datos para
+  pasajeros con cuenta ya existían end-to-end (`bookings.customer_id`,
+  RLS `customers_select_own_bookings`) — solo faltaba el flujo de signup.
+  Nuevo: `apps/web/app/actions/passenger-auth.ts` (`signupPassengerCore`,
+  mismo patrón que `signupAction` pero rol `customer`) +
+  `/api/mobile/passenger/signup` (público). Login usa
+  `supabase.auth.signInWithPassword` directo, sin servidor.
+- **White-label real (a pedido explícito del usuario)**: la app pinta el
+  logo/nombre/color de la empresa configurada en `EXPO_PUBLIC_COMPANY_SLUG`
+  en RUNTIME, nunca fijo en el código — nuevo endpoint público
+  `/api/mobile/passenger/branding` (mismo patrón que ya usa la web en
+  `quote/[id]`/`review/[id]`: logo en caja blanca o inicial sobre el color
+  de marca si no hay logo) + `lib/branding.tsx` (`BrandingProvider`,
+  contexto) + `components/BrandMark.tsx`. Esto es lo que hace posible que
+  la MISMA app instalada sirva a cualquier empresa que use LuxeRide, sin
+  tocar código por cliente. Limitación real (no resuelta, ya documentada):
+  el nombre/ícono de la app en las stores SÍ queda fijo por build de EAS —
+  un build de marca propia por operador es upsell Enterprise futuro.
+- **Cotizar + reservar**: `/api/mobile/passenger/quote` y `/book` — rutas
+  delgadas que delegan a `getPublicVehicleQuotesAction`/`createPublicBookingAction`
+  (los mismos núcleos que ya usa el wizard público de la web, sin duplicar
+  el motor de precios). `createPublicBookingAction` ganó un parámetro
+  `customerId` opcional para asociar la reserva a la cuenta del pasajero.
+- **Geocodificación con `expo-location`** (geocoder nativo del teléfono,
+  gratis, sin key propia) en vez de autocomplete de Google Places — el
+  autocomplete real llega en el Sprint 2 junto con el mapa interactivo.
+- **Migración 62** (`stripe_customer_id` en `user_profiles` + RLS
+  `customers_select_own_trip_locations`): el nombre de columna quedó mal
+  puesto — **el pago en este proyecto es 100% vía Whop, no Stripe**
+  (`getSavedWhopCardAction`/`chargeWithSavedWhopCardAction`,
+  `passenger_whop_members`, ya existentes en `app/actions/payments.ts`).
+  La columna queda sin usar hasta que el Sprint 3 de pago se replantee
+  sobre Whop en vez de Stripe SetupIntent como se había planeado
+  originalmente — corregido en `docs/PHASE-2-MOBILE.md`.
+- **Pantallas construidas**: Auth (login+signup), Nueva reserva, Selección
+  de vehículo, Confirmar reserva (sin cobro), Éxito, más stubs de Mis
+  viajes/Perfil (Perfil sí tiene cerrar sesión real).
+- **Verificado**: `tsc --noEmit` limpio (app y web), `npx expo export
+  --platform android` compila (1024 módulos), `npm run build` de
+  `apps/web` compila con las 4 rutas nuevas, 170/170 tests de Vitest.
+- **Pendiente del usuario**: correr la migración 62 en Supabase SQL Editor
+  (no aplicada todavía) y definir `EXPO_PUBLIC_COMPANY_SLUG` en
+  `apps/passenger-mobile/.env` con el slug de una empresa real
+  (`status = 'active'`) antes de poder probar el flujo en un dispositivo.
+- **Backlog explícito, sin empezar** (Sprint 2-5, ver
+  `docs/PHASE-2-MOBILE.md`): mapa en vivo interactivo (`react-native-maps`),
+  autocomplete de Places, pago vía Whop, chat con el conductor, viaje en
+  curso, calificar, historial de viajes, perfil completo, i18n, primer
+  `eas build`.
 
 ## ✅ Auditoría completa de RLS + fix de seguridad + selector de idioma en 5 páginas públicas (2026-07-21)
 

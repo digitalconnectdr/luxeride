@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "LuxeRide",
+    "slug": "luxeride-passenger",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#faf9f6",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jprsdigitalconnect.luxeride.passenger"
+    },
+    "android": {
+      "package": "com.jprsdigitalconnect.luxeride.passenger",
+      "adaptiveIcon": {
+        "backgroundColor": "#faf9f6",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}
