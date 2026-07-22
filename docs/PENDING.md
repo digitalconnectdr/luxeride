@@ -1,7 +1,43 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-07-19. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-07-20. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## ✅ Alertas de reserva/viaje nuevo + fixes de notificaciones + índices RLS + centro de notificaciones admin + badge de plan (2026-07-20)
+
+- **Toast + sonido de reserva/viaje nuevo**: Dispatch Board y portal web del
+  conductor (`/driver/trips`) avisan con un chime (Web Audio API, sin asset)
+  + toast (`sonner`) cuando aparece una reserva/viaje nuevo entre renders —
+  antes solo había polling silencioso. El auto-refresh del conductor dejó
+  de depender de tener viajes activos.
+- **3 fixes más de la auditoría de notificaciones**: `subscription-alerts`
+  ahora también emaila a la propia empresa (antes solo el super-admin se
+  enteraba); `reportDriverAction` (cliente reporta a un conductor) ahora
+  notifica por email al admin; `document-alerts` se fusionó dentro de
+  `compliance-alerts` (un solo cron, un solo email por conductor con todo
+  lo que vence, en vez de dos crons en dos horarios).
+- **4 índices RLS faltantes** en `trip_locations`, `trip_messages`,
+  `audit_logs` y `notifications` — las 4 filtraban por `company_id` en su
+  política sin índice propio o solo con índices simples. Migración 59.
+- **Iconos en Editar/Eliminar** (9 tablas CRUD del admin: tipos de vehículo,
+  zonas, reglas de precio, aeropuertos, servicios de portada, leads
+  Enterprise de super-admin) en vez de texto — más limpio visualmente.
+- **Badge de mantenimiento en Flota** rediseñado: pasó de un recorte ámbar
+  pegado al nombre del vehículo a una pill propia en su propia línea.
+- **Centro de notificaciones del panel admin (nuevo)**: concentra reporte
+  de conductor, mantenimiento/seguro de vehículo y alerta de compliance en
+  una campana con leído/no-leído (mismo patrón que la del super-admin).
+  Diseñado explícitamente para volumen — los avisos no se calculan al
+  vuelo en cada render (eso lo carga cada admin de cada empresa en cada
+  navegación), se insertan una vez por evento o los detecta el cron diario
+  con deduplicación de 14 días; el layout hace una sola query indexada por
+  `(company_id, created_at)`; el mismo cron purga avisos de más de 30 días.
+  Migración 60. Fuera de esta campana, a propósito: "reserva nueva" (ya
+  tiene su señal en tiempo real vía el toast+sonido de arriba).
+- **Badge de plan** (Free/Starter/Professional/Elite/Enterprise) en el
+  topbar admin, colores ascendentes por prestigio (Enterprise en negro+
+  dorado). De paso, el ícono de "Mensajes" dejó de compartir la campana
+  visual con "Notificaciones" (ahora es una burbuja de chat).
 
 ## ✅ i18n de /auth/* + signup wizard + auditoría completa de notificaciones/alertas (2026-07-19)
 
