@@ -306,7 +306,6 @@ export type Database = {
           is_active: boolean
           last_seen_at: string | null
           metadata: Json
-          stripe_customer_id: string | null
           created_at: string
           updated_at: string
         }
@@ -321,7 +320,6 @@ export type Database = {
           is_active?: boolean | undefined
           last_seen_at?: string | null | undefined
           metadata?: Json | undefined
-          stripe_customer_id?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -336,7 +334,6 @@ export type Database = {
           is_active?: boolean | undefined
           last_seen_at?: string | null | undefined
           metadata?: Json | undefined
-          stripe_customer_id?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }

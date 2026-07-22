@@ -1,14 +1,15 @@
 -- ── Fundaciones para la app nativa de pasajero (Sprint 0) ──────────────────
--- 1) stripe_customer_id: reservado para Sprint 3 (tarjeta guardada vía
---    Stripe Customer + SetupIntent). Se agrega ya para no tener que tocar
---    database.types.ts dos veces.
--- 2) customers_select_own_trip_locations: RLS nueva, barata y sin efecto
---    hasta que exista la pantalla de mapa en vivo (Sprint 2) — permite que
---    un pasajero autenticado (rol 'customer') lea directo por Supabase
---    Realtime la posición del conductor en SUS propias reservas, en vez de
---    depender de service-role como hoy hace el guest anónimo.
-
-ALTER TABLE public.user_profiles ADD COLUMN stripe_customer_id TEXT;
+-- customers_select_own_trip_locations: RLS nueva, barata y sin efecto hasta
+-- que exista la pantalla de mapa en vivo (Sprint 2) — permite que un
+-- pasajero autenticado (rol 'customer') lea directo por Supabase Realtime
+-- la posición del conductor en SUS propias reservas, en vez de depender de
+-- service-role como hoy hace el guest anónimo.
+--
+-- (Nota: esta migración originalmente agregaba también una columna
+-- stripe_customer_id en user_profiles, pensada para el pago de Sprint 3 —
+-- se quitó antes de aplicar porque el pago real de la plataforma es Whop
+-- Connect, no Stripe; ver docs/PHASE-2-MOBILE.md. El Sprint 3 definirá el
+-- campo correcto sobre el modelo de passenger_whop_members existente.)
 
 CREATE POLICY "customers_select_own_trip_locations" ON public.trip_locations
   FOR SELECT
