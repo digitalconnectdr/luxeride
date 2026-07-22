@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
+import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewForm } from './review-form'
 import { AutoRedirect } from './auto-redirect'
 
@@ -12,13 +13,17 @@ export const metadata: Metadata = {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export default async function ReviewPage({ params }: { params: { id: string } }) {
-  const dict = getDict(getLocale())
+  const locale = getLocale()
+  const dict = getDict(locale)
   const t = dict.review
 
   const card =
     'w-full max-w-md rounded-2xl bg-white/[0.03] border border-white/10 p-7 sm:p-8 shadow-2xl shadow-black/40'
   const wrap = (children: React.ReactNode, brand = '#c9a24b') => (
     <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-[#08080a] text-white antialiased" style={{ ['--brand' as string]: brand }}>
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSwitcher current={locale} variant="dark" />
+      </div>
       {children}
     </div>
   )

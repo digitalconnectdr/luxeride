@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
+import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { QuoteActions } from './quote-actions'
 
 export const metadata: Metadata = {
@@ -24,6 +25,9 @@ export default async function QuotePage({ params }: { params: { id: string } }) 
   const card = 'w-full max-w-md rounded-2xl bg-white/[0.03] border border-white/10 p-7 sm:p-8 shadow-2xl shadow-black/40'
   const wrap = (children: React.ReactNode, brand = '#c9a24b') => (
     <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-[#08080a] text-white antialiased" style={{ ['--brand' as string]: brand }}>
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSwitcher current={locale} variant="dark" />
+      </div>
       {children}
     </div>
   )

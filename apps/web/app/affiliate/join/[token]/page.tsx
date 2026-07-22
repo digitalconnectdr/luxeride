@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { getAffiliateInvitePreviewAction } from '@/app/actions/affiliates'
 import { JoinExternalAffiliateForm } from '@/components/affiliate/join-external-affiliate-form'
+import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { getAppUrl } from '@/lib/app-url'
 import { brand } from '@/lib/brand'
 
@@ -20,6 +21,9 @@ export default async function AffiliateJoinPage({ params }: { params: { token: s
 
   return (
     <div className="min-h-screen bg-sl-bg flex items-center justify-center p-4 py-8">
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSwitcher current={locale} variant="light" />
+      </div>
       <div className={`w-full ${preview?.valid ? 'max-w-2xl' : 'max-w-md'}`}>
         <div className="mb-6 text-center">
           <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface mb-2">{t.pageTitle}</h1>

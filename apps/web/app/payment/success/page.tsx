@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { getDict } from '@/lib/i18n/server'
+import { getLocale, getDict } from '@/lib/i18n/server'
+import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 
 export const metadata: Metadata = { title: 'Payment' }
 export const dynamic = 'force-dynamic'
@@ -9,11 +10,15 @@ export default function PaymentSuccessPage({
 }: {
   searchParams: { booking?: string }
 }) {
-  const t = getDict().payment
+  const locale = getLocale()
+  const t = getDict(locale).payment
   const bookingNumber = searchParams.booking ?? ''
 
   return (
     <div className="min-h-screen bg-[#faf9f6] flex items-center justify-center p-6">
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSwitcher current={locale} variant="light" />
+      </div>
       <div className="max-w-md w-full bg-white rounded-3xl border border-gray-200 shadow-sm p-10 text-center space-y-4">
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto text-3xl">
           ✓
