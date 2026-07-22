@@ -1,7 +1,41 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-07-20. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-07-21. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## ✅ Auditoría completa de RLS + fix de seguridad + selector de idioma en 5 páginas públicas (2026-07-21)
+
+- **Auditoría de RLS de las 60+ migraciones**: en general bien configurado
+  (59 tablas, 58 con RLS habilitado, 102 políticas, aislamiento consistente
+  por `company_id = auth_company_id()` en todo lo sensible, sin
+  `USING(true)` accidental ni acceso `anon` fuera de catálogos
+  intencionalmente públicos). 2 hallazgos críticos reales, ya corregidos
+  en migración 61:
+  - `live_tracking_usage_by_booking` era la única de las 59 tablas sin
+    `ENABLE ROW LEVEL SECURITY` (no explotado hoy — solo se lee vía
+    service-role — pero sin protección si se agrega una query client-side).
+  - `auth_company_id()`, `auth_role()`, `auth_has_role()` y
+    `audit_trigger()` — las funciones que usan literalmente todas las
+    políticas del sistema — eran `SECURITY DEFINER` sin `search_path`
+    fijo (patrón clásico de escalación de privilegios en Postgres,
+    marcado por el Security Advisor de Supabase). `handle_new_user()`
+    tenía el mismo defecto y ya se había corregido antes (migración 16);
+    nunca se aplicó retroactivamente a estas 4.
+  - Hallazgos medios sin acción automática (documentados, no son huecos):
+    8 tablas con RLS habilitado pero cero políticas (deny-all por diseño,
+    "solo service-role" documentado en el propio código); INSERT de
+    `bookings` no exige `customer_id = auth.uid()`, solo `company_id`;
+    `company_services_public_read` permite leer el catálogo de servicios
+    de todas las empresas sin conocer el slug (intencional para el
+    micrositio, riesgo bajo).
+- **Selector de idioma agregado a 5 páginas públicas** que ya usaban el
+  diccionario i18n (EN/ES/PT) para su contenido pero no tenían el
+  `LanguageSwitcher`: `/affiliate/join/[token]`, `/payment/success`,
+  `/payment/cancelled`, `/quote/[id]` y `/review/[id]`. Quedaban atrapadas
+  en el idioma que resolviera la cookie/Accept-Language sin forma de
+  cambiarlo. Verificado en navegador (dropdown abre, cambia a español
+  correctamente). `/terms` y `/privacy` ya lo tenían (vía
+  `LegalPageLayout`), no hacía falta tocarlas.
 
 ## ✅ Alertas de reserva/viaje nuevo + fixes de notificaciones + índices RLS + centro de notificaciones admin + badge de plan (2026-07-20)
 
@@ -32,8 +66,9 @@
   navegación), se insertan una vez por evento o los detecta el cron diario
   con deduplicación de 14 días; el layout hace una sola query indexada por
   `(company_id, created_at)`; el mismo cron purga avisos de más de 30 días.
-  Migración 60. Fuera de esta campana, a propósito: "reserva nueva" (ya
-  tiene su señal en tiempo real vía el toast+sonido de arriba).
+  Migración 60. Extendida el mismo día para incluir también "reserva nueva
+  sin asignar" (interna o pública) — mismo criterio que el toast: solo si
+  el intento de auto-asignación/auto-farm no la dejó asignada.
 - **Badge de plan** (Free/Starter/Professional/Elite/Enterprise) en el
   topbar admin, colores ascendentes por prestigio (Enterprise en negro+
   dorado). De paso, el ícono de "Mensajes" dejó de compartir la campana
