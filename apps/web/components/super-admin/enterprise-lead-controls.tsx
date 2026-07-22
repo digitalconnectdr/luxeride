@@ -2,6 +2,7 @@
 // ── Controles del panel de leads Enterprise (super-admin) ──────────────────────
 
 import { useState, useTransition } from 'react'
+import { Trash2 } from 'lucide-react'
 import { updateEnterpriseLeadStatusAction, deleteEnterpriseLeadAction } from '@/app/actions/enterprise-leads'
 import type { EnterpriseLeadStatus } from '@/lib/supabase/database.types'
 
@@ -53,9 +54,11 @@ export function LeadDeleteButton({ leadId }: { leadId: string }) {
             if (!result.success) setError(result.error ?? 'Error')
           })
         }}
-        className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        title="Eliminar"
+        aria-label="Eliminar"
+        className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        {isPending ? '…' : 'Eliminar'}
+        {isPending ? <span className="text-xs">…</span> : <Trash2 size={14} strokeWidth={2} />}
       </button>
       {error && <p className="text-[10px] text-red-500 mt-0.5">{error}</p>}
     </div>

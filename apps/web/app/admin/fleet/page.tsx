@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Plus, Info } from 'lucide-react'
+import { Plus, Info, AlertTriangle } from 'lucide-react'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { VehicleStatusSelect, DriverAssignSelect } from '@/components/admin/fleet-controls'
@@ -165,20 +165,21 @@ export default async function FleetPage({ searchParams }: PageProps) {
                             <div className="h-11 w-16 rounded-lg bg-sl-bg border border-sl-outline-variant shrink-0" />
                           )}
                           <div>
-                            <p className="font-semibold text-sl-on-surface flex items-center gap-2">
+                            <p className="font-semibold text-sl-on-surface">
                               {v.year} {v.make} {v.model}
-                              {maintenanceAlert(v.next_maintenance_at, v.insurance_expires_at) && (
-                                <span
-                                  title={t.maintenanceDue}
-                                  className="text-[10px] font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5"
-                                >
-                                  ⚠ {t.maintenanceDue}
-                                </span>
-                              )}
                             </p>
                             <p className="text-xs text-sl-on-surface-muted mt-0.5">
                               {v.plate_number}{v.color ? ` · ${v.color}` : ''}
                             </p>
+                            {maintenanceAlert(v.next_maintenance_at, v.insurance_expires_at) && (
+                              <span
+                                title={t.maintenanceDue}
+                                className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5"
+                              >
+                                <AlertTriangle size={11} strokeWidth={2.25} />
+                                {t.maintenanceDue}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </td>

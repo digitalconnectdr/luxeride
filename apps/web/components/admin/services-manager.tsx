@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useTransition, type FormEvent } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import {
   createServiceAction,
   updateServiceAction,
@@ -173,12 +174,21 @@ function ServiceRow({ service, t, actions }: { service: Service; t: SettingsDict
       >
         {service.is_active ? '●' : '○'}
       </button>
-      <button onClick={() => setEditing(true)} className="text-xs font-medium text-bronze hover:text-bronze/80">{actions.edit}</button>
+      <button
+        onClick={() => setEditing(true)}
+        title={actions.edit}
+        aria-label={actions.edit}
+        className="p-1.5 rounded-lg text-bronze hover:bg-bronze/10 transition-colors"
+      >
+        <Pencil size={14} strokeWidth={2} />
+      </button>
       <button
         onClick={() => { if (confirm(actions.confirmDelete)) startToggle(async () => { await deleteServiceAction(service.id) }) }}
-        className="text-xs font-medium text-red-500 hover:text-red-700"
+        title={actions.delete}
+        aria-label={actions.delete}
+        className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
       >
-        {actions.delete}
+        <Trash2 size={14} strokeWidth={2} />
       </button>
     </li>
   )

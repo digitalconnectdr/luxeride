@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, type FormEvent } from 'react'
+import { Pencil } from 'lucide-react'
 import { updatePricingRuleAction } from '@/app/actions/pricing'
 import { PricingRuleActiveToggle, PricingRuleDeleteButton } from './pricing-controls'
 import { ZoneSelectFields } from './zone-select-fields'
@@ -201,8 +202,13 @@ export function PricingRuleRow({
       </td>
       <td className="px-5 py-3.5 text-right">
         <div className="flex items-center justify-end gap-3">
-          <button onClick={() => setEditing(true)} className="text-xs font-medium text-bronze hover:text-bronze/80 transition-colors">
-            {actions.edit}
+          <button
+            onClick={() => setEditing(true)}
+            title={actions.edit}
+            aria-label={actions.edit}
+            className="p-1.5 rounded-lg text-bronze hover:bg-bronze/10 transition-colors"
+          >
+            <Pencil size={14} strokeWidth={2} />
           </button>
           <PricingRuleDeleteButton ruleId={rule.id} />
         </div>

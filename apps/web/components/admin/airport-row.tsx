@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, type FormEvent } from 'react'
+import { Pencil } from 'lucide-react'
 import { updateAirportFeeAction } from '@/app/actions/services'
 import { AirportActiveToggle, AirportRemoveButton } from './airport-controls'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
@@ -119,8 +120,13 @@ export function AirportRow({
       {isAdmin && (
         <td className="px-5 py-3.5 text-right">
           <div className="flex items-center justify-end gap-3">
-            <button onClick={() => setEditing(true)} className="text-xs font-medium text-bronze hover:text-bronze/80 transition-colors">
-              {actions.edit}
+            <button
+              onClick={() => setEditing(true)}
+              title={actions.edit}
+              aria-label={actions.edit}
+              className="p-1.5 rounded-lg text-bronze hover:bg-bronze/10 transition-colors"
+            >
+              <Pencil size={14} strokeWidth={2} />
             </button>
             <AirportRemoveButton id={ca.id} />
           </div>

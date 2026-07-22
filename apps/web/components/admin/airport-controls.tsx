@@ -1,6 +1,7 @@
 'use client'
 
 import { useTransition } from 'react'
+import { Trash2 } from 'lucide-react'
 import {
   toggleAirportActiveAction,
   removeCompanyAirportAction,
@@ -48,9 +49,11 @@ export function AirportRemoveButton({ id }: { id: string }) {
           await removeCompanyAirportAction(id)
         })
       }}
-      className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      title="Quitar"
+      aria-label="Quitar"
+      className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
     >
-      {isPending ? '…' : 'Remove'}
+      {isPending ? <span className="text-xs">…</span> : <Trash2 size={14} strokeWidth={2} />}
     </button>
   )
 }

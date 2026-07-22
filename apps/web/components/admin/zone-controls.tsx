@@ -1,6 +1,7 @@
 'use client'
 
 import { useTransition } from 'react'
+import { Trash2 } from 'lucide-react'
 import { toggleZoneActiveAction, deleteZoneAction } from '@/app/actions/services'
 
 export function ZoneActiveToggle({
@@ -45,9 +46,11 @@ export function ZoneDeleteButton({ zoneId }: { zoneId: string }) {
           await deleteZoneAction(zoneId)
         })
       }}
-      className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      title="Eliminar"
+      aria-label="Eliminar"
+      className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
     >
-      {isPending ? '…' : 'Delete'}
+      {isPending ? <span className="text-xs">…</span> : <Trash2 size={14} strokeWidth={2} />}
     </button>
   )
 }

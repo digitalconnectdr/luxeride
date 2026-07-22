@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useFormState } from 'react-dom'
+import { Pencil, Trash2 } from 'lucide-react'
 import {
   updateVehicleTypeAction,
   deleteVehicleTypeAction,
@@ -29,9 +30,6 @@ interface VehicleType {
 const inputCls =
   'text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface ' +
   'placeholder:text-sl-on-surface-muted/50 focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze'
-
-const btnLink =
-  'text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
 
 export function VehicleTypeRow({
   vt,
@@ -155,11 +153,22 @@ export function VehicleTypeRow({
       <td className="px-5 py-4">
         <div className="flex items-center gap-3">
           <VehicleTypeActiveToggle typeId={vt.id} isActive={vt.is_active} labels={fleet.activeToggle} />
-          <button onClick={() => setEditing(true)} className={`${btnLink} text-bronze hover:text-bronze/80`}>
-            {actions.edit}
+          <button
+            onClick={() => setEditing(true)}
+            title={actions.edit}
+            aria-label={actions.edit}
+            className="p-1.5 rounded-lg text-bronze hover:bg-bronze/10 transition-colors"
+          >
+            <Pencil size={14} strokeWidth={2} />
           </button>
-          <button onClick={handleDelete} disabled={isDeleting} className={`${btnLink} text-red-500 hover:text-red-700`}>
-            {isDeleting ? actions.deleting : actions.delete}
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            title={isDeleting ? actions.deleting : actions.delete}
+            aria-label={actions.delete}
+            className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Trash2 size={14} strokeWidth={2} />
           </button>
         </div>
         {delErr && <p className="mt-1 text-xs text-red-500">{delErr}</p>}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, type FormEvent } from 'react'
+import { Pencil } from 'lucide-react'
 import { updateZoneAction } from '@/app/actions/services'
 import { ZoneActiveToggle, ZoneDeleteButton } from './zone-controls'
 import { ZoneGeoFields } from './zone-geo-fields'
@@ -170,8 +171,13 @@ export function ZoneRow({
             <button onClick={() => setShowMap((v) => !v)} className="text-xs font-medium text-bronze hover:text-bronze/80 transition-colors">
               {showMap ? t.hideZoneAction : t.viewZoneAction}
             </button>
-            <button onClick={() => setEditing(true)} className="text-xs font-medium text-bronze hover:text-bronze/80 transition-colors">
-              {actions.edit}
+            <button
+              onClick={() => setEditing(true)}
+              title={actions.edit}
+              aria-label={actions.edit}
+              className="p-1.5 rounded-lg text-bronze hover:bg-bronze/10 transition-colors"
+            >
+              <Pencil size={14} strokeWidth={2} />
             </button>
             <ZoneDeleteButton zoneId={zone.id} />
           </div>
