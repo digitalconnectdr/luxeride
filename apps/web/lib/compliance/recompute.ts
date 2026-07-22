@@ -83,7 +83,7 @@ export async function recomputeVehicleCompliance(admin: Admin, vehicleId: string
   await recomputeCompanyCompliance(admin, vehicle.company_id)
 }
 
-export async function recomputeCompanyCompliance(admin: Admin, companyId: string): Promise<void> {
+export async function recomputeCompanyCompliance(admin: Admin, companyId: string): Promise<{ alert: boolean } | null> {
   const [{ data: company }, { data: drivers }, { data: vehicles }] = await Promise.all([
     admin
       .from('companies')
@@ -93,7 +93,7 @@ export async function recomputeCompanyCompliance(admin: Admin, companyId: string
     admin.from('drivers').select('operational_block').eq('company_id', companyId),
     admin.from('vehicles').select('operational_block').eq('company_id', companyId),
   ])
-  if (!company) return
+  if (!company) return null
 
   const fleetTotal = (drivers?.length ?? 0) + (vehicles?.length ?? 0)
   const fleetBlocked =
@@ -129,4 +129,6 @@ export async function recomputeCompanyCompliance(admin: Admin, companyId: string
       compliance_alert: result.alert,
     })
     .eq('id', companyId)
+
+  return { alert: result.alert }
 }

@@ -5,20 +5,36 @@
 // páginas reales existentes, no inventa contadores ni datos.
 
 import Link from 'next/link'
-import { Menu, Bell, ShieldCheck, HelpCircle } from 'lucide-react'
+import { Menu, MessageSquare, ShieldCheck, HelpCircle } from 'lucide-react'
 import { useSidebarState } from '@/components/admin/sidebar-context'
 import { FeatureRequestButton, type FeatureRequestLabels } from '@/components/admin/feature-request-modal'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
+import { NotificationsBell, type AdminNotificationItem, type NotificationsBellLabels } from '@/components/admin/notifications-bell'
+import { PLAN_LABEL, PLAN_BADGE_STYLE } from '@/lib/billing/plan-badge'
 import type { Locale } from '@/lib/i18n/config'
+import type { CompanyPlan } from '@/lib/supabase/database.types'
 
 interface Props {
   userName: string
   userInitials: string
   featureRequestLabels: FeatureRequestLabels
   locale: Locale
+  companyPlan?: CompanyPlan
+  notifications: AdminNotificationItem[]
+  notificationPendingCount: number
+  notificationLabels: NotificationsBellLabels
 }
 
-export function AdminTopBar({ userName, userInitials, featureRequestLabels, locale }: Props) {
+export function AdminTopBar({
+  userName,
+  userInitials,
+  featureRequestLabels,
+  locale,
+  companyPlan,
+  notifications,
+  notificationPendingCount,
+  notificationLabels,
+}: Props) {
   const { toggleCollapsed } = useSidebarState()
 
   return (
@@ -33,13 +49,19 @@ export function AdminTopBar({ userName, userInitials, featureRequestLabels, loca
         <Menu size={18} />
       </button>
 
+      {companyPlan && (
+        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border mr-1 ${PLAN_BADGE_STYLE[companyPlan]}`}>
+          {PLAN_LABEL[companyPlan]}
+        </span>
+      )}
       <Link
         href="/admin/messages"
         title="Mensajes"
         className="p-2 rounded-lg text-sl-on-surface-muted hover:text-bronze hover:bg-sl-bg transition-colors"
       >
-        <Bell size={18} />
+        <MessageSquare size={18} />
       </Link>
+      <NotificationsBell items={notifications} pendingCount={notificationPendingCount} labels={notificationLabels} />
       <Link
         href="/admin/compliance"
         title="Cumplimiento"

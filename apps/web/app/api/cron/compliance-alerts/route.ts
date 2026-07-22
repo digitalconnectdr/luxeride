@@ -16,11 +16,17 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { notify, sendOperatorEmail } from '@/lib/notifications'
+import { pushAdminNotification, cleanupOldAdminNotifications } from '@/lib/notifications/admin-feed'
 import {
   recomputeDriverCompliance,
   recomputeVehicleCompliance,
   recomputeCompanyCompliance,
 } from '@/lib/compliance/recompute'
+
+// Mismo umbral que el badge visual de /admin/fleet (maintenanceAlert()) —
+// el aviso en la campana debe reflejar exactamente lo mismo que ya se ve ahí.
+const MAINTENANCE_WINDOW_DAYS = 14
+const DEDUP_DAYS = 14
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -57,7 +63,19 @@ export async function GET(request: Request) {
 
   const { data: companyIds } = await admin.from('companies').select('id').limit(BATCH_LIMIT)
   for (const c of companyIds ?? []) {
-    await recomputeCompanyCompliance(admin, c.id)
+    const result = await recomputeCompanyCompliance(admin, c.id)
+    if (result?.alert) {
+      await pushAdminNotification({
+        companyId: c.id,
+        type: 'compliance_alert',
+        title: 'Alerta de cumplimiento en tu empresa',
+        detail: 'Revisa el Compliance Center — hay datos o vencimientos que requieren atención.',
+        href: '/admin/compliance',
+        sourceTable: 'companies',
+        sourceId: c.id,
+        dedupDays: DEDUP_DAYS,
+      })
+    }
   }
 
   let emailsSent = 0
@@ -158,6 +176,34 @@ export async function GET(request: Request) {
     if (result.sent) emailsSent += 1
   }
 
+  // ── 3b. Mismo aviso que el badge de /admin/fleet, ahora también en la
+  // campana del panel admin (14 días, next_maintenance_at o insurance_expires_at) ──
+  const maintenanceLimit = new Date(Date.now() + MAINTENANCE_WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10)
+  const { data: maintenanceVehicles } = await admin
+    .from('vehicles')
+    .select('id, company_id, make, model, plate_number, next_maintenance_at, insurance_expires_at')
+    .or(
+      `and(next_maintenance_at.gte.${today},next_maintenance_at.lte.${maintenanceLimit}),and(insurance_expires_at.gte.${today},insurance_expires_at.lte.${maintenanceLimit})`,
+    )
+    .limit(BATCH_LIMIT)
+
+  for (const v of maintenanceVehicles ?? []) {
+    const isDue =
+      (!!v.next_maintenance_at && v.next_maintenance_at >= today && v.next_maintenance_at <= maintenanceLimit) ||
+      (!!v.insurance_expires_at && v.insurance_expires_at >= today && v.insurance_expires_at <= maintenanceLimit)
+    if (!isDue) continue
+    await pushAdminNotification({
+      companyId: v.company_id,
+      type: 'vehicle_maintenance',
+      title: `Mantenimiento/seguro por vencer: ${v.make} ${v.model}`,
+      detail: `Placa ${v.plate_number}`,
+      href: '/admin/fleet',
+      sourceTable: 'vehicles',
+      sourceId: v.id,
+      dedupDays: DEDUP_DAYS,
+    })
+  }
+
   // ── 4. Licencia operativa / seguro comercial de la empresa por vencer ─────
   const { data: expiringCompanies } = await admin
     .from('companies')
@@ -183,6 +229,10 @@ export async function GET(request: Request) {
     )
     if (result.sent) emailsSent += 1
   }
+
+  // Purga avisos de la campana admin de más de 30 días (la campana solo
+  // muestra 7 — evita que la tabla crezca sin límite con muchas empresas).
+  await cleanupOldAdminNotifications()
 
   return NextResponse.json({
     ok: true,

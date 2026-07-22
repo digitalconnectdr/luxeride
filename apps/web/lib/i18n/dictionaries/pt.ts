@@ -1287,6 +1287,12 @@ export const pt: Dictionary = {
       stillNeedHelp: 'Ainda precisa de ajuda? Escreva para',
       contactEmail: 'luxeride@digitalconnectdr.com',
     },
+    notificationsBell: {
+      title: 'Notificações',
+      historyLabel: 'Últimos 7 dias',
+      empty: 'Sem notificações nos últimos 7 dias.',
+      newLabel: 'nova(s)',
+    },
     featureRequest: {
       triggerLabel: 'Recomendar uma função ou reportar um problema',
       modalTitle: 'Tem uma ideia ou encontrou um problema?',

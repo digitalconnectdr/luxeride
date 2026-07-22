@@ -1330,6 +1330,61 @@ export type Database = {
         Relationships: []
       }
 
+      // ── admin_notifications (centro de notificaciones del panel admin) ───────
+      admin_notifications: {
+        Row: {
+          id: string
+          company_id: string
+          type: string
+          title: string
+          detail: string | null
+          href: string | null
+          source_table: string | null
+          source_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          type: string
+          title: string
+          detail?: string | null | undefined
+          href?: string | null | undefined
+          source_table?: string | null | undefined
+          source_id?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          type?: string | undefined
+          title?: string | undefined
+          detail?: string | null | undefined
+          href?: string | null | undefined
+          source_table?: string | null | undefined
+          source_id?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── admin_notification_reads (última vez que se abrió la campana admin) ──
+      admin_notification_reads: {
+        Row: {
+          user_id: string
+          last_seen_at: string
+        }
+        Insert: {
+          user_id: string
+          last_seen_at?: string | undefined
+        }
+        Update: {
+          user_id?: string | undefined
+          last_seen_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── live_tracking_usage_by_booking (consumo de mapa por viaje) ────────────
       live_tracking_usage_by_booking: {
         Row: {

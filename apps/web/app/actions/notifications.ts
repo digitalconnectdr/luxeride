@@ -15,3 +15,13 @@ export async function markSuperAdminNotificationsSeenAction(): Promise<void> {
     .from('super_admin_notification_reads')
     .upsert({ user_id: user.id, last_seen_at: new Date().toISOString() })
 }
+
+// ── Estado de lectura de la campana del panel admin (misma idea, scoped a
+// admin_notifications en vez de las 3 fuentes del super-admin) ────────────────
+export async function markAdminNotificationsSeenAction(): Promise<void> {
+  const user = await requireRole('company_owner', 'company_admin', 'dispatcher', 'accounting')
+  const admin = createAdminClient()
+  await admin
+    .from('admin_notification_reads')
+    .upsert({ user_id: user.id, last_seen_at: new Date().toISOString() })
+}

@@ -15,6 +15,7 @@ import { getStripe } from '@/lib/stripe/server'
 import { createWhopCheckout } from '@/lib/whop/checkout'
 import { getAppUrl } from '@/lib/app-url'
 import { sendOperatorEmail } from '@/lib/notifications'
+import { pushAdminNotification } from '@/lib/notifications/admin-feed'
 import { waitUntil } from '@vercel/functions'
 import type { BookingStatus, BookingType, Json } from '@/lib/supabase/database.types'
 
@@ -649,6 +650,15 @@ export async function reportDriverAction(
       `Reporte de conductor | Reserva ${booking.booking_number}`,
       `Un pasajero reportó a ${driverName} en la reserva ${booking.booking_number}.\n\nMotivo: ${CATEGORY_LABELS[cat]}\nDetalle: ${cleanReason.slice(0, 2000)}\n\nVer todos los reportes en: ${getAppUrl()}/admin/driver-reports`,
     ),
+  )
+  waitUntil(
+    pushAdminNotification({
+      companyId: booking.company_id,
+      type: 'driver_report',
+      title: `Reporte de conductor: ${driverName}`,
+      detail: `Reserva ${booking.booking_number} · ${CATEGORY_LABELS[cat]}`,
+      href: '/admin/driver-reports',
+    }),
   )
 
   return { success: true }

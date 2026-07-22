@@ -1286,6 +1286,12 @@ export const en = {
       stillNeedHelp: 'Still need help? Write to us at',
       contactEmail: 'luxeride@digitalconnectdr.com',
     },
+    notificationsBell: {
+      title: 'Notifications',
+      historyLabel: 'Last 7 days',
+      empty: 'No notifications in the last 7 days.',
+      newLabel: 'new',
+    },
     featureRequest: {
       triggerLabel: 'Suggest a feature or report a problem',
       modalTitle: 'Have an idea or found a problem?',

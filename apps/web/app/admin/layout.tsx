@@ -9,9 +9,14 @@ import { SidebarProvider } from '@/components/admin/sidebar-context'
 import { SubscriptionExpiryPopup } from '@/components/admin/subscription-expiry-popup'
 import { getTierForCount } from '@/lib/referrals/tiers'
 import { getMarketplaceItems, type MarketplaceItemKey } from '@/lib/billing/catalog'
+import type { AdminNotificationItem } from '@/components/admin/notifications-bell'
 import type { CompanyPlan } from '@/lib/supabase/database.types'
 
 const SUBSCRIPTION_WARNING_DAYS = 5
+
+// Ventana de historial de la campana admin — igual criterio que la del
+// super-admin: acota la lista, el punto rojo se basa en last_seen_at.
+const NOTIFICATION_HISTORY_DAYS = 7
 
 // PWA branded del back-office: el dueño/staff puede "instalar" su propio
 // panel admin con el logo y color de SU empresa (mismo patrón que el
@@ -117,6 +122,41 @@ export default async function AdminLayout({
     if (tier) referralTier = { key: tier.key, count: count ?? 0 }
   }
 
+  // ── Campana de notificaciones — UNA sola query indexada por
+  // (company_id, created_at), sin importar cuántas empresas/avisos totales
+  // acumule el sistema (ver migración 60 / lib/notifications/admin-feed.ts). ──
+  let notificationItems: AdminNotificationItem[] = []
+  let notificationPendingCount = 0
+  if (user.company_id) {
+    const admin = createAdminClient()
+    const historySince = new Date(Date.now() - NOTIFICATION_HISTORY_DAYS * 86_400_000).toISOString()
+    const [{ data: notifRows }, { data: readRow }] = await Promise.all([
+      admin
+        .from('admin_notifications')
+        .select('id, type, title, detail, href, created_at')
+        .eq('company_id', user.company_id)
+        .gte('created_at', historySince)
+        .order('created_at', { ascending: false })
+        .limit(30),
+      admin
+        .from('admin_notification_reads')
+        .select('last_seen_at')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ])
+    const lastSeenAt = readRow?.last_seen_at ? new Date(readRow.last_seen_at).getTime() : 0
+    notificationItems = (notifRows ?? []).map((n) => ({
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      detail: n.detail,
+      href: n.href,
+      timestamp: n.created_at,
+      isNew: new Date(n.created_at).getTime() > lastSeenAt,
+    }))
+    notificationPendingCount = notificationItems.filter((n) => n.isNew).length
+  }
+
   const locale = getLocale()
   const dict = getDict(locale)
   const nav = dict.adminNav
@@ -160,7 +200,16 @@ export default async function AdminLayout({
 
         {/* ── Main — barra superior + contenido, envuelto en MapsProvider ── */}
         <div className="flex-1 flex flex-col min-w-0">
-          <AdminTopBar userName={userName} userInitials={userInitials} featureRequestLabels={dict.admin.featureRequest} locale={locale} />
+          <AdminTopBar
+            userName={userName}
+            userInitials={userInitials}
+            featureRequestLabels={dict.admin.featureRequest}
+            locale={locale}
+            companyPlan={companyPlan}
+            notifications={notificationItems}
+            notificationPendingCount={notificationPendingCount}
+            notificationLabels={dict.admin.notificationsBell}
+          />
           <main className="flex-1 overflow-auto">
             <MapsProvider>{children}</MapsProvider>
           </main>
