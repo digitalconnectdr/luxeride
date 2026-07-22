@@ -10,7 +10,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { Bell, AlertTriangle, Wrench, ShieldAlert } from 'lucide-react'
+import { Bell, AlertTriangle, Wrench, ShieldAlert, CalendarPlus } from 'lucide-react'
 import { markAdminNotificationsSeenAction } from '@/app/actions/notifications'
 
 export interface AdminNotificationItem {
@@ -34,6 +34,7 @@ const TYPE_ICON: Record<string, typeof AlertTriangle> = {
   driver_report: AlertTriangle,
   vehicle_maintenance: Wrench,
   compliance_alert: ShieldAlert,
+  new_booking: CalendarPlus,
 }
 
 function fmtDate(iso: string): string {

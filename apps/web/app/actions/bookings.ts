@@ -17,6 +17,7 @@ import {
 } from '@/lib/policy/engine'
 import { waitUntil } from '@vercel/functions'
 import { notifyBookingEventInBackground, notify } from '@/lib/notifications'
+import { pushAdminNotification } from '@/lib/notifications/admin-feed'
 import { notifyDriverPushInBackground } from '@/lib/notifications/push'
 import { trackBookingFlight } from '@/lib/flights/refresh'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
@@ -429,7 +430,16 @@ export async function createBookingAction(
         currency: quote.currency ?? 'USD',
       }
       const result = await tryAutoAssignDriver(admin, autoAssignBooking)
-      if (!result.assigned) await tryAutoFarmToAffiliates(admin, autoAssignBooking)
+      if (!result.assigned) {
+        await tryAutoFarmToAffiliates(admin, autoAssignBooking)
+        await pushAdminNotification({
+          companyId: user.company_id,
+          type: 'new_booking',
+          title: `Reserva nueva sin asignar: ${booking.booking_number}`,
+          detail: `${passengerName} · ${pickupAddr}`,
+          href: '/dispatcher/dashboard',
+        })
+      }
     } catch (e) {
       console.error('[createBookingAction] auto-assign', e)
     }
@@ -1219,7 +1229,16 @@ export async function createPublicBookingAction(data: {
       currency: quote.currency ?? 'USD',
     }
     const result = await tryAutoAssignDriver(admin, autoAssignBooking)
-    if (!result.assigned) await tryAutoFarmToAffiliates(admin, autoAssignBooking)
+    if (!result.assigned) {
+      await tryAutoFarmToAffiliates(admin, autoAssignBooking)
+      await pushAdminNotification({
+        companyId: company.id,
+        type: 'new_booking',
+        title: `Reserva nueva sin asignar: ${booking.booking_number}`,
+        detail: `${name} · ${data.pickupAddress}`,
+        href: '/dispatcher/dashboard',
+      })
+    }
   } catch (e) {
     console.error('[createPublicBookingAction] auto-assign', e)
   }
