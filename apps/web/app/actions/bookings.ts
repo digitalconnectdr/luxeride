@@ -20,6 +20,7 @@ import { notifyBookingEventInBackground, notify } from '@/lib/notifications'
 import { pushAdminNotification } from '@/lib/notifications/admin-feed'
 import { notifyDriverPushInBackground } from '@/lib/notifications/push'
 import { trackBookingFlight } from '@/lib/flights/refresh'
+import { geocodeBookingLocations } from '@/lib/maps/reverse-geocode'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
 import { checkMonthlyBookingLimit } from '@/lib/plans/limits'
 import { getAppUrl } from '@/lib/app-url'
@@ -354,6 +355,7 @@ export async function createBookingAction(
       company_id:       user.company_id,
       status:           asQuote ? 'quote' : 'pending',
       type:             bookingType,
+      booking_source:   'staff',
       vehicle_type_id:  quote.vehicle_type_id,
       corporate_account_id: corporateAccountId,
       passenger_count:  passengerCount,
@@ -449,6 +451,10 @@ export async function createBookingAction(
   if (flightNumber && ['airport_pickup', 'airport_dropoff'].includes(bookingType)) {
     waitUntil(trackBookingFlight(user.company_id, booking.id, flightNumber))
   }
+
+  // Reporte de rutas frecuentes (add-on AI Growth Assistant) — ciudad/país
+  // de origen y destino en background, nunca bloquea la respuesta.
+  waitUntil(geocodeBookingLocations(booking.id, pickupLat, pickupLng, dropoffLat, dropoffLng))
 
   // F1.14 — confirmación al pasajero (email + SMS). Si es cotización aún NO se
   // confirma, así que no se envía la confirmación (se enviará al convertirla).
@@ -1019,6 +1025,10 @@ export async function createPublicBookingAction(data: {
   // El guest checkout público (web) nunca manda esto — queda NULL igual que
   // siempre.
   customerId?: string | null
+  // Reporte de rutas frecuentes (Sprint 2) — qué canal creó la reserva. El
+  // wizard público de la web nunca lo manda (default 'web' a nivel de BD);
+  // la ruta /api/mobile/passenger/book de la app SÍ lo manda explícito.
+  source?: 'web' | 'mobile_app'
 }): Promise<{ success: boolean; error?: string; data?: BookingResult }> {
   // F1.17 — rate limit por IP
   if (!(await checkRateLimit('public_booking', 5))) {
@@ -1161,6 +1171,7 @@ export async function createPublicBookingAction(data: {
       company_id:       company.id,
       status:           'pending',
       type:             data.bookingType,
+      booking_source:   data.source ?? 'web',
       vehicle_type_id:  quote.vehicle_type_id,
       partner_id:       partnerId,
       customer_id:      data.customerId ?? null,
@@ -1255,6 +1266,11 @@ export async function createPublicBookingAction(data: {
   if (publicFlightNumber && ['airport_pickup', 'airport_dropoff'].includes(data.bookingType)) {
     waitUntil(trackBookingFlight(company.id, booking.id, publicFlightNumber))
   }
+
+  // Reporte de rutas frecuentes (add-on AI Growth Assistant) — cubre tanto
+  // el guest checkout de la web como la app de pasajero (que reusa esta
+  // misma función vía /api/mobile/passenger/book).
+  waitUntil(geocodeBookingLocations(booking.id, data.pickupLat, data.pickupLng, data.dropoffLat, data.dropoffLng))
 
   // F1.14 — confirmación al pasajero (email + SMS)
   notifyBookingEventInBackground('booking_confirmation', toNotifyData({

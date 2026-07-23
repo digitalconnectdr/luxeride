@@ -9,7 +9,7 @@ import {
   tierFromAiGrowthAddonKey,
 } from '@/lib/billing/ai-growth-addon'
 import { AddonUpsellCard } from '@/components/admin/addon-upsell-card'
-import { ContentGenerator } from '@/components/admin/growth-assistant/content-generator'
+import { GrowthAssistantTabs } from '@/components/admin/growth-assistant/growth-assistant-tabs'
 
 function firstDayOfMonthIso(): string {
   const d = new Date()
@@ -82,36 +82,18 @@ export default async function GrowthAssistantPage() {
         <p className="text-sm text-sl-on-surface-muted">{t.subtitle}</p>
       </div>
 
-      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6 max-w-lg space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-sl-on-surface-muted">{t.activeTier}</p>
-          <span className="text-sm font-semibold text-sl-on-surface capitalize">
-            {tier === 'basic' ? t.basicTitle : t.plusTitle} — ${AI_GROWTH_TIER_PRICE[tier]}/mes
-          </span>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <p className="text-xs text-sl-on-surface-muted">{t.usageTitle}</p>
-            <p className="text-xs text-sl-on-surface">
-              {t.generationsUsed.replace('{used}', String(used)).replace('{quota}', String(quota))}
-            </p>
-          </div>
-          <div className="h-2 rounded-full bg-sl-outline-variant overflow-hidden">
-            <div className="h-full bg-bronze" style={{ width: `${pct}%` }} />
-          </div>
-        </div>
-
-        {over > 0 && (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            {t.overageNote.replace('{over}', String(over)).replace('{price}', String(AI_GROWTH_OVERAGE_PRICE_PER_50))}
-          </p>
-        )}
-
-        <p className="text-xs text-sl-on-surface-muted">{t.followupNote}</p>
-      </div>
-
-      <ContentGenerator t={t} />
+      <GrowthAssistantTabs
+        t={t}
+        usage={{
+          tierLabel: tier === 'basic' ? t.basicTitle : t.plusTitle,
+          price: AI_GROWTH_TIER_PRICE[tier],
+          used,
+          quota,
+          over,
+          overagePrice: AI_GROWTH_OVERAGE_PRICE_PER_50,
+          pct,
+        }}
+      />
     </div>
   )
 }

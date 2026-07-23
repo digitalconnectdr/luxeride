@@ -59,6 +59,7 @@ export type BookingType =
   | 'airport_dropoff'
   | 'point_to_point'
 export type PricingModel = 'flat_rate' | 'per_mile' | 'per_km' | 'hourly' | 'zone_based'
+export type BookingSource = 'web' | 'mobile_app' | 'staff'
 export type PaymentStatus =
   | 'pending'
   | 'processing'
@@ -1724,7 +1725,12 @@ export type Database = {
           passenger_phone: string | null
           passenger_email: string | null
           pickup_location: Json
+          pickup_city: string | null
+          pickup_country: string | null
           dropoff_location: Json
+          dropoff_city: string | null
+          dropoff_country: string | null
+          booking_source: BookingSource
           waypoints: Json[] | null
           scheduled_at: string
           flight_number: string | null
@@ -1789,7 +1795,12 @@ export type Database = {
           passenger_phone?: string | null | undefined
           passenger_email?: string | null | undefined
           pickup_location: Json
+          pickup_city?: string | null | undefined
+          pickup_country?: string | null | undefined
           dropoff_location: Json
+          dropoff_city?: string | null | undefined
+          dropoff_country?: string | null | undefined
+          booking_source?: BookingSource | undefined
           waypoints?: Json[] | null | undefined
           scheduled_at: string
           flight_number?: string | null | undefined
@@ -1854,7 +1865,12 @@ export type Database = {
           passenger_phone?: string | null | undefined
           passenger_email?: string | null | undefined
           pickup_location?: Json | undefined
+          pickup_city?: string | null | undefined
+          pickup_country?: string | null | undefined
           dropoff_location?: Json | undefined
+          dropoff_city?: string | null | undefined
+          dropoff_country?: string | null | undefined
+          booking_source?: BookingSource | undefined
           waypoints?: Json[] | null | undefined
           scheduled_at?: string | undefined
           flight_number?: string | null | undefined

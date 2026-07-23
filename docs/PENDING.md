@@ -3,6 +3,61 @@
 > Actualizado: 2026-07-22. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Reporte de rutas frecuentes — insight geográfico para Ads (add-on AI Growth Assistant) (2026-07-22)
+
+El usuario preguntó si se puede capturar país/ciudad de origen y destino de
+cada reserva para identificar zonas de alta demanda de cara a Google Ads/Meta.
+Se dividió en dos partes: (1) reporte/insight con mapa interactivo (construido
+en esta sesión) y (2) creación/gestión automática de campañas de Ads con
+presupuesto — **explícitamente pendiente de revisión, NO construida**, el
+usuario quiere revisar más detalles antes de decidir.
+
+- **Migración 63** (`pickup_city`/`pickup_country`/`dropoff_city`/`dropoff_country`
+  + `booking_source` en `bookings`): `booking_source` se agregó a pedido del
+  usuario ("también sería bueno capturar desde dónde el cliente reserva: web
+  o app Android, para saber dónde más se usa el sistema") — enum
+  `web`/`mobile_app`/`staff`, default `'web'` a nivel de columna para no
+  romper ningún call site existente.
+- **Reverse geocoding nuevo** (`apps/web/lib/maps/reverse-geocode.ts`) — la
+  key de servidor ya tenía Geocoding API habilitada (confirmado al configurar
+  el mapa de la app móvil el mismo día), no hizo falta nada nuevo en Google
+  Cloud. Se dispara en background (`waitUntil`, mismo patrón que el flight
+  tracking) en `createPublicBookingAction` (cubre guest web Y la app de
+  pasajero) y `createBookingAction` (staff/dispatcher) — nunca bloquea la
+  creación de la reserva.
+- **Cron de backfill** (`/api/cron/geocode-backfill`, diario, 100 reservas
+  históricas por corrida) — usa `''` (no `NULL`) como marca de "ya se
+  intentó, sin dato" para que una reserva con coordenadas raras no bloquee
+  la cola para siempre.
+- **`lib/route-insights/engine.ts`** — agregación pura y testeada (7 tests):
+  corredores origen→destino (top 20 por volumen), top ciudades de origen/
+  destino, puntos para heatmap, y desglose por canal (web/app/staff).
+- **UI**: `/admin/growth-assistant` ganó su primer selector de pestañas
+  ("Generador de contenido" | "Rutas frecuentes"). El mapa nuevo
+  (`route-insights-map.tsx`) usa `HeatmapLayer` de Google Maps (librería
+  `visualization`, agregada a `maps-provider.tsx` — no se usaba en ningún
+  lado del proyecto) para pickups/dropoffs, más líneas de corredor
+  (grosor = volumen, click muestra viajes/facturación). Mismo gating que el
+  generador de contenido (`company_addons` ai_growth_basic/plus) — el
+  reporte NO consume la cuota de `ai_growth_generations` (es lectura, no
+  una llamada a OpenAI).
+- **Hallazgo de tipos**: `@types/google.maps` tiene `HeatmapLayer` con un
+  constructor vacío y sin `setMap`/`setData` (desactualizado respecto a la
+  API real) — se resolvió con una interfaz local + cast puntual, documentado
+  en el propio archivo.
+- **Verificado**: `tsc --noEmit` limpio, 177/177 tests de Vitest (incluye
+  los 7 nuevos de `aggregateRoutes`), `npm run build` compila
+  `/admin/growth-assistant` y `/api/cron/geocode-backfill` sin errores.
+  Servidor de dev levantado y confirmado que la ruta nueva redirige a login
+  correctamente (protegida) — **no se pudo verificar visualmente el mapa
+  con datos reales** por no tener credenciales de una cuenta con el addon
+  activo en este entorno.
+- **Pendiente del usuario**: correr la migración 63 en Supabase SQL Editor.
+- **Explícitamente fuera de alcance** (a pedido del usuario, "pendiente de
+  revisión"): creación/gestión automática de campañas de Google Ads/Meta con
+  presupuesto asignado por el operador y medición de efectividad — quedó
+  como conversación de producto, sin ningún código construido.
+
 ## 🚧 App nativa de pasajero — Sprint 2 (mapa en vivo + autocomplete) (2026-07-22)
 
 Continuación del Sprint 0+1 de abajo, mismo día. El usuario pidió proceder

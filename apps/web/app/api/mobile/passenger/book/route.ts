@@ -69,6 +69,7 @@ export async function POST(request: Request) {
     dropoffLng,
     stops: Array.isArray(body?.stops) ? (body.stops as StopInput[]) : undefined,
     customerId: user.id,
+    source: 'mobile_app',
   })
 
   return NextResponse.json(result, { status: result.success ? 200 : 400 })
