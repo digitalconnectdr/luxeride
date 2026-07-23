@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
 import { Card, EmptyState, ScreenLoader, StatusBadge } from '../components/ui'
 import { PressableScale } from '../components/PressableScale'
-import { color, font, space } from '../lib/theme'
+import { color, font, radius, space } from '../lib/theme'
 import type { BookingStatus } from '../lib/types'
 
 interface TripRow {
@@ -23,11 +23,16 @@ interface TripRow {
   scheduled_at: string
   total_amount: number | null
   currency: string | null
-  pickup_location: { address?: string } | null
-  dropoff_location: { address?: string } | null
+  passenger_count: number
+  pickup_location: { address?: string; lat?: number; lng?: number } | null
+  dropoff_location: { address?: string; lat?: number; lng?: number } | null
 }
 
 const ACTIVE_STATUSES: BookingStatus[] = ['pending', 'assigned', 'en_route', 'arrived', 'in_progress']
+// "Reservar de nuevo" solo tiene sentido para un viaje que ya se completó —
+// uno cancelado/no-show no es una ruta que el pasajero probablemente quiera
+// repetir tal cual (el motivo de la cancelación pudo ser la ruta misma).
+const REBOOKABLE_STATUSES: BookingStatus[] = ['completed']
 
 // Indicador de cercanía: mientras más cerca el viaje, más "urgente" el color
 // (verde -> ámbar -> rojo), igual que el semáforo de StatusBadge pero para
@@ -51,7 +56,7 @@ export function MyTripsScreen() {
   const load = useCallback(async () => {
     const { data, error: loadError } = await supabase
       .from('bookings')
-      .select('id, booking_number, status, scheduled_at, total_amount, currency, pickup_location, dropoff_location')
+      .select('id, booking_number, status, scheduled_at, total_amount, currency, passenger_count, pickup_location, dropoff_location')
       .order('scheduled_at', { ascending: false })
       .limit(30)
 
@@ -73,6 +78,26 @@ export function MyTripsScreen() {
     setRefreshing(true)
     await load()
     setRefreshing(false)
+  }
+
+  function rebook(item: TripRow) {
+    const pickup = item.pickup_location
+    const dropoff = item.dropoff_location
+    if (pickup?.lat == null || pickup?.lng == null || dropoff?.lat == null || dropoff?.lng == null) return
+    navigation.navigate('Reservar', {
+      screen: 'NewBooking',
+      params: {
+        prefill: {
+          pickupAddress: pickup.address ?? '',
+          pickupLat: pickup.lat,
+          pickupLng: pickup.lng,
+          dropoffAddress: dropoff.address ?? '',
+          dropoffLat: dropoff.lat,
+          dropoffLng: dropoff.lng,
+          passengerCount: item.passenger_count,
+        },
+      },
+    })
   }
 
   if (!trips && !error) return <ScreenLoader />
@@ -105,6 +130,10 @@ export function MyTripsScreen() {
         const hoursUntil = (date.getTime() - Date.now()) / 3_600_000
         const showUrgency = isActive && hoursUntil > 0 && hoursUntil < 240 // hasta 10 días
         const urgencyInfo = showUrgency ? urgency(hoursUntil) : null
+        const canRebook =
+          REBOOKABLE_STATUSES.includes(item.status) &&
+          item.pickup_location?.lat != null && item.pickup_location?.lng != null &&
+          item.dropoff_location?.lat != null && item.dropoff_location?.lng != null
         return (
           <PressableScale
             onPress={() =>
@@ -156,6 +185,15 @@ export function MyTripsScreen() {
                   <Text style={styles.activeHintText}>Toca para ver el viaje en vivo</Text>
                 </View>
               )}
+
+              {canRebook && (
+                <PressableScale onPress={() => rebook(item)}>
+                  <View style={styles.rebookBtn}>
+                    <Ionicons name="repeat-outline" size={14} color={color.gold} />
+                    <Text style={styles.rebookText}>Reservar de nuevo</Text>
+                  </View>
+                </PressableScale>
+              )}
             </Card>
           </PressableScale>
         )
@@ -199,4 +237,16 @@ const styles = StyleSheet.create({
   price: { color: color.ink, fontFamily: font.bodyBold, fontSize: 16 },
   activeHint: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   activeHintText: { color: color.gold, fontFamily: font.bodyMedium, fontSize: 11 },
+  rebookBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: space.xs,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.border,
+  },
+  rebookText: { color: color.gold, fontFamily: font.bodySemi, fontSize: 12 },
 })

@@ -61,9 +61,23 @@ export interface BookingResult {
   bookingNumber: string
 }
 
+// "Reservar de nuevo" desde Mis viajes — prefill parcial (solo lo que
+// tenemos guardado de la reserva anterior: no hay placeId/código postal
+// persistidos en bookings, así que el autocomplete no queda "seleccionado"
+// pero el geocoder de respaldo ya funciona igual con solo texto).
+export interface BookingPrefill {
+  pickupAddress: string
+  pickupLat: number
+  pickupLng: number
+  dropoffAddress: string
+  dropoffLat: number
+  dropoffLng: number
+  passengerCount?: number
+}
+
 // ── Navegación ──────────────────────────────────────────────────────────
 export type BookingStackParamList = {
-  NewBooking: undefined
+  NewBooking: { prefill?: BookingPrefill } | undefined
   VehicleSelect: { draft: BookingDraft }
   BookingConfirm: { draft: BookingDraft; quote: VehicleQuote }
   BookingSuccess: { bookingId: string; bookingNumber: string }

@@ -10,7 +10,7 @@
 // web — antes solo existían los chips, sin forma de agendar un viaje en
 // una fecha/hora arbitraria.
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Modal } from 'react-native'
 import * as Location from 'expo-location'
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker'
@@ -59,15 +59,38 @@ function formatCustomDateTime(d: Date): string {
   return `${datePart}, ${timePart}`
 }
 
-export function NewBookingScreen({ navigation }: Props) {
-  const [pickupAddress, setPickupAddress] = useState('')
-  const [pickupResolved, setPickupResolved] = useState<ResolvedPlace | null>(null)
-  const [dropoffAddress, setDropoffAddress] = useState('')
-  const [dropoffResolved, setDropoffResolved] = useState<ResolvedPlace | null>(null)
+export function NewBookingScreen({ navigation, route }: Props) {
+  // "Reservar de nuevo" desde Mis viajes llega con prefill — no hay
+  // placeId/código postal guardados en bookings, así que se marca como "no
+  // resuelto por autocomplete" (placeId vacío) pero sí trae lat/lng reales,
+  // suficiente para cotizar sin tener que re-geocodificar el texto.
+  const prefill = route.params?.prefill
+  const [pickupAddress, setPickupAddress] = useState(prefill?.pickupAddress ?? '')
+  const [pickupResolved, setPickupResolved] = useState<ResolvedPlace | null>(
+    prefill ? { lat: prefill.pickupLat, lng: prefill.pickupLng, placeId: '', postalCode: null } : null,
+  )
+  const [dropoffAddress, setDropoffAddress] = useState(prefill?.dropoffAddress ?? '')
+  const [dropoffResolved, setDropoffResolved] = useState<ResolvedPlace | null>(
+    prefill ? { lat: prefill.dropoffLat, lng: prefill.dropoffLng, placeId: '', postalCode: null } : null,
+  )
   const [timeOption, setTimeOption] = useState<number>(0)
   const [customDateTime, setCustomDateTime] = useState<Date | null>(null)
   const [pickerStep, setPickerStep] = useState<'date' | 'time' | null>(null)
-  const [passengerCount, setPassengerCount] = useState(1)
+  const [passengerCount, setPassengerCount] = useState(prefill?.passengerCount ?? 1)
+
+  // Si la pantalla ya estaba montada (el pasajero ya había visitado esta
+  // pestaña antes), el useState de arriba no vuelve a leer el prefill al
+  // navegar de nuevo con nuevos params — cada "Reservar de nuevo" arma un
+  // objeto nuevo, así que la referencia cambia y este efecto sí reacciona.
+  useEffect(() => {
+    if (!prefill) return
+    setPickupAddress(prefill.pickupAddress)
+    setPickupResolved({ lat: prefill.pickupLat, lng: prefill.pickupLng, placeId: '', postalCode: null })
+    setDropoffAddress(prefill.dropoffAddress)
+    setDropoffResolved({ lat: prefill.dropoffLat, lng: prefill.dropoffLng, placeId: '', postalCode: null })
+    if (prefill.passengerCount) setPassengerCount(prefill.passengerCount)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefill])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
