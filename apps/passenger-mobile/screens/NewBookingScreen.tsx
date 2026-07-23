@@ -17,6 +17,7 @@ import DateTimePicker, { type DateTimePickerEvent } from '@react-native-communit
 import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AddressAutocomplete } from '../components/AddressAutocomplete'
+import { PressableScale } from '../components/PressableScale'
 import { Button, Card, SectionLabel } from '../components/ui'
 import { color, font, radius, space } from '../lib/theme'
 import type { BookingStackParamList } from '../lib/types'
@@ -202,22 +203,24 @@ export function NewBookingScreen({ navigation }: Props) {
         <View style={styles.section}>
           <SectionLabel>¿Cuándo?</SectionLabel>
           <View style={styles.chipRow}>
-            {TIME_OPTIONS.map((opt, i) => (
-              <Text
-                key={opt.label}
-                style={[styles.chip, timeOption === i && styles.chipActive]}
-                onPress={() => setTimeOption(i)}
-              >
-                {opt.label}
-              </Text>
-            ))}
-            <Text
-              style={[styles.chip, styles.chipCustom, timeOption === CUSTOM_OPTION && styles.chipActive]}
-              onPress={openCustomPicker}
-            >
-              <Ionicons name="calendar-outline" size={13} color={timeOption === CUSTOM_OPTION ? '#fff' : color.ink} />{' '}
-              {timeOption === CUSTOM_OPTION && customDateTime ? formatCustomDateTime(customDateTime) : 'Elegir fecha y hora'}
-            </Text>
+            {TIME_OPTIONS.map((opt, i) => {
+              const active = timeOption === i
+              return (
+                <PressableScale key={opt.label} onPress={() => setTimeOption(i)} haptic="light">
+                  <View style={[styles.chip, active && styles.chipActive]}>
+                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{opt.label}</Text>
+                  </View>
+                </PressableScale>
+              )
+            })}
+            <PressableScale onPress={openCustomPicker} haptic="light">
+              <View style={[styles.chip, styles.chipCustom, timeOption === CUSTOM_OPTION && styles.chipActive]}>
+                <Ionicons name="calendar-outline" size={13} color={timeOption === CUSTOM_OPTION ? '#fff' : color.ink} />
+                <Text style={[styles.chipText, timeOption === CUSTOM_OPTION && styles.chipTextActive]}>
+                  {timeOption === CUSTOM_OPTION && customDateTime ? formatCustomDateTime(customDateTime) : 'Elegir fecha y hora'}
+                </Text>
+              </View>
+            </PressableScale>
           </View>
         </View>
 
@@ -305,18 +308,19 @@ const styles = StyleSheet.create({
   section: { gap: space.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {
-    fontFamily: font.bodyMedium,
-    fontSize: 13,
-    color: color.ink,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: color.surfaceRaised,
     borderWidth: 1,
     borderColor: color.border,
     borderRadius: radius.pill,
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
-    overflow: 'hidden',
   },
-  chipActive: { backgroundColor: color.gold, borderColor: color.gold, color: '#fff' },
+  chipText: { fontFamily: font.bodyMedium, fontSize: 13, color: color.ink },
+  chipActive: { backgroundColor: color.gold, borderColor: color.gold },
+  chipTextActive: { color: '#fff' },
   chipCustom: { borderStyle: 'dashed' },
   pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   pickerSheet: {

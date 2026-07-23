@@ -37,6 +37,10 @@
     {
       "path": "/api/cron/geocode-backfill",
       "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/cron/booking-reminders",
+      "schedule": "0 9 * * *"
     }
   ],
   "rewrites": [

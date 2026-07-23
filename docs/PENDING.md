@@ -3,6 +3,63 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Recordatorios automáticos de viaje (pasajero + conductor) (2026-07-23)
+
+A pedido del usuario: el operador configura en `/admin/settings` cuántas
+horas antes de un viaje avisar al pasajero y/o al conductor (umbrales
+independientes, ej. 24h y 6h). Se le preguntó explícitamente sobre el
+trade-off de frecuencia y **el usuario eligió el alcance reducido**: solo
+umbrales en horas con un cron 1x/día, no precisión al minuto.
+
+- **Limitación real, ya comunicada y aceptada por el usuario**: los crons de
+  este proyecto en Vercel corren 1 vez al día (mismo límite que
+  `auto-assign`/`quote-followup` — plan Hobby). El aviso llega en algún
+  momento del día en que el viaje entra en la ventana del umbral
+  configurado, no al minuto exacto — un aviso de "30 min antes" con
+  precisión real habría requerido QStash (Upstash) o subir el plan de
+  Vercel; el usuario prefirió no hacerlo por ahora.
+- **Sin migración nueva**: se guarda en `companies.settings.
+  notificationReminders = { passengerHours: number[], driverHours: number[] }`
+  (mismo patrón JSONB que `settings.payments.platform_fee_pct`).
+  `app/actions/settings.ts` → `updateNotificationRemindersAction`.
+- **`lib/notifications/index.ts`** → `sendBookingReminder()` — mismo patrón
+  de dedup que `sendQuoteFollowup` (chequea la tabla `notifications` por
+  `booking_id` + `type` antes de enviar; `type` incluye el umbral, ej.
+  `reminder_passenger_24h`, para que cada umbral avise una sola vez por
+  reserva).
+- **Cron nuevo** `app/api/cron/booking-reminders/route.ts` (`0 9 * * *`,
+  agregado a `vercel.json`) — por cada empresa activa con umbrales
+  configurados, busca bookings próximos (`pending`/`assigned`/`en_route`)
+  dentro de la ventana de cada umbral y envía el email correspondiente al
+  pasajero (`bookings.passenger_email`) y/o al conductor (email vía
+  `admin.auth.admin.getUserById`, cacheado por corrida).
+- **UI**: nueva sección "Recordatorios de viaje" en `/admin/settings`, chips
+  de horas independientes para pasajero/conductor —
+  `components/admin/hour-chips-field.tsx` (mismo patrón visual que los
+  códigos postales de zonas).
+- **Explícitamente fuera de alcance** (por elección del usuario): avisos con
+  precisión de minutos (ej. "30 min antes"), push nativo (el pasajero no
+  tiene push todavía, ver Sprint 2), SMS (solo email por ahora, igual que
+  `quote-followup`).
+- **Verificado**: `tsc --noEmit` limpio, 177/177 tests, `npm run build`
+  compila sin errores.
+- **Pendiente del usuario**: configurar los umbrales deseados en
+  `/admin/settings` (vacío por defecto — la función no envía nada hasta que
+  el operador configure al menos un umbral).
+
+## ✅ App de pasajero — 2 ajustes tras feedback visual del build anterior (2026-07-23)
+
+- **Chips de "¿Cuándo?" con tamaños inconsistentes**: `NewBookingScreen.tsx`
+  usaba `<Text onPress={...}>` desnudo como botón — mismo antipatrón que
+  `PressableScale` (`components/PressableScale.tsx`) ya documenta haber
+  tenido que resolver para otros botones. Se migran los chips a
+  `PressableScale` + `View`+`Text`, consistente con el resto de la app.
+- **Faltaba "Instrucciones especiales (opcional)"** — ya existía en el
+  backend (`/api/mobile/passenger/book` ya aceptaba `specialInstructions`,
+  nunca se exponía en la UI de la app) y en la web. Se agrega el campo en
+  `BookingConfirmScreen.tsx`, mismo lugar que la web (junto a nombre/teléfono).
+- **Verificado**: `tsc --noEmit` limpio.
+
 ## ✅ Fix crítico: Google eliminó HeatmapLayer, crasheaba "Rutas frecuentes" (2026-07-23)
 
 Descubierto en producción real (Revival Transportation Group, primera vez

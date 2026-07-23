@@ -12,7 +12,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { supabase } from '../lib/supabase'
 import { callPassengerApi } from '../lib/api'
 import { Button, Card, SectionLabel } from '../components/ui'
-import { color, font, space } from '../lib/theme'
+import { color, font, radius, space } from '../lib/theme'
 import type { BookingStackParamList } from '../lib/types'
 
 type Props = NativeStackScreenProps<BookingStackParamList, 'BookingConfirm'>
@@ -30,6 +30,7 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
   const { draft, quote } = route.params
   const [passengerName, setPassengerName] = useState('')
   const [passengerPhone, setPassengerPhone] = useState('')
+  const [specialInstructions, setSpecialInstructions] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -64,6 +65,7 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
       passengerName: passengerName.trim(),
       passengerPhone: passengerPhone.trim(),
       passengerCount: draft.passengerCount,
+      specialInstructions: specialInstructions.trim() || undefined,
       scheduledAt: draft.scheduledAt,
       pickupAddress: draft.pickupAddress,
       pickupLat: draft.pickupLat,
@@ -119,6 +121,17 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
             onChangeText={setPassengerPhone}
           />
         </View>
+        <View style={styles.divider} />
+        <SectionLabel>Instrucciones especiales (opcional)</SectionLabel>
+        <TextInput
+          style={styles.textarea}
+          placeholder="Ej. número de vuelo, puerta del edificio, señas particulares…"
+          placeholderTextColor={color.inkFaint}
+          value={specialInstructions}
+          onChangeText={setSpecialInstructions}
+          multiline
+          numberOfLines={3}
+        />
       </Card>
 
       {error ? (
@@ -160,6 +173,18 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
   },
   input: { flex: 1, color: color.ink, fontFamily: font.body, fontSize: 15, paddingVertical: 4 },
+  textarea: {
+    color: color.ink,
+    fontFamily: font.body,
+    fontSize: 14,
+    backgroundColor: color.surfaceRaised,
+    borderWidth: 1,
+    borderColor: color.border,
+    borderRadius: radius.md,
+    padding: space.md,
+    minHeight: 72,
+    textAlignVertical: 'top',
+  },
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   error: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1 },
   submit: { marginTop: space.sm },

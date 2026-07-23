@@ -411,3 +411,58 @@ export async function sendQuoteFollowup(opts: {
 
   return { sent: r.ok }
 }
+
+// ─── Recordatorios de viaje próximo (sin template; con dedup vía notifications) ─
+// Umbrales configurables por el operador (settings.notificationReminders,
+// ver app/actions/companies.ts) — "avisar N horas antes" al pasajero y/o al
+// conductor. El cron de apps/web/app/api/cron/booking-reminders/route.ts corre
+// una vez al día (límite del plan Hobby de Vercel — mismo motivo que
+// auto-assign), así que el aviso llega "en algún momento del día" en el que
+// el viaje entra en la ventana del umbral, no al minuto exacto. `type` incluye
+// el umbral (ej. 'reminder_passenger_6h') para que cada umbral se pueda
+// avisar una sola vez por reserva, igual que sendQuoteFollowup.
+
+export async function sendBookingReminder(opts: {
+  companyId: string
+  bookingId: string
+  type: string
+  to: string
+  subject: string
+  body: string
+}): Promise<{ sent: boolean; skipped?: boolean }> {
+  const admin = createAdminClient()
+
+  const { data: existing } = await admin
+    .from('notifications')
+    .select('id')
+    .eq('booking_id', opts.bookingId)
+    .eq('type', opts.type)
+    .limit(1)
+  if (existing && existing.length) return { sent: false, skipped: true }
+
+  const { data: company } = await admin
+    .from('companies')
+    .select('name, logo_url, primary_color')
+    .eq('id', opts.companyId)
+    .single()
+
+  const r = await sendEmail(opts.to, opts.subject, opts.body, company?.name, {
+    logoUrl: (company as { logo_url?: string | null })?.logo_url ?? null,
+    brandColor: (company as { primary_color?: string | null })?.primary_color ?? null,
+  })
+
+  await admin.from('notifications').insert({
+    company_id: opts.companyId,
+    booking_id: opts.bookingId,
+    channel: 'email',
+    type: opts.type,
+    recipient: opts.to,
+    subject: opts.subject,
+    body: opts.body,
+    status: r.ok ? 'sent' : isResendConfigured() ? 'failed' : 'pending',
+    sent_at: r.ok ? new Date().toISOString() : null,
+    error_message: r.ok ? null : r.error ?? null,
+  })
+
+  return { sent: r.ok }
+}

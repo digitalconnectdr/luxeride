@@ -6,7 +6,9 @@ import {
   updateGratuitySettingsAction,
   updatePolicySettingsAction,
   updateExtraFeesAction,
+  updateNotificationRemindersAction,
 } from '@/app/actions/settings'
+import { HourChipsField } from '@/components/admin/hour-chips-field'
 import { parsePolicy, parseExtraFees } from '@/lib/policy/engine'
 import {
   createConnectOnboardingAction,
@@ -154,15 +156,21 @@ export default async function SettingsPage({
       enabled?: boolean
       default_percentage?: number
     }
+    notificationReminders?: {
+      passengerHours?: number[]
+      driverHours?: number[]
+    }
   }) ?? {}
 
   const booking  = settings.booking  ?? {}
   const gratuity = settings.gratuity ?? {}
+  const reminders = settings.notificationReminders ?? {}
 
   // void casts — TypeScript void-callback rule
   const infoAction:     (fd: FormData) => void = updateCompanyInfoAction
   const bookingAction:  (fd: FormData) => void = updateBookingSettingsAction
   const gratuityAction: (fd: FormData) => void = updateGratuitySettingsAction
+  const remindersAction: (fd: FormData) => void = updateNotificationRemindersAction
   const connectAction:  () => void = createConnectOnboardingAction
   const refreshAction:  () => void = refreshConnectStatusAction
   const policyAction:   (fd: FormData) => void = updatePolicySettingsAction
@@ -934,6 +942,38 @@ export default async function SettingsPage({
           <div className="flex justify-end pt-1">
             <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
               {t.saveGratuity}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      {/* ── Recordatorios de viaje ── */}
+      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
+        <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.remindersTitle}</h2>
+        <p className="text-xs text-sl-on-surface-muted mb-5">{t.remindersIntro}</p>
+        <form action={remindersAction} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>{t.remindersPassengerLabel}</label>
+              <HourChipsField
+                name="passenger_hours"
+                defaultValues={reminders.passengerHours ?? []}
+                placeholder={t.remindersPlaceholder}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>{t.remindersDriverLabel}</label>
+              <HourChipsField
+                name="driver_hours"
+                defaultValues={reminders.driverHours ?? []}
+                placeholder={t.remindersPlaceholder}
+              />
+            </div>
+          </div>
+          <p className="text-[11px] text-sl-on-surface-muted">{t.remindersHint}</p>
+          <div className="flex justify-end pt-1">
+            <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
+              {t.saveReminders}
             </button>
           </div>
         </form>

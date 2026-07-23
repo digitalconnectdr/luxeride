@@ -1757,6 +1757,13 @@ export const pt: Dictionary = {
       saveGratuity: 'Salvar configurações de gorjeta',
       gratuityDepositWarning: 'A gorjeta não é oferecida ao passageiro enquanto "Exigir depósito ao reservar" estiver ativo (em Reservas), mesmo que esteja habilitada aqui embaixo.',
       requireDepositGratuityNote: 'Nota: enquanto isso estiver ativo, a gorjeta não é exibida ao passageiro (veja a seção Gorjetas).',
+      remindersTitle: 'Lembretes de viagem',
+      remindersIntro: 'Avisa por e-mail passageiros e motoristas antes de uma viagem agendada. O aviso chega em algum momento do dia em que a viagem entra na janela configurada — não no minuto exato.',
+      remindersPassengerLabel: 'Avisar o passageiro (horas antes)',
+      remindersDriverLabel: 'Avisar o motorista (horas antes)',
+      remindersPlaceholder: 'Ex. 24',
+      remindersHint: 'Digite um número de horas e pressione Enter para adicioná-lo. Você pode configurar vários limites.',
+      saveReminders: 'Salvar lembretes',
     },
     bookingStatuses: {
       quote: 'Cotação', pending: 'Pendente', assigned: 'Atribuído',

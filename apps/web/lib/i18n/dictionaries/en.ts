@@ -1756,6 +1756,13 @@ export const en = {
       saveGratuity: 'Save Gratuity Settings',
       gratuityDepositWarning: 'Gratuity is not offered to the passenger while "Require deposit at booking" is on (under Booking), even if enabled here below.',
       requireDepositGratuityNote: 'Note: while this is on, gratuity is not shown to the passenger (see the Gratuity section).',
+      remindersTitle: 'Trip reminders',
+      remindersIntro: 'Email passengers and drivers ahead of a scheduled trip. The reminder goes out sometime during the day the trip enters the configured window — not at the exact minute.',
+      remindersPassengerLabel: 'Remind passenger (hours before)',
+      remindersDriverLabel: 'Remind driver (hours before)',
+      remindersPlaceholder: 'E.g. 24',
+      remindersHint: 'Type a number of hours and press Enter to add it. You can set multiple thresholds.',
+      saveReminders: 'Save reminders',
     },
     bookingStatuses: {
       quote: 'Quote', pending: 'Pending', assigned: 'Assigned',

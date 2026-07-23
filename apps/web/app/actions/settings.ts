@@ -329,3 +329,58 @@ export async function updateGratuitySettingsAction(
   revalidatePath('/admin/settings')
   return { success: true }
 }
+
+// ── Recordatorios automáticos de viaje próximo ────────────────────────────────
+// Umbrales en horas (ej. 6, 24) configurables por separado para pasajero y
+// conductor — el cron de app/api/cron/booking-reminders/route.ts los lee de
+// aquí. Corre 1 vez al día (límite del plan Hobby de Vercel), así que solo
+// tienen sentido umbrales de varias horas, no minutos.
+
+function parseHoursList(formData: FormData, field: string): number[] {
+  return formData
+    .getAll(field)
+    .map((v) => parseInt(v as string, 10))
+    .filter((n) => Number.isInteger(n) && n >= 1 && n <= 168) // hasta 7 días
+    .sort((a, b) => a - b)
+    .filter((n, i, arr) => arr.indexOf(n) === i) // sin duplicados
+    .slice(0, 10)
+}
+
+export async function updateNotificationRemindersAction(
+  formData: FormData,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('company_owner')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const passengerHours = parseHoursList(formData, 'passenger_hours')
+  const driverHours = parseHoursList(formData, 'driver_hours')
+
+  const admin = createAdminClient()
+
+  const { data: company } = await admin
+    .from('companies')
+    .select('settings')
+    .eq('id', user.company_id)
+    .single()
+
+  if (!company) return { success: false, error: 'Empresa no encontrada' }
+
+  const currentSettings = (company.settings as Record<string, unknown>) ?? {}
+  const updatedSettings = {
+    ...currentSettings,
+    notificationReminders: { passengerHours, driverHours },
+  }
+
+  const { error } = await admin
+    .from('companies')
+    .update({ settings: updatedSettings })
+    .eq('id', user.company_id)
+
+  if (error) {
+    console.error('[updateNotificationRemindersAction]', error)
+    return { success: false, error: 'Error al actualizar los recordatorios' }
+  }
+
+  revalidatePath('/admin/settings')
+  return { success: true }
+}

@@ -1757,6 +1757,13 @@ export const es: Dictionary = {
       saveGratuity: 'Guardar configuración de propinas',
       gratuityDepositWarning: 'La propina no se ofrece al pasajero mientras "Requerir depósito al reservar" esté activo (en Reservaciones), aunque esté habilitada aquí abajo.',
       requireDepositGratuityNote: 'Nota: mientras esto esté activo, la propina no se muestra al pasajero (ver sección Propinas).',
+      remindersTitle: 'Recordatorios de viaje',
+      remindersIntro: 'Avisa por correo a pasajeros y conductores antes de un viaje programado. El aviso llega en algún momento del día en que el viaje entra en la ventana configurada — no al minuto exacto.',
+      remindersPassengerLabel: 'Avisar al pasajero (horas antes)',
+      remindersDriverLabel: 'Avisar al conductor (horas antes)',
+      remindersPlaceholder: 'Ej. 24',
+      remindersHint: 'Escribe un número de horas y presiona Enter para agregarlo. Puedes configurar varios umbrales.',
+      saveReminders: 'Guardar recordatorios',
     },
     bookingStatuses: {
       quote: 'Cotización', pending: 'Pendiente', assigned: 'Asignado',
