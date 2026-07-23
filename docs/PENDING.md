@@ -32,9 +32,9 @@ pero se revertía en cada recarga, sin ningún error visible.
   correr `supabase/migrations/20260723000064_fix_companies_audit_trigger.sql`
   en Supabase SQL Editor. Sin esto, cualquier `UPDATE` sobre `companies`
   sigue fallando, incluyendo activaciones reales de Whop.
-- **Pendiente de verificar tras aplicar la migración**: reactivar Revival
-  Transportation Group desde `/super-admin/companies` y confirmar que
-  queda en `active` de forma persistente.
+- **Verificado por el usuario** (2026-07-22): tras aplicar la migración,
+  reactivar Revival Transportation Group desde `/super-admin/companies`
+  quedó en `active` de forma persistente (confirmado en base de datos).
 
 ## ✅ Fix: crash nativo al abrir la app de pasajero (2026-07-22)
 
@@ -62,6 +62,11 @@ Build solo cubren tiempo de compilación, nunca crashes en runtime).
 - **Para recordar en Sprint 3+**: cualquier variable `EXPO_PUBLIC_*` o de
   `app.config.js` que se agregue a la app debe declararse también en
   `eas.json` → `build.apk.env`, no solo en `.env` local.
+- **Empresa de prueba configurada**: `EXPO_PUBLIC_COMPANY_SLUG=luxeride-platform`
+  (única empresa activa con vehículos y reglas de precio ya configurados
+  al momento de esta prueba; `revival` no tenía datos suficientes y estaba
+  suspendida — ver fix del trigger arriba). Signup + login + branding
+  dinámico verificados end-to-end en dispositivo físico por el usuario.
 
 ## ✅ Reporte de rutas frecuentes — insight geográfico para Ads (add-on AI Growth Assistant) (2026-07-22)
 
