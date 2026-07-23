@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { supabase } from '../lib/supabase'
 import { callPassengerApi } from '../lib/api'
-import { Button, Card, SectionLabel } from '../components/ui'
+import { Button, Card, Field, SectionLabel } from '../components/ui'
 import { color, font, radius, space } from '../lib/theme'
 import type { BookingStackParamList } from '../lib/types'
 
@@ -33,6 +33,7 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
   const [specialInstructions, setSpecialInstructions] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [focusedField, setFocusedField] = useState<string | null>(null)
 
   useEffect(() => {
     async function prefill() {
@@ -100,27 +101,25 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
 
       <Card style={styles.section}>
         <SectionLabel>Datos del pasajero</SectionLabel>
-        <View style={styles.inputWrap}>
-          <Ionicons name="person-outline" size={18} color={color.inkFaint} />
-          <TextInput
-            style={styles.input}
-            placeholder="Nombre completo"
-            placeholderTextColor={color.inkFaint}
-            value={passengerName}
-            onChangeText={setPassengerName}
-          />
-        </View>
-        <View style={styles.inputWrap}>
-          <Ionicons name="call-outline" size={18} color={color.inkFaint} />
-          <TextInput
-            style={styles.input}
-            placeholder="Teléfono"
-            placeholderTextColor={color.inkFaint}
-            keyboardType="phone-pad"
-            value={passengerPhone}
-            onChangeText={setPassengerPhone}
-          />
-        </View>
+        <Field
+          icon="person-outline"
+          placeholder="Nombre completo"
+          value={passengerName}
+          onChangeText={setPassengerName}
+          focused={focusedField === 'name'}
+          onFocus={() => setFocusedField('name')}
+          onBlur={() => setFocusedField(null)}
+        />
+        <Field
+          icon="call-outline"
+          placeholder="Teléfono"
+          value={passengerPhone}
+          onChangeText={setPassengerPhone}
+          keyboardType="phone-pad"
+          focused={focusedField === 'phone'}
+          onFocus={() => setFocusedField('phone')}
+          onBlur={() => setFocusedField(null)}
+        />
         <View style={styles.divider} />
         <SectionLabel>Instrucciones especiales (opcional)</SectionLabel>
         <TextInput
@@ -165,14 +164,7 @@ const styles = StyleSheet.create({
   },
   totalLabel: { color: color.ink, fontFamily: font.bodySemi, fontSize: 14 },
   totalValue: { color: color.gold, fontFamily: font.bodyBold, fontSize: 22 },
-  section: { gap: space.sm },
-  inputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    paddingVertical: space.sm,
-  },
-  input: { flex: 1, color: color.ink, fontFamily: font.body, fontSize: 15, paddingVertical: 4 },
+  section: { gap: space.md },
   textarea: {
     color: color.ink,
     fontFamily: font.body,

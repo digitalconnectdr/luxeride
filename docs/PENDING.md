@@ -3,6 +3,37 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ App de pasajero: pasada de pulido visual (2026-07-23)
+
+El usuario pidió pulir la presentación general ("la veo débil"), sin
+puntos concretos — se revisaron las 8 pantallas con criterio propio y se
+corrigieron 3 puntos débiles reales, sin poder probarlos visualmente en un
+emulador (limitación ya conocida de este entorno):
+
+- **`BookingSuccessScreen.tsx`** (el momento más plano de la app — "reserva
+  confirmada" aparecía todo de golpe, sin ningún énfasis para un momento
+  que debería sentirse como un logro): entrada orquestada con
+  `Animated` — el ícono de check rebota primero, luego el resto del
+  contenido sube con fade. Respeta `AccessibilityInfo.isReduceMotionEnabled()`
+  (sin animación si el sistema lo pide). El círculo de check ahora tiene un
+  resplandor sutil en vez de quedar plano.
+- **`BookingConfirmScreen.tsx`**: los campos de nombre/teléfono usaban
+  `TextInput` suelto con solo un ícono al lado, sin borde — visualmente
+  inconsistente frente a Auth/Perfil, que ya usan el componente `Field`
+  (fondo, borde, foco dorado). Se migraron a `Field` para que las 3
+  pantallas con formularios se vean de la misma familia.
+- **`TripTrackingScreen.tsx`**: la barra de estado sobre el mapa mostraba
+  solo el badge de estado, flotando solo en una barra ancha — se sentía
+  incompleta. Se agregó el número de reserva al lado para dar contexto.
+- **Explícitamente no tocado**: `VehicleSelectScreen.tsx` y
+  `MyTripsScreen.tsx` ya se sentían sólidos (el segundo ya concentra
+  bastante trabajo de esta sesión — recibo, calificar, pagar, reservar de
+  nuevo) — no se forzó un cambio ahí solo por tocar algo.
+- **Verificado**: `tsc --noEmit` limpio. Sin verificación visual en
+  emulador (no disponible en este entorno) — se recomienda instalar el
+  próximo build de EAS y confirmar especialmente la animación de
+  "Reserva confirmada".
+
 ## ✅ App de pasajero: Perfil editable + direcciones guardadas (2026-07-23)
 
 Cierra el pulido menor pendiente ("Perfil solo tenía cerrar sesión") — ahora

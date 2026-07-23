@@ -19,13 +19,14 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { supabase } from '../lib/supabase'
 import { decodePolyline, type LatLng } from '../lib/polyline'
 import { ScreenLoader, StatusBadge, EmptyState } from '../components/ui'
-import { color, space } from '../lib/theme'
+import { color, font, space } from '../lib/theme'
 import type { BookingStackParamList, BookingStatus } from '../lib/types'
 
 type Props = NativeStackScreenProps<BookingStackParamList, 'TripTracking'>
 
 interface TripBooking {
   status: BookingStatus
+  bookingNumber: string
   pickup: { address?: string; lat?: number; lng?: number } | null
   dropoff: { address?: string; lat?: number; lng?: number } | null
   routePolyline: string | null
@@ -44,7 +45,7 @@ export function TripTrackingScreen({ route }: Props) {
     async function load() {
       const { data, error } = await supabase
         .from('bookings')
-        .select('status, pickup_location, dropoff_location, route_polyline')
+        .select('status, booking_number, pickup_location, dropoff_location, route_polyline')
         .eq('id', bookingId)
         .single()
       if (cancelled) return
@@ -54,6 +55,7 @@ export function TripTrackingScreen({ route }: Props) {
       }
       setBooking({
         status: data.status as BookingStatus,
+        bookingNumber: data.booking_number,
         pickup: data.pickup_location as TripBooking['pickup'],
         dropoff: data.dropoff_location as TripBooking['dropoff'],
         routePolyline: (data.route_polyline as string | null) ?? null,
@@ -122,6 +124,7 @@ export function TripTrackingScreen({ route }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.statusBar}>
+        <Text style={styles.bookingNumber}>{booking.bookingNumber}</Text>
         <StatusBadge status={booking.status} />
       </View>
 
@@ -166,7 +169,16 @@ export function TripTrackingScreen({ route }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.bg },
   center: { flex: 1, backgroundColor: color.bg, justifyContent: 'center' },
-  statusBar: { padding: space.lg, backgroundColor: color.bgElevated, borderBottomWidth: 1, borderBottomColor: color.border },
+  statusBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: space.lg,
+    backgroundColor: color.bgElevated,
+    borderBottomWidth: 1,
+    borderBottomColor: color.border,
+  },
+  bookingNumber: { color: color.inkFaint, fontFamily: font.bodySemi, fontSize: 12, letterSpacing: 0.3 },
   map: { flex: 1 },
   pin: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: '#fff' },
   driverMarker: {
