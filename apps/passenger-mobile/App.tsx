@@ -14,6 +14,7 @@ import {
 } from '@expo-google-fonts/playfair-display'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
+import { registerForPushNotifications } from './lib/push'
 import { BrandingProvider, useBranding } from './lib/branding'
 import { color, font } from './lib/theme'
 import { ScreenLoader } from './components/ui'
@@ -136,6 +137,13 @@ function AuthGate() {
 
     return () => subscription.subscription.unsubscribe()
   }, [validatePassengerSession])
+
+  // Se registra recién con sesión de pasajero YA validada (no antes) — pedir
+  // el permiso de notificaciones en la pantalla de login no tendría a quién
+  // asociarle el token todavía.
+  useEffect(() => {
+    if (session) registerForPushNotifications(session.user.id)
+  }, [session])
 
   if (checkingSession) {
     return (

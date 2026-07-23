@@ -19,7 +19,7 @@ import {
 import { waitUntil, geolocation } from '@vercel/functions'
 import { notifyBookingEventInBackground, notify } from '@/lib/notifications'
 import { pushAdminNotification } from '@/lib/notifications/admin-feed'
-import { notifyDriverPushInBackground } from '@/lib/notifications/push'
+import { notifyDriverPushInBackground, notifyUserPushInBackground } from '@/lib/notifications/push'
 import { trackBookingFlight } from '@/lib/flights/refresh'
 import { geocodeBookingLocations } from '@/lib/maps/reverse-geocode'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
@@ -506,7 +506,7 @@ export async function updateBookingStatusAction(
 
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, status, company_id, scheduled_at, total_amount, booking_number, passenger_name, passenger_email, passenger_phone, pickup_location, dropoff_location, currency')
+    .select('id, status, company_id, customer_id, scheduled_at, total_amount, booking_number, passenger_name, passenger_email, passenger_phone, pickup_location, dropoff_location, currency')
     .eq('id', bookingId)
     .eq('company_id', user.company_id)
     .single()
@@ -605,6 +605,25 @@ export async function updateBookingStatusAction(
     }))
   }
 
+  // Push nativo — solo si el pasajero tiene cuenta en la app (customer_id),
+  // no aplica a guest checkout de la web. Deliberadamente NO se manda para
+  // 'pending' (ese paso ya se ve en pantalla al confirmar la reserva) — solo
+  // para los momentos en que el pasajero probablemente no tiene la app
+  // abierta y se beneficia de un aviso empujado.
+  const PUSH_BY_STATUS: Partial<Record<BookingStatus, string>> = {
+    en_route:  'Tu conductor va en camino',
+    arrived:   'Tu conductor ha llegado',
+    completed: 'Viaje completado',
+    cancelled: 'Tu reserva fue cancelada',
+  }
+  const pushTitle = PUSH_BY_STATUS[newStatus]
+  if (pushTitle && booking.customer_id) {
+    notifyUserPushInBackground(booking.customer_id, pushTitle, booking.booking_number, {
+      bookingId: booking.id,
+      type: notifyType,
+    })
+  }
+
   revalidatePath('/admin/bookings')
   revalidatePath(`/admin/bookings/${bookingId}`)
   revalidatePath('/admin/dashboard')
@@ -626,7 +645,7 @@ export async function assignDriverAction(
 
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, status, company_id, driver_id, scheduled_at, duration_minutes, total_amount, booking_number, passenger_name, passenger_email, passenger_phone, pickup_location, dropoff_location, currency')
+    .select('id, status, company_id, customer_id, driver_id, scheduled_at, duration_minutes, total_amount, booking_number, passenger_name, passenger_email, passenger_phone, pickup_location, dropoff_location, currency')
     .eq('id', bookingId)
     .eq('company_id', user.company_id)
     .single()
@@ -746,6 +765,16 @@ export async function assignDriverAction(
     `${booking.booking_number} · ${(booking.pickup_location as { address?: string } | null)?.address ?? ''}`,
     { bookingId: booking.id, type: 'trip_assigned' },
   )
+
+  if (booking.customer_id) {
+    const driverFirstName = driverProfile?.first_name ?? 'Tu conductor'
+    notifyUserPushInBackground(
+      booking.customer_id,
+      'Conductor asignado',
+      `${driverFirstName} va en camino a recogerte — ${booking.booking_number}`,
+      { bookingId: booking.id, type: 'driver_assigned' },
+    )
+  }
 
   if (isReassignment && previousDriverId) {
     await admin.from('booking_events').insert({

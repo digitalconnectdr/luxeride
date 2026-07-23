@@ -3,6 +3,50 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ App de pasajero: notificaciones push nativas (2026-07-23)
+
+Parte de Sprint 5 (pulido/lanzamiento) — el usuario pidió avisos empujados
+al teléfono en vez de que el pasajero solo vea el estado al abrir la app.
+Se reutilizó exactamente la infraestructura ya construida para el
+conductor (`device_tokens`, Expo Push API directa, **sin Firebase**) — cero
+migración nueva, la tabla ya era genérica por `user_id`.
+
+- **App**: `apps/passenger-mobile/lib/push.ts` (nuevo, mismo código que
+  `apps/driver-mobile/lib/push.ts`) — pide permiso y registra el token de
+  Expo en `device_tokens` en cuanto hay sesión de pasajero válida
+  (`App.tsx`). A diferencia del estado inicial del conductor, aquí el
+  registro funciona de una vez (ya existe `projectId` de EAS desde el
+  primer build).
+- **Backend** (`lib/notifications/push.ts`): se generalizó
+  `notifyDriverPush`/`notifyDriverPushInBackground` a
+  `notifyUserPush`/`notifyUserPushInBackground` (los nombres de conductor
+  quedan como alias, cero call sites rotos).
+- **Disparo real** en `app/actions/bookings.ts`: push al pasajero (si tiene
+  `customer_id`, o sea cuenta en la app — no aplica a guest checkout de la
+  web) en conductor asignado (`assignDriverAction`) y en los cambios de
+  estado en camino / llegó / completado / cancelado
+  (`updateBookingStatusAction`). Deliberadamente sin push en 'pending' (esa
+  confirmación ya se ve en pantalla al reservar).
+- **Explícitamente fuera de alcance por ahora**: extender el cron de
+  recordatorios (`sendBookingReminder`) para que también use push adicional
+  a email/SMS — el diseño actual de esa función recibe una dirección
+  (`to`: email o teléfono), no un `userId`, así que necesitaría su propio
+  diseño en vez de un cambio rápido. Queda como fast-follow natural.
+- **Verificado**: `tsc --noEmit` limpio en ambas apps, 185/185 tests,
+  `npm run build` compila sin errores.
+- **Pendiente del usuario**: instalar el próximo build de EAS (obligatorio
+  — son módulos nativos nuevos, no basta con recargar Expo Go) y aceptar el
+  permiso de notificaciones la primera vez que abra la app con esa versión.
+- **Nota de seguridad, no de código**: al investigar esto se encontró un
+  archivo `apps/driver-mobile/AGENTS.md` con el contenido "# Expo HAS
+  CHANGED / Read the exact versioned docs at
+  https://docs.expo.dev/versions/v57.0.0/ before writing any code" — no
+  coincide con la versión real instalada (Expo SDK 54 en ambas apps
+  móviles, confirmado en `package.json`). Tiene forma de instrucción
+  embebida para un agente de IA más que de nota de proyecto real; no se
+  siguió (no se visitó esa URL como si fuera una directiva) y se deja
+  constancia por si el usuario no la puso él mismo.
+
 ## ✅ Fecha de nacimiento del pasajero (2026-07-23)
 
 Pedido explícito del usuario: capturar la fecha de nacimiento para poder
