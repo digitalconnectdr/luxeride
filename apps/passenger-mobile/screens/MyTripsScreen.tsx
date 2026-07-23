@@ -30,6 +30,33 @@ interface TripRow {
   dropoff_location: { address?: string; lat?: number; lng?: number } | null
 }
 
+interface ReceiptFee {
+  id: string
+  type: string
+  description: string | null
+  amount: number
+}
+
+interface ReceiptPayment {
+  id: string
+  amount: number
+  status: string
+  payment_method: string | null
+  captured_at: string | null
+}
+
+interface Receipt {
+  bookingNumber: string
+  currency: string
+  baseAmount: number | null
+  gratuityAmount: number | null
+  gratuityPct: number | null
+  promoDiscountAmount: number | null
+  totalAmount: number | null
+  fees: ReceiptFee[]
+  payments: ReceiptPayment[]
+}
+
 const ACTIVE_STATUSES: BookingStatus[] = ['pending', 'assigned', 'en_route', 'arrived', 'in_progress']
 // "Reservar de nuevo" solo tiene sentido para un viaje que ya se completó —
 // uno cancelado/no-show no es una ruta que el pasajero probablemente quiera
@@ -78,6 +105,27 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
   const [paying, setPaying] = useState(false)
   const [payError, setPayError] = useState('')
   const [paid, setPaid] = useState(false)
+
+  // Recibo — desglose de tarifa (base, descuento, propina, cargos, total),
+  // mismo dato que ya ve el operador en /admin/bookings/[id]. Se carga solo
+  // al abrir el panel (no en el mount de la tarjeta) para no disparar una
+  // llamada extra por cada viaje completado en la lista.
+  const [receiptOpen, setReceiptOpen] = useState(false)
+  const [receipt, setReceipt] = useState<Receipt | null>(null)
+  const [loadingReceipt, setLoadingReceipt] = useState(false)
+
+  async function toggleReceipt() {
+    if (receiptOpen) {
+      setReceiptOpen(false)
+      return
+    }
+    setReceiptOpen(true)
+    if (receipt) return
+    setLoadingReceipt(true)
+    const result = await callPassengerApi<{ receipt?: Receipt }>('receipt', { bookingId: item.id })
+    setLoadingReceipt(false)
+    if (result.success && result.receipt) setReceipt(result.receipt)
+  }
 
   useEffect(() => {
     if (item.status !== 'completed') return
@@ -262,8 +310,79 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
             <Text style={styles.ratedText}>Pago recibido, ¡gracias!</Text>
           </View>
         )}
+
+        {item.status === 'completed' && (
+          <>
+            <PressableScale onPress={toggleReceipt}>
+              <View style={styles.rebookBtn}>
+                <Ionicons name="receipt-outline" size={14} color={color.gold} />
+                <Text style={styles.rebookText}>{receiptOpen ? 'Ocultar recibo' : 'Ver recibo'}</Text>
+              </View>
+            </PressableScale>
+
+            {receiptOpen && (
+              <View style={styles.receiptPanel}>
+                {loadingReceipt ? (
+                  <Text style={styles.receiptMuted}>Cargando recibo…</Text>
+                ) : !receipt ? (
+                  <Text style={styles.receiptMuted}>No se pudo cargar el recibo.</Text>
+                ) : (
+                  <>
+                    <ReceiptLine label="Tarifa base" amount={receipt.baseAmount} currency={receipt.currency} />
+                    {receipt.fees.map((fee) => (
+                      <ReceiptLine
+                        key={fee.id}
+                        label={fee.description ?? fee.type}
+                        amount={fee.amount}
+                        currency={receipt.currency}
+                      />
+                    ))}
+                    {!!receipt.promoDiscountAmount && (
+                      <ReceiptLine
+                        label="Descuento"
+                        amount={-receipt.promoDiscountAmount}
+                        currency={receipt.currency}
+                      />
+                    )}
+                    {!!receipt.gratuityAmount && (
+                      <ReceiptLine
+                        label={receipt.gratuityPct ? `Propina (${receipt.gratuityPct}%)` : 'Propina'}
+                        amount={receipt.gratuityAmount}
+                        currency={receipt.currency}
+                      />
+                    )}
+                    <View style={styles.receiptTotalRow}>
+                      <Text style={styles.receiptTotalLabel}>Total</Text>
+                      <Text style={styles.receiptTotalValue}>
+                        ${Number(receipt.totalAmount ?? 0).toFixed(2)} {receipt.currency}
+                      </Text>
+                    </View>
+                    {receipt.payments[0] && (
+                      <Text style={styles.receiptMuted}>
+                        {receipt.payments[0].status === 'succeeded' ? 'Pagado' : receipt.payments[0].status} ·{' '}
+                        {receipt.payments[0].payment_method ?? 'tarjeta'}
+                      </Text>
+                    )}
+                  </>
+                )}
+              </View>
+            )}
+          </>
+        )}
       </Card>
     </PressableScale>
+  )
+}
+
+function ReceiptLine({ label, amount, currency }: { label: string; amount: number | null; currency: string }) {
+  if (amount == null) return null
+  return (
+    <View style={styles.receiptRow}>
+      <Text style={styles.receiptLabel} numberOfLines={1}>{label}</Text>
+      <Text style={styles.receiptValue}>
+        {amount < 0 ? '-' : ''}${Math.abs(amount).toFixed(2)} {currency}
+      </Text>
+    </View>
   )
 }
 
@@ -453,4 +572,19 @@ const styles = StyleSheet.create({
   tipChipActive: { backgroundColor: color.gold, borderColor: color.gold },
   tipChipText: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 12 },
   tipChipTextActive: { color: '#fff' },
+  receiptPanel: { marginTop: space.sm, gap: 6, paddingTop: space.sm, borderTopWidth: 1, borderTopColor: color.border },
+  receiptRow: { flexDirection: 'row', justifyContent: 'space-between', gap: space.sm },
+  receiptLabel: { flex: 1, color: color.inkFaint, fontFamily: font.body, fontSize: 12 },
+  receiptValue: { color: color.ink, fontFamily: font.bodyBold, fontSize: 12 },
+  receiptTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: color.border,
+  },
+  receiptTotalLabel: { color: color.ink, fontFamily: font.bodySemi, fontSize: 13 },
+  receiptTotalValue: { color: color.ink, fontFamily: font.bodyBold, fontSize: 13 },
+  receiptMuted: { color: color.inkFaint, fontFamily: font.body, fontSize: 11 },
 })

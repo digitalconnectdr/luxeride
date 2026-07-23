@@ -3,6 +3,24 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ App de pasajero: recibo con desglose de tarifa (2026-07-23)
+
+Cierra el hueco de "Historial + recibos" del roadmap (Sprint 3-4) — hasta
+ahora "Mis viajes" solo mostraba el total, sin desglose. `booking_fees` y
+`payments` tienen RLS scopeada a `company_id` (staff), así que el pasajero no
+puede leerlas directo por Supabase como sí hace con `bookings`.
+
+- **Ruta nueva** `/api/mobile/passenger/receipt` (mismo patrón bearer +
+  ownership check que las demás rutas mobile) — devuelve tarifa base,
+  descuento de promo, propina, cada `booking_fee` y el último pago
+  registrado, todos campos que ya existen en `bookings`/`booking_fees`/
+  `payments` (cero columnas nuevas).
+- **UI**: en "Mis viajes", cada viaje `completed` tiene un botón "Ver
+  recibo" que expande el desglose completo (carga perezosa, solo al abrir
+  el panel — no dispara una llamada extra por cada viaje de la lista).
+- **Verificado**: `tsc --noEmit` limpio en ambas apps, 185/185 tests,
+  `npm run build` compila sin errores.
+
 ## ⚠️ Resend en modo sandbox — los emails de producción probablemente solo llegan a una cuenta (2026-07-23)
 
 Descubierto al probar el envío de un recordatorio: Resend rechazó el envío
