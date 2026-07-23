@@ -3,6 +3,44 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fix real: pasajeros mezclados con el equipo en /admin/team + pestaña "Pasajeros" (2026-07-23)
+
+El usuario notó (viendo `/admin/team`) que cuentas de pasajeros — incluyendo
+las creadas por primera vez desde la app móvil — aparecían permanentemente
+en la tabla de "Equipo", junto al staff real, sin forma de filtrarlas ni ver
+más detalle que nombre y teléfono.
+
+- **Causa real**: la query de `/admin/team` nunca filtraba por rol —
+  `select(...).eq('company_id', ...)` traía TODAS las filas de
+  `user_profiles` de la empresa, incluyendo `role = 'customer'` (pasajeros)
+  y `role = 'corporate_manager'/'corporate_user'` (cuentas corporativas, que
+  ya se gestionan aparte en `/admin/corporate`). Un pasajero que reservó una
+  sola vez quedaba ahí para siempre.
+- **Fix**: `STAFF_ROLES` (`company_owner`, `company_admin`, `dispatcher`,
+  `accounting`, `driver`) — la pestaña "Equipo" ahora filtra
+  `.in('role', STAFF_ROLES)`.
+- **Pestaña nueva "Pasajeros"** (mismo patrón GET-form + `searchParams` que
+  ya usa `/admin/messages`, sin JS de cliente): búsqueda por nombre/teléfono,
+  filtro por rango de fecha de registro, paginación real a nivel de base de
+  datos (20 por página vía `.range()`, no carga todo a memoria), y por
+  pedido explícito del usuario tras ver la primera versión: columnas
+  **"Fecha de registro"** y **"Último acceso"** (ambas con fecha+hora) — el
+  último acceso viene de `auth.users.last_sign_in_at`, leído en la MISMA
+  llamada `getUserById` que ya se hacía para el email de cada fila (cero
+  llamadas extra).
+- **Índices**: ya existía `idx_user_profiles_company_role (company_id,
+  role)` desde la migración 03. Se agregó
+  `idx_user_profiles_company_role_created (company_id, role, created_at
+  DESC)` (migración 68) para que el filtro + orden de "Pasajeros" no tenga
+  que ordenar en memoria a medida que crece la base de clientes.
+- **Verificado en navegador** (Revival Transportation Group, datos reales):
+  la pestaña Pasajeros muestra correctamente 1 pasajero con email/fecha/
+  estado; confirmado por el usuario en captura de pantalla.
+- **Verificado**: `tsc --noEmit` limpio, 185/185 tests, `npm run build`
+  compila sin errores.
+- **Pendiente del usuario**: correr la migración
+  `20260723000068_customers_pagination_index.sql` en Supabase.
+
 ## ✅ App de pasajero: recibo con desglose de tarifa (2026-07-23)
 
 Cierra el hueco de "Historial + recibos" del roadmap (Sprint 3-4) — hasta
