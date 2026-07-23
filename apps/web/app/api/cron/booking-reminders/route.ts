@@ -36,7 +36,17 @@ function formatWhen(iso: string): string {
   return new Date(iso).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
+// GET: lo usa el cron de vercel.json. POST: lo usa el schedule de Upstash
+// QStash (por defecto envía POST) — mismo handler para ambos.
 export async function GET(request: Request) {
+  return handleRequest(request)
+}
+
+export async function POST(request: Request) {
+  return handleRequest(request)
+}
+
+async function handleRequest(request: Request) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
