@@ -130,10 +130,14 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
     pickupAddress: '', pickupLat: 0, pickupLng: 0,
     dropoffAddress: '', dropoffLat: 0, dropoffLng: 0,
     scheduledAt: '', bookingType: 'one_way' as BookingType,
+    requestedHours: undefined as number | undefined,
     stops: [] as { address: string; lat: number; lng: number }[],
   })
   // Multi-stop: cantidad de inputs de parada visibles (máx. 3)
   const [stopCount, setStopCount] = useState(0)
+  // Controla el select de tipo de servicio para mostrar "Horas solicitadas"
+  // solo cuando el tipo es 'hourly' (ver lib/pricing/engine.ts).
+  const [bookingTypeSel, setBookingTypeSel] = useState<BookingType>('one_way')
   const [vehicleQuotes, setVehicleQuotes] = useState<VehicleQuote[]>([])
   const [selectedQuote, setSelectedQuote] = useState<VehicleQuote | null>(null)
   const [passengerData, setPassengerData] = useState({
@@ -298,6 +302,9 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
       stops.push({ address, lat: sLat, lng: sLng })
     }
 
+    const requestedHoursRaw = parseFloat(fd.get('requested_hours') as string)
+    const requestedHours = Number.isFinite(requestedHoursRaw) && requestedHoursRaw > 0 ? requestedHoursRaw : undefined
+
     const newRouteData = {
       pickupAddress:  fd.get('pickup')  as string,
       pickupLat, pickupLng,
@@ -305,6 +312,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
       dropoffLat, dropoffLng,
       scheduledAt,
       bookingType: (fd.get('booking_type') as BookingType) || 'one_way',
+      requestedHours,
       stops,
     }
     setRouteData(newRouteData)
@@ -324,6 +332,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
         dropoffPostalCode,
         scheduledAt:  newRouteData.scheduledAt,
         bookingType:  newRouteData.bookingType,
+        requestedHours: newRouteData.requestedHours,
         stops:        newRouteData.stops,
         partnerSlug,
       })
@@ -610,7 +619,8 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
             </label>
             <select
               name="booking_type"
-              defaultValue="one_way"
+              value={bookingTypeSel}
+              onChange={(e) => setBookingTypeSel(e.target.value as BookingType)}
               className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
             >
               <option value="one_way">{dict.types.one_way}</option>
@@ -620,6 +630,22 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               <option value="hourly">{dict.types.hourly}</option>
             </select>
           </div>
+
+          {bookingTypeSel === 'hourly' && (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">
+                {dict.requestedHours}
+              </label>
+              <input
+                type="number"
+                name="requested_hours"
+                min={0.5}
+                step={0.5}
+                placeholder={dict.requestedHoursPlaceholder}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>

@@ -1651,6 +1651,7 @@ export type Database = {
           dropoff_address: string | null
           distance_miles: number | null
           duration_minutes: number | null
+          requested_hours: number | null
           route_polyline: string | null
           base_amount: number
           surcharge_amount: number | null
@@ -1674,6 +1675,7 @@ export type Database = {
           dropoff_address?: string | null | undefined
           distance_miles?: number | null | undefined
           duration_minutes?: number | null | undefined
+          requested_hours?: number | null | undefined
           route_polyline?: string | null | undefined
           base_amount: number
           surcharge_amount?: number | null | undefined
@@ -1697,6 +1699,7 @@ export type Database = {
           dropoff_address?: string | null | undefined
           distance_miles?: number | null | undefined
           duration_minutes?: number | null | undefined
+          requested_hours?: number | null | undefined
           route_polyline?: string | null | undefined
           base_amount?: number | undefined
           surcharge_amount?: number | null | undefined
@@ -1754,6 +1757,7 @@ export type Database = {
           no_show_at: string | null
           distance_miles: number | null
           duration_minutes: number | null
+          requested_hours: number | null
           actual_distance_miles: number | null
           actual_duration_minutes: number | null
           route_polyline: string | null
@@ -1826,6 +1830,7 @@ export type Database = {
           no_show_at?: string | null | undefined
           distance_miles?: number | null | undefined
           duration_minutes?: number | null | undefined
+          requested_hours?: number | null | undefined
           actual_distance_miles?: number | null | undefined
           actual_duration_minutes?: number | null | undefined
           route_polyline?: string | null | undefined
@@ -1898,6 +1903,7 @@ export type Database = {
           no_show_at?: string | null | undefined
           distance_miles?: number | null | undefined
           duration_minutes?: number | null | undefined
+          requested_hours?: number | null | undefined
           actual_distance_miles?: number | null | undefined
           actual_duration_minutes?: number | null | undefined
           route_polyline?: string | null | undefined

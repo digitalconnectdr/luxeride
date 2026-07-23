@@ -177,6 +177,11 @@ export async function calculateQuoteAction(
   const vehicleTypeId = (formData.get('vehicle_type_id') as string) || null
   const scheduledAtStr = formData.get('scheduled_at') as string
   const bookingType  = ((formData.get('booking_type') as string) || 'one_way') as BookingType
+  // "Horas solicitadas" — solo relevante cuando el tipo es 'hourly' (ver
+  // lib/pricing/engine.ts): reemplaza la duración estimada de Google Maps
+  // como base del cálculo para el modelo de precio "Por hora".
+  const requestedHoursRaw = parseFloat(formData.get('requested_hours') as string)
+  const requestedHours = Number.isFinite(requestedHoursRaw) && requestedHoursRaw > 0 ? requestedHoursRaw : null
 
   if (!pickupLat || !pickupLng || !dropoffLat || !dropoffLng) {
     return { success: false, error: 'Coordenadas de pickup/dropoff requeridas. Selecciona la dirección del dropdown.' }
@@ -232,7 +237,7 @@ export async function calculateQuoteAction(
   const durationMinutes = route?.durationMinutes ?? 0
 
   const fare = calculateFare(
-    rule, distanceMiles, durationMinutes, scheduledAt, bookingType, companyTz?.timezone,
+    rule, distanceMiles, durationMinutes, scheduledAt, bookingType, companyTz?.timezone, requestedHours,
   )
 
   // Guardar cotización (admin client — no hay INSERT policy de usuario en price_quotes)
@@ -250,6 +255,7 @@ export async function calculateQuoteAction(
       dropoff_address: dropoffAddr,
       distance_miles:  distanceMiles || null,
       duration_minutes: durationMinutes || null,
+      requested_hours: requestedHours,
       route_polyline:  route?.polyline ?? null,
       base_amount:     fare.baseAmount,
       surcharge_amount: fare.surchargeAmount,
@@ -379,6 +385,7 @@ export async function createBookingAction(
       currency:         quote.currency ?? 'USD',
       distance_miles:   quote.distance_miles,
       duration_minutes: quote.duration_minutes,
+      requested_hours:  quote.requested_hours,
       route_polyline:   quote.route_polyline,
       created_by:       user.id,
     })
@@ -793,6 +800,10 @@ export async function getPublicVehicleQuotesAction(
     dropoffPostalCode?: string | null
     scheduledAt: string
     bookingType?: BookingType
+    // "Horas solicitadas" — solo relevante cuando bookingType es 'hourly'
+    // (ver lib/pricing/engine.ts): el cliente indica cuántas horas quiere,
+    // en vez de que el sistema infiera la duración desde la ruta estimada.
+    requestedHours?: number
     stops?: StopInput[]
     partnerSlug?: string
   },
@@ -904,7 +915,7 @@ export async function getPublicVehicleQuotesAction(
     }
 
     const fare = calculateFare(
-      rule, distanceMiles, durationMinutes, scheduledAt, bookingType, company.timezone,
+      rule, distanceMiles, durationMinutes, scheduledAt, bookingType, company.timezone, data.requestedHours,
     )
     // El ajuste de tarifa del partner (si aplica) se hornea en el total
     // guardado en price_quotes — todo lo que viene despues (createPublicBookingAction)
@@ -927,6 +938,7 @@ export async function getPublicVehicleQuotesAction(
         dropoff_address: data.dropoffAddress,
         distance_miles:  distanceMiles || null,
         duration_minutes: durationMinutes || null,
+        requested_hours: data.requestedHours ?? null,
         route_polyline:  route?.polyline ?? null,
         base_amount:     fare.baseAmount,
         surcharge_amount: fare.surchargeAmount,
@@ -1202,6 +1214,7 @@ export async function createPublicBookingAction(data: {
       currency:         quote.currency ?? 'USD',
       distance_miles:   quote.distance_miles,
       duration_minutes: quote.duration_minutes,
+      requested_hours:  quote.requested_hours,
       route_polyline:   quote.route_polyline,
       promo_code_id:        promoCodeId,
       promo_discount_amount: promoCodeId ? discountAmount : null,

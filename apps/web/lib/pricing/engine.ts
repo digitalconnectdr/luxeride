@@ -85,6 +85,7 @@ export function calculateFare(
   scheduledAt: Date,
   bookingType: BookingType,
   timezone?: string | null,
+  requestedHours?: number | null,
 ): FareResult {
   let base = 0
 
@@ -101,12 +102,16 @@ export function calculateFare(
       break
     }
     case 'hourly': {
-      // Piso de horas: un servicio "por horas" (bodas, eventos, disposición
-      // del conductor) no se cotiza por cuánto tarda Google en manejar de
-      // origen a destino — si ambas direcciones son iguales (común en este
-      // tipo de servicio), la duración estimada es ~0 y sin este piso la
-      // tarifa base saldría en $0.
-      const hours = Math.max(durationMinutes / 60, rule.minimum_hours ?? 0)
+      // Si el cliente/staff indicó cuántas horas quiere (servicio "a
+      // disposición": bodas, eventos, con paradas y esperas), se usa eso en
+      // vez de la duración estimada de Google Maps entre origen y destino
+      // — que no representa el bloque de horas real contratado. minimum_hours
+      // sigue siendo el piso en ambos casos (regla del operador, ej. "3h
+      // mínimo"), incluso si el cliente pidió menos.
+      const baseHours = requestedHours != null && requestedHours > 0
+        ? requestedHours
+        : durationMinutes / 60
+      const hours = Math.max(baseHours, rule.minimum_hours ?? 0)
       base = (rule.hourly_rate ?? 0) * hours
       break
     }

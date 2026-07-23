@@ -44,6 +44,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [phase, setPhase] = useState<'route' | 'passenger'>('route')
+  const [bookingType, setBookingType] = useState<typeof BOOKING_TYPE_VALUES[number]>('one_way')
   const [stopCount, setStopCount] = useState(0) // multi-stop (máx. 3)
   const [quote, setQuote]  = useState<QuoteResult | null>(null)
   const [error, setError]  = useState('')
@@ -126,7 +127,8 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
             </label>
             <select
               name="booking_type"
-              defaultValue="one_way"
+              value={bookingType}
+              onChange={(e) => setBookingType(e.target.value as typeof BOOKING_TYPE_VALUES[number])}
               className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
             >
               {BOOKING_TYPE_VALUES.map((v) => (
@@ -134,6 +136,22 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
               ))}
             </select>
           </div>
+
+          {bookingType === 'hourly' && (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
+                {t.requestedHours}
+              </label>
+              <input
+                type="number"
+                name="requested_hours"
+                min={0.5}
+                step={0.5}
+                placeholder={t.requestedHoursPlaceholder}
+                className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
+              />
+            </div>
+          )}
 
           {vehicleTypes.length > 0 && (
             <div>

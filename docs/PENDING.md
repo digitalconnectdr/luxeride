@@ -61,6 +61,39 @@ horas) — eligió la opción rápida: **mínimo de horas a nivel de regla**.
   mínimo de horas en las reglas "Por hora" existentes (por defecto queda en
   0, es decir sin cambio de comportamiento hasta que se configure).
 
+## ✅ Pricing "Por hora": campo "Horas solicitadas" + mínimo default 1h (2026-07-23)
+
+Continuación de la revisión de "Por hora": el usuario pidió NO elegir entre
+el mínimo de horas y el campo de horas solicitadas — quiso las dos cosas.
+
+- **Migración** `20260723000067_requested_hours.sql`: agrega
+  `price_quotes.requested_hours` y `bookings.requested_hours`; sube el
+  `DEFAULT` de `pricing_rules.minimum_hours` de 0 a 1 (para reglas nuevas) y
+  además actualiza las reglas "Por hora" existentes que seguían en 0 (nadie
+  las había configurado todavía vía la UI nueva) a 1, para que el fix del
+  caso "$0" aplique de inmediato sin tocarlas una por una.
+- **`lib/pricing/engine.ts`**: `calculateFare()` ahora acepta
+  `requestedHours` opcional. Si viene (y es > 0), se usa como base de horas
+  en vez de la duración estimada de Google Maps; `minimum_hours` sigue
+  siendo el piso en ambos casos — si el cliente pide menos horas que el
+  mínimo del operador, igual se cobra el mínimo (4 tests nuevos).
+- **Backend**: `calculateQuoteAction` y `getPublicVehicleQuotesAction` leen
+  `requested_hours`/`requestedHours` y lo pasan a `calculateFare` +
+  lo guardan en `price_quotes`. `createBookingAction` y
+  `createPublicBookingAction` copian `requested_hours` del quote a la
+  reserva (mismo patrón que `duration_minutes`) — sin parámetros nuevos ahí,
+  ya leen `select('*')` de `price_quotes`.
+- **UI**: campo "Horas solicitadas" condicional (solo con tipo de servicio
+  "Por hora") en el wizard público (`booking-wizard.tsx`, paso 1) y en el
+  formulario de admin (`new-booking-form.tsx`, fase 1 — ruta).
+- **Explícitamente fuera de alcance todavía**: la app móvil de pasajero no
+  tiene ninguna opción de tipo de servicio "Por hora" (siempre reserva
+  `one_way`) — agregar ese flujo ahí es trabajo aparte, no se tocó.
+- **Verificado**: `tsc --noEmit` limpio, 185/185 tests, `npm run build`
+  compila sin errores.
+- **Pendiente del usuario**: correr la migración
+  `20260723000067_requested_hours.sql` en Supabase.
+
 ## ✅ Feedback de sesión sobre la app de pasajero + AI Growth Assistant (2026-07-23)
 
 Tras probar el build anterior en el dispositivo, tres observaciones de UI +

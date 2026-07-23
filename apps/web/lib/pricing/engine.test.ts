@@ -90,6 +90,30 @@ describe('calculateFare | modelos', () => {
     expect(fare.baseAmount).toBe(400) // 4h * 100, no 0
   })
 
+  it('hourly con requestedHours usa las horas pedidas en vez de la duración estimada', () => {
+    const fare = calculateFare(
+      rule({ model: 'hourly', hourly_rate: 100, minimum_hours: 1 }),
+      0, 20, WEEKDAY_AFTERNOON, 'one_way', TZ_SD, 5, // ruta estimada de 20min, pero el cliente pidió 5h
+    )
+    expect(fare.baseAmount).toBe(500) // 5h * 100, no 0.33h * 100
+  })
+
+  it('hourly con requestedHours menor que minimum_hours igual respeta el piso del operador', () => {
+    const fare = calculateFare(
+      rule({ model: 'hourly', hourly_rate: 100, minimum_hours: 3 }),
+      0, 0, WEEKDAY_AFTERNOON, 'one_way', TZ_SD, 2, // pidió 2h, pero el mínimo de la regla es 3h
+    )
+    expect(fare.baseAmount).toBe(300) // 3h * 100, no 2h * 100
+  })
+
+  it('hourly ignora requestedHours en 0/negativo y cae a la duración estimada', () => {
+    const fare = calculateFare(
+      rule({ model: 'hourly', hourly_rate: 100, minimum_hours: 1 }),
+      0, 90, WEEKDAY_AFTERNOON, 'one_way', TZ_SD, 0,
+    )
+    expect(fare.baseAmount).toBe(150) // 1.5h * 100, requestedHours=0 se ignora
+  })
+
   it('aplica tarifa mínima', () => {
     const fare = calculateFare(
       rule({ minimum_fare: 50 }),
