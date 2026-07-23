@@ -61,6 +61,27 @@ horas) — eligió la opción rápida: **mínimo de horas a nivel de regla**.
   mínimo de horas en las reglas "Por hora" existentes (por defecto queda en
   0, es decir sin cambio de comportamiento hasta que se configure).
 
+## ✅ App de pasajero: "Reservar de nuevo" desde Mis viajes (2026-07-23)
+
+Siguiente pieza del roadmap de Sprint 3-4 (`docs/PHASE-2-MOBILE.md`) — "Re-
+reservar en 1 toque" estaba listado como pendiente.
+
+- **`lib/types.ts`**: `BookingPrefill` (pickup/dropoff address+lat/lng+
+  passengerCount) + `NewBooking: { prefill?: BookingPrefill } | undefined`
+  en `BookingStackParamList` (antes `undefined` a secas).
+- **`NewBookingScreen.tsx`**: lee `route.params?.prefill` para precargar
+  origen/destino/pasajeros. Como bookings no guarda `placeId`/código
+  postal, el prefill marca los campos como "no resueltos por autocomplete"
+  pero con lat/lng reales — suficiente para cotizar sin re-geocodificar.
+  Se agregó un `useEffect` además del `useState` inicial: si la pantalla ya
+  estaba montada (el pasajero ya había visitado esa pestaña), el estado
+  inicial no se habría actualizado con params nuevos — el efecto lo corrige.
+- **`MyTripsScreen.tsx`**: botón "Reservar de nuevo" en viajes con status
+  `completed` (no en cancelados/no-show — la ruta pudo ser el motivo de la
+  cancelación) que tengan lat/lng guardados en ambas direcciones.
+- **Verificado**: `tsc --noEmit` limpio en `apps/passenger-mobile`.
+- Build EAS nuevo en camino con este cambio.
+
 ## ✅ Pricing "Por hora": campo "Horas solicitadas" + mínimo default 1h (2026-07-23)
 
 Continuación de la revisión de "Por hora": el usuario pidió NO elegir entre
