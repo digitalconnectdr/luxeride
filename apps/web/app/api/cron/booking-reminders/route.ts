@@ -26,10 +26,17 @@ interface NotificationReminders {
   driverMinutes?: number[]
 }
 
+// Acepta el secreto por header (crons de Vercel: Authorization: Bearer ...)
+// O por query param ?token=... — la consola de Upstash QStash, al crear un
+// Schedule, solo deja agregar headers de su propia lista predefinida
+// (Upstash-Cron, Upstash-Method, etc.), no headers personalizados como
+// Authorization; el query param evita pelear con esa limitación de la UI.
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return false
-  return request.headers.get('authorization') === `Bearer ${secret}`
+  if (request.headers.get('authorization') === `Bearer ${secret}`) return true
+  const url = new URL(request.url)
+  return url.searchParams.get('token') === secret
 }
 
 function formatWhen(iso: string): string {
