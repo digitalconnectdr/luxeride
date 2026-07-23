@@ -46,7 +46,7 @@ export function MapsProvider({ children }: MapsProviderProps) {
   return (
     <APIProvider
       apiKey={API_KEY}
-      libraries={['places', 'routes', 'geometry', 'visualization']}
+      libraries={['places', 'routes', 'geometry']}
       language={language}
       region="DO"
     >

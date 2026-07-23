@@ -3,6 +3,31 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fix crítico: Google eliminó HeatmapLayer, crasheaba "Rutas frecuentes" (2026-07-23)
+
+Descubierto en producción real (Revival Transportation Group, primera vez
+que alguien entraba a la pestaña con datos reales) — pantalla en blanco:
+"Application error: a client-side exception has occurred".
+
+- **Causa real** (confirmada por consola del navegador del usuario):
+  `Error: The Heatmap Layer functionality in the Maps JavaScript API is no
+  longer available in the Maps JavaScript API as of version 3.65.` Google
+  **eliminó por completo** `google.maps.visualization.HeatmapLayer` de su
+  API — no era un bug de tipos desactualizados como se pensó al construir
+  la feature (ver nota original en el commit), sino que la función ya no
+  existe en absoluto. Nunca se había detectado porque no se pudo probar
+  visualmente con datos reales durante la construcción (sin cuenta con el
+  addon activo en ese momento).
+- **Fix** (`route-insights-map.tsx`): se reemplaza `HeatmapLayer` por
+  `google.maps.Circle` — un círculo pequeño y semitransparente (300m,
+  18% opacidad) por cada punto de recogida/destino. Donde hay más
+  reservas cercanas, los círculos se superponen y la zona se ve más
+  intensa — mismo efecto visual de densidad, con una API que sí sigue
+  soportada. Se quita `'visualization'` de `maps-provider.tsx` (ya no se
+  usa esa librería).
+- **Verificado**: `tsc --noEmit` limpio, `npm run build` compila sin
+  errores.
+
 ## ✅ App de pasajero — 3 pulidos tras la primera prueba end-to-end real (2026-07-23)
 
 Primer recorrido completo en dispositivo físico (signup → cotizar → elegir

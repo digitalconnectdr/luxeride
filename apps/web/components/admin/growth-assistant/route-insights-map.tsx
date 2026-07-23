@@ -7,7 +7,7 @@
 // esto — antes no se usaba en ningún lado del proyecto.
 
 import { useEffect, useRef, useState } from 'react'
-import { Map, useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
+import { Map, useMap } from '@vis.gl/react-google-maps'
 import { MapsProvider } from '@/components/maps/maps-provider'
 import { APPLE_WHITE_MAP_STYLES } from '@/lib/maps/config'
 import type { Dictionary } from '@/lib/i18n/server'
@@ -15,45 +15,37 @@ import type { RouteCorridor, HeatmapPoint } from '@/lib/route-insights/engine'
 
 type T = Dictionary['admin']['growthAssistant']
 
-// @types/google.maps declara HeatmapLayer con un constructor sin argumentos
-// y sin setMap/setData — desactualizado respecto a la API real de Google
-// (visualization library). Se define la forma real usada aquí y se castea
-// puntualmente al construirla.
-interface HeatmapLayerLike {
-  setMap(map: google.maps.Map | null): void
-  setData(data: google.maps.LatLng[]): void
-}
-type HeatmapLayerCtor = new (opts: {
-  data: google.maps.LatLng[]
-  radius?: number
-  opacity?: number
-  gradient?: string[]
-}) => HeatmapLayerLike
-
+// Google eliminó HeatmapLayer de la Maps JavaScript API (deprecada, ya no
+// disponible desde la versión 3.65 — ver
+// https://developers.google.com/maps/deprecations) — descubierto en
+// producción real (crash "The Heatmap Layer functionality... is no longer
+// available"). Se reemplaza por círculos pequeños semitransparentes por
+// punto: donde hay más reservas cercanas, los círculos se superponen y la
+// zona se ve más intensa — mismo efecto visual de densidad, sin depender de
+// una función retirada de la API.
 function HeatmapPoints({ points, color, opacity }: { points: HeatmapPoint[]; color: string; opacity: number }) {
   const map = useMap()
-  const visualizationLib = useMapsLibrary('visualization')
-  const layerRef = useRef<HeatmapLayerLike | null>(null)
+  const circlesRef = useRef<google.maps.Circle[]>([])
 
   useEffect(() => {
-    if (!map || !visualizationLib || points.length === 0) return
-    const data = points.map((p) => new google.maps.LatLng(p.lat, p.lng))
-    if (!layerRef.current) {
-      const HeatmapLayer = visualizationLib.HeatmapLayer as unknown as HeatmapLayerCtor
-      layerRef.current = new HeatmapLayer({
-        data,
-        radius: 24,
-        opacity,
-        gradient: [`rgba(255,255,255,0)`, color, color],
-      })
-      layerRef.current.setMap(map)
-    } else {
-      layerRef.current.setData(data)
-    }
+    if (!map) return
+    circlesRef.current.forEach((c) => c.setMap(null))
+    circlesRef.current = points.map(
+      (p) =>
+        new google.maps.Circle({
+          center: { lat: p.lat, lng: p.lng },
+          radius: 300,
+          strokeWeight: 0,
+          fillColor: color,
+          fillOpacity: opacity,
+          map,
+          clickable: false,
+        }),
+    )
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, visualizationLib, points])
+  }, [map, points])
 
-  useEffect(() => () => { layerRef.current?.setMap(null); layerRef.current = null }, [])
+  useEffect(() => () => circlesRef.current.forEach((c) => c.setMap(null)), [])
 
   return null
 }
@@ -162,8 +154,8 @@ export function RouteInsightsMap({ corridors, pickupPoints, dropoffPoints, t }: 
             fullscreenControl={false}
           >
             <FitAllPoints pickupPoints={pickupPoints} dropoffPoints={dropoffPoints} />
-            <HeatmapPoints points={pickupPoints} color="#e9c176" opacity={0.7} />
-            <HeatmapPoints points={dropoffPoints} color="#c0473d" opacity={0.7} />
+            <HeatmapPoints points={pickupPoints} color="#e9c176" opacity={0.18} />
+            <HeatmapPoints points={dropoffPoints} color="#c0473d" opacity={0.18} />
             <CorridorLines corridors={corridors} visible={showCorridors} />
           </Map>
         </MapsProvider>
