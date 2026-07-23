@@ -17,6 +17,7 @@ function rule(overrides: Partial<PricingRuleFields> = {}): PricingRuleFields {
     per_km_rate: null,
     hourly_rate: null,
     minimum_fare: null,
+    minimum_hours: null,
     origin_zone_id: null,
     destination_zone_id: null,
     airport_pickup_fee: null,
@@ -63,6 +64,30 @@ describe('calculateFare | modelos', () => {
       5, 90, WEEKDAY_AFTERNOON, 'one_way', TZ_SD,
     )
     expect(fare.baseAmount).toBe(165) // 1.5h * 110
+  })
+
+  it('hourly con minimum_hours aplica el piso cuando la duración estimada es menor', () => {
+    const fare = calculateFare(
+      rule({ model: 'hourly', hourly_rate: 100, minimum_hours: 3 }),
+      0, 20, WEEKDAY_AFTERNOON, 'one_way', TZ_SD, // 20min = 0.33h, menos que el piso de 3h
+    )
+    expect(fare.baseAmount).toBe(300) // 3h * 100, no 0.33h * 100
+  })
+
+  it('hourly con minimum_hours no reduce la duración cuando esta ya la supera', () => {
+    const fare = calculateFare(
+      rule({ model: 'hourly', hourly_rate: 100, minimum_hours: 3 }),
+      0, 300, WEEKDAY_AFTERNOON, 'one_way', TZ_SD, // 300min = 5h, más que el piso
+    )
+    expect(fare.baseAmount).toBe(500) // 5h * 100
+  })
+
+  it('hourly con origen=destino (duración ~0) y minimum_hours evita cobrar $0', () => {
+    const fare = calculateFare(
+      rule({ model: 'hourly', hourly_rate: 100, minimum_hours: 4 }),
+      0, 0, WEEKDAY_AFTERNOON, 'one_way', TZ_SD,
+    )
+    expect(fare.baseAmount).toBe(400) // 4h * 100, no 0
   })
 
   it('aplica tarifa mínima', () => {

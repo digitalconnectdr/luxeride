@@ -23,6 +23,44 @@ recibos, recordatorios, etc.), solo esa cuenta de prueba.
   dominio, tanto en `.env.local` como en Vercel. No se puede hacer sin
   acceso al panel de DNS del dominio.
 
+## ✅ Pricing "Por hora": mínimo de horas para evitar cobrar $0 (2026-07-23)
+
+El usuario pidió revisar la regla "Por hora" en `/admin/pricing`. Hallazgo:
+el modelo `hourly` nunca cobró por horas SOLICITADAS — cobra
+`tarifa_por_hora × duración estimada por Google Maps entre origen y
+destino` (`lib/pricing/engine.ts`). Esto no encaja con cómo se vende
+normalmente un servicio "por horas" (bodas, eventos, conductor a
+disposición), donde origen y destino suelen ser iguales o la ruta es corta
+— con la lógica actual eso da una tarifa base de ~$0. No existe en NINGÚN
+lugar (web, admin, app móvil) un campo para que el cliente/staff indique
+"quiero 3 horas de servicio".
+
+Se le presentaron 3 opciones al usuario (agregar selector de horas
+solicitadas al cliente, dejarlo como está, o solo poner un mínimo de
+horas) — eligió la opción rápida: **mínimo de horas a nivel de regla**.
+
+- **Migración** `20260723000066_pricing_minimum_hours.sql`:
+  `pricing_rules.minimum_hours NUMERIC(6,2) DEFAULT 0`.
+- **`lib/pricing/engine.ts`**: `case 'hourly'` ahora usa
+  `Math.max(durationMinutes / 60, rule.minimum_hours ?? 0)` — la tarifa
+  nunca se calcula con menos horas que el mínimo configurado, sin importar
+  cuán corta sea la ruta estimada (3 tests nuevos, incluyendo origen=destino).
+- **UI**: campo "Mínimo de horas" condicional (solo aparece cuando el
+  modelo es "Por hora"), igual patrón que los selects de zona condicionales
+  a "Por zona" — en el formulario de crear (`pricing-model-field.tsx`) y de
+  editar (`pricing-rule-row.tsx`) reglas.
+- **Explícitamente NO resuelto todavía**: un campo real de "horas
+  solicitadas" capturado del cliente al reservar (requeriría UI nueva en el
+  wizard web, el form de admin y la app móvil, más lógica de qué pasa si el
+  cliente pide menos horas que las paradas/ruta real necesitan) — el
+  usuario lo dejó pendiente de revisión futura.
+- **Verificado**: `tsc --noEmit` limpio, 182/182 tests, `npm run build`
+  compila sin errores.
+- **Pendiente del usuario**: correr la migración
+  `20260723000066_pricing_minimum_hours.sql` en Supabase; configurar un
+  mínimo de horas en las reglas "Por hora" existentes (por defecto queda en
+  0, es decir sin cambio de comportamiento hasta que se configure).
+
 ## ✅ Feedback de sesión sobre la app de pasajero + AI Growth Assistant (2026-07-23)
 
 Tras probar el build anterior en el dispositivo, tres observaciones de UI +

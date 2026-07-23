@@ -29,6 +29,7 @@ interface Rule {
   per_km_rate: number | string | null
   hourly_rate: number | string | null
   minimum_fare: number | string | null
+  minimum_hours: number | string | null
   origin_zone_id: string | null
   destination_zone_id: string | null
   airport_pickup_fee: number | string | null
@@ -152,6 +153,12 @@ export function PricingRuleRow({
                 <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.minimumFare}</label>
                 <input name="minimum_fare" type="number" step="0.01" min="0" defaultValue={num(rule.minimum_fare)} className={inputCls} />
               </div>
+              {model === 'hourly' && (
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.minimumHours}</label>
+                  <input name="minimum_hours" type="number" step="0.5" min="0" defaultValue={num(rule.minimum_hours)} className={inputCls} />
+                </div>
+              )}
               <div>
                 <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.nightSurcharge}</label>
                 <input name="night_surcharge_pct" type="number" step="0.01" min="0" defaultValue={num(rule.night_surcharge_pct)} className={inputCls} />

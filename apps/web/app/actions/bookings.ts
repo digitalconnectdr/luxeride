@@ -198,7 +198,7 @@ export async function calculateQuoteAction(
   const [{ data: rulesRaw }, { data: zonesRaw }] = await Promise.all([
     admin
       .from('pricing_rules')
-      .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, surge_enabled, surge_multiplier, vehicle_type_id, priority')
+      .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, minimum_hours, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, surge_enabled, surge_multiplier, vehicle_type_id, priority')
       .eq('company_id', user.company_id)
       .eq('is_active', true)
       .order('priority', { ascending: false }),
@@ -860,7 +860,7 @@ export async function getPublicVehicleQuotesAction(
   const [{ data: rulesRaw }, { data: zonesRaw }] = await Promise.all([
     admin
       .from('pricing_rules')
-      .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, surge_enabled, surge_multiplier, vehicle_type_id, priority')
+      .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, minimum_hours, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, surge_enabled, surge_multiplier, vehicle_type_id, priority')
       .eq('company_id', companyId)
       .eq('is_active', true)
       .order('priority', { ascending: false }),

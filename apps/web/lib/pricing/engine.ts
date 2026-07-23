@@ -13,6 +13,7 @@ export interface PricingRuleFields {
   per_km_rate: number | null
   hourly_rate: number | null
   minimum_fare: number | null
+  minimum_hours: number | null
   origin_zone_id: string | null
   destination_zone_id: string | null
   airport_pickup_fee: number | null
@@ -99,9 +100,16 @@ export function calculateFare(
       base = rule.base_price + (rule.per_km_rate ?? 0) * km
       break
     }
-    case 'hourly':
-      base = (rule.hourly_rate ?? 0) * (durationMinutes / 60)
+    case 'hourly': {
+      // Piso de horas: un servicio "por horas" (bodas, eventos, disposición
+      // del conductor) no se cotiza por cuánto tarda Google en manejar de
+      // origen a destino — si ambas direcciones son iguales (común en este
+      // tipo de servicio), la duración estimada es ~0 y sin este piso la
+      // tarifa base saldría en $0.
+      const hours = Math.max(durationMinutes / 60, rule.minimum_hours ?? 0)
+      base = (rule.hourly_rate ?? 0) * hours
       break
+    }
     case 'zone_based':
     default:
       base = rule.base_price
