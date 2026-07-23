@@ -1,12 +1,23 @@
 'use client'
-// ── Chips de horas (umbrales de recordatorio) ──────────────────────────────
+// ── Chips de umbrales de recordatorio (en minutos) ─────────────────────────
 // Mismo patrón que ZoneGeoFields (códigos postales): chips visuales + input
 // que agrega con Enter/coma/blur, persistido como inputs ocultos repetidos
-// bajo la misma `name` (el server action los lee con formData.getAll).
+// bajo la misma `name` (el server action los lee con formData.getAll). El
+// operador escribe minutos (30, 90, 360, 1440...); se muestran formateados
+// como duración legible (30m, 1h30, 6h, 1d) para que no tenga que calcular.
 
 import { useState, type KeyboardEvent } from 'react'
 
-const MAX_HOURS = 168 // 7 días
+const MAX_MINUTES = 10_080 // 7 días
+const MIN_MINUTES = 5
+
+export function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`
+  if (minutes % 1440 === 0) return `${minutes / 1440}d`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  return rest === 0 ? `${hours}h` : `${hours}h${rest}`
+}
 
 export function HourChipsField({
   name,
@@ -22,7 +33,7 @@ export function HourChipsField({
 
   function addValue(raw: string) {
     const n = parseInt(raw, 10)
-    if (!Number.isInteger(n) || n < 1 || n > MAX_HOURS || values.includes(n)) {
+    if (!Number.isInteger(n) || n < MIN_MINUTES || n > MAX_MINUTES || values.includes(n)) {
       setDraft('')
       return
     }
@@ -48,12 +59,12 @@ export function HourChipsField({
               key={v}
               className="inline-flex items-center gap-1 text-xs bg-sl-bg border border-sl-outline-variant rounded-full pl-2.5 pr-1.5 py-1 text-sl-on-surface"
             >
-              {v}h
+              {formatDuration(v)}
               <button
                 type="button"
                 onClick={() => setValues((prev) => prev.filter((x) => x !== v))}
                 className="text-sl-on-surface-muted hover:text-red-500 leading-none"
-                aria-label={`Quitar ${v}h`}
+                aria-label={`Quitar ${formatDuration(v)}`}
               >
                 ×
               </button>
@@ -63,8 +74,8 @@ export function HourChipsField({
       )}
       <input
         type="number"
-        min={1}
-        max={MAX_HOURS}
+        min={MIN_MINUTES}
+        max={MAX_MINUTES}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={handleKeyDown}

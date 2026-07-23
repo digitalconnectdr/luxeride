@@ -331,16 +331,19 @@ export async function updateGratuitySettingsAction(
 }
 
 // ── Recordatorios automáticos de viaje próximo ────────────────────────────────
-// Umbrales en horas (ej. 6, 24) configurables por separado para pasajero y
-// conductor — el cron de app/api/cron/booking-reminders/route.ts los lee de
-// aquí. Corre 1 vez al día (límite del plan Hobby de Vercel), así que solo
-// tienen sentido umbrales de varias horas, no minutos.
+// Umbrales en MINUTOS (ej. 30, 90, 360, 1440) configurables por separado para
+// pasajero y conductor — el cron de app/api/cron/booking-reminders/route.ts
+// los lee de aquí. Ese cron está registrado 1x/día en vercel.json (respaldo,
+// límite del plan Hobby), pero está pensado para dispararse cada 5-15 min vía
+// un schedule de Upstash QStash (mismo CRON_SECRET como header HTTP, sin
+// tocar el plan de Vercel) — con eso, umbrales de minutos sí llegan con
+// precisión real. Ver docs/PENDING.md para las instrucciones de QStash.
 
-function parseHoursList(formData: FormData, field: string): number[] {
+function parseMinutesList(formData: FormData, field: string): number[] {
   return formData
     .getAll(field)
     .map((v) => parseInt(v as string, 10))
-    .filter((n) => Number.isInteger(n) && n >= 1 && n <= 168) // hasta 7 días
+    .filter((n) => Number.isInteger(n) && n >= 5 && n <= 10_080) // hasta 7 días
     .sort((a, b) => a - b)
     .filter((n, i, arr) => arr.indexOf(n) === i) // sin duplicados
     .slice(0, 10)
@@ -352,8 +355,8 @@ export async function updateNotificationRemindersAction(
   const user = await requireRole('company_owner')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
-  const passengerHours = parseHoursList(formData, 'passenger_hours')
-  const driverHours = parseHoursList(formData, 'driver_hours')
+  const passengerMinutes = parseMinutesList(formData, 'passenger_minutes')
+  const driverMinutes = parseMinutesList(formData, 'driver_minutes')
 
   const admin = createAdminClient()
 
@@ -368,7 +371,7 @@ export async function updateNotificationRemindersAction(
   const currentSettings = (company.settings as Record<string, unknown>) ?? {}
   const updatedSettings = {
     ...currentSettings,
-    notificationReminders: { passengerHours, driverHours },
+    notificationReminders: { passengerMinutes, driverMinutes },
   }
 
   const { error } = await admin

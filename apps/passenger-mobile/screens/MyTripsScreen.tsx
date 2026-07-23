@@ -29,6 +29,16 @@ interface TripRow {
 
 const ACTIVE_STATUSES: BookingStatus[] = ['pending', 'assigned', 'en_route', 'arrived', 'in_progress']
 
+// Indicador de cercanía: mientras más cerca el viaje, más "urgente" el color
+// (verde -> ámbar -> rojo), igual que el semáforo de StatusBadge pero para
+// el tiempo restante en vez del estado.
+function urgency(hoursUntil: number): { label: string; tint: string } {
+  if (hoursUntil < 6) return { label: 'Muy pronto', tint: color.danger }
+  if (hoursUntil < 24) return { label: 'Hoy', tint: color.warning }
+  const days = Math.round(hoursUntil / 24)
+  return { label: days <= 1 ? 'Mañana' : `En ${days} días`, tint: color.success }
+}
+
 export function MyTripsScreen() {
   // any: esta pantalla vive en el Tab.Navigator raíz, no en BookingStack
   // (que es donde vive TripTracking) — React Navigation soporta navegar a un
@@ -92,6 +102,9 @@ export function MyTripsScreen() {
       renderItem={({ item }) => {
         const isActive = ACTIVE_STATUSES.includes(item.status)
         const date = new Date(item.scheduled_at)
+        const hoursUntil = (date.getTime() - Date.now()) / 3_600_000
+        const showUrgency = isActive && hoursUntil > 0 && hoursUntil < 240 // hasta 10 días
+        const urgencyInfo = showUrgency ? urgency(hoursUntil) : null
         return (
           <PressableScale
             onPress={() =>
@@ -118,10 +131,18 @@ export function MyTripsScreen() {
               </View>
 
               <View style={styles.footer}>
-                <Text style={styles.date}>
-                  {date.toLocaleDateString('es-DO', { day: 'numeric', month: 'short' })} ·{' '}
-                  {date.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
-                </Text>
+                <View style={styles.dateGroup}>
+                  <Text style={styles.date}>
+                    {date.toLocaleDateString('es-DO', { day: 'numeric', month: 'short' })} ·{' '}
+                    {date.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                  {urgencyInfo && (
+                    <View style={[styles.urgencyPill, { backgroundColor: `${urgencyInfo.tint}18`, borderColor: `${urgencyInfo.tint}40` }]}>
+                      <View style={[styles.urgencyDot, { backgroundColor: urgencyInfo.tint }]} />
+                      <Text style={[styles.urgencyText, { color: urgencyInfo.tint }]}>{urgencyInfo.label}</Text>
+                    </View>
+                  )}
+                </View>
                 {item.total_amount != null && (
                   <Text style={styles.price}>
                     ${item.total_amount.toFixed(0)} {item.currency ?? 'USD'}
@@ -161,7 +182,20 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: color.border,
   },
+  dateGroup: { gap: 4, flexShrink: 1 },
   date: { color: color.inkFaint, fontFamily: font.bodyMedium, fontSize: 12 },
+  urgencyPill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  urgencyDot: { width: 5, height: 5, borderRadius: 2.5 },
+  urgencyText: { fontFamily: font.bodySemi, fontSize: 10 },
   price: { color: color.ink, fontFamily: font.displaySemi, fontSize: 16 },
   activeHint: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   activeHintText: { color: color.gold, fontFamily: font.bodyMedium, fontSize: 11 },

@@ -413,21 +413,24 @@ export async function sendQuoteFollowup(opts: {
 }
 
 // ─── Recordatorios de viaje próximo (sin template; con dedup vía notifications) ─
-// Umbrales configurables por el operador (settings.notificationReminders,
-// ver app/actions/companies.ts) — "avisar N horas antes" al pasajero y/o al
-// conductor. El cron de apps/web/app/api/cron/booking-reminders/route.ts corre
-// una vez al día (límite del plan Hobby de Vercel — mismo motivo que
-// auto-assign), así que el aviso llega "en algún momento del día" en el que
-// el viaje entra en la ventana del umbral, no al minuto exacto. `type` incluye
-// el umbral (ej. 'reminder_passenger_6h') para que cada umbral se pueda
-// avisar una sola vez por reserva, igual que sendQuoteFollowup.
+// Umbrales configurables por el operador en MINUTOS (settings.
+// notificationReminders, ver app/actions/settings.ts) — "avisar N minutos
+// antes" al pasajero y/o al conductor, por email y/o SMS. El cron de
+// apps/web/app/api/cron/booking-reminders/route.ts corre 1 vez al día vía
+// Vercel (respaldo) pero está pensado para dispararse cada 5-15 min vía un
+// schedule de Upstash QStash (mismo CRON_SECRET como header, sin tocar el
+// plan de Vercel) — así el aviso sí puede llegar con precisión real de
+// minutos. `type` incluye el umbral (ej. 'reminder_passenger_30m') y el
+// dedup filtra también por `channel`, para que email y SMS del mismo umbral
+// se puedan enviar de forma independiente sin pisarse entre sí.
 
 export async function sendBookingReminder(opts: {
   companyId: string
   bookingId: string
+  channel: 'email' | 'sms'
   type: string
   to: string
-  subject: string
+  subject?: string // solo aplica a email
   body: string
 }): Promise<{ sent: boolean; skipped?: boolean }> {
   const admin = createAdminClient()
@@ -437,32 +440,40 @@ export async function sendBookingReminder(opts: {
     .select('id')
     .eq('booking_id', opts.bookingId)
     .eq('type', opts.type)
+    .eq('channel', opts.channel)
     .limit(1)
   if (existing && existing.length) return { sent: false, skipped: true }
 
-  const { data: company } = await admin
-    .from('companies')
-    .select('name, logo_url, primary_color')
-    .eq('id', opts.companyId)
-    .single()
+  let result: { ok: boolean; providerId?: string; error?: string }
+  if (opts.channel === 'email') {
+    const { data: company } = await admin
+      .from('companies')
+      .select('name, logo_url, primary_color')
+      .eq('id', opts.companyId)
+      .single()
+    result = await sendEmail(opts.to, opts.subject ?? brand.name, opts.body, company?.name, {
+      logoUrl: (company as { logo_url?: string | null })?.logo_url ?? null,
+      brandColor: (company as { primary_color?: string | null })?.primary_color ?? null,
+    })
+  } else {
+    result = await sendSms(opts.to, opts.body)
+  }
 
-  const r = await sendEmail(opts.to, opts.subject, opts.body, company?.name, {
-    logoUrl: (company as { logo_url?: string | null })?.logo_url ?? null,
-    brandColor: (company as { primary_color?: string | null })?.primary_color ?? null,
-  })
+  const configured = opts.channel === 'email' ? isResendConfigured() : isTwilioConfigured()
 
   await admin.from('notifications').insert({
     company_id: opts.companyId,
     booking_id: opts.bookingId,
-    channel: 'email',
+    channel: opts.channel,
     type: opts.type,
     recipient: opts.to,
-    subject: opts.subject,
+    subject: opts.subject ?? null,
     body: opts.body,
-    status: r.ok ? 'sent' : isResendConfigured() ? 'failed' : 'pending',
-    sent_at: r.ok ? new Date().toISOString() : null,
-    error_message: r.ok ? null : r.error ?? null,
+    status: result.ok ? 'sent' : configured ? 'failed' : 'pending',
+    provider_id: result.providerId ?? null,
+    sent_at: result.ok ? new Date().toISOString() : null,
+    error_message: result.ok ? null : result.error ?? null,
   })
 
-  return { sent: r.ok }
+  return { sent: result.ok }
 }

@@ -3,46 +3,55 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
-## ✅ Recordatorios automáticos de viaje (pasajero + conductor) (2026-07-23)
+## ✅ Recordatorios automáticos de viaje — email + SMS, umbrales en minutos (2026-07-23)
 
-A pedido del usuario: el operador configura en `/admin/settings` cuántas
-horas antes de un viaje avisar al pasajero y/o al conductor (umbrales
-independientes, ej. 24h y 6h). Se le preguntó explícitamente sobre el
-trade-off de frecuencia y **el usuario eligió el alcance reducido**: solo
-umbrales en horas con un cron 1x/día, no precisión al minuto.
+A pedido del usuario: el operador configura en `/admin/settings` cuántos
+minutos antes de un viaje avisar al pasajero y/o al conductor (umbrales
+independientes, ej. 1440 = 1 día, 90 = 1:30, 30 = 30 min), por email y SMS.
 
-- **Limitación real, ya comunicada y aceptada por el usuario**: los crons de
-  este proyecto en Vercel corren 1 vez al día (mismo límite que
-  `auto-assign`/`quote-followup` — plan Hobby). El aviso llega en algún
-  momento del día en que el viaje entra en la ventana del umbral
-  configurado, no al minuto exacto — un aviso de "30 min antes" con
-  precisión real habría requerido QStash (Upstash) o subir el plan de
-  Vercel; el usuario prefirió no hacerlo por ahora.
 - **Sin migración nueva**: se guarda en `companies.settings.
-  notificationReminders = { passengerHours: number[], driverHours: number[] }`
+  notificationReminders = { passengerMinutes: number[], driverMinutes: number[] }`
   (mismo patrón JSONB que `settings.payments.platform_fee_pct`).
   `app/actions/settings.ts` → `updateNotificationRemindersAction`.
 - **`lib/notifications/index.ts`** → `sendBookingReminder()` — mismo patrón
   de dedup que `sendQuoteFollowup` (chequea la tabla `notifications` por
-  `booking_id` + `type` antes de enviar; `type` incluye el umbral, ej.
-  `reminder_passenger_24h`, para que cada umbral avise una sola vez por
-  reserva).
-- **Cron nuevo** `app/api/cron/booking-reminders/route.ts` (`0 9 * * *`,
-  agregado a `vercel.json`) — por cada empresa activa con umbrales
-  configurados, busca bookings próximos (`pending`/`assigned`/`en_route`)
-  dentro de la ventana de cada umbral y envía el email correspondiente al
-  pasajero (`bookings.passenger_email`) y/o al conductor (email vía
-  `admin.auth.admin.getUserById`, cacheado por corrida).
-- **UI**: nueva sección "Recordatorios de viaje" en `/admin/settings`, chips
-  de horas independientes para pasajero/conductor —
-  `components/admin/hour-chips-field.tsx` (mismo patrón visual que los
-  códigos postales de zonas).
-- **Explícitamente fuera de alcance** (por elección del usuario): avisos con
-  precisión de minutos (ej. "30 min antes"), push nativo (el pasajero no
-  tiene push todavía, ver Sprint 2), SMS (solo email por ahora, igual que
-  `quote-followup`).
-- **Verificado**: `tsc --noEmit` limpio, 177/177 tests, `npm run build`
-  compila sin errores.
+  `booking_id` + `type` + `channel` antes de enviar; `type` incluye el
+  umbral, ej. `reminder_passenger_90m`, para que cada umbral+canal avise
+  una sola vez por reserva). Soporta `channel: 'email' | 'sms'` — SMS vía
+  Twilio, mismo proveedor que el resto de la plataforma.
+- **Cron** `app/api/cron/booking-reminders/route.ts` — por cada empresa
+  activa con umbrales configurados, busca bookings próximos
+  (`pending`/`assigned`/`en_route`) dentro de la ventana de cada umbral y
+  envía el aviso al pasajero (`bookings.passenger_email`/`passenger_phone`)
+  y/o al conductor (email vía `admin.auth.admin.getUserById`, teléfono vía
+  `user_profiles.phone`, cacheados por corrida).
+- **Precisión real (30min, 1:30, etc.) — requiere Upstash QStash, pendiente
+  del usuario**: el cron está registrado 1x/día en `vercel.json` como
+  respaldo (límite del plan Hobby de Vercel), pero para que los umbrales en
+  minutos lleguen con precisión real hace falta que **el usuario** cree un
+  schedule en Upstash QStash (console.upstash.com → QStash → Schedules,
+  producto distinto al Redis que ya usan para rate limiting):
+  - URL destino: `https://getluxeride.vercel.app/api/cron/booking-reminders`
+  - Método: GET
+  - Cron expression: `*/5 * * * *` (cada 5 min) o `*/15 * * * *` (cada 15 min)
+  - Header personalizado: `Authorization: Bearer <mismo valor de CRON_SECRET>`
+  - **Cero cambios de código adicionales** — el endpoint ya acepta ese mismo
+    header (es el mecanismo que ya usan todos los crons), y el dedup por
+    booking+umbral+canal hace seguro llamarlo cada 5-15 min sin duplicar
+    envíos.
+- **UI**: sección "Recordatorios de viaje" en `/admin/settings`, chips de
+  minutos independientes para pasajero/conductor (formateados como "30m",
+  "1h30", "6h", "1d" para legibilidad) — `components/admin/hour-chips-field.tsx`
+  (mismo patrón visual que los códigos postales de zonas).
+- **App de pasajero**: "Mis viajes" ahora muestra un indicador de cercanía
+  que cambia de color según cuánto falta para el viaje (verde >24h, ámbar
+  6-24h, rojo <6h) — `MyTripsScreen.tsx`.
+- **Explícitamente fuera de alcance todavía**: WhatsApp y Telegram — el
+  usuario los pidió como próximo paso, pero requieren que él mismo obtenga
+  acceso/token de esos proveedores primero (aprobación de WhatsApp Business
+  API o un bot de Telegram) antes de poder integrarlos.
+- **Verificado**: `tsc --noEmit` limpio (web y app), 177/177 tests,
+  `npm run build` compila sin errores.
 - **Pendiente del usuario**: configurar los umbrales deseados en
   `/admin/settings` (vacío por defecto — la función no envía nada hasta que
   el operador configure al menos un umbral).

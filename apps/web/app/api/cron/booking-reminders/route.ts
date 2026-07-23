@@ -1,12 +1,13 @@
-// ── Cron diario: recordatorios de viaje próximo (pasajero + conductor) ────────
-// El operador configura umbrales en horas (ej. 6, 24) por separado para
-// pasajero y conductor en /admin/settings (companies.settings.
-// notificationReminders, ver app/actions/settings.ts). Este cron corre 1 vez
-// al día (límite del plan Hobby de Vercel — mismo motivo que auto-assign y
-// quote-followup), así que el aviso llega en algún momento del día en que el
-// viaje entra en la ventana del umbral, no al minuto exacto. Dedup por
-// booking+umbral vía la tabla notifications (sendBookingReminder). Protegido
-// con CRON_SECRET. Programado en vercel.json.
+// ── Recordatorios de viaje próximo (pasajero + conductor, email + SMS) ────────
+// El operador configura umbrales en MINUTOS por separado para pasajero y
+// conductor en /admin/settings (companies.settings.notificationReminders,
+// ver app/actions/settings.ts). Este endpoint está registrado 1x/día en
+// vercel.json como respaldo (límite del plan Hobby de Vercel), pero está
+// pensado para dispararse cada 5-15 min vía un schedule de Upstash QStash —
+// mismo CRON_SECRET como header HTTP `Authorization: Bearer <secret>`, sin
+// tocar el plan de Vercel — para que los umbrales de minutos (30min, 1:30h,
+// etc.) lleguen con precisión real. Dedup por booking+umbral+canal vía la
+// tabla notifications (sendBookingReminder). Protegido con CRON_SECRET.
 
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
@@ -21,8 +22,8 @@ export const maxDuration = 60
 const ACTIVE_STATUSES: BookingStatus[] = ['pending', 'assigned', 'en_route']
 
 interface NotificationReminders {
-  passengerHours?: number[]
-  driverHours?: number[]
+  passengerMinutes?: number[]
+  driverMinutes?: number[]
 }
 
 function isAuthorized(request: Request): boolean {
@@ -51,34 +52,45 @@ export async function GET(request: Request) {
 
   let passengerSent = 0
   let driverSent = 0
-  const driverEmailCache = new Map<string, string | null>()
+  const driverCache = new Map<string, { email: string | null; phone: string | null }>()
 
-  async function getDriverEmail(driverId: string): Promise<string | null> {
-    if (driverEmailCache.has(driverId)) return driverEmailCache.get(driverId) ?? null
+  async function getDriverContact(driverId: string): Promise<{ email: string | null; phone: string | null }> {
+    const cached = driverCache.get(driverId)
+    if (cached) return cached
+
+    let email: string | null = null
     try {
       const { data } = await admin.auth.admin.getUserById(driverId)
-      const email = data.user?.email ?? null
-      driverEmailCache.set(driverId, email)
-      return email
+      email = data.user?.email ?? null
     } catch {
-      driverEmailCache.set(driverId, null)
-      return null
+      email = null
     }
+
+    const { data: profile } = await admin
+      .from('user_profiles')
+      .select('phone')
+      .eq('id', driverId)
+      .single()
+    const phone = profile?.phone ?? null
+
+    const contact = { email, phone }
+    driverCache.set(driverId, contact)
+    return contact
   }
 
   for (const company of companies ?? []) {
     const reminders = (company.settings as { notificationReminders?: NotificationReminders } | null)
       ?.notificationReminders
-    const passengerHours = reminders?.passengerHours ?? []
-    const driverHours = reminders?.driverHours ?? []
-    if (passengerHours.length === 0 && driverHours.length === 0) continue
+    const passengerMinutes = reminders?.passengerMinutes ?? []
+    const driverMinutes = reminders?.driverMinutes ?? []
+    if (passengerMinutes.length === 0 && driverMinutes.length === 0) continue
 
-    const maxHours = Math.max(...passengerHours, ...driverHours, 0)
-    const windowEnd = new Date(now + maxHours * 3_600_000).toISOString()
+    const maxMinutes = Math.max(...passengerMinutes, ...driverMinutes, 0)
+    const windowEnd = new Date(now + maxMinutes * 60_000).toISOString()
 
     const { data: bookings } = await admin
       .from('bookings')
-      .select('id, booking_number, status, scheduled_at, passenger_name, passenger_email, driver_id, pickup_location, dropoff_location')
+      .select('id, booking_number, status, scheduled_at, passenger_name, passenger_email, passenger_phone, driver_id, pickup_location, dropoff_location')
       .eq('company_id', company.id)
       .in('status', ACTIVE_STATUSES)
       .gte('scheduled_at', new Date(now).toISOString())
@@ -87,58 +99,92 @@ export async function GET(request: Request) {
 
     for (const b of bookings ?? []) {
       const scheduledAtMs = new Date(b.scheduled_at).getTime()
-      const hoursUntil = (scheduledAtMs - now) / 3_600_000
+      const minutesUntil = (scheduledAtMs - now) / 60_000
       const pickup = (b.pickup_location as { address?: string } | null)?.address ?? ''
       const dropoff = (b.dropoff_location as { address?: string } | null)?.address ?? ''
       const when = formatWhen(b.scheduled_at)
 
-      for (const h of passengerHours) {
-        if (hoursUntil > h) continue // aún no entra en la ventana de este umbral
-        if (!b.passenger_email) break // sin email, ningún umbral de pasajero aplica
-        const body = [
-          `Hola ${b.passenger_name ?? ''}`.trim() + ',',
-          '',
-          `Te recordamos tu viaje con ${company.name} programado para: ${when}.`,
-          '',
-          `Origen: ${pickup || 'a confirmar'}`,
-          `Destino: ${dropoff || 'a confirmar'}`,
-          '',
-          `Sigue tu viaje aquí: ${appUrl}/track/${b.id}`,
-        ].join('\n')
-        const result = await sendBookingReminder({
-          companyId: company.id,
-          bookingId: b.id,
-          type: `reminder_passenger_${h}h`,
-          to: b.passenger_email,
-          subject: `Recordatorio: tu viaje ${b.booking_number}`,
-          body,
-        })
-        if (result.sent) passengerSent += 1
+      for (const m of passengerMinutes) {
+        if (minutesUntil > m) continue // aún no entra en la ventana de este umbral
+        const type = `reminder_passenger_${m}m`
+
+        if (b.passenger_email) {
+          const body = [
+            `Hola ${b.passenger_name ?? ''}`.trim() + ',',
+            '',
+            `Te recordamos tu viaje con ${company.name} programado para: ${when}.`,
+            '',
+            `Origen: ${pickup || 'a confirmar'}`,
+            `Destino: ${dropoff || 'a confirmar'}`,
+            '',
+            `Sigue tu viaje aquí: ${appUrl}/track/${b.id}`,
+          ].join('\n')
+          const result = await sendBookingReminder({
+            companyId: company.id,
+            bookingId: b.id,
+            channel: 'email',
+            type,
+            to: b.passenger_email,
+            subject: `Recordatorio: tu viaje ${b.booking_number}`,
+            body,
+          })
+          if (result.sent) passengerSent += 1
+        }
+
+        if (b.passenger_phone) {
+          const smsBody = `${company.name}: recordatorio de tu viaje ${b.booking_number} el ${when}. Sigue tu viaje: ${appUrl}/track/${b.id}`
+          const result = await sendBookingReminder({
+            companyId: company.id,
+            bookingId: b.id,
+            channel: 'sms',
+            type,
+            to: b.passenger_phone,
+            body: smsBody,
+          })
+          if (result.sent) passengerSent += 1
+        }
       }
 
       if (!b.driver_id) continue
-      const driverEmail = await getDriverEmail(b.driver_id)
-      if (!driverEmail) continue
+      const driverContact = await getDriverContact(b.driver_id)
 
-      for (const h of driverHours) {
-        if (hoursUntil > h) continue
-        const body = [
-          'Hola,',
-          '',
-          `Te recordamos tu viaje asignado (${b.booking_number}) programado para: ${when}.`,
-          '',
-          `Recoger en: ${pickup || 'a confirmar'}`,
-          `Destino: ${dropoff || 'a confirmar'}`,
-        ].join('\n')
-        const result = await sendBookingReminder({
-          companyId: company.id,
-          bookingId: b.id,
-          type: `reminder_driver_${h}h`,
-          to: driverEmail,
-          subject: `Recordatorio: viaje asignado ${b.booking_number}`,
-          body,
-        })
-        if (result.sent) driverSent += 1
+      for (const m of driverMinutes) {
+        if (minutesUntil > m) continue
+        const type = `reminder_driver_${m}m`
+
+        if (driverContact.email) {
+          const body = [
+            'Hola,',
+            '',
+            `Te recordamos tu viaje asignado (${b.booking_number}) programado para: ${when}.`,
+            '',
+            `Recoger en: ${pickup || 'a confirmar'}`,
+            `Destino: ${dropoff || 'a confirmar'}`,
+          ].join('\n')
+          const result = await sendBookingReminder({
+            companyId: company.id,
+            bookingId: b.id,
+            channel: 'email',
+            type,
+            to: driverContact.email,
+            subject: `Recordatorio: viaje asignado ${b.booking_number}`,
+            body,
+          })
+          if (result.sent) driverSent += 1
+        }
+
+        if (driverContact.phone) {
+          const smsBody = `Viaje asignado ${b.booking_number} el ${when}. Recoger en: ${pickup || 'a confirmar'}`
+          const result = await sendBookingReminder({
+            companyId: company.id,
+            bookingId: b.id,
+            channel: 'sms',
+            type,
+            to: driverContact.phone,
+            body: smsBody,
+          })
+          if (result.sent) driverSent += 1
+        }
       }
     }
   }

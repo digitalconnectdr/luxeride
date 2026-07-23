@@ -157,8 +157,8 @@ export default async function SettingsPage({
       default_percentage?: number
     }
     notificationReminders?: {
-      passengerHours?: number[]
-      driverHours?: number[]
+      passengerMinutes?: number[]
+      driverMinutes?: number[]
     }
   }) ?? {}
 
@@ -956,16 +956,16 @@ export default async function SettingsPage({
             <div>
               <label className={labelCls}>{t.remindersPassengerLabel}</label>
               <HourChipsField
-                name="passenger_hours"
-                defaultValues={reminders.passengerHours ?? []}
+                name="passenger_minutes"
+                defaultValues={reminders.passengerMinutes ?? []}
                 placeholder={t.remindersPlaceholder}
               />
             </div>
             <div>
               <label className={labelCls}>{t.remindersDriverLabel}</label>
               <HourChipsField
-                name="driver_hours"
-                defaultValues={reminders.driverHours ?? []}
+                name="driver_minutes"
+                defaultValues={reminders.driverMinutes ?? []}
                 placeholder={t.remindersPlaceholder}
               />
             </div>
