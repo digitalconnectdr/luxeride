@@ -61,6 +61,29 @@ horas) — eligió la opción rápida: **mínimo de horas a nivel de regla**.
   mínimo de horas en las reglas "Por hora" existentes (por defecto queda en
   0, es decir sin cambio de comportamiento hasta que se configure).
 
+## ✅ Fix real: Total no reflejaba el cargo de cancelación (2026-07-23)
+
+Reportado por el usuario probando `/admin/bookings/[id]` de una reserva
+cancelada de prueba: "Tarifa Base $250, Cargo Por Cancelación Tardía
+(50%) $125, pero el Total sigue en $250" — esperaba $125.
+
+- **Causa real** (`updateBookingStatusAction` en `app/actions/bookings.ts`):
+  al cancelar/marcar no-show con cargo, el código insertaba la fila del
+  cargo en `booking_fees` pero **nunca actualizaba `bookings.total_amount`**
+  — el campo se quedaba con el valor de la reserva viva (la tarifa
+  completa), y el "Total" del desglose de cargos en la página de detalle
+  simplemente lee `booking.total_amount` directo, ignorando por completo
+  el cargo recién insertado.
+- **Fix**: cuando `fee.feeAmount > 0`, además de insertar la fila en
+  `booking_fees`, se actualiza `bookings.total_amount = fee.feeAmount` —
+  el monto que el cliente debe pagar ahora es el cargo de cancelación, no
+  la tarifa original. Confirmado que esto no afecta reportes de ingresos
+  existentes (`/admin/dashboard` y el CSV de `/api/reports/bookings` ya
+  excluyen o simplemente exportan el campo crudo por reserva — nada suma
+  `total_amount` de reservas canceladas como si fueran ingreso).
+- **Verificado**: `tsc --noEmit` limpio, 185/185 tests, `npm run build`
+  compila sin errores.
+
 ## ✅ App de pasajero: calificar viaje completado (2026-07-23)
 
 Siguiente pieza de Sprint 4 ("Post-viaje: calificación... bookings.rating ya

@@ -579,6 +579,12 @@ export async function updateBookingStatusAction(
             : `Cargo por cancelación tardía (${fee.feePct}% según política)`,
         amount: fee.feeAmount,
       })
+      // El monto que el cliente debe pagar ahora ES el cargo de cancelación,
+      // no la tarifa completa original — sin esto, bookings.total_amount se
+      // queda con el valor de la reserva viva y el desglose de cargos de
+      // /admin/bookings/[id] muestra un Total que ignora por completo el
+      // cargo que se acaba de insertar (bug real encontrado en producción).
+      await admin.from('bookings').update({ total_amount: fee.feeAmount }).eq('id', bookingId)
     }
   }
 
