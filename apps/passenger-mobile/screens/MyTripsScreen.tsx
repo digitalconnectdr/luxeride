@@ -6,7 +6,7 @@
 // activo navega a TripTracking, que vive en el stack de la pestaña
 // "Reservar" (navegación cross-tab: navigation.navigate('Reservar', { screen, params })).
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { View, Text, StyleSheet, FlatList, RefreshControl, TextInput } from 'react-native'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
@@ -65,6 +65,46 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
   const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [ratingError, setRatingError] = useState('')
+
+  // Pagar con tarjeta Whop guardada (de un viaje anterior con esta misma
+  // empresa) + propina opcional — cubre el caso "la empresa cobra en
+  // efectivo/después, pero el pasajero ya tiene tarjeta guardada y quiere
+  // pagar (con propina) directo desde la app". Mismo mecanismo exacto que
+  // ya usa el checkout público de la web (chargeWithSavedWhopCardAction) —
+  // si el viaje ya tiene un pago exitoso, esa misma acción lo rechaza sola,
+  // no se duplica esa validación acá.
+  const [savedCard, setSavedCard] = useState<{ last4: string | null; brand: string | null } | null>(null)
+  const [gratuityPct, setGratuityPct] = useState(0)
+  const [paying, setPaying] = useState(false)
+  const [payError, setPayError] = useState('')
+  const [paid, setPaid] = useState(false)
+
+  useEffect(() => {
+    if (item.status !== 'completed') return
+    let cancelled = false
+    callPassengerApi<{ found: boolean; card?: { last4: string | null; brand: string | null } }>(
+      'saved-card',
+      { bookingId: item.id },
+    ).then((r) => {
+      if (!cancelled && r.success && r.found && r.card) setSavedCard(r.card)
+    })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id, item.status])
+
+  async function payWithSavedCard() {
+    setPaying(true)
+    setPayError('')
+    const result = await callPassengerApi('charge-saved-card', { bookingId: item.id, gratuityPct })
+    setPaying(false)
+    if (!result.success) {
+      setPayError(result.error === 'Esta reservación ya tiene un pago registrado'
+        ? 'Este viaje ya tiene un pago registrado.'
+        : 'No se pudo procesar el pago. Intenta de nuevo.')
+      return
+    }
+    setPaid(true)
+  }
 
   const isActive = ACTIVE_STATUSES.includes(item.status)
   const date = new Date(item.scheduled_at)
@@ -186,6 +226,42 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
             )}
           </>
         ) : null}
+
+        {savedCard && !paid && (
+          <View style={styles.payPanel}>
+            <View style={styles.payRow}>
+              <Ionicons name="card-outline" size={14} color={color.gold} />
+              <Text style={styles.payText}>
+                Pagar viaje con {savedCard.brand ?? 'tarjeta'} •••• {savedCard.last4 ?? '····'}
+              </Text>
+            </View>
+            <View style={styles.tipRow}>
+              {[0, 15, 18, 20].map((pct) => (
+                <PressableScale key={pct} onPress={() => setGratuityPct(pct)} haptic="light">
+                  <View style={[styles.tipChip, gratuityPct === pct && styles.tipChipActive]}>
+                    <Text style={[styles.tipChipText, gratuityPct === pct && styles.tipChipTextActive]}>
+                      {pct === 0 ? 'Sin propina' : `${pct}%`}
+                    </Text>
+                  </View>
+                </PressableScale>
+              ))}
+            </View>
+            {payError ? <Text style={styles.ratingError}>{payError}</Text> : null}
+            <Button
+              label={gratuityPct > 0 ? `Pagar con ${gratuityPct}% de propina` : 'Pagar viaje'}
+              icon="checkmark"
+              onPress={payWithSavedCard}
+              loading={paying}
+              variant="secondary"
+            />
+          </View>
+        )}
+        {paid && (
+          <View style={styles.ratedRow}>
+            <Ionicons name="checkmark-circle" size={12} color={color.success} />
+            <Text style={styles.ratedText}>Pago recibido, ¡gracias!</Text>
+          </View>
+        )}
       </Card>
     </PressableScale>
   )
@@ -362,4 +438,19 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   ratingError: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 12 },
+  payPanel: { marginTop: space.sm, gap: space.sm, paddingTop: space.sm, borderTopWidth: 1, borderTopColor: color.border },
+  payRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  payText: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 12, flexShrink: 1 },
+  tipRow: { flexDirection: 'row', gap: space.xs, flexWrap: 'wrap' },
+  tipChip: {
+    paddingHorizontal: space.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.border,
+    backgroundColor: color.surfaceRaised,
+  },
+  tipChipActive: { backgroundColor: color.gold, borderColor: color.gold },
+  tipChipText: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 12 },
+  tipChipTextActive: { color: '#fff' },
 })

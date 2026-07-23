@@ -61,6 +61,36 @@ horas) — eligió la opción rápida: **mínimo de horas a nivel de regla**.
   mínimo de horas en las reglas "Por hora" existentes (por defecto queda en
   0, es decir sin cambio de comportamiento hasta que se configure).
 
+## ✅ App de pasajero: pagar viaje + propina con tarjeta Whop guardada (2026-07-23)
+
+El usuario confirmó seguir con la parte de "propina post-viaje" (Sprint 4)
+que había quedado en pausa por tocar pagos reales. **Alcance deliberadamente
+acotado** para no arriesgar la protección anti-doble-cobro existente: se
+reusa `chargeWithSavedWhopCardAction` (ya en producción, usada por el
+checkout público de la web) TAL CUAL, sin tocar su lógica — cubre
+exactamente el mismo caso que ya soporta la web (pagar con una tarjeta
+guardada de un pago anterior), simplemente portado a la app nativa por
+primera vez. Explícitamente NO se construyó: agregar una propina a un viaje
+que YA tiene un pago exitoso registrado (eso exigiría aflojar el guard
+anti-doble-cobro — cambio de mayor riesgo, no se tocó sin pedirlo aparte).
+
+- **2 rutas nuevas delgadas** (mismo patrón que las demás — bearer token +
+  verificación de `bookings.customer_id`): `/api/mobile/passenger/saved-card`
+  (envuelve `getSavedWhopCardAction`) y `/charge-saved-card` (envuelve
+  `chargeWithSavedWhopCardAction`). Cero lógica de pago nueva.
+- **UI**: en "Mis viajes", un viaje completado consulta automáticamente si
+  el pasajero tiene tarjeta Whop guardada (de un pago anterior con esa
+  empresa); si la tiene, muestra chips de propina (Sin propina/15/18/20%) +
+  botón "Pagar viaje". Si el viaje ya tiene un pago registrado, la acción
+  ya existente lo rechaza con su mismo mensaje — sin duplicar esa validación.
+- **Verificado**: `tsc --noEmit` limpio en ambas apps, 185/185 tests,
+  `npm run build` compila sin errores.
+- **Limitación conocida**: los % de propina son fijos genéricamente (no se
+  consultan los `gratuity.options` configurados por la empresa) — si una
+  empresa deshabilitó propinas en su configuración, el servidor igual
+  valida/descarta el % elegido (`sanitizeGratuityPct`), así que no hay
+  bug de cobro, solo una propina que termina en $0 sin explicación en la UI.
+
 ## ✅ Fix real: Total no reflejaba el cargo de cancelación (2026-07-23)
 
 Reportado por el usuario probando `/admin/bookings/[id]` de una reserva
