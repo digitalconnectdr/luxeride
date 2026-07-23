@@ -126,11 +126,11 @@ export function RouteInsightsMap({ corridors, pickupPoints, dropoffPoints, t }: 
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-4 text-xs">
           <span className="inline-flex items-center gap-1.5 text-sl-on-surface-muted">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#e9c176' }} />
+            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#d99a1b' }} />
             {t.legendPickup}
           </span>
           <span className="inline-flex items-center gap-1.5 text-sl-on-surface-muted">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#c0473d' }} />
+            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#2f6fed' }} />
             {t.legendDropoff}
           </span>
         </div>
@@ -154,8 +154,11 @@ export function RouteInsightsMap({ corridors, pickupPoints, dropoffPoints, t }: 
             fullscreenControl={false}
           >
             <FitAllPoints pickupPoints={pickupPoints} dropoffPoints={dropoffPoints} />
-            <HeatmapPoints points={pickupPoints} color="#e9c176" opacity={0.18} />
-            <HeatmapPoints points={dropoffPoints} color="#c0473d" opacity={0.18} />
+            {/* Dorado vs. azul (cálido/frío) en vez de dorado vs. rojo — a esta
+                opacidad el dorado y el rojo se desvanecían a tonos pálidos casi
+                indistinguibles sobre el mapa claro; el azul se mantiene legible. */}
+            <HeatmapPoints points={pickupPoints} color="#d99a1b" opacity={0.32} />
+            <HeatmapPoints points={dropoffPoints} color="#2f6fed" opacity={0.32} />
             <CorridorLines corridors={corridors} visible={showCorridors} />
           </Map>
         </MapsProvider>
