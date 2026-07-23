@@ -3,6 +3,33 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Push como tercer canal de los recordatorios ya configurables (2026-07-23)
+
+El usuario preguntó si los avisos push pueden controlarse desde
+configuración de empresa con tiempos propios — aclarado que se refería al
+sistema de recordatorios que YA es configurable en minutos
+(`/admin/settings` → "Recordatorios de viaje"), pidiendo agregar push ahí
+como canal adicional, no una sección nueva.
+
+- **`sendBookingReminder()`** (`lib/notifications/index.ts`) acepta ahora
+  `channel: 'push'` además de `'email'`/`'sms'` — mismo mecanismo de dedup
+  por `booking_id`+`type`+`channel`. Para push, `to` es el `user_id` (no
+  email/teléfono); si el usuario todavía no tiene ningún dispositivo
+  registrado en `device_tokens`, se omite SIN marcar el dedup como
+  consumido — así, si instala la app y registra un token antes de que pase
+  el viaje, la siguiente corrida del cron sí le avisa.
+- **Cron** (`app/api/cron/booking-reminders/route.ts`): en cada umbral ya
+  configurado (`passengerMinutes`/`driverMinutes`), además de email/SMS
+  ahora también intenta push — al pasajero (si tiene `customer_id`, cuenta
+  en la app) y al conductor (mismos `device_tokens` que ya usa "nuevo viaje
+  asignado"). Cero UI nueva: es el mismo umbral en minutos que el operador
+  ya configuraba, un canal más.
+- **Verificado**: `tsc --noEmit` limpio, 185/185 tests, `npm run build`
+  compila sin errores.
+- **Pendiente del usuario**: ninguna acción nueva — funciona con la
+  configuración de umbrales que ya exista en `/admin/settings`, y con el
+  build de EAS que ya se generó para el registro de push del pasajero.
+
 ## ✅ App de pasajero: notificaciones push nativas (2026-07-23)
 
 Parte de Sprint 5 (pulido/lanzamiento) — el usuario pidió avisos empujados

@@ -107,7 +107,7 @@ async function handleRequest(request: Request) {
 
     const { data: bookings } = await admin
       .from('bookings')
-      .select('id, booking_number, status, scheduled_at, passenger_name, passenger_email, passenger_phone, driver_id, pickup_location, dropoff_location')
+      .select('id, booking_number, status, scheduled_at, passenger_name, passenger_email, passenger_phone, customer_id, driver_id, pickup_location, dropoff_location')
       .eq('company_id', company.id)
       .in('status', ACTIVE_STATUSES)
       .gte('scheduled_at', new Date(now).toISOString())
@@ -160,6 +160,21 @@ async function handleRequest(request: Request) {
           })
           if (result.sent) passengerSent += 1
         }
+
+        // Push — solo si el pasajero tiene cuenta en la app (customer_id);
+        // no aplica a guest checkout de la web. Mismo umbral de minutos que
+        // email/SMS, sin configuración nueva.
+        if (b.customer_id) {
+          const result = await sendBookingReminder({
+            companyId: company.id,
+            bookingId: b.id,
+            channel: 'push',
+            type,
+            to: b.customer_id,
+            body: `${b.booking_number} el ${when}`,
+          })
+          if (result.sent) passengerSent += 1
+        }
       }
 
       if (!b.driver_id) continue
@@ -199,6 +214,20 @@ async function handleRequest(request: Request) {
             type,
             to: driverContact.phone,
             body: smsBody,
+          })
+          if (result.sent) driverSent += 1
+        }
+
+        // Push al conductor — mismo device_tokens que ya usa la app del
+        // conductor para "nuevo viaje asignado".
+        {
+          const result = await sendBookingReminder({
+            companyId: company.id,
+            bookingId: b.id,
+            channel: 'push',
+            type,
+            to: b.driver_id,
+            body: `${b.booking_number} el ${when}`,
           })
           if (result.sent) driverSent += 1
         }

@@ -8,6 +8,7 @@
 import { waitUntil } from '@vercel/functions'
 import { createAdminClient } from '@/lib/supabase/server'
 import { brand } from '@/lib/brand'
+import { notifyUserPush } from './push'
 import type { NotificationChannel } from '@/lib/supabase/database.types'
 
 // ─── Configuración de proveedores ─────────────────────────────────────────────
@@ -415,20 +416,24 @@ export async function sendQuoteFollowup(opts: {
 // ─── Recordatorios de viaje próximo (sin template; con dedup vía notifications) ─
 // Umbrales configurables por el operador en MINUTOS (settings.
 // notificationReminders, ver app/actions/settings.ts) — "avisar N minutos
-// antes" al pasajero y/o al conductor, por email y/o SMS. El cron de
+// antes" al pasajero y/o al conductor, por email, SMS y/o push. El cron de
 // apps/web/app/api/cron/booking-reminders/route.ts corre 1 vez al día vía
 // Vercel (respaldo) pero está pensado para dispararse cada 5-15 min vía un
 // schedule de Upstash QStash (mismo CRON_SECRET como header, sin tocar el
 // plan de Vercel) — así el aviso sí puede llegar con precisión real de
 // minutos. `type` incluye el umbral (ej. 'reminder_passenger_30m') y el
-// dedup filtra también por `channel`, para que email y SMS del mismo umbral
-// se puedan enviar de forma independiente sin pisarse entre sí.
+// dedup filtra también por `channel`, para que email, SMS y push del mismo
+// umbral se puedan enviar de forma independiente sin pisarse entre sí.
+// El push reusa EXACTAMENTE los mismos umbrales ya configurables por el
+// operador — no hace falta una sección nueva en /admin/settings, es el
+// mismo "cuándo" con un canal más.
 
 export async function sendBookingReminder(opts: {
   companyId: string
   bookingId: string
-  channel: 'email' | 'sms'
+  channel: 'email' | 'sms' | 'push'
   type: string
+  /** Email, teléfono, o (para push) el user_id del destinatario. */
   to: string
   subject?: string // solo aplica a email
   body: string
@@ -444,6 +449,16 @@ export async function sendBookingReminder(opts: {
     .limit(1)
   if (existing && existing.length) return { sent: false, skipped: true }
 
+  // Push: si todavía no hay ningún dispositivo registrado para este usuario,
+  // se omite SIN marcar el dedup como consumido — así, si instala la app y
+  // registra un token más tarde (pero antes de que pase la hora del viaje),
+  // la siguiente corrida del cron sí puede avisarle. Email/SMS no necesitan
+  // este chequeo porque su "dirección" (email/teléfono) no cambia con el tiempo.
+  if (opts.channel === 'push') {
+    const { data: tokens } = await admin.from('device_tokens').select('expo_push_token').eq('user_id', opts.to)
+    if (!tokens || !tokens.length) return { sent: false, skipped: true }
+  }
+
   let result: { ok: boolean; providerId?: string; error?: string }
   if (opts.channel === 'email') {
     const { data: company } = await admin
@@ -455,11 +470,14 @@ export async function sendBookingReminder(opts: {
       logoUrl: (company as { logo_url?: string | null })?.logo_url ?? null,
       brandColor: (company as { primary_color?: string | null })?.primary_color ?? null,
     })
-  } else {
+  } else if (opts.channel === 'sms') {
     result = await sendSms(opts.to, opts.body)
+  } else {
+    await notifyUserPush(opts.to, brand.name, opts.body, { bookingId: opts.bookingId, type: opts.type })
+    result = { ok: true }
   }
 
-  const configured = opts.channel === 'email' ? isResendConfigured() : isTwilioConfigured()
+  const configured = opts.channel === 'email' ? isResendConfigured() : opts.channel === 'sms' ? isTwilioConfigured() : true
 
   await admin.from('notifications').insert({
     company_id: opts.companyId,
