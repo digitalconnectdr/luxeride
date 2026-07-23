@@ -306,6 +306,7 @@ export type Database = {
           avatar_url: string | null
           is_active: boolean
           last_seen_at: string | null
+          date_of_birth: string | null
           metadata: Json
           created_at: string
           updated_at: string
@@ -320,6 +321,7 @@ export type Database = {
           avatar_url?: string | null | undefined
           is_active?: boolean | undefined
           last_seen_at?: string | null | undefined
+          date_of_birth?: string | null | undefined
           metadata?: Json | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
@@ -334,6 +336,7 @@ export type Database = {
           avatar_url?: string | null | undefined
           is_active?: boolean | undefined
           last_seen_at?: string | null | undefined
+          date_of_birth?: string | null | undefined
           metadata?: Json | undefined
           created_at?: string | undefined
           updated_at?: string | undefined

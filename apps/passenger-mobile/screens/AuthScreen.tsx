@@ -8,14 +8,20 @@
 // fijo de "LuxeRide".
 
 import { useRef, useState } from 'react'
-import { View, Text, TextInput, StyleSheet, Animated, KeyboardAvoidingView, Platform, Keyboard, ScrollView } from 'react-native'
+import { View, Text, TextInput, StyleSheet, Animated, KeyboardAvoidingView, Platform, Keyboard, ScrollView, Modal } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import { supabase } from '../lib/supabase'
 import { callPassengerApi } from '../lib/api'
 import { useBranding } from '../lib/branding'
 import { BrandMark } from '../components/BrandMark'
+import { PressableScale } from '../components/PressableScale'
 import { Button } from '../components/ui'
 import { color, font, radius, space } from '../lib/theme'
+
+function formatDob(d: Date): string {
+  return d.toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' })
+}
 
 type Mode = 'login' | 'signup'
 
@@ -28,9 +34,17 @@ export function AuthScreen({ roleError }: { roleError?: string }) {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null)
+  const [showDobPicker, setShowDobPicker] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [focusedField, setFocusedField] = useState<string | null>(null)
+
+  function handleDobChange(event: DateTimePickerEvent, selected?: Date) {
+    if (Platform.OS === 'android') setShowDobPicker(false)
+    if (event.type === 'dismissed' || !selected) return
+    setDateOfBirth(selected)
+  }
 
   const shake = useRef(new Animated.Value(0)).current
 
@@ -68,6 +82,7 @@ export function AuthScreen({ roleError }: { roleError?: string }) {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       phone: phone.trim() || undefined,
+      dateOfBirth: dateOfBirth!.toISOString().slice(0, 10),
     })
     if (!result.success || !result.session) {
       setLoading(false)
@@ -89,7 +104,7 @@ export function AuthScreen({ roleError }: { roleError?: string }) {
   const displayError = error || roleError
   const isSignup = mode === 'signup'
   const canSubmit = isSignup
-    ? !!(email && password && firstName && lastName)
+    ? !!(email && password && firstName && lastName && dateOfBirth)
     : !!(email && password)
 
   return (
@@ -157,6 +172,17 @@ export function AuthScreen({ roleError }: { roleError?: string }) {
             />
           )}
 
+          {isSignup && (
+            <PressableScale onPress={() => setShowDobPicker(true)}>
+              <View style={[styles.inputWrap, showDobPicker && styles.inputWrapFocused]}>
+                <Ionicons name="gift-outline" size={18} color={dateOfBirth ? color.gold : color.inkFaint} />
+                <Text style={[styles.input, !dateOfBirth && styles.inputPlaceholder]}>
+                  {dateOfBirth ? formatDob(dateOfBirth) : 'Fecha de nacimiento'}
+                </Text>
+              </View>
+            </PressableScale>
+          )}
+
           <Field
             icon="lock-closed-outline"
             placeholder="Contraseña"
@@ -189,9 +215,39 @@ export function AuthScreen({ roleError }: { roleError?: string }) {
           {isSignup ? '¿Ya tienes cuenta? Inicia sesión' : '¿Primera vez? Crea tu cuenta'}
         </Text>
       </ScrollView>
+
+      {showDobPicker &&
+        (Platform.OS === 'android' ? (
+          <DateTimePicker
+            value={dateOfBirth ?? DEFAULT_DOB}
+            mode="date"
+            display="default"
+            maximumDate={new Date()}
+            onChange={handleDobChange}
+          />
+        ) : (
+          <Modal transparent animationType="fade">
+            <View style={styles.pickerOverlay}>
+              <View style={styles.pickerSheet}>
+                <DateTimePicker
+                  value={dateOfBirth ?? DEFAULT_DOB}
+                  mode="date"
+                  display="spinner"
+                  maximumDate={new Date()}
+                  onChange={handleDobChange}
+                />
+                <Button label="Listo" onPress={() => setShowDobPicker(false)} />
+              </View>
+            </View>
+          </Modal>
+        ))}
     </KeyboardAvoidingView>
   )
 }
+
+// Punto de partida razonable para el spinner (25 años atrás) — el usuario
+// lo cambia libremente, esto solo evita arrancar en "hoy".
+const DEFAULT_DOB = new Date(new Date().getFullYear() - 25, 0, 1)
 
 interface FieldProps {
   icon: keyof typeof Ionicons.glyphMap
@@ -239,6 +295,15 @@ const styles = StyleSheet.create({
   },
   inputWrapFocused: { borderColor: color.gold },
   input: { flex: 1, color: color.ink, fontFamily: font.body, fontSize: 15, paddingVertical: 0 },
+  inputPlaceholder: { color: color.inkFaint },
+  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  pickerSheet: {
+    backgroundColor: color.bgElevated,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    padding: space.lg,
+    gap: space.md,
+  },
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.xs },
   error: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1 },
   submit: { marginTop: space.sm },

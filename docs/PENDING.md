@@ -3,6 +3,48 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fecha de nacimiento del pasajero (2026-07-23)
+
+Pedido explícito del usuario: capturar la fecha de nacimiento para poder
+enviar en el futuro un mensaje de felicitación de cumpleaños (estrategia de
+retención — recordarle al cliente el servicio de la empresa). Solo se
+construyó la captura y el guardado; el envío automático del mensaje de
+cumpleaños queda para más adelante (no se pidió todavía).
+
+- **Migración** `20260723000069_date_of_birth.sql`: `user_profiles.
+  date_of_birth DATE`.
+- **App móvil (obligatorio)**: nuevo campo en el signup de `AuthScreen.tsx`
+  — selector de fecha nativo (`@react-native-community/datetimepicker`,
+  mismo patrón que el selector de fecha/hora de `NewBookingScreen.tsx`),
+  `maximumDate` = hoy. Es un campo requerido para crear la cuenta (si no se
+  captura ahí, no se puede reconstruir después). Se valida también en el
+  servidor (`passenger-auth.ts`, `SignupPassengerSchema`) — rechaza fechas
+  futuras o inválidas.
+- **Admin manual (opcional)**: al crear un cliente a mano desde
+  `/admin/team` → "Agregar miembro" con rol "Cliente", aparece un campo
+  opcional de fecha de nacimiento (el staff puede no conocerla en el
+  momento, ej. un walk-in) — mismo patrón de campo condicional por rol ya
+  usado en esta sesión (select controlado + campo que aparece solo con el
+  rol correcto).
+- **Visible en la pestaña Pasajeros** (`/admin/team?tab=customers`, ver
+  entrada anterior) — nueva columna "Fecha de nacimiento".
+- **Explícitamente fuera de alcance, a pedido del usuario**: la métrica de
+  "usuarios nuevos por semana/mes" agregada de todas las empresas en
+  `/super-admin/dashboard` — el usuario confirmó que por ahora solo quiere
+  la captura del dato, y dejar esa métrica para una ronda futura. Cuando se
+  construya: el dashboard de super-admin ya tiene un patrón de gráfico de
+  barras hecho a mano (divs con `height` proporcional, sin librería de
+  charts — ver `TREND_DAYS`/líneas ~132-142 y ~352-366 de
+  `super-admin/dashboard/page.tsx`) que se puede replicar con
+  `user_profiles.created_at` sin filtrar por empresa (mismo patrón
+  `createAdminClient()` + `Promise.all` que ya usa esa página). No hay
+  ninguna librería de gráficos (recharts/chart.js) en el proyecto todavía.
+- **Verificado**: `tsc --noEmit` limpio en ambas apps, 185/185 tests,
+  `npm run build` compila sin errores.
+- **Pendiente del usuario**: correr la migración
+  `20260723000069_date_of_birth.sql` en Supabase; instalar el próximo build
+  EAS para probar el selector de fecha de nacimiento en el registro real.
+
 ## ✅ Fix real: pasajeros mezclados con el equipo en /admin/team + pestaña "Pasajeros" (2026-07-23)
 
 El usuario notó (viendo `/admin/team`) que cuentas de pasajeros — incluyendo

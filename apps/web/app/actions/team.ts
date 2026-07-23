@@ -38,11 +38,16 @@ export async function inviteTeamMemberAction(
   const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
-  const email     = (formData.get('email') as string ?? '').trim().toLowerCase()
-  const firstName = (formData.get('first_name') as string ?? '').trim()
-  const lastName  = (formData.get('last_name') as string ?? '').trim()
-  const role      = formData.get('role') as UserRole
-  const phone     = (formData.get('phone') as string ?? '').trim() || null
+  const email       = (formData.get('email') as string ?? '').trim().toLowerCase()
+  const firstName   = (formData.get('first_name') as string ?? '').trim()
+  const lastName    = (formData.get('last_name') as string ?? '').trim()
+  const role        = formData.get('role') as UserRole
+  const phone       = (formData.get('phone') as string ?? '').trim() || null
+  // Solo tiene sentido para role='customer' (uso futuro: felicitación de
+  // cumpleaños) — el formulario ya lo oculta para otros roles, pero se
+  // ignora igual aquí si llegara con un rol distinto.
+  const dateOfBirthRaw = (formData.get('date_of_birth') as string ?? '').trim()
+  const dateOfBirth    = role === 'customer' && dateOfBirthRaw ? dateOfBirthRaw : null
 
   if (!email)     return { success: false, error: 'Email requerido' }
   if (!firstName) return { success: false, error: 'Nombre requerido' }
@@ -95,13 +100,14 @@ export async function inviteTeamMemberAction(
   // Asegurar el perfil (el trigger lo crea desde metadata; reforzamos
   // phone + is_active por si acaso).
   const { error: profileError } = await admin.from('user_profiles').upsert({
-    id:         authData.user.id,
-    company_id: user.company_id,
+    id:            authData.user.id,
+    company_id:    user.company_id,
     role,
-    first_name: firstName,
-    last_name:  lastName,
-    phone:      phone ?? undefined,
-    is_active:  true,
+    first_name:    firstName,
+    last_name:     lastName,
+    phone:         phone ?? undefined,
+    is_active:     true,
+    date_of_birth: dateOfBirth,
   })
 
   if (profileError) {

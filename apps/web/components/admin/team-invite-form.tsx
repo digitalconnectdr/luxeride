@@ -30,6 +30,7 @@ export function TeamInviteForm({ t, isOwner }: { t: TeamDict; isOwner: boolean }
   const [state, formAction] = useFormState(inviteTeamMemberAction, null)
   const [copied, setCopied] = useState(false)
   const [open, setOpen] = useState(false)
+  const [role, setRole] = useState('')
 
   function copyCreds() {
     if (!state?.email || !state?.tempPassword) return
@@ -108,7 +109,7 @@ export function TeamInviteForm({ t, isOwner }: { t: TeamDict; isOwner: boolean }
           </div>
           <div>
             <label className="block text-xs text-sl-on-surface-muted mb-1">{t.role} *</label>
-            <select name="role" required className={inputCls}>
+            <select name="role" required className={inputCls} value={role} onChange={(e) => setRole(e.target.value)}>
               <option value="">{t.selectRole}</option>
               {isOwner && <option value="company_admin">{t.roles.company_admin}</option>}
               <option value="dispatcher">{t.roles.dispatcher}</option>
@@ -117,6 +118,12 @@ export function TeamInviteForm({ t, isOwner }: { t: TeamDict; isOwner: boolean }
               <option value="customer">{t.roles.customer}</option>
             </select>
           </div>
+          {role === 'customer' && (
+            <div>
+              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.dateOfBirth}</label>
+              <input name="date_of_birth" type="date" max={new Date().toISOString().slice(0, 10)} className={inputCls} />
+            </div>
+          )}
         </div>
         <div className="flex justify-end items-center gap-4">
           <button type="button" onClick={() => setOpen(false)} className="text-xs text-sl-on-surface-muted hover:text-sl-on-surface">

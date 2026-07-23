@@ -1,8 +1,8 @@
 // ── App móvil del pasajero — crear cuenta ──────────────────────────────────
 // Único endpoint de /api/mobile/passenger/* que NO requiere bearer token —
 // es el que lo produce. Body: { companySlug, email, password, firstName,
-// lastName, phone? }. Devuelve { success, session } — la app guarda la
-// sesión (access_token/refresh_token) en su propio AsyncStorage.
+// lastName, dateOfBirth, phone? }. Devuelve { success, session } — la app
+// guarda la sesión (access_token/refresh_token) en su propio AsyncStorage.
 
 import { NextResponse } from 'next/server'
 import { signupPassengerCore } from '@/app/actions/passenger-auth'
@@ -23,9 +23,11 @@ export async function POST(request: Request) {
   const password = body?.password
   const firstName = body?.firstName
   const lastName = body?.lastName
+  const dateOfBirth = body?.dateOfBirth
   if (
     typeof companySlug !== 'string' || typeof email !== 'string' ||
-    typeof password !== 'string' || typeof firstName !== 'string' || typeof lastName !== 'string'
+    typeof password !== 'string' || typeof firstName !== 'string' || typeof lastName !== 'string' ||
+    typeof dateOfBirth !== 'string'
   ) {
     return NextResponse.json({ success: false, error: 'Faltan datos requeridos' }, { status: 400 })
   }
@@ -36,6 +38,7 @@ export async function POST(request: Request) {
     password,
     firstName,
     lastName,
+    dateOfBirth,
     phone: typeof body?.phone === 'string' ? body.phone : undefined,
   })
 

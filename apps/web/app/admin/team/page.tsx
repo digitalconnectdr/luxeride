@@ -31,6 +31,16 @@ function formatDateTime(iso: string | null): string {
   })
 }
 
+function formatDateOnly(iso: string | null): string {
+  if (!iso) return '—'
+  // date_of_birth es DATE puro (sin hora) — parsear con new Date(iso) directo
+  // lo interpreta en UTC medianoche y puede mostrar el día anterior según el
+  // huso horario del servidor; se fuerza a mediodía UTC para evitar eso.
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString(undefined, {
+    year: 'numeric', month: 'short', day: 'numeric',
+  })
+}
+
 function escapeIlikePattern(term: string): string {
   // El filtro .or() de PostgREST usa "," y "(" ")" como sintaxis — envolver
   // el valor entre comillas dobles permite que el texto de búsqueda los
@@ -298,7 +308,7 @@ async function CustomersTab({
 
   let query = admin
     .from('user_profiles')
-    .select('id, first_name, last_name, phone, is_active, created_at', { count: 'exact' })
+    .select('id, first_name, last_name, phone, is_active, created_at, date_of_birth', { count: 'exact' })
     .eq('company_id', companyId)
     .eq('role', 'customer')
 
@@ -409,6 +419,7 @@ async function CustomersTab({
                 {c.email && <p className="text-xs text-sl-on-surface-muted">{c.email}</p>}
                 <div className="flex items-center justify-between pt-1">
                   <div className="text-[11px] text-sl-on-surface-muted space-y-0.5">
+                    {c.date_of_birth && <p>{t.thDateOfBirth}: {formatDateOnly(c.date_of_birth)}</p>}
                     <p>{t.thSignupDate}: {formatDateTime(c.created_at)}</p>
                     <p>{t.thLastLogin}: {formatDateTime(c.lastSignInAt)}</p>
                   </div>
@@ -428,6 +439,7 @@ async function CustomersTab({
                   <tr className="border-b border-gold/20">
                     <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thCustomer}</th>
                     <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thEmail}</th>
+                    <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thDateOfBirth}</th>
                     <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thSignupDate}</th>
                     <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thLastLogin}</th>
                     <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.thStatus}</th>
@@ -441,6 +453,7 @@ async function CustomersTab({
                         {c.phone && <p className="text-xs text-sl-on-surface-muted mt-0.5">{c.phone}</p>}
                       </td>
                       <td className="px-6 py-4 text-sl-on-surface-muted">{c.email ?? '—'}</td>
+                      <td className="px-6 py-4 text-sl-on-surface-muted">{formatDateOnly(c.date_of_birth)}</td>
                       <td className="px-6 py-4 text-sl-on-surface-muted">{formatDateTime(c.created_at)}</td>
                       <td className="px-6 py-4 text-sl-on-surface-muted">{formatDateTime(c.lastSignInAt)}</td>
                       <td className="px-6 py-4">

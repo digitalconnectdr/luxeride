@@ -24,6 +24,12 @@ const SignupPassengerSchema = z.object({
   firstName: z.string().min(1, 'Nombre requerido'),
   lastName: z.string().min(1, 'Apellido requerido'),
   phone: z.string().optional(),
+  // Se pide en el signup de la app (uso futuro: felicitación de cumpleaños,
+  // ver docs/PENDING.md) — YYYY-MM-DD, no puede ser en el futuro.
+  dateOfBirth: z.string().refine((v) => {
+    const d = new Date(`${v}T00:00:00Z`)
+    return !Number.isNaN(d.getTime()) && d.getTime() < Date.now()
+  }, 'Fecha de nacimiento inválida'),
 })
 
 export interface SignupPassengerInput {
@@ -33,6 +39,7 @@ export interface SignupPassengerInput {
   firstName: string
   lastName: string
   phone?: string
+  dateOfBirth: string
 }
 
 export interface SignupPassengerResult {
@@ -97,6 +104,7 @@ export async function signupPassengerCore(input: SignupPassengerInput): Promise<
     first_name: parsed.data.firstName,
     last_name: parsed.data.lastName,
     phone: parsed.data.phone ?? null,
+    date_of_birth: parsed.data.dateOfBirth,
   })
 
   if (profileError) {
