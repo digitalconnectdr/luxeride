@@ -3,6 +3,33 @@
 > Actualizado: 2026-07-22. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fix: crash nativo al abrir la app de pasajero (2026-07-22)
+
+Tras el primer `eas build` real (perfil `apk`), la app instalaba pero se
+cerraba de inmediato al abrir, sin mostrar ninguna pantalla (ni siquiera la
+pantalla roja de error de React Native). Diagnosticado con `adb logcat` en un
+dispositivo físico (no había otra forma de ver el error — los logs de EAS
+Build solo cubren tiempo de compilación, nunca crashes en runtime).
+
+- **Causa real**: `apps/passenger-mobile/lib/supabase.ts` lee
+  `process.env.EXPO_PUBLIC_SUPABASE_URL!` sin fallback. El perfil `apk` de
+  `eas.json` solo tenía `GOOGLE_MAPS_ANDROID_API_KEY` en su bloque `env` —
+  faltaban las variables de Supabase. **EAS Build no lee el `.env` local del
+  proyecto**, solo variables declaradas explícitamente en `eas.json` o en el
+  panel de EAS — mismo problema que ya había pasado con la key de Maps.
+  Sin la URL, `createClient()` lanzaba `Error: supabaseUrl is required.` al
+  cargar el primer módulo JS, lo que abortaba el proceso nativo antes de
+  poder renderizar cualquier UI (de ahí el cierre instantáneo sin pantalla
+  de error).
+- **Fix**: se agregaron `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+  y `EXPO_PUBLIC_API_BASE_URL` al bloque `env` del perfil `apk` en
+  `apps/passenger-mobile/eas.json`, junto a la key de Maps. Nuevo build
+  confirmado funcionando por el usuario en dispositivo físico (llega a la
+  pantalla de login).
+- **Para recordar en Sprint 3+**: cualquier variable `EXPO_PUBLIC_*` o de
+  `app.config.js` que se agregue a la app debe declararse también en
+  `eas.json` → `build.apk.env`, no solo en `.env` local.
+
 ## ✅ Reporte de rutas frecuentes — insight geográfico para Ads (add-on AI Growth Assistant) (2026-07-22)
 
 El usuario preguntó si se puede capturar país/ciudad de origen y destino de

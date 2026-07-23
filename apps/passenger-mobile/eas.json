@@ -17,7 +17,10 @@
       },
       "distribution": "internal",
       "env": {
-        "GOOGLE_MAPS_ANDROID_API_KEY": "AIzaSyCWmbI8oimOCOz9Pij3gNISNTgE6mT8mvY"
+        "GOOGLE_MAPS_ANDROID_API_KEY": "AIzaSyCWmbI8oimOCOz9Pij3gNISNTgE6mT8mvY",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://iwjtjwryhtpzuvwmlpjk.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3anRqd3J5aHRwenV2d21scGprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTY1MzMsImV4cCI6MjA5NjM5MjUzM30.84fybkwwdszvE6A7gPJlYrJ2CbLhWOe-Y2BlTH9iQng",
+        "EXPO_PUBLIC_API_BASE_URL": "https://getluxeride.vercel.app"
       }
     },
     "production": {
