@@ -3,6 +3,39 @@
 > Actualizado: 2026-07-22. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fix crítico: audit_trigger() rompía todo UPDATE sobre companies (2026-07-22)
+
+Descubierto al intentar reactivar "Revival Transportation Group" (suspendida)
+desde `/super-admin/companies` — el dropdown de status mostraba el cambio
+pero se revertía en cada recarga, sin ningún error visible.
+
+- **Causa real**: `audit_trigger()` (migración 11, `search_path` fijado en
+  migración 61) referencia `OLD.company_id`/`NEW.company_id` — válido para
+  `bookings`/`payments`/`refunds`/`user_profiles` (tienen FK `company_id`),
+  pero el trigger `audit_companies` también la aplica a la tabla `companies`,
+  que NO tiene esa columna (solo `id`). Cualquier `UPDATE` sobre `companies`
+  fallaba en Postgres con `record "old"/"new" has no field "company_id"`.
+  **Esto también afecta `activateCompanySubscription`
+  (`lib/billing/subscriptions.ts`), usada por el webhook real de Whop y por
+  la renovación manual de suscripción desde super-admin** — probablemente
+  bloqueó en silencio activaciones/renovaciones pagadas reales.
+- **Por qué no se había notado antes**: `status-forms.tsx` (dropdown de
+  super-admin) no revisaba el resultado del server action — el error de
+  Postgres se perdía en silencio y el `<select>` (no controlado,
+  `defaultValue`) mostraba el cambio en el navegador de todas formas,
+  revirtiendo solo al recargar.
+- **Fix de UI** (ya desplegado, `apps/web/components/super-admin/status-forms.tsx`):
+  ambos `<select>` (status y plan) ahora son controlados, revierten
+  visualmente si el guardado falla, y muestran el mensaje de error real.
+- **Fix de base de datos** (migración 64, `audit_companies_trigger()`
+  dedicada usando `id` en vez de `company_id`) — **pendiente del usuario**:
+  correr `supabase/migrations/20260723000064_fix_companies_audit_trigger.sql`
+  en Supabase SQL Editor. Sin esto, cualquier `UPDATE` sobre `companies`
+  sigue fallando, incluyendo activaciones reales de Whop.
+- **Pendiente de verificar tras aplicar la migración**: reactivar Revival
+  Transportation Group desde `/super-admin/companies` y confirmar que
+  queda en `active` de forma persistente.
+
 ## ✅ Fix: crash nativo al abrir la app de pasajero (2026-07-22)
 
 Tras el primer `eas build` real (perfil `apk`), la app instalaba pero se
