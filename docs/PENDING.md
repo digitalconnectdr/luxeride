@@ -61,6 +61,33 @@ horas) — eligió la opción rápida: **mínimo de horas a nivel de regla**.
   mínimo de horas en las reglas "Por hora" existentes (por defecto queda en
   0, es decir sin cambio de comportamiento hasta que se configure).
 
+## ✅ App de pasajero: calificar viaje completado (2026-07-23)
+
+Siguiente pieza de Sprint 4 ("Post-viaje: calificación... bookings.rating ya
+existe") — implementado SOLO la calificación, sin propina post-pago (esa
+parte depende de adaptar el flujo de pago de Whop a la app, que es Sprint 3
+y sigue sin construir — ver nota existente en `docs/PHASE-2-MOBILE.md`
+sobre por qué eso no es un simple Payment Sheet de Stripe).
+
+- **Cero backend nuevo de verdad** — reusa `submitReviewAction` (el mismo
+  núcleo que ya usa `/review/[id]`, el link público que se manda por email
+  al completar un viaje). Solo se agregó una ruta delgada
+  `/api/mobile/passenger/submit-review` que exige bearer token de rol
+  `customer` y verifica que `bookings.customer_id` sea el usuario
+  autenticado (capa extra de seguridad que el link público de la web no
+  necesita, porque ahí el bookingId ya es el secreto — ver `/track/[id]`).
+- **UI**: `MyTripsScreen.tsx` — se extrajo la tarjeta de viaje a su propio
+  componente `TripCard` (antes vivía como closure inline dentro de
+  `renderItem`, lo cual no permite estado por-ítem en un `FlatList`).
+  Viajes `completed` sin `rated_at` muestran "Calificar viaje" → panel
+  expandible con 5 estrellas + comentario opcional, mismo patrón visual que
+  ya usa el conductor para calificar al pasajero en
+  `apps/driver-mobile/screens/EarningsScreen.tsx`.
+- **Verificado**: `tsc --noEmit` limpio en ambas apps, 185/185 tests,
+  `npm run build` compila sin errores.
+- Sin migración nueva — las columnas `rating`/`rating_comment`/`rated_at`
+  ya existían desde antes.
+
 ## ✅ App de pasajero: "Reservar de nuevo" desde Mis viajes (2026-07-23)
 
 Siguiente pieza del roadmap de Sprint 3-4 (`docs/PHASE-2-MOBILE.md`) — "Re-

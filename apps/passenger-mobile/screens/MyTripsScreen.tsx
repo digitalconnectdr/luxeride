@@ -7,11 +7,12 @@
 // "Reservar" (navegación cross-tab: navigation.navigate('Reservar', { screen, params })).
 
 import { useCallback, useState } from 'react'
-import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native'
+import { View, Text, StyleSheet, FlatList, RefreshControl, TextInput } from 'react-native'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
-import { Card, EmptyState, ScreenLoader, StatusBadge } from '../components/ui'
+import { callPassengerApi } from '../lib/api'
+import { Button, Card, EmptyState, ScreenLoader, StatusBadge } from '../components/ui'
 import { PressableScale } from '../components/PressableScale'
 import { color, font, radius, space } from '../lib/theme'
 import type { BookingStatus } from '../lib/types'
@@ -24,6 +25,7 @@ interface TripRow {
   total_amount: number | null
   currency: string | null
   passenger_count: number
+  rated_at: string | null
   pickup_location: { address?: string; lat?: number; lng?: number } | null
   dropoff_location: { address?: string; lat?: number; lng?: number } | null
 }
@@ -44,6 +46,151 @@ function urgency(hoursUntil: number): { label: string; tint: string } {
   return { label: days <= 1 ? 'Mañana' : `En ${days} días`, tint: color.success }
 }
 
+interface TripCardProps {
+  item: TripRow
+  onNavigateTracking: () => void
+  onRebook: () => void
+  onRated: () => void
+}
+
+// Componente propio (no una función inline dentro de renderItem) porque el
+// panel de calificación necesita su propio estado por tarjeta (expandido,
+// estrellas, comentario) — un FlatList no da hooks-por-ítem si el render se
+// queda como closure suelto. Mismo patrón que TripRow en
+// apps/driver-mobile/screens/EarningsScreen.tsx ("Calificar pasajero"), aquí
+// invertido: el PASAJERO califica el viaje/conductor.
+function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps) {
+  const [ratingOpen, setRatingOpen] = useState(false)
+  const [stars, setStars] = useState(0)
+  const [comment, setComment] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [ratingError, setRatingError] = useState('')
+
+  const isActive = ACTIVE_STATUSES.includes(item.status)
+  const date = new Date(item.scheduled_at)
+  const hoursUntil = (date.getTime() - Date.now()) / 3_600_000
+  const showUrgency = isActive && hoursUntil > 0 && hoursUntil < 240 // hasta 10 días
+  const urgencyInfo = showUrgency ? urgency(hoursUntil) : null
+  const canRebook =
+    REBOOKABLE_STATUSES.includes(item.status) &&
+    item.pickup_location?.lat != null && item.pickup_location?.lng != null &&
+    item.dropoff_location?.lat != null && item.dropoff_location?.lng != null
+  const canRate = item.status === 'completed' && !item.rated_at
+
+  async function submitRating() {
+    if (stars < 1) return
+    setSubmitting(true)
+    setRatingError('')
+    const result = await callPassengerApi('submit-review', { bookingId: item.id, rating: stars, comment })
+    setSubmitting(false)
+    if (!result.success) {
+      setRatingError('No se pudo enviar tu calificación. Intenta de nuevo.')
+      return
+    }
+    setRatingOpen(false)
+    onRated()
+  }
+
+  return (
+    <PressableScale onPress={onNavigateTracking}>
+      <Card style={styles.card}>
+        <View style={styles.row}>
+          <Text style={styles.number}>{item.booking_number}</Text>
+          <StatusBadge status={item.status} />
+        </View>
+
+        <View style={styles.addressRow}>
+          <View style={[styles.dot, { backgroundColor: color.gold }]} />
+          <Text style={styles.address} numberOfLines={1}>
+            {item.pickup_location?.address ?? 'Origen'}
+          </Text>
+        </View>
+        <View style={styles.addressRow}>
+          <View style={[styles.dot, { backgroundColor: color.danger }]} />
+          <Text style={styles.address} numberOfLines={1}>
+            {item.dropoff_location?.address ?? 'Destino'}
+          </Text>
+        </View>
+
+        <View style={styles.footer}>
+          <View style={styles.dateGroup}>
+            <Text style={styles.date}>
+              {date.toLocaleDateString('es-DO', { day: 'numeric', month: 'short' })} ·{' '}
+              {date.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+            {urgencyInfo && (
+              <View style={[styles.urgencyPill, { backgroundColor: `${urgencyInfo.tint}18`, borderColor: `${urgencyInfo.tint}40` }]}>
+                <View style={[styles.urgencyDot, { backgroundColor: urgencyInfo.tint }]} />
+                <Text style={[styles.urgencyText, { color: urgencyInfo.tint }]}>{urgencyInfo.label}</Text>
+              </View>
+            )}
+          </View>
+          {item.total_amount != null && (
+            <Text style={styles.price}>
+              ${item.total_amount.toFixed(0)} {item.currency ?? 'USD'}
+            </Text>
+          )}
+        </View>
+
+        {isActive && (
+          <View style={styles.activeHint}>
+            <Ionicons name="navigate-outline" size={13} color={color.gold} />
+            <Text style={styles.activeHintText}>Toca para ver el viaje en vivo</Text>
+          </View>
+        )}
+
+        {canRebook && (
+          <PressableScale onPress={onRebook}>
+            <View style={styles.rebookBtn}>
+              <Ionicons name="repeat-outline" size={14} color={color.gold} />
+              <Text style={styles.rebookText}>Reservar de nuevo</Text>
+            </View>
+          </PressableScale>
+        )}
+
+        {item.rated_at ? (
+          <View style={styles.ratedRow}>
+            <Ionicons name="star" size={12} color={color.gold} />
+            <Text style={styles.ratedText}>Ya calificaste este viaje</Text>
+          </View>
+        ) : canRate ? (
+          <>
+            <PressableScale onPress={() => setRatingOpen((v) => !v)}>
+              <View style={styles.rateBtn}>
+                <Ionicons name="star-outline" size={14} color={color.gold} />
+                <Text style={styles.rateBtnText}>Calificar viaje</Text>
+              </View>
+            </PressableScale>
+
+            {ratingOpen && (
+              <View style={styles.ratingPanel}>
+                <View style={styles.starsRow}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <PressableScale key={n} onPress={() => setStars(n)} haptic="light" hitSlop={6}>
+                      <Ionicons name={n <= stars ? 'star' : 'star-outline'} size={28} color={color.gold} />
+                    </PressableScale>
+                  ))}
+                </View>
+                <TextInput
+                  style={styles.commentInput}
+                  placeholder="Comentario (opcional)"
+                  placeholderTextColor={color.inkFaint}
+                  value={comment}
+                  onChangeText={setComment}
+                  multiline
+                  numberOfLines={2}
+                />
+                {ratingError ? <Text style={styles.ratingError}>{ratingError}</Text> : null}
+                <Button label="Enviar calificación" icon="checkmark" onPress={submitRating} loading={submitting} disabled={stars < 1} />
+              </View>
+            )}
+          </>
+        ) : null}
+      </Card>
+    </PressableScale>
+  )
+}
+
 export function MyTripsScreen() {
   // any: esta pantalla vive en el Tab.Navigator raíz, no en BookingStack
   // (que es donde vive TripTracking) — React Navigation soporta navegar a un
@@ -56,7 +203,7 @@ export function MyTripsScreen() {
   const load = useCallback(async () => {
     const { data, error: loadError } = await supabase
       .from('bookings')
-      .select('id, booking_number, status, scheduled_at, total_amount, currency, passenger_count, pickup_location, dropoff_location')
+      .select('id, booking_number, status, scheduled_at, total_amount, currency, passenger_count, rated_at, pickup_location, dropoff_location')
       .order('scheduled_at', { ascending: false })
       .limit(30)
 
@@ -124,80 +271,16 @@ export function MyTripsScreen() {
           subtitle="Aún no tienes reservas. Cuando reserves un viaje, lo verás aquí."
         />
       }
-      renderItem={({ item }) => {
-        const isActive = ACTIVE_STATUSES.includes(item.status)
-        const date = new Date(item.scheduled_at)
-        const hoursUntil = (date.getTime() - Date.now()) / 3_600_000
-        const showUrgency = isActive && hoursUntil > 0 && hoursUntil < 240 // hasta 10 días
-        const urgencyInfo = showUrgency ? urgency(hoursUntil) : null
-        const canRebook =
-          REBOOKABLE_STATUSES.includes(item.status) &&
-          item.pickup_location?.lat != null && item.pickup_location?.lng != null &&
-          item.dropoff_location?.lat != null && item.dropoff_location?.lng != null
-        return (
-          <PressableScale
-            onPress={() =>
-              navigation.navigate('Reservar', { screen: 'TripTracking', params: { bookingId: item.id } })
-            }
-          >
-            <Card style={styles.card}>
-              <View style={styles.row}>
-                <Text style={styles.number}>{item.booking_number}</Text>
-                <StatusBadge status={item.status} />
-              </View>
-
-              <View style={styles.addressRow}>
-                <View style={[styles.dot, { backgroundColor: color.gold }]} />
-                <Text style={styles.address} numberOfLines={1}>
-                  {item.pickup_location?.address ?? 'Origen'}
-                </Text>
-              </View>
-              <View style={styles.addressRow}>
-                <View style={[styles.dot, { backgroundColor: color.danger }]} />
-                <Text style={styles.address} numberOfLines={1}>
-                  {item.dropoff_location?.address ?? 'Destino'}
-                </Text>
-              </View>
-
-              <View style={styles.footer}>
-                <View style={styles.dateGroup}>
-                  <Text style={styles.date}>
-                    {date.toLocaleDateString('es-DO', { day: 'numeric', month: 'short' })} ·{' '}
-                    {date.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                  {urgencyInfo && (
-                    <View style={[styles.urgencyPill, { backgroundColor: `${urgencyInfo.tint}18`, borderColor: `${urgencyInfo.tint}40` }]}>
-                      <View style={[styles.urgencyDot, { backgroundColor: urgencyInfo.tint }]} />
-                      <Text style={[styles.urgencyText, { color: urgencyInfo.tint }]}>{urgencyInfo.label}</Text>
-                    </View>
-                  )}
-                </View>
-                {item.total_amount != null && (
-                  <Text style={styles.price}>
-                    ${item.total_amount.toFixed(0)} {item.currency ?? 'USD'}
-                  </Text>
-                )}
-              </View>
-
-              {isActive && (
-                <View style={styles.activeHint}>
-                  <Ionicons name="navigate-outline" size={13} color={color.gold} />
-                  <Text style={styles.activeHintText}>Toca para ver el viaje en vivo</Text>
-                </View>
-              )}
-
-              {canRebook && (
-                <PressableScale onPress={() => rebook(item)}>
-                  <View style={styles.rebookBtn}>
-                    <Ionicons name="repeat-outline" size={14} color={color.gold} />
-                    <Text style={styles.rebookText}>Reservar de nuevo</Text>
-                  </View>
-                </PressableScale>
-              )}
-            </Card>
-          </PressableScale>
-        )
-      }}
+      renderItem={({ item }) => (
+        <TripCard
+          item={item}
+          onNavigateTracking={() =>
+            navigation.navigate('Reservar', { screen: 'TripTracking', params: { bookingId: item.id } })
+          }
+          onRebook={() => rebook(item)}
+          onRated={load}
+        />
+      )}
     />
   )
 }
@@ -249,4 +332,34 @@ const styles = StyleSheet.create({
     borderColor: color.border,
   },
   rebookText: { color: color.gold, fontFamily: font.bodySemi, fontSize: 12 },
+  ratedRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  ratedText: { color: color.inkFaint, fontFamily: font.bodyMedium, fontSize: 11 },
+  rateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: space.xs,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.border,
+  },
+  rateBtnText: { color: color.gold, fontFamily: font.bodySemi, fontSize: 12 },
+  ratingPanel: { marginTop: space.sm, gap: space.sm },
+  starsRow: { flexDirection: 'row', gap: space.sm, alignSelf: 'center' },
+  commentInput: {
+    backgroundColor: color.bg,
+    color: color.ink,
+    fontFamily: font.body,
+    fontSize: 13,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.border,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    minHeight: 56,
+    textAlignVertical: 'top',
+  },
+  ratingError: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 12 },
 })
