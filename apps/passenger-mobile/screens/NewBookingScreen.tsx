@@ -16,11 +16,19 @@ import * as Location from 'expo-location'
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { supabase } from '../lib/supabase'
 import { AddressAutocomplete } from '../components/AddressAutocomplete'
 import { PressableScale } from '../components/PressableScale'
 import { Button, Card, SectionLabel } from '../components/ui'
 import { color, font, radius, space } from '../lib/theme'
 import type { BookingStackParamList } from '../lib/types'
+
+interface SavedAddress { id: string; label: string; address: string; lat: number; lng: number }
+
+const SAVED_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
+  Casa: 'home-outline',
+  Trabajo: 'briefcase-outline',
+}
 
 type Props = NativeStackScreenProps<BookingStackParamList, 'NewBooking'>
 
@@ -93,6 +101,31 @@ export function NewBookingScreen({ navigation, route }: Props) {
   }, [prefill])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([])
+
+  useEffect(() => {
+    async function loadSaved() {
+      const { data: auth } = await supabase.auth.getUser()
+      if (!auth.user) return
+      const { data } = await supabase
+        .from('passenger_saved_addresses')
+        .select('id, label, address, lat, lng')
+        .eq('customer_id', auth.user.id)
+        .order('created_at', { ascending: true })
+      setSavedAddresses((data ?? []) as SavedAddress[])
+    }
+    loadSaved()
+  }, [])
+
+  function pickSaved(item: SavedAddress, target: 'pickup' | 'dropoff') {
+    if (target === 'pickup') {
+      setPickupAddress(item.address)
+      setPickupResolved({ lat: item.lat, lng: item.lng, placeId: '', postalCode: null })
+    } else {
+      setDropoffAddress(item.address)
+      setDropoffResolved({ lat: item.lat, lng: item.lng, placeId: '', postalCode: null })
+    }
+  }
 
   function scheduledAtValue(): Date {
     if (timeOption === CUSTOM_OPTION && customDateTime) return customDateTime
@@ -204,6 +237,18 @@ export function NewBookingScreen({ navigation, route }: Props) {
               setPickupResolved({ lat: details.lat, lng: details.lng, placeId: details.placeId, postalCode: details.postalCode })
             }
           />
+          {savedAddresses.length > 0 && (
+            <View style={styles.savedRow}>
+              {savedAddresses.map((item) => (
+                <PressableScale key={item.id} onPress={() => pickSaved(item, 'pickup')} haptic="light">
+                  <View style={styles.savedChip}>
+                    <Ionicons name={SAVED_ICON[item.label] ?? 'location-outline'} size={11} color={color.gold} />
+                    <Text style={styles.savedChipText}>{item.label}</Text>
+                  </View>
+                </PressableScale>
+              ))}
+            </View>
+          )}
 
           <View style={styles.divider} />
 
@@ -221,6 +266,18 @@ export function NewBookingScreen({ navigation, route }: Props) {
               setDropoffResolved({ lat: details.lat, lng: details.lng, placeId: details.placeId, postalCode: details.postalCode })
             }
           />
+          {savedAddresses.length > 0 && (
+            <View style={styles.savedRow}>
+              {savedAddresses.map((item) => (
+                <PressableScale key={item.id} onPress={() => pickSaved(item, 'dropoff')} haptic="light">
+                  <View style={styles.savedChip}>
+                    <Ionicons name={SAVED_ICON[item.label] ?? 'location-outline'} size={11} color={color.gold} />
+                    <Text style={styles.savedChipText}>{item.label}</Text>
+                  </View>
+                </PressableScale>
+              ))}
+            </View>
+          )}
         </Card>
 
         <View style={styles.section}>
@@ -328,6 +385,19 @@ const styles = StyleSheet.create({
   scroll: { padding: space.lg, gap: space.lg },
   addressCard: { zIndex: 10, overflow: 'visible' },
   divider: { height: 1, backgroundColor: color.border, marginVertical: space.sm },
+  savedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs, marginTop: -space.xs, marginBottom: space.xs },
+  savedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: space.sm,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.border,
+    backgroundColor: color.surfaceRaised,
+  },
+  savedChipText: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 11 },
   section: { gap: space.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {

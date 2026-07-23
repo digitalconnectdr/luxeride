@@ -8,15 +8,14 @@
 // fijo de "LuxeRide".
 
 import { useRef, useState } from 'react'
-import { View, Text, TextInput, StyleSheet, Animated, KeyboardAvoidingView, Platform, Keyboard, ScrollView, Modal } from 'react-native'
+import { View, Text, StyleSheet, Animated, KeyboardAvoidingView, Platform, Keyboard, ScrollView, Modal } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import { supabase } from '../lib/supabase'
 import { callPassengerApi } from '../lib/api'
 import { useBranding } from '../lib/branding'
 import { BrandMark } from '../components/BrandMark'
-import { PressableScale } from '../components/PressableScale'
-import { Button } from '../components/ui'
+import { Button, Field, FieldButton } from '../components/ui'
 import { color, font, radius, space } from '../lib/theme'
 
 function formatDob(d: Date): string {
@@ -173,14 +172,13 @@ export function AuthScreen({ roleError }: { roleError?: string }) {
           )}
 
           {isSignup && (
-            <PressableScale onPress={() => setShowDobPicker(true)}>
-              <View style={[styles.inputWrap, showDobPicker && styles.inputWrapFocused]}>
-                <Ionicons name="gift-outline" size={18} color={dateOfBirth ? color.gold : color.inkFaint} />
-                <Text style={[styles.input, !dateOfBirth && styles.inputPlaceholder]}>
-                  {dateOfBirth ? formatDob(dateOfBirth) : 'Fecha de nacimiento'}
-                </Text>
-              </View>
-            </PressableScale>
+            <FieldButton
+              icon="gift-outline"
+              label={dateOfBirth ? formatDob(dateOfBirth) : null}
+              placeholder="Fecha de nacimiento"
+              active={showDobPicker}
+              onPress={() => setShowDobPicker(true)}
+            />
           )}
 
           <Field
@@ -249,30 +247,6 @@ export function AuthScreen({ roleError }: { roleError?: string }) {
 // lo cambia libremente, esto solo evita arrancar en "hoy".
 const DEFAULT_DOB = new Date(new Date().getFullYear() - 25, 0, 1)
 
-interface FieldProps {
-  icon: keyof typeof Ionicons.glyphMap
-  placeholder: string
-  value: string
-  onChangeText: (v: string) => void
-  focused: boolean
-  onFocus: () => void
-  onBlur: () => void
-  secureTextEntry?: boolean
-  keyboardType?: 'default' | 'email-address' | 'phone-pad'
-  autoCapitalize?: 'none' | 'words'
-  onSubmitEditing?: () => void
-  style?: object
-}
-
-function Field({ icon, focused, style, ...inputProps }: FieldProps) {
-  return (
-    <View style={[styles.inputWrap, focused && styles.inputWrapFocused, style]}>
-      <Ionicons name={icon} size={18} color={focused ? color.gold : color.inkFaint} />
-      <TextInput style={styles.input} placeholderTextColor={color.inkFaint} autoCorrect={false} {...inputProps} />
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.bg },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: space.xl },
@@ -282,20 +256,6 @@ const styles = StyleSheet.create({
   form: { gap: space.md },
   row: { flexDirection: 'row', gap: space.md },
   rowItem: { flex: 1 },
-  inputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    backgroundColor: color.surfaceRaised,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.border,
-    paddingHorizontal: space.lg,
-    paddingVertical: 14,
-  },
-  inputWrapFocused: { borderColor: color.gold },
-  input: { flex: 1, color: color.ink, fontFamily: font.body, fontSize: 15, paddingVertical: 0 },
-  inputPlaceholder: { color: color.inkFaint },
   pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   pickerSheet: {
     backgroundColor: color.bgElevated,

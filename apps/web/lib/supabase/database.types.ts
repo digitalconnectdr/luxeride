@@ -344,6 +344,41 @@ export type Database = {
         Relationships: []
       }
 
+      // ── passenger_saved_addresses ────────────────────────────────────────────
+      passenger_saved_addresses: {
+        Row: {
+          id: string
+          customer_id: string
+          label: string
+          address: string
+          lat: number
+          lng: number
+          place_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          customer_id: string
+          label: string
+          address: string
+          lat: number
+          lng: number
+          place_id?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          customer_id?: string | undefined
+          label?: string | undefined
+          address?: string | undefined
+          lat?: number | undefined
+          lng?: number | undefined
+          place_id?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── vehicle_types ───────────────────────────────────────────────────────
       vehicle_types: {
         Row: {

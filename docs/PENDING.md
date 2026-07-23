@@ -3,6 +3,37 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ App de pasajero: Perfil editable + direcciones guardadas (2026-07-23)
+
+Cierra el pulido menor pendiente ("Perfil solo tenía cerrar sesión") — ahora
+el pasajero puede editar nombre/apellido/teléfono/fecha de nacimiento y
+guardar direcciones frecuentes ("Casa", "Trabajo", etc.) para reservar más
+rápido.
+
+- **Edición de perfil**: sin backend nuevo — `user_profiles` ya tenía una
+  policy RLS `users_update_own_profile` (migración 03) que deja a cualquier
+  usuario actualizar su propia fila (bloquea cambiar `role`/`company_id`),
+  nunca usada desde ningún cliente hasta ahora. La app actualiza directo
+  vía Supabase, limitando ella misma los campos enviados a los 4 visibles
+  en el formulario (nunca `avatar_url`/`metadata`/`is_active`, aunque la
+  policy los permitiría).
+- **Direcciones guardadas**: tabla nueva `passenger_saved_addresses`
+  (migración `20260723000070_passenger_saved_addresses.sql`), RLS propia
+  scopeada a `customer_id = auth.uid()` — mismo patrón de acceso directo
+  sin ruta de servidor (como `device_tokens`). Chips rápidos "Casa"/
+  "Trabajo"/"Otro" al guardar.
+- **Reutilizadas en el flujo de reserva**: `NewBookingScreen.tsx` muestra
+  las direcciones guardadas como chips debajo de Origen y Destino — un
+  toque llena el campo sin re-escribir ni re-buscar.
+- **Refactor menor**: el componente `Field` (input con ícono) vivía privado
+  dentro de `AuthScreen.tsx`; se promovió a `components/ui.tsx` junto con
+  un `FieldButton` nuevo (mismo look, para valores que se eligen con un
+  picker en vez de escribirse, ej. fecha de nacimiento) — ahora se reusa
+  en Perfil sin duplicar código.
+- **Verificado**: `tsc --noEmit` limpio en `apps/passenger-mobile`.
+- **Pendiente del usuario**: correr la migración
+  `20260723000070_passenger_saved_addresses.sql` en Supabase.
+
 ## ✅ Push como tercer canal de los recordatorios ya configurables (2026-07-23)
 
 El usuario preguntó si los avisos push pueden controlarse desde

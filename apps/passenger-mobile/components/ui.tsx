@@ -4,7 +4,7 @@
 // app — así el look & feel no diverge entre pantallas.
 
 import type { ReactNode } from 'react'
-import { View, Text, StyleSheet, ActivityIndicator, type StyleProp, type ViewStyle } from 'react-native'
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, type StyleProp, type ViewStyle, type TextInputProps } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { PressableScale } from './PressableScale'
 import { color, font, radius, shadow, space, STATUS_COLOR } from '../lib/theme'
@@ -95,6 +95,69 @@ export function StatusBadge({ status }: { status: BookingStatus | string }) {
 export function SectionLabel({ children }: { children: ReactNode }) {
   return <Text style={styles.sectionLabel}>{children}</Text>
 }
+
+// ── Field / FieldButton ─────────────────────────────────────────────────────
+// Promovidos desde AuthScreen.tsx (donde vivían como componente privado) para
+// reusarlos también en el formulario de Perfil — mismo look en toda la app.
+// Field: TextInput con icono. FieldButton: mismo look pero para un valor que
+// se elige con un picker/modal (ej. fecha de nacimiento), no se escribe.
+
+interface FieldProps extends Pick<TextInputProps, 'secureTextEntry' | 'keyboardType' | 'autoCapitalize' | 'onSubmitEditing' | 'editable'> {
+  icon: keyof typeof Ionicons.glyphMap
+  placeholder: string
+  value: string
+  onChangeText: (v: string) => void
+  focused: boolean
+  onFocus: () => void
+  onBlur: () => void
+  style?: StyleProp<ViewStyle>
+}
+
+export function Field({ icon, focused, style, ...inputProps }: FieldProps) {
+  return (
+    <View style={[fieldStyles.wrap, focused && fieldStyles.wrapFocused, style]}>
+      <Ionicons name={icon} size={18} color={focused ? color.gold : color.inkFaint} />
+      <TextInput style={fieldStyles.input} placeholderTextColor={color.inkFaint} autoCorrect={false} {...inputProps} />
+    </View>
+  )
+}
+
+export function FieldButton({
+  icon, label, placeholder, active, onPress, style,
+}: {
+  icon: keyof typeof Ionicons.glyphMap
+  label: string | null
+  placeholder: string
+  active?: boolean
+  onPress: () => void
+  style?: StyleProp<ViewStyle>
+}) {
+  return (
+    <PressableScale onPress={onPress}>
+      <View style={[fieldStyles.wrap, active && fieldStyles.wrapFocused, style]}>
+        <Ionicons name={icon} size={18} color={label ? color.gold : color.inkFaint} />
+        <Text style={[fieldStyles.input, !label && fieldStyles.placeholder]}>{label ?? placeholder}</Text>
+      </View>
+    </PressableScale>
+  )
+}
+
+const fieldStyles = StyleSheet.create({
+  wrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    backgroundColor: color.surfaceRaised,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.border,
+    paddingHorizontal: space.lg,
+    paddingVertical: 14,
+  },
+  wrapFocused: { borderColor: color.gold },
+  input: { flex: 1, color: color.ink, fontFamily: font.body, fontSize: 15, paddingVertical: 0 },
+  placeholder: { color: color.inkFaint },
+})
 
 const styles = StyleSheet.create({
   card: {
