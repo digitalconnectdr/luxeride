@@ -128,6 +128,7 @@ export interface VehicleQuote {
     class: string
     capacity: number
     amenities: string[]
+    imageUrl: string | null
   }
   quoteId: string
   baseAmount: number
@@ -845,7 +846,7 @@ export async function getPublicVehicleQuotesAction(
   // Tipos de vehículo activos
   const { data: vehicleTypes } = await admin
     .from('vehicle_types')
-    .select('id, name, class, capacity, amenities')
+    .select('id, name, class, capacity, amenities, base_image_url')
     .eq('company_id', companyId)
     .eq('is_active', true)
     .order('sort_order')
@@ -890,7 +891,7 @@ export async function getPublicVehicleQuotesAction(
 
     if (!rule) {
       quotes.push({
-        vehicleType: { id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [] },
+        vehicleType: { id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null },
         quoteId: '',
         baseAmount: 0, surchargeAmount: 0, totalAmount: 0,
         currency,
@@ -935,7 +936,7 @@ export async function getPublicVehicleQuotesAction(
       .single()
 
     quotes.push({
-      vehicleType: { id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [] },
+      vehicleType: { id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null },
       quoteId:     quote?.id ?? '',
       baseAmount:  fare.baseAmount,
       surchargeAmount: fare.surchargeAmount,

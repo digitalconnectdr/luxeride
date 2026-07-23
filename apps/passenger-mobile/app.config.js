@@ -47,7 +47,7 @@ module.exports = {
     web: {
       favicon: './assets/favicon.png',
     },
-    plugins: ['expo-font'],
+    plugins: ['expo-font', '@react-native-community/datetimepicker'],
     extra: {
       eas: {
         // Proyecto EAS creado por `npx eas-cli credentials` (2026-07-22),

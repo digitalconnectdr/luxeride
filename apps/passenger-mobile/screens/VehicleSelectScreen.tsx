@@ -4,7 +4,7 @@
 // duplicar nada) apenas se entra a la pantalla.
 
 import { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, FlatList } from 'react-native'
+import { View, Text, StyleSheet, FlatList, Image } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { callPassengerApi } from '../lib/api'
@@ -79,7 +79,11 @@ export function VehicleSelectScreen({ route, navigation }: Props) {
         <PressableScale onPress={() => navigation.navigate('BookingConfirm', { draft, quote: item })}>
           <Card style={styles.card}>
             <View style={styles.iconWrap}>
-              <Ionicons name={CLASS_ICON[item.vehicleType.class] ?? 'car-outline'} size={22} color={color.gold} />
+              {item.vehicleType.imageUrl ? (
+                <Image source={{ uri: item.vehicleType.imageUrl }} style={styles.vehicleImage} resizeMode="cover" />
+              ) : (
+                <Ionicons name={CLASS_ICON[item.vehicleType.class] ?? 'car-outline'} size={22} color={color.gold} />
+              )}
             </View>
             <View style={styles.info}>
               <Text style={styles.name}>{item.vehicleType.name}</Text>
@@ -108,8 +112,10 @@ const styles = StyleSheet.create({
     backgroundColor: color.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
     ...shadow.card,
   },
+  vehicleImage: { width: '100%', height: '100%' },
   info: { flex: 1, gap: 2 },
   name: { color: color.ink, fontFamily: font.bodySemi, fontSize: 15 },
   meta: { color: color.inkFaint, fontFamily: font.body, fontSize: 12 },

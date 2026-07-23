@@ -29,6 +29,7 @@ export interface VehicleQuote {
     class: string
     capacity: number
     amenities: string[]
+    imageUrl: string | null
   }
   quoteId: string
   baseAmount: number

@@ -1,7 +1,43 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-07-22. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## ✅ App de pasajero — 3 pulidos tras la primera prueba end-to-end real (2026-07-23)
+
+Primer recorrido completo en dispositivo físico (signup → cotizar → elegir
+vehículo → confirmar → "Reserva confirmada") con Revival Transportation
+Group. El usuario reportó 3 huecos reales frente a la web:
+
+- **"Mis viajes" era un placeholder fijo** (`MyTripsScreen.tsx`) — si el
+  pasajero cerraba "Reserva confirmada" sin tocar "Ver mi viaje", no había
+  forma de volver a encontrar esa reserva. Ahora lee `bookings` directo por
+  Supabase (RLS `customers_select_own_bookings`, ya existente desde Sprint
+  0+1 — nunca se había conectado a esta pantalla), con pull-to-refresh y
+  tap-para-ver-en-vivo en viajes con estado activo (navegación cross-tab
+  hacia `TripTracking`, que vive en el stack de la pestaña "Reservar").
+- **Sin selector de fecha/hora nativo** — `NewBookingScreen.tsx` solo tenía
+  chips rápidos ("En 30 min", "Mañana 9:00 AM"), sin forma de agendar un
+  viaje en una fecha/hora arbitraria como sí permite la web
+  (`<input type="date"/"time">`, tarea #32). Se agregó
+  `@react-native-community/datetimepicker` (nueva dependencia nativa —
+  requiere el build de EAS de hoy) con un quinto chip "Elegir fecha y hora".
+- **Sin foto real del vehículo** en `VehicleSelectScreen.tsx` (solo ícono
+  genérico por clase) — se descubrió que la web declara
+  `imageUrl: string | null` en su tipo `VehicleQuote` desde hace tiempo
+  pero **nunca lo usa** (campo muerto). Se conectó de verdad: `vehicle_types.
+  base_image_url` ahora se selecciona en `getPublicVehicleQuotesAction`
+  (`apps/web/app/actions/bookings.ts`, compartido con la web — no se duplica
+  el motor de precios) y se mapea a `imageUrl`; la app renderiza `<Image>`
+  con fallback al ícono de clase si no hay foto. La web sigue sin renderizarla
+  (queda como mejora futura de bajo esfuerzo, fuera de alcance hoy).
+- **Verificado**: `tsc --noEmit` limpio (app y web), 177/177 tests de Vitest.
+- **Nota de infraestructura, no de código**: durante esta sesión el disco C:
+  del usuario se llenó a 0 bytes libres (`.gemini\antigravity-backup\
+  browser_recordings`, 48.7 GB de capturas de sesión de Antigravity — nada
+  que ver con este repo), lo que causó fallos `ENOSPC` transitorios en
+  Vitest. El usuario liberó espacio manualmente: nada que hacer de nuestro
+  lado, solo dejar constancia por si reaparece.
 
 ## ✅ Fix crítico: audit_trigger() rompía todo UPDATE sobre companies (2026-07-22)
 

@@ -5,12 +5,15 @@
 // postal (mejora la resolución de zona de precio). Si escribe sin
 // seleccionar nada, se mantiene el fallback del Sprint 1: geocodificación
 // con el geocoder nativo del dispositivo (expo-location, gratis).
-// Selector de fecha/hora por chips rápidos en vez de un date picker
-// nativo, para no arrastrar una dependencia nueva solo para esto.
+// Chips rápidos + selector de fecha/hora nativo (@react-native-community/
+// datetimepicker) para paridad con el <input type="date"/"time"> de la
+// web — antes solo existían los chips, sin forma de agendar un viaje en
+// una fecha/hora arbitraria.
 
 import { useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Modal } from 'react-native'
 import * as Location from 'expo-location'
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AddressAutocomplete } from '../components/AddressAutocomplete'
@@ -34,6 +37,9 @@ const TIME_OPTIONS = [
   { label: 'Mañana 9:00 AM', tomorrowAt9: true },
 ] as const
 
+// -1 = el pasajero eligió una fecha/hora específica con el date picker nativo.
+const CUSTOM_OPTION = -1
+
 function resolveScheduledAt(optionIndex: number): Date {
   const opt = TIME_OPTIONS[optionIndex]
   const now = new Date()
@@ -46,15 +52,55 @@ function resolveScheduledAt(optionIndex: number): Date {
   return new Date(now.getTime() + opt.minutesFromNow * 60_000)
 }
 
+function formatCustomDateTime(d: Date): string {
+  const datePart = d.toLocaleDateString('es-DO', { day: 'numeric', month: 'short' })
+  const timePart = d.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })
+  return `${datePart}, ${timePart}`
+}
+
 export function NewBookingScreen({ navigation }: Props) {
   const [pickupAddress, setPickupAddress] = useState('')
   const [pickupResolved, setPickupResolved] = useState<ResolvedPlace | null>(null)
   const [dropoffAddress, setDropoffAddress] = useState('')
   const [dropoffResolved, setDropoffResolved] = useState<ResolvedPlace | null>(null)
-  const [timeOption, setTimeOption] = useState(0)
+  const [timeOption, setTimeOption] = useState<number>(0)
+  const [customDateTime, setCustomDateTime] = useState<Date | null>(null)
+  const [pickerStep, setPickerStep] = useState<'date' | 'time' | null>(null)
   const [passengerCount, setPassengerCount] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  function scheduledAtValue(): Date {
+    if (timeOption === CUSTOM_OPTION && customDateTime) return customDateTime
+    return resolveScheduledAt(timeOption)
+  }
+
+  function openCustomPicker() {
+    setPickerStep('date')
+  }
+
+  function handleDateChange(event: DateTimePickerEvent, selected?: Date) {
+    if (Platform.OS === 'android') setPickerStep(null)
+    if (event.type === 'dismissed' || !selected) return
+    // Guarda solo la parte de fecha por ahora; la hora se combina en el paso siguiente.
+    const base = customDateTime ?? new Date()
+    const combined = new Date(selected)
+    combined.setHours(base.getHours(), base.getMinutes(), 0, 0)
+    setCustomDateTime(combined)
+    setPickerStep('time')
+  }
+
+  function handleTimeChange(event: DateTimePickerEvent, selected?: Date) {
+    if (Platform.OS === 'android') setPickerStep(null)
+    if (event.type === 'dismissed' || !selected) return
+    setCustomDateTime((prev) => {
+      const base = prev ?? new Date()
+      const combined = new Date(base)
+      combined.setHours(selected.getHours(), selected.getMinutes(), 0, 0)
+      return combined
+    })
+    setTimeOption(CUSTOM_OPTION)
+  }
 
   async function geocode(address: string): Promise<{ lat: number; lng: number } | null> {
     try {
@@ -110,7 +156,7 @@ export function NewBookingScreen({ navigation }: Props) {
         dropoffLng: dropoff.lng,
         dropoffPlaceId: dropoff.placeId,
         dropoffPostalCode: dropoff.postalCode ?? undefined,
-        scheduledAt: resolveScheduledAt(timeOption).toISOString(),
+        scheduledAt: scheduledAtValue().toISOString(),
         passengerCount,
       },
     })
@@ -165,8 +211,65 @@ export function NewBookingScreen({ navigation }: Props) {
                 {opt.label}
               </Text>
             ))}
+            <Text
+              style={[styles.chip, styles.chipCustom, timeOption === CUSTOM_OPTION && styles.chipActive]}
+              onPress={openCustomPicker}
+            >
+              <Ionicons name="calendar-outline" size={13} color={timeOption === CUSTOM_OPTION ? '#fff' : color.ink} />{' '}
+              {timeOption === CUSTOM_OPTION && customDateTime ? formatCustomDateTime(customDateTime) : 'Elegir fecha y hora'}
+            </Text>
           </View>
         </View>
+
+        {pickerStep === 'date' &&
+          (Platform.OS === 'android' ? (
+            <DateTimePicker
+              value={customDateTime ?? new Date()}
+              mode="date"
+              display="default"
+              minimumDate={new Date()}
+              onChange={handleDateChange}
+            />
+          ) : (
+            <Modal transparent animationType="fade">
+              <View style={styles.pickerOverlay}>
+                <View style={styles.pickerSheet}>
+                  <DateTimePicker
+                    value={customDateTime ?? new Date()}
+                    mode="date"
+                    display="spinner"
+                    minimumDate={new Date()}
+                    onChange={handleDateChange}
+                  />
+                  <Button label="Continuar" onPress={() => setPickerStep('time')} />
+                </View>
+              </View>
+            </Modal>
+          ))}
+
+        {pickerStep === 'time' &&
+          (Platform.OS === 'android' ? (
+            <DateTimePicker
+              value={customDateTime ?? new Date()}
+              mode="time"
+              display="default"
+              onChange={handleTimeChange}
+            />
+          ) : (
+            <Modal transparent animationType="fade">
+              <View style={styles.pickerOverlay}>
+                <View style={styles.pickerSheet}>
+                  <DateTimePicker
+                    value={customDateTime ?? new Date()}
+                    mode="time"
+                    display="spinner"
+                    onChange={handleTimeChange}
+                  />
+                  <Button label="Listo" onPress={() => setPickerStep(null)} />
+                </View>
+              </View>
+            </Modal>
+          ))}
 
         <View style={styles.section}>
           <SectionLabel>Pasajeros</SectionLabel>
@@ -214,6 +317,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   chipActive: { backgroundColor: color.gold, borderColor: color.gold, color: '#fff' },
+  chipCustom: { borderStyle: 'dashed' },
+  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  pickerSheet: {
+    backgroundColor: color.bgElevated,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    padding: space.lg,
+    gap: space.md,
+  },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: space.xl },
   stepperBtn: {
     width: 40,
