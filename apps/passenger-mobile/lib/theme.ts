@@ -19,7 +19,10 @@ export const color = {
   bronze: '#8a6526',
   ink: '#1d1d1f',
   inkMuted: '#6b6558',
-  inkFaint: '#9c9587',
+  // Antes #9c9587 (contraste ~2.97:1 sobre blanco, falla WCAG AA para texto).
+  // Este tono da ~4.77:1, cumple AA con margen razonable y mantiene la
+  // jerarquía (más claro que inkMuted, mucho más oscuro que el original).
+  inkFaint: '#797263',
   success: '#3f8f5c',
   successSoft: '#3f8f5c1a',
   danger: '#c0473d',

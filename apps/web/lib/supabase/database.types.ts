@@ -1730,6 +1730,8 @@ export type Database = {
           dropoff_location: Json
           dropoff_city: string | null
           dropoff_country: string | null
+          requester_city: string | null
+          requester_country: string | null
           booking_source: BookingSource
           waypoints: Json[] | null
           scheduled_at: string
@@ -1800,6 +1802,8 @@ export type Database = {
           dropoff_location: Json
           dropoff_city?: string | null | undefined
           dropoff_country?: string | null | undefined
+          requester_city?: string | null | undefined
+          requester_country?: string | null | undefined
           booking_source?: BookingSource | undefined
           waypoints?: Json[] | null | undefined
           scheduled_at: string
@@ -1870,6 +1874,8 @@ export type Database = {
           dropoff_location?: Json | undefined
           dropoff_city?: string | null | undefined
           dropoff_country?: string | null | undefined
+          requester_city?: string | null | undefined
+          requester_country?: string | null | undefined
           booking_source?: BookingSource | undefined
           waypoints?: Json[] | null | undefined
           scheduled_at?: string | undefined

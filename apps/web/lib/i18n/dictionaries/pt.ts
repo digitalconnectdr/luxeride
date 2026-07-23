@@ -1163,6 +1163,7 @@ export const pt: Dictionary = {
       topCorridorsTitle: 'Rotas mais frequentes',
       colOrigin: 'Origem',
       colDestination: 'Destino',
+      colRequesterCity: 'Cidade do cliente',
       colTrips: 'Viagens',
       colRevenue: 'Faturamento',
       colAvgFare: 'Tarifa média',

@@ -78,7 +78,7 @@ export function VehicleSelectScreen({ route, navigation }: Props) {
       renderItem={({ item }) => (
         <PressableScale onPress={() => navigation.navigate('BookingConfirm', { draft, quote: item })}>
           <Card style={styles.card}>
-            <View style={styles.iconWrap}>
+            <View style={item.vehicleType.imageUrl ? styles.imageWrap : styles.iconWrap}>
               {item.vehicleType.imageUrl ? (
                 <Image source={{ uri: item.vehicleType.imageUrl }} style={styles.vehicleImage} resizeMode="cover" />
               ) : (
@@ -115,9 +115,21 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadow.card,
   },
+  // Caja horizontal (no cuadrada) para fotos reales de vehículo: las fotos
+  // subidas en /admin/fleet son landscape (mismo ratio ~1.45:1 que la
+  // miniatura h-11 w-16 de esa página) — un cuadrado con resizeMode="cover"
+  // recortaba el vehículo casi por completo.
+  imageWrap: {
+    width: 76,
+    height: 52,
+    borderRadius: radius.md,
+    backgroundColor: color.surfaceRaised,
+    overflow: 'hidden',
+    ...shadow.card,
+  },
   vehicleImage: { width: '100%', height: '100%' },
   info: { flex: 1, gap: 2 },
   name: { color: color.ink, fontFamily: font.bodySemi, fontSize: 15 },
   meta: { color: color.inkFaint, fontFamily: font.body, fontSize: 12 },
-  price: { color: color.ink, fontFamily: font.displaySemi, fontSize: 20 },
+  price: { color: color.ink, fontFamily: font.bodyBold, fontSize: 20 },
 })

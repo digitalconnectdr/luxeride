@@ -17,6 +17,11 @@ export interface RouteInsightBooking {
   dropoffLng: number | null
   totalAmount: number | null
   bookingSource: BookingSource
+  // Ciudad/país desde donde se HIZO la solicitud (geolocalización por IP del
+  // request, ver createPublicBookingAction) — puede diferir de pickupCity
+  // (alguien en Santo Domingo reservando un viaje en Nueva York).
+  requesterCity: string | null
+  requesterCountry: string | null
 }
 
 export interface RouteCorridor {
@@ -31,6 +36,11 @@ export interface RouteCorridor {
   originLng: number | null
   destLat: number | null
   destLng: number | null
+  // Ciudad del solicitante más frecuente entre las reservas de este corredor
+  // (no todas vienen del mismo lugar) — null si ninguna reserva del grupo
+  // tiene ciudad de solicitante resuelta.
+  topRequesterCity: string | null
+  topRequesterCountry: string | null
 }
 
 export interface CityAggregate {
@@ -83,7 +93,10 @@ function hasCity(city: string | null): city is string {
 export function aggregateRoutes(bookings: RouteInsightBooking[], opts?: { topN?: number }): RouteInsightsResult {
   const topN = opts?.topN ?? 20
 
-  const corridorGroups = new Map<string, GroupAccumulator & { originCity: string; originCountry: string | null; destCity: string; destCountry: string | null }>()
+  const corridorGroups = new Map<string, GroupAccumulator & {
+    originCity: string; originCountry: string | null; destCity: string; destCountry: string | null
+    requesterCounts: Map<string, { city: string; country: string | null; count: number }>
+  }>()
   const originGroups = new Map<string, GroupAccumulator & { city: string; country: string | null }>()
   const destGroups = new Map<string, GroupAccumulator & { city: string; country: string | null }>()
   const pickupHeatmapPoints: HeatmapPoint[] = []
@@ -140,9 +153,16 @@ export function aggregateRoutes(bookings: RouteInsightBooking[], opts?: { topN?:
         originCity: b.pickupCity, originCountry: b.pickupCountry,
         destCity: b.dropoffCity, destCountry: b.dropoffCountry,
         count: 0, totalRevenue: 0, latSum: 0, lngSum: 0, coordCount: 0,
+        requesterCounts: new Map<string, { city: string; country: string | null; count: number }>(),
       }
       existing.count++
       existing.totalRevenue += revenue
+      if (hasCity(b.requesterCity)) {
+        const rKey = `${b.requesterCity}|${b.requesterCountry ?? ''}`
+        const rEntry = existing.requesterCounts.get(rKey) ?? { city: b.requesterCity, country: b.requesterCountry, count: 0 }
+        rEntry.count++
+        existing.requesterCounts.set(rKey, rEntry)
+      }
       corridorGroups.set(key, existing)
     }
   }
@@ -153,6 +173,10 @@ export function aggregateRoutes(bookings: RouteInsightBooking[], opts?: { topN?:
       const dest = destGroups.get(`${g.destCity}|${g.destCountry ?? ''}`)
       const originCentroid = origin ? centroid(origin) : { lat: null, lng: null }
       const destCentroid = dest ? centroid(dest) : { lat: null, lng: null }
+      let topRequester: { city: string; country: string | null; count: number } | null = null
+      for (const r of g.requesterCounts.values()) {
+        if (!topRequester || r.count > topRequester.count) topRequester = r
+      }
       return {
         originCity: g.originCity,
         originCountry: g.originCountry,
@@ -165,6 +189,8 @@ export function aggregateRoutes(bookings: RouteInsightBooking[], opts?: { topN?:
         originLng: originCentroid.lng,
         destLat: destCentroid.lat,
         destLng: destCentroid.lng,
+        topRequesterCity: topRequester?.city ?? null,
+        topRequesterCountry: topRequester?.country ?? null,
       }
     })
     .sort((a, b) => b.count - a.count)

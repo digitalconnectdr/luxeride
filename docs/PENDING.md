@@ -3,6 +3,66 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ⚠️ Resend en modo sandbox — los emails de producción probablemente solo llegan a una cuenta (2026-07-23)
+
+Descubierto al probar el envío de un recordatorio: Resend rechazó el envío
+con `"You can only send testing emails to your own email address
+(digitalconnectdr@gmail.com)..."`. `RESEND_FROM_EMAIL` está en
+`onboarding@resend.dev` (el remitente sandbox por defecto) — mientras no se
+verifique un dominio propio en resend.com/domains, la cuenta de Resend
+**solo puede enviar a la dirección dueña de la cuenta**, rechazando
+cualquier otro destinatario. Esto no es específico de los recordatorios —
+afecta `sendEmail()` en general, es decir probablemente **ningún cliente
+real ha recibido nunca un correo de la plataforma** (confirmaciones,
+recibos, recordatorios, etc.), solo esa cuenta de prueba.
+
+- **SMS sí funciona** (Twilio, probado con envío real a un número real).
+- **Pendiente del usuario**: verificar un dominio propio en
+  resend.com/domains (requiere agregar registros DNS en su proveedor de
+  dominio) y luego actualizar `RESEND_FROM_EMAIL` a una dirección de ese
+  dominio, tanto en `.env.local` como en Vercel. No se puede hacer sin
+  acceso al panel de DNS del dominio.
+
+## ✅ Feedback de sesión sobre la app de pasajero + AI Growth Assistant (2026-07-23)
+
+Tras probar el build anterior en el dispositivo, tres observaciones de UI +
+una idea nueva:
+
+- **Fotos de vehículo recortadas**: `VehicleSelectScreen.tsx` mostraba la
+  imagen dentro de una caja cuadrada de 48×48 con `resizeMode="cover"` — las
+  fotos reales son landscape (mismo ratio que la miniatura `h-11 w-16` de
+  `/admin/fleet`), así que un cuadrado recortaba casi todo el vehículo. Se
+  agrega una caja rectangular (76×52) solo para cuando hay foto real.
+- **Contraste insuficiente**: `color.inkFaint` (`#9c9587`) daba ~2.97:1
+  sobre blanco, por debajo del mínimo WCAG AA (4.5:1) — se usa en labels,
+  fechas, placeholders y el disclaimer de toda la app. Se oscurece a
+  `#797263` (~4.77:1), manteniendo la jerarquía frente a `inkMuted`.
+- **Fuente de números poco legible**: precios y contadores (`totalValue` en
+  BookingConfirm, `price` en VehicleSelect/MyTrips, `stepperValue` en
+  NewBooking) usaban Playfair Display (serif de marca) — sus cifras no
+  quedan parejas como en una fuente pensada para datos. Se cambian las 4 a
+  Inter Bold (`font.bodyBold`), dejando Playfair solo para títulos/texto.
+- **Nueva idea: ciudad del solicitante en "Rutas más frecuentes"** — el
+  usuario preguntó si además del origen/destino del viaje se puede saber
+  desde qué ciudad se HIZO la reserva (puede ser distinto: alguien en Santo
+  Domingo reservando un viaje en Nueva York para un familiar). Se resuelve
+  con `geolocation()` de `@vercel/functions`, que lee los headers de
+  geolocalización por IP que Vercel ya agrega a cada request en su edge
+  network — sin API externa, sin costo, sin permiso del usuario. Nueva
+  migración `20260723000065_requester_geo.sql` (`bookings.requester_city`,
+  `requester_country`); se captura en `createPublicBookingAction` (cubre web
+  guest checkout Y la app móvil, que reusa esa misma acción vía
+  `/api/mobile/passenger/book`). `lib/route-insights/engine.ts` calcula la
+  ciudad de solicitante más frecuente por corredor (`topRequesterCity`) y se
+  muestra como columna nueva en la tabla de Rutas más frecuentes. Reservas
+  anteriores a esta migración quedan con el campo NULL (no hay forma de
+  reconstruir la IP retroactivamente).
+- **Verificado**: `tsc --noEmit` limpio (web y app), 179/179 tests,
+  `npm run build` compila sin errores.
+- **Pendiente del usuario**: correr la migración
+  `20260723000065_requester_geo.sql` en Supabase; instalar el nuevo build
+  EAS de la app para ver los 3 fixes visuales.
+
 ## ✅ Recordatorios automáticos de viaje — email + SMS, umbrales en minutos (2026-07-23)
 
 A pedido del usuario: el operador configura en `/admin/settings` cuántos
@@ -25,20 +85,18 @@ independientes, ej. 1440 = 1 día, 90 = 1:30, 30 = 30 min), por email y SMS.
   envía el aviso al pasajero (`bookings.passenger_email`/`passenger_phone`)
   y/o al conductor (email vía `admin.auth.admin.getUserById`, teléfono vía
   `user_profiles.phone`, cacheados por corrida).
-- **Precisión real (30min, 1:30, etc.) — requiere Upstash QStash, pendiente
-  del usuario**: el cron está registrado 1x/día en `vercel.json` como
-  respaldo (límite del plan Hobby de Vercel), pero para que los umbrales en
-  minutos lleguen con precisión real hace falta que **el usuario** cree un
-  schedule en Upstash QStash (console.upstash.com → QStash → Schedules,
-  producto distinto al Redis que ya usan para rate limiting):
-  - URL destino: `https://getluxeride.vercel.app/api/cron/booking-reminders`
-  - Método: GET
-  - Cron expression: `*/5 * * * *` (cada 5 min) o `*/15 * * * *` (cada 15 min)
-  - Header personalizado: `Authorization: Bearer <mismo valor de CRON_SECRET>`
-  - **Cero cambios de código adicionales** — el endpoint ya acepta ese mismo
-    header (es el mecanismo que ya usan todos los crons), y el dedup por
-    booking+umbral+canal hace seguro llamarlo cada 5-15 min sin duplicar
-    envíos.
+- **Precisión real (30min, 1:30, etc.) — QStash configurado y funcionando
+  (2026-07-23)**: el cron sigue registrado 1x/día en `vercel.json` como
+  respaldo (límite del plan Hobby de Vercel), pero además hay un Schedule de
+  Upstash QStash corriendo cada 10 min contra el mismo endpoint. La consola
+  de QStash **no permite agregar el header `Authorization` personalizado**
+  en su UI de Schedules (solo ofrece una lista fija de headers propios de
+  Upstash) — se resolvió agregando un fallback de auth por query param:
+  `isAuthorized()` en `booking-reminders/route.ts` acepta
+  `?token=<CRON_SECRET>` en la URL además del header `Authorization: Bearer`.
+  El schedule real usa `https://getluxeride.vercel.app/api/cron/booking-reminders?token=<CRON_SECRET>`,
+  método POST (default de QStash), cron `*/10 * * * *`. `CRON_SECRET` se
+  generó y se agregó como env var (Production + Preview) en Vercel.
 - **UI**: sección "Recordatorios de viaje" en `/admin/settings`, chips de
   minutos independientes para pasajero/conductor (formateados como "30m",
   "1h30", "6h", "1d" para legibilidad) — `components/admin/hour-chips-field.tsx`

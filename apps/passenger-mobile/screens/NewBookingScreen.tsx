@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     color: color.ink,
     overflow: 'hidden',
   },
-  stepperValue: { fontFamily: font.displaySemi, fontSize: 20, color: color.ink, minWidth: 24, textAlign: 'center' },
+  stepperValue: { fontFamily: font.bodyBold, fontSize: 20, color: color.ink, minWidth: 24, textAlign: 'center' },
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   error: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1 },
   submit: { marginTop: space.md },

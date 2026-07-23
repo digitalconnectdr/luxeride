@@ -4,6 +4,7 @@
 // OWASP Top 10 compliant — inputs validados, admin client para inserts en price_quotes.
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
 import { calculateRoute } from '@/lib/maps/routes'
@@ -15,7 +16,7 @@ import {
   validateBookingTime,
   validateOperatingHours,
 } from '@/lib/policy/engine'
-import { waitUntil } from '@vercel/functions'
+import { waitUntil, geolocation } from '@vercel/functions'
 import { notifyBookingEventInBackground, notify } from '@/lib/notifications'
 import { pushAdminNotification } from '@/lib/notifications/admin-feed'
 import { notifyDriverPushInBackground } from '@/lib/notifications/push'
@@ -1166,6 +1167,12 @@ export async function createPublicBookingAction(data: {
     partnerId = partner?.id ?? null
   }
 
+  // Ciudad/país desde donde se hace la solicitud (no el viaje) — headers de
+  // geolocalización que Vercel agrega a cada request en su edge network, sin
+  // costo ni permiso del usuario. Solo tiene valor real en producción (detrás
+  // del edge de Vercel); en local dev queda undefined → NULL.
+  const geo = geolocation({ headers: headers() })
+
   const { data: booking, error } = await admin
     .from('bookings')
     .insert({
@@ -1180,6 +1187,8 @@ export async function createPublicBookingAction(data: {
       passenger_name:   name,
       passenger_phone:  phone,
       passenger_email:  email || null,
+      requester_city:    geo.city ?? null,
+      requester_country: geo.country ?? null,
       pickup_location:  { address: data.pickupAddress.slice(0, 500),  lat: data.pickupLat,  lng: data.pickupLng  },
       dropoff_location: { address: data.dropoffAddress.slice(0, 500), lat: data.dropoffLat, lng: data.dropoffLng },
       waypoints:        sanitizeStops(data.stops) as unknown as Json[],

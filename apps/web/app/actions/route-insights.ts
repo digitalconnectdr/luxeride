@@ -52,7 +52,7 @@ export async function getRouteInsightsAction(
 
   let query = admin
     .from('bookings')
-    .select('pickup_city, pickup_country, pickup_location, dropoff_city, dropoff_country, dropoff_location, total_amount, status, booking_source')
+    .select('pickup_city, pickup_country, pickup_location, dropoff_city, dropoff_country, dropoff_location, requester_city, requester_country, total_amount, status, booking_source')
     .eq('company_id', user.company_id)
     .not('status', 'in', `(${EXCLUDED_STATUSES.join(',')})`)
 
@@ -82,6 +82,8 @@ export async function getRouteInsightsAction(
       dropoffCountry: b.dropoff_country,
       dropoffLat: dropoff?.lat ?? null,
       dropoffLng: dropoff?.lng ?? null,
+      requesterCity: b.requester_city,
+      requesterCountry: b.requester_country,
       totalAmount: b.total_amount,
       bookingSource: b.booking_source,
     }

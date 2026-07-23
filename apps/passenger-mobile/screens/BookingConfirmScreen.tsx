@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     borderTopColor: color.border,
   },
   totalLabel: { color: color.ink, fontFamily: font.bodySemi, fontSize: 14 },
-  totalValue: { color: color.gold, fontFamily: font.displaySemi, fontSize: 22 },
+  totalValue: { color: color.gold, fontFamily: font.bodyBold, fontSize: 22 },
   section: { gap: space.sm },
   inputWrap: {
     flexDirection: 'row',

@@ -1162,6 +1162,7 @@ export const en = {
       topCorridorsTitle: 'Most frequent routes',
       colOrigin: 'Origin',
       colDestination: 'Destination',
+      colRequesterCity: 'Customer city',
       colTrips: 'Trips',
       colRevenue: 'Revenue',
       colAvgFare: 'Avg. fare',

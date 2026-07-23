@@ -110,6 +110,7 @@ export function RouteInsightsReport({ t }: { t: T }) {
                     <tr className="text-left text-xs uppercase tracking-wide text-sl-on-surface-muted border-b border-sl-outline-variant">
                       <th className="pb-2 pr-4 font-medium">{t.colOrigin}</th>
                       <th className="pb-2 pr-4 font-medium">{t.colDestination}</th>
+                      <th className="pb-2 pr-4 font-medium">{t.colRequesterCity}</th>
                       <th className="pb-2 pr-4 font-medium text-right">{t.colTrips}</th>
                       <th className="pb-2 pr-4 font-medium text-right">{t.colRevenue}</th>
                       <th className="pb-2 font-medium text-right">{t.colAvgFare}</th>
@@ -120,6 +121,7 @@ export function RouteInsightsReport({ t }: { t: T }) {
                       <tr key={`${c.originCity}-${c.destCity}`} className="border-b border-sl-outline-variant/50 last:border-0">
                         <td className="py-2 pr-4 text-sl-on-surface">{c.originCity}</td>
                         <td className="py-2 pr-4 text-sl-on-surface">{c.destCity}</td>
+                        <td className="py-2 pr-4 text-sl-on-surface-muted">{c.topRequesterCity ?? '—'}</td>
                         <td className="py-2 pr-4 text-right text-sl-on-surface tabular-nums">{c.count}</td>
                         <td className="py-2 pr-4 text-right text-sl-on-surface tabular-nums">{money(c.totalRevenue)}</td>
                         <td className="py-2 text-right text-sl-on-surface tabular-nums">{money(c.avgFare)}</td>

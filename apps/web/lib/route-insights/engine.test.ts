@@ -13,6 +13,8 @@ function booking(overrides: Partial<RouteInsightBooking>): RouteInsightBooking {
     dropoffLng: -68.4,
     totalAmount: 100,
     bookingSource: 'web',
+    requesterCity: null,
+    requesterCountry: null,
     ...overrides,
   }
 }
@@ -84,5 +86,21 @@ describe('aggregateRoutes', () => {
       booking({ bookingSource: 'staff' }),
     ])
     expect(result.bySource).toEqual({ web: 1, mobileApp: 2, staff: 1 })
+  })
+
+  it('picks the most frequent requester city per corridor, ignoring bookings with no requester city', () => {
+    const result = aggregateRoutes([
+      booking({ requesterCity: 'Santo Domingo', requesterCountry: 'Dominican Republic' }),
+      booking({ requesterCity: 'Santo Domingo', requesterCountry: 'Dominican Republic' }),
+      booking({ requesterCity: 'Miami', requesterCountry: 'United States' }),
+      booking({ requesterCity: null }),
+    ])
+    expect(result.corridors[0].topRequesterCity).toBe('Santo Domingo')
+    expect(result.corridors[0].topRequesterCountry).toBe('Dominican Republic')
+  })
+
+  it('leaves topRequesterCity null when no booking in the corridor has a resolved requester city', () => {
+    const result = aggregateRoutes([booking({ requesterCity: null })])
+    expect(result.corridors[0].topRequesterCity).toBeNull()
   })
 })

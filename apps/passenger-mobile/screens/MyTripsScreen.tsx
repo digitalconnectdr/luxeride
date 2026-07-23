@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   },
   urgencyDot: { width: 5, height: 5, borderRadius: 2.5 },
   urgencyText: { fontFamily: font.bodySemi, fontSize: 10 },
-  price: { color: color.ink, fontFamily: font.displaySemi, fontSize: 16 },
+  price: { color: color.ink, fontFamily: font.bodyBold, fontSize: 16 },
   activeHint: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   activeHintText: { color: color.gold, fontFamily: font.bodyMedium, fontSize: 11 },
 })
