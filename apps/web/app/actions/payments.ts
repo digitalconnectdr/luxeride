@@ -927,6 +927,58 @@ export async function createCardSetupCheckoutAction(
   return { success: true, data: { url: result.url } }
 }
 
+export type CardSetupStatus = 'succeeded' | 'canceled' | 'requires_action' | 'processing' | 'not_found'
+
+// Consulta el estado REAL del intento de guardado de tarjeta en Whop —
+// llamado por la app justo después de cerrar el WebBrowser del checkout de
+// setup, para poder mostrarle al pasajero un motivo específico si falló
+// (tarjeta rechazada, lo canceló, el banco pidió un paso extra) en vez de
+// dejarlo en silencio con el mismo banner de "guarda tu tarjeta" de antes.
+// La API de Whop no permite filtrar setup intents por metadata directo —
+// se listan los más recientes de la empresa y se busca por metadata.phone
+// (volumen bajo: solo ocurre cuando un pasajero nuevo guarda su primera
+// tarjeta, no en cada reserva).
+export async function getCardSetupStatusAction(
+  companySlug: string,
+  phone: string,
+): Promise<{ status: CardSetupStatus; errorMessage?: string | null }> {
+  const cleanPhone = phone?.trim()
+  if (!cleanPhone) return { status: 'not_found' }
+
+  const admin = createAdminClient()
+  const { data: company } = await admin
+    .from('companies')
+    .select('whop_connect_company_id, active_payment_provider, whop_connect_onboarded')
+    .eq('slug', companySlug)
+    .maybeSingle()
+  if (
+    !company?.whop_connect_company_id ||
+    company.active_payment_provider !== 'whop' ||
+    !company.whop_connect_onboarded
+  ) {
+    return { status: 'not_found' }
+  }
+
+  const client = getWhopClient()
+  if (!client) return { status: 'not_found' }
+
+  try {
+    const page = await client.setupIntents.list({
+      company_id: company.whop_connect_company_id,
+      direction: 'desc',
+      first: 20,
+    })
+    const match = page.data
+      .filter((si) => (si.metadata as Record<string, unknown> | null)?.phone === cleanPhone)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
+    if (!match) return { status: 'not_found' }
+    return { status: match.status, errorMessage: match.error_message }
+  } catch (err) {
+    console.error('[getCardSetupStatusAction]', err)
+    return { status: 'not_found' }
+  }
+}
+
 // ─── Auto-cobro al completar el viaje (método "Tarjeta al finalizar") ─────────
 // Llamado desde advanceDriverTrip (app/actions/driver.ts) y
 // updateBookingStatusAction (app/actions/bookings.ts) — los DOS lugares

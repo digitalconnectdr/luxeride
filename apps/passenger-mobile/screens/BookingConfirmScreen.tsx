@@ -133,7 +133,28 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
       return
     }
     await WebBrowser.openAuthSessionAsync(result.data.url, SETUP_REDIRECT_URL)
-    await checkSavedCard(passengerPhone)
+
+    // El pasajero necesita saber POR QUÉ no quedó guardada — no solo que no
+    // se encontró tarjeta. Consulta el estado real del intento en Whop
+    // (rechazada, cancelada, el banco pidió un paso extra) en vez de dejarlo
+    // en silencio con el mismo banner de "guarda tu tarjeta" de antes.
+    const status = await callPassengerApi<{ status?: string; errorMessage?: string | null }>(
+      'card-setup-status',
+      { companySlug, phone: passengerPhone.trim() },
+    )
+    if (status.status === 'succeeded') {
+      await checkSavedCard(passengerPhone)
+    } else {
+      const fallback =
+        status.status === 'canceled'
+          ? 'Cancelaste el guardado de la tarjeta. Intenta de nuevo.'
+          : status.status === 'requires_action'
+            ? 'Tu banco pidió un paso adicional que no se completó. Intenta de nuevo.'
+            : status.status === 'processing'
+              ? 'Estamos confirmando tu tarjeta. Espera unos segundos e intenta de nuevo.'
+              : 'No se pudo confirmar el guardado de la tarjeta. Intenta de nuevo.'
+      setCardSetupError(status.errorMessage || fallback)
+    }
     setSettingUpCard(false)
   }
 

@@ -3,6 +3,28 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Visibilidad al pasajero si falla el guardado de tarjeta (2026-07-25)
+
+El usuario suscribió el webhook `whop-connect` a `setup_intent.succeeded` +
+`canceled` + `requires_action`, y pidió que el pasajero SEPA por qué falló
+(no solo quedarse con el mismo banner de "guarda tu tarjeta").
+
+- **`getCardSetupStatusAction(companySlug, phone)`** (payments.ts) — consulta
+  el estado real del intento en Whop (`client.setupIntents.list`, Whop no
+  permite filtrar por metadata directo así que se listan los 20 más
+  recientes de la empresa y se busca por `metadata.phone`). Devuelve
+  `status` ('succeeded'/'canceled'/'requires_action'/'processing'/
+  'not_found') + `error_message` real de Whop si lo hay (ej. "tarjeta
+  rechazada").
+- Ruta móvil nueva `card-setup-status`.
+- **`BookingConfirmScreen.tsx`**: tras cerrar el WebBrowser del setup
+  checkout, consulta este status antes de solo re-chequear la tarjeta —
+  si no fue 'succeeded', muestra el `error_message` de Whop si existe, o
+  un mensaje específico según la causa (canceló / banco pidió un paso
+  extra / procesando / desconocido).
+- Verificado: `tsc --noEmit` en ambos apps, `vitest run` (185/185),
+  `npm run build`.
+
 ## ✅ Cobro de la diferencia cuando "Pagar ahora" + cargo extra durante el viaje (2026-07-25)
 
 El usuario preguntó qué pasa con pasajero/equipaje extra (`driverAddExtraChargeAction`)
