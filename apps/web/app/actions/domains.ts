@@ -1,12 +1,19 @@
 'use server'
 // ── Dominio personalizado por empresa ──────────────────────────────────────
 // Dos caminos que terminan en el mismo lugar (companies.custom_domain
-// verificado vía la API de Vercel, ver lib/vercel/domains.ts):
-// (a) BYOD — el operador ya tiene dominio, lo agrega él mismo (addCustomDomainAction).
-// (b) Sin dominio — pide que se lo consigan (submitDomainRequestAction), el
-//     super-admin lo COMPRA MANUALMENTE fuera del sistema (dinero real, no
-//     hay integración de compra) y entra el dominio real comprado
-//     (resolveDomainRequestAction), que reusa el mismo connectDomainToCompany.
+// verificado vía la API de Vercel, ver lib/vercel/domains.ts), pero con
+// modelos de cobro DISTINTOS (aclaración de negocio 2026-07-24 — ver
+// lib/billing/custom-domain-addon.ts):
+// (a) BYOD — el operador ya tiene dominio, lo agrega él mismo
+//     (addCustomDomainAction). Gateado por un cargo ÚNICO
+//     (custom_domain_byod, incluido en Elite/Enterprise) — no hay costo
+//     continuo para LuxeRide, el dominio lo sigue pagando el operador.
+// (b) Sin dominio — pide que se lo consigan (submitDomainRequestAction),
+//     gateado por la cuota MENSUAL (custom_domain) porque ahí sí LuxeRide
+//     compra y renueva el dominio. El super-admin lo COMPRA MANUALMENTE
+//     fuera del sistema (dinero real, no hay integración de compra) y entra
+//     el dominio real comprado (resolveDomainRequestAction), que reusa el
+//     mismo connectDomainToCompany.
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
@@ -16,7 +23,7 @@ import {
   getVercelDomainStatus,
   removeDomainFromVercelProject,
 } from '@/lib/vercel/domains'
-import { isCustomDomainAddonActive } from '@/lib/billing/custom-domain-addon'
+import { isCustomDomainAddonActive, isCustomDomainByodActive } from '@/lib/billing/custom-domain-addon'
 import type { DomainRequestStatus } from '@/lib/supabase/database.types'
 
 type ActionResult<T = undefined> = { success: boolean; error?: string; data?: T }
@@ -74,14 +81,13 @@ export async function addCustomDomainAction(domain: string): Promise<ActionResul
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
   const admin = createAdminClient()
-  const { data: rows } = await admin
-    .from('company_addons')
-    .select('addon_key')
-    .eq('company_id', user.company_id)
-    .eq('enabled', true)
+  const [{ data: company }, { data: rows }] = await Promise.all([
+    admin.from('companies').select('plan').eq('id', user.company_id).single(),
+    admin.from('company_addons').select('addon_key').eq('company_id', user.company_id).eq('enabled', true),
+  ])
   const enabledKeys = new Set((rows ?? []).map((r) => r.addon_key))
-  if (!isCustomDomainAddonActive(enabledKeys)) {
-    return { success: false, error: 'Activa el add-on de dominio personalizado primero' }
+  if (!company || !isCustomDomainByodActive(company.plan, enabledKeys)) {
+    return { success: false, error: 'Activa el cargo único de conexión de dominio primero' }
   }
 
   return connectDomainToCompany(user.company_id, domain)
@@ -139,10 +145,20 @@ export async function submitDomainRequestAction(requestedName: string, notes?: s
   const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
+  const admin = createAdminClient()
+  const { data: rows } = await admin
+    .from('company_addons')
+    .select('addon_key')
+    .eq('company_id', user.company_id)
+    .eq('enabled', true)
+  const enabledKeys = new Set((rows ?? []).map((r) => r.addon_key))
+  if (!isCustomDomainAddonActive(enabledKeys)) {
+    return { success: false, error: 'Activa el add-on de dominio personalizado primero' }
+  }
+
   const clean = requestedName.trim()
   if (!clean) return { success: false, error: 'Escribe el nombre que te gustaría para tu dominio' }
 
-  const admin = createAdminClient()
   const { error } = await admin.from('domain_requests').insert({
     company_id: user.company_id,
     requested_by: user.id,

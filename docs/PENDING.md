@@ -2603,15 +2603,31 @@ Pedido del usuario: que el link final del micrositio sea el dominio propio
 del cliente (`reservas.suempresa.com` en vez de `getluxeride.vercel.app/book/slug`)
 Y que LuxeRide pueda cobrar por proveer el dominio a los clientes que no
 tengan uno. Se construyeron ambos caminos juntos desde el inicio (decisión
-explícita del usuario, no phaseado):
+explícita del usuario, no phaseado).
 
-- **Add-on nuevo "Dominio personalizado"** ($15/mes, `lib/billing/custom-domain-addon.ts`)
-  — deliberadamente FUERA del mecanismo genérico de add-ons (nunca incluido
-  gratis en Elite/Enterprise, mismo motivo que el add-on de Asistente IA):
-  puede implicar un costo real de renovación de dominio si LuxeRide lo compra.
+**Corrección de modelo de precio (mismo día, tras feedback del usuario):**
+el primer diseño cobraba $15/mes por CUALQUIER conexión de dominio, incluido
+BYOD. El usuario aclaró que eso no tiene sentido si el cliente ya tiene su
+propio sitio/dominio pagado aparte — LuxeRide no asume ningún costo continuo
+en ese caso. Se separó en DOS servicios con modelos de cobro distintos:
+- **BYOD** (`custom_domain_byod`, `CUSTOM_DOMAIN_BYOD_SETUP_FEE = $29`) —
+  cargo ÚNICO por conectar un dominio que el operador YA TIENE. Sin costo
+  variable para LuxeRide → SÍ incluido gratis en Elite/Enterprise (mismo
+  criterio que nómina/firma electrónica/promo codes). Vive en el mecanismo
+  GENÉRICO de add-ons (`company_addons`, vía `resolveAddonKeyForPlanId`).
+- **Consíganme uno** (`custom_domain`, `CUSTOM_DOMAIN_MONTHLY_PRICE = $15/mes`)
+  — cuota MENSUAL, porque aquí LuxeRide sí compra y renueva el dominio.
+  Nunca incluido por plan (mismo motivo que el add-on de Asistente IA).
+- Desarrollo de un sitio 100% a medida (distinto a las 4 plantillas del
+  micrositio) quedó **fuera de alcance deliberadamente** — es un servicio
+  manual/cotización aparte, no una feature del sistema.
+
+Piezas construidas:
 - **Migración 73** (`custom_domain`/`custom_domain_status`/`custom_domain_added_at`
   en `companies` + tabla nueva `domain_requests` con RLS solo-super_admin,
-  mismo patrón que `enterprise_leads`).
+  mismo patrón que `enterprise_leads`) — **ya corrida en Supabase**.
+- **`lib/billing/custom-domain-addon.ts`**: los DOS servicios (BYOD one-time +
+  mensual) con sus propias env vars de Whop, precio y checkers de activación.
 - **`lib/vercel/domains.ts`**: wrapper delgado sobre la API de Dominios de
   Vercel (`VERCEL_API_TOKEN`/`VERCEL_PROJECT_ID`/`VERCEL_TEAM_ID` opcional) —
   agregar/verificar/quitar un dominio del proyecto. Nota: los shapes de
@@ -2619,29 +2635,31 @@ explícita del usuario, no phaseado):
   llamada real (agregar un dominio de prueba antes de depender en producción).
 - **`app/actions/domains.ts`**: núcleo compartido `connectDomainToCompany()`
   usado por ambos caminos — BYOD (`addCustomDomainAction`, gateado por el
-  add-on activo) y resolución de super-admin (`resolveDomainRequestAction`).
+  cargo único o Elite/Enterprise) y resolución de super-admin
+  (`resolveDomainRequestAction`, sin gate — el super-admin siempre puede
+  resolver). `submitDomainRequestAction` gateado por la cuota mensual.
 - **Middleware** (`middleware.ts`): si el host de la request no es la
   plataforma (excluye cualquier `*.vercel.app`, cubre prod + previews) y el
   path es exactamente `/`, busca `companies.custom_domain` verificado y
   reescribe a `/book/<slug>` — el resto de rutas (`/track`, `/quote`, etc.)
   no cambian porque son por ID, no por slug. Consulta REST directa (fetch,
   sin supabase-js) para no cargar el cliente completo en el Edge Runtime.
-- **`/admin/domain`**: gestión BYOD (conectar dominio, instrucciones de DNS,
-  reverificar, desconectar) + formulario "no tengo dominio, consíganme uno"
-  (deja fila en `domain_requests`).
+- **`/admin/domain`**: DOS secciones independientes, cada una con su propio
+  upsell si no está activa — conectar dominio propio (BYOD, cargo único) y
+  "no tengo dominio, consíganme uno" (mensual, deja fila en `domain_requests`).
 - **`/super-admin/domains`**: cola de solicitudes con "Marcar como comprado"
   (el super-admin escribe el dominio real que compró manualmente — NO hay
   integración de compra, es dinero real fuera del sistema) o "Rechazar".
-- Catálogo del marketplace, sidebar (admin + super-admin) e i18n EN/ES/PT
-  completos.
+- Catálogo del marketplace (2 items: `custom_domain_byod` cargo único +
+  `custom_domain` mensual), sidebar (admin + super-admin) e i18n EN/ES/PT
+  completos. `AddonUpsellCard` ahora soporta `cadence: 'once' | 'monthly'`.
 
-**Pendiente del usuario:** configurar en Vercel/entorno las env vars
-`VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` (si aplica),
-`WHOP_PLAN_ID_CUSTOM_DOMAIN_ADDON`, `WHOP_CHECKOUT_URL_CUSTOM_DOMAIN_ADDON`,
-y crear el producto "Dominio personalizado" en Whop. Correr la migración 73
-en Supabase (SQL abajo). Antes de depender del flujo BYOD en producción,
-agregar un dominio de prueba real y confirmar el shape de respuesta de
-Vercel.
+**Pendiente del usuario:** configurar env vars — Vercel: `VERCEL_API_TOKEN`,
+`VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` (si aplica). Whop (DOS productos
+distintos): `WHOP_PLAN_ID_CUSTOM_DOMAIN_BYOD`/`WHOP_CHECKOUT_URL_CUSTOM_DOMAIN_BYOD`
+(pago único ~$29) y `WHOP_PLAN_ID_CUSTOM_DOMAIN_ADDON`/`WHOP_CHECKOUT_URL_CUSTOM_DOMAIN_ADDON`
+(mensual $15). Antes de depender del flujo BYOD en producción, agregar un
+dominio de prueba real y confirmar el shape de respuesta de Vercel.
 
 ## Backlog de DESARROLLO (0–6 ✅ COMPLETO, ver resumen arriba — detalle histórico abajo)
 

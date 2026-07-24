@@ -42,6 +42,7 @@ export default async function MarketplacePage() {
       isActive: item.isActive(ctx),
       includedInElitePlan: item.includedInElitePlan,
       hasFixedPrice: item.hasFixedPrice,
+      billingCadence: item.billingCadence,
       name: copy.name,
       shortDesc: copy.shortDesc,
       features: copy.features,

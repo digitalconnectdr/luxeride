@@ -42,6 +42,10 @@ import {
   CUSTOM_DOMAIN_MONTHLY_PRICE,
   getCustomDomainCheckoutUrl,
   isCustomDomainAddonActive,
+  CUSTOM_DOMAIN_BYOD_ADDON_KEY,
+  CUSTOM_DOMAIN_BYOD_SETUP_FEE,
+  getCustomDomainByodCheckoutUrl,
+  isCustomDomainByodActive,
 } from '@/lib/billing/custom-domain-addon'
 
 /** Identificador estable de cada servicio en la tienda (no siempre == addon_key de la BD, ver ai_chat/ai_growth que agrupan 2 tiers bajo un solo item). */
@@ -52,6 +56,7 @@ export type MarketplaceItemKey =
   | 'ai_chat'
   | 'ai_growth'
   | 'affiliate_network'
+  | 'custom_domain_byod'
   | 'custom_domain'
 
 export const MARKETPLACE_ITEM_KEYS: readonly MarketplaceItemKey[] = [
@@ -61,6 +66,7 @@ export const MARKETPLACE_ITEM_KEYS: readonly MarketplaceItemKey[] = [
   'ai_chat',
   'ai_growth',
   'affiliate_network',
+  'custom_domain_byod',
   'custom_domain',
 ]
 
@@ -93,6 +99,8 @@ export interface MarketplaceItem {
   includedInElitePlan: boolean
   /** false = precio variable (comisión por viaje) — la UI nunca debe mostrar un "$X/mes" inventado. */
   hasFixedPrice: boolean
+  /** 'once' = cargo único (ej. conexión BYOD de dominio) — ausente/'monthly' = cuota recurrente de siempre. */
+  billingCadence?: 'monthly' | 'once'
   isActive: (ctx: MarketplaceActivationContext) => boolean
 }
 
@@ -172,12 +180,26 @@ export function getMarketplaceItems(): MarketplaceItem[] {
       isActive: ({ plan, affiliateNetworkEnabled }) => plan === 'elite' || plan === 'enterprise' || affiliateNetworkEnabled,
     },
     {
+      key: 'custom_domain_byod',
+      icon: Globe,
+      route: '/admin/domain',
+      // Cargo ÚNICO — conectar un dominio que el operador YA TIENE. Sin
+      // costo variable para LuxeRide, por eso SÍ se incluye en Elite/
+      // Enterprise (mismo criterio que nómina/firma/promo codes).
+      tiers: flatTier(CUSTOM_DOMAIN_BYOD_ADDON_KEY, CUSTOM_DOMAIN_BYOD_SETUP_FEE, getCustomDomainByodCheckoutUrl()),
+      includedInElitePlan: true,
+      hasFixedPrice: true,
+      billingCadence: 'once',
+      isActive: ({ plan, enabledAddonKeys }) => isCustomDomainByodActive(plan, enabledAddonKeys),
+    },
+    {
       key: 'custom_domain',
       icon: Globe,
       route: '/admin/domain',
+      // Cuota MENSUAL — servicio de "consíganme un dominio": LuxeRide lo
+      // compra y renueva, por eso nunca se incluye por plan (ver
+      // custom-domain-addon.ts).
       tiers: flatTier(CUSTOM_DOMAIN_ADDON_KEY, CUSTOM_DOMAIN_MONTHLY_PRICE, getCustomDomainCheckoutUrl()),
-      // Nunca incluido por plan — ver custom-domain-addon.ts (puede implicar
-      // un costo real de renovación de dominio si lo compramos nosotros).
       includedInElitePlan: false,
       hasFixedPrice: true,
       isActive: ({ enabledAddonKeys }) => isCustomDomainAddonActive(enabledAddonKeys),

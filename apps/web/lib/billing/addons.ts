@@ -16,7 +16,10 @@
 import type { CompanyPlan } from '@/lib/supabase/database.types'
 import { resolveAiChatTierAddonKeyForPlanId } from '@/lib/billing/ai-chat-addon'
 import { resolveAiGrowthTierAddonKeyForPlanId } from '@/lib/billing/ai-growth-addon'
-import { resolveCustomDomainAddonKeyForPlanId } from '@/lib/billing/custom-domain-addon'
+import {
+  resolveCustomDomainAddonKeyForPlanId,
+  resolveCustomDomainByodAddonKeyForPlanId,
+} from '@/lib/billing/custom-domain-addon'
 
 export type AddonKey = 'driver_payroll' | 'esignature' | 'promo_codes'
 
@@ -72,7 +75,8 @@ export function resolveAddonKeyForPlanId(whopPlanId: string | null): string | nu
   return (
     resolveAiChatTierAddonKeyForPlanId(whopPlanId) ??
     resolveAiGrowthTierAddonKeyForPlanId(whopPlanId) ??
-    resolveCustomDomainAddonKeyForPlanId(whopPlanId)
+    resolveCustomDomainAddonKeyForPlanId(whopPlanId) ??
+    resolveCustomDomainByodAddonKeyForPlanId(whopPlanId)
   )
 }
 

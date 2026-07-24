@@ -10,20 +10,26 @@ export function AddonUpsellCard({
   price,
   checkoutUrl,
   companyEmail,
+  cadence = 'monthly',
 }: {
   title: string
   body: string
   price: number
   checkoutUrl?: string
   companyEmail?: string | null
+  /** 'once' = cargo único (ej. conexión BYOD de dominio) — 'monthly' (default) preserva el texto "/mes" de siempre. */
+  cadence?: 'monthly' | 'once'
 }) {
+  const priceSuffix = cadence === 'once' ? '' : '/mes'
+  const buyLabel = cadence === 'once' ? `Pagar $${price} una vez →` : `Activar por $${price}/mes →`
+
   return (
     <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6 space-y-3 max-w-lg">
       <p className="font-playfair text-lg font-semibold text-sl-on-surface">{title}</p>
       <p className="text-sm text-sl-on-surface-muted">{body}</p>
       <p className="text-2xl font-bold text-sl-on-surface">
         ${price}
-        <span className="text-sm font-normal text-sl-on-surface-muted">/mes</span>
+        <span className="text-sm font-normal text-sl-on-surface-muted">{priceSuffix || ' pago único'}</span>
       </p>
 
       {checkoutUrl ? (
@@ -34,7 +40,7 @@ export function AddonUpsellCard({
             rel="noopener noreferrer"
             className="inline-flex px-4 py-2 bg-bronze text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
           >
-            Activar por ${price}/mes →
+            {buyLabel}
           </a>
           {companyEmail ? (
             <p className="text-xs text-sl-on-surface-muted">

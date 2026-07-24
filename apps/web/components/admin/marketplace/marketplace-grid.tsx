@@ -29,6 +29,7 @@ const ICONS: Record<MarketplaceItemKey, LucideIcon> = {
   ai_chat: Bot,
   ai_growth: TrendingUp,
   affiliate_network: Handshake,
+  custom_domain_byod: Globe,
   custom_domain: Globe,
 }
 
@@ -48,6 +49,8 @@ export interface MarketplaceCardData {
   isActive: boolean
   includedInElitePlan: boolean
   hasFixedPrice: boolean
+  /** 'once' = cargo único — ausente/'monthly' = cuota recurrente de siempre. */
+  billingCadence?: 'monthly' | 'once'
   name: string
   shortDesc: string
   features: string[]
@@ -102,9 +105,10 @@ type T = Dictionary['admin']['marketplace']
 
 function priceLabel(card: MarketplaceCardData, t: T): string | null {
   if (!card.hasFixedPrice || !card.tiers || card.tiers.length === 0) return null
-  if (card.tiers.length === 1) return `$${card.tiers[0].price}${t.perMonth}`
+  const suffix = card.billingCadence === 'once' ? t.oneTime : t.perMonth
+  if (card.tiers.length === 1) return `$${card.tiers[0].price}${suffix}`
   const min = Math.min(...card.tiers.map((tier) => tier.price))
-  return `${t.startingAt} $${min}${t.perMonth}`
+  return `${t.startingAt} $${min}${suffix}`
 }
 
 export function MarketplaceGrid({
@@ -283,7 +287,9 @@ export function MarketplaceGrid({
                       <div className="flex items-baseline gap-2">
                         <span className="text-2xl font-playfair font-semibold text-sl-on-surface">
                           ${selectedTier.price}
-                          <span className="text-sm font-sans font-normal text-sl-on-surface-muted">{t.perMonth}</span>
+                          <span className="text-sm font-sans font-normal text-sl-on-surface-muted">
+                          {selected.billingCadence === 'once' ? t.oneTime : t.perMonth}
+                        </span>
                         </span>
                         {selectedTier.quota != null && selected.quotaUnit && (
                           <span className="text-xs text-sl-on-surface-muted">
