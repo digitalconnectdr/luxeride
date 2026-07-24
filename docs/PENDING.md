@@ -3,6 +3,27 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Push de re-engagement para pasajeros inactivos (2026-07-23)
+
+Último ítem de Sprint 5 (PHASE-2-MOBILE.md) ligado directamente a la
+infraestructura de push nativo ya construida. Reusa `device_tokens` y la
+tabla `notifications` — sin migración nueva.
+
+- `sendReengagementPush()` en `lib/notifications/index.ts` — sin booking
+  asociado (a diferencia de `sendBookingReminder`), dedup por
+  `recipient=userId` + `type='reengagement'` + `channel='push'` con
+  **cooldown de 30 días** (no un dedup para siempre — el cron puede volver
+  a avisar si la persona sigue sin reservar un mes después). Se salta sin
+  gastar el cooldown si el usuario aún no tiene ningún `device_token`.
+- Cron nuevo `/api/cron/passenger-reengagement` (registrado 1x/semana,
+  lunes 10am, en `vercel.json`) — por cada empresa activa, busca
+  `user_profiles` con `role='customer'`, `is_active=true`, cuenta con más
+  de 7 días de antigüedad, que no tengan ningún `booking` creado en los
+  últimos 21 días (cualquier estado, incluyendo cancelado — sigue contando
+  como interacción reciente con la app).
+- Verificado: `tsc --noEmit`, `vitest run` (185/185), `npm run build` — los
+  3 limpios en `apps/web`. Sin cambios en la app móvil, no requiere build EAS.
+
 ## ✅ App de pasajero: pestaña Inicio, reservar para otro, Perfil ampliado (2026-07-23)
 
 Feedback del usuario probando el build real: (1) al iniciar sesión caía

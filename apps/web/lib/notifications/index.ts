@@ -495,3 +495,46 @@ export async function sendBookingReminder(opts: {
 
   return { sent: result.ok }
 }
+
+// ─── Push de re-engagement (pasajeros inactivos) ──────────────────────────────
+// A diferencia de sendBookingReminder (dedup por booking), este no tiene
+// booking asociado — el dedup es por usuario, con un cooldown de 30 días
+// (no queremos empujar el mismo aviso cada vez que corre el cron semanal
+// mientras el pasajero sigue sin reservar). Reusa la tabla `notifications`
+// con booking_id NULL y recipient = user_id, mismo patrón de auditoría.
+
+export async function sendReengagementPush(opts: {
+  companyId: string
+  userId: string
+  body: string
+}): Promise<{ sent: boolean; skipped?: boolean }> {
+  const admin = createAdminClient()
+
+  const cooldownStart = new Date(Date.now() - 30 * 24 * 60 * 60_000).toISOString()
+  const { data: existing } = await admin
+    .from('notifications')
+    .select('id')
+    .eq('recipient', opts.userId)
+    .eq('type', 'reengagement')
+    .eq('channel', 'push')
+    .gte('created_at', cooldownStart)
+    .limit(1)
+  if (existing && existing.length) return { sent: false, skipped: true }
+
+  const { data: tokens } = await admin.from('device_tokens').select('expo_push_token').eq('user_id', opts.userId)
+  if (!tokens || !tokens.length) return { sent: false, skipped: true }
+
+  await notifyUserPush(opts.userId, brand.name, opts.body, { type: 'reengagement' })
+
+  await admin.from('notifications').insert({
+    company_id: opts.companyId,
+    channel: 'push',
+    type: 'reengagement',
+    recipient: opts.userId,
+    body: opts.body,
+    status: 'sent',
+    sent_at: new Date().toISOString(),
+  })
+
+  return { sent: true }
+}

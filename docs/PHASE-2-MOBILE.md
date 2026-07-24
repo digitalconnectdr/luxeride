@@ -434,7 +434,8 @@ Pantallas:
 
 - EAS Build + TestFlight/Play Internal → producción.
 - Página /apps en el landing con QR codes.
-- Push de re-engagement ("¿Viajas pronto? Reserva tu traslado").
+- ✅ Push de re-engagement ("¿Viajas pronto? Reserva tu traslado") — cron
+  semanal `/api/cron/passenger-reengagement`, dedup con cooldown de 30 días.
 
 ## Decisiones tomadas
 
