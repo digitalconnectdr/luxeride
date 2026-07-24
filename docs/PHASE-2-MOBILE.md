@@ -426,6 +426,20 @@ Pantallas:
   pendiente.
 - **Post-viaje**: calificación + propina post-pago (bookings.rating ya
   existe; cierra otro gap competitivo: reviews) — Sprint 4.
+- **Chat con el conductor — ✅ hecho (2026-07-24).** `ChatScreen.tsx` +
+  migración 71 (RLS `customers_read/write_trip_messages`, mismo patrón que
+  el conductor). Acceso directo a Supabase + Realtime desde
+  `TripTrackingScreen` (ícono junto al badge de estado, oculto si el viaje
+  ya cerró: completed/cancelled/no_show).
+- **Métodos de pago (mockup #10) — pendiente, alcance acotado a propósito.**
+  Whop no expone un wallet de varias tarjetas: `passenger_whop_members`
+  guarda UNA tarjeta por teléfono+empresa (la última usada), no una lista.
+  Construir el mockup tal cual (Visa/Mastercard/+ Agregar) sería engañoso.
+  Alcance acordado si se retoma: pantalla que muestre la tarjeta en archivo
+  (si existe) + botón "Actualizar método de pago" que abre un checkout
+  nuevo de Whop (`createWhopCheckout`, mismo que ya existe) — completarlo
+  reemplaza la tarjeta guardada. Sin lista multi-tarjeta ni opción de
+  efectivo nativa (eso lo coordina el operador manualmente).
 - **Corporativo**: si el usuario es corporate_user, reserva contra su cuenta
   con sus límites (lógica ya construida) — no contemplado todavía en la app
   nativa (el signup de Sprint 1 solo soporta rol `customer`).

@@ -3,6 +3,33 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Chat con el conductor en la app pasajero + decisión de métodos de pago (2026-07-24)
+
+El usuario comparó un mockup de referencia (17 pantallas: 11 pasajero + 6
+conductor) contra lo ya construido y señaló 2 gaps reales: faltaba el chat
+y "métodos de pago" era solo parcial. El chat se construyó completo esta
+sesión; métodos de pago quedó explícitamente pospuesto (ver razón abajo).
+
+- **Chat con el conductor** — `ChatScreen.tsx` nuevo en
+  `apps/passenger-mobile`, accesible desde un ícono en `TripTrackingScreen`
+  (oculto si el viaje ya cerró). Migración 71
+  (`customers_read_trip_messages` / `customers_write_trip_messages`) le da
+  al pasajero autenticado el mismo acceso directo por RLS que ya tenía el
+  conductor — sin ruta `/api/mobile/passenger/*` nueva, Realtime directo
+  vía Supabase client. El chat del pasajero de la WEB sigue siendo distinto
+  (guest sin sesión, vía server actions con service role) — no se tocó.
+- **Métodos de pago — pospuesto a propósito.** El mockup mostraba una lista
+  de varias tarjetas + "Agregar método de pago", pero Whop no soporta eso:
+  `passenger_whop_members` guarda una sola tarjeta por teléfono+empresa (la
+  última usada en un checkout), no un wallet. Construir la lista tal cual
+  habría sido una interfaz que miente sobre lo que el backend puede hacer.
+  Alcance recomendado si se retoma: mostrar la tarjeta en archivo (si
+  existe) + botón que abre un checkout nuevo de Whop para reemplazarla —
+  sin lista multi-tarjeta ni opción de efectivo nativa en la app.
+- Verificado: `tsc --noEmit` en ambos apps, `vitest run` (185/185) y
+  `npm run build` en `apps/web` — todo limpio. Migración 71 confirmada
+  corrida por el usuario en Supabase.
+
 ## ✅ Push de re-engagement para pasajeros inactivos (2026-07-23)
 
 Último ítem de Sprint 5 (PHASE-2-MOBILE.md) ligado directamente a la

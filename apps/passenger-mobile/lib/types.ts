@@ -75,6 +75,14 @@ export interface BookingPrefill {
   passengerCount?: number
 }
 
+export interface TripMessage {
+  id: string
+  sender: 'client' | 'driver' | 'dispatcher'
+  body: string
+  created_at: string
+  read_at: string | null
+}
+
 // ── Navegación ──────────────────────────────────────────────────────────
 export type BookingStackParamList = {
   NewBooking: { prefill?: BookingPrefill } | undefined
@@ -82,6 +90,7 @@ export type BookingStackParamList = {
   BookingConfirm: { draft: BookingDraft; quote: VehicleQuote }
   BookingSuccess: { bookingId: string; bookingNumber: string }
   TripTracking: { bookingId: string }
+  Chat: { bookingId: string }
 }
 
 export type RootTabParamList = {

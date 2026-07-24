@@ -25,6 +25,7 @@ import { VehicleSelectScreen } from './screens/VehicleSelectScreen'
 import { BookingConfirmScreen } from './screens/BookingConfirmScreen'
 import { BookingSuccessScreen } from './screens/BookingSuccessScreen'
 import { TripTrackingScreen } from './screens/TripTrackingScreen'
+import { ChatScreen } from './screens/ChatScreen'
 import { MyTripsScreen } from './screens/MyTripsScreen'
 import { ProfileScreen } from './screens/ProfileScreen'
 import type { BookingStackParamList } from './lib/types'
@@ -47,6 +48,7 @@ function BookingStackScreen() {
       <BookingStack.Screen name="BookingConfirm" component={BookingConfirmScreen} options={{ title: 'Confirmar' }} />
       <BookingStack.Screen name="BookingSuccess" component={BookingSuccessScreen} options={{ title: '', headerBackVisible: false }} />
       <BookingStack.Screen name="TripTracking" component={TripTrackingScreen} options={{ title: 'Tu viaje' }} />
+      <BookingStack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat con tu conductor' }} />
     </BookingStack.Navigator>
   )
 }

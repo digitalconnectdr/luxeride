@@ -18,11 +18,17 @@ import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { supabase } from '../lib/supabase'
 import { decodePolyline, type LatLng } from '../lib/polyline'
+import { PressableScale } from '../components/PressableScale'
 import { ScreenLoader, StatusBadge, EmptyState } from '../components/ui'
-import { color, font, space } from '../lib/theme'
+import { color, font, space, radius } from '../lib/theme'
 import type { BookingStackParamList, BookingStatus } from '../lib/types'
 
 type Props = NativeStackScreenProps<BookingStackParamList, 'TripTracking'>
+
+// Mismo criterio que CHAT_CLOSED en apps/web/app/actions/trip.ts — una vez
+// el viaje termina (o nunca se realizó), ya no tiene sentido coordinar por
+// chat con el conductor.
+const CHAT_CLOSED: BookingStatus[] = ['completed', 'cancelled', 'no_show']
 
 interface TripBooking {
   status: BookingStatus
@@ -32,7 +38,7 @@ interface TripBooking {
   routePolyline: string | null
 }
 
-export function TripTrackingScreen({ route }: Props) {
+export function TripTrackingScreen({ route, navigation }: Props) {
   const { bookingId } = route.params
   const [booking, setBooking] = useState<TripBooking | null>(null)
   const [driverPos, setDriverPos] = useState<LatLng | null>(null)
@@ -125,7 +131,18 @@ export function TripTrackingScreen({ route }: Props) {
     <View style={styles.container}>
       <View style={styles.statusBar}>
         <Text style={styles.bookingNumber}>{booking.bookingNumber}</Text>
-        <StatusBadge status={booking.status} />
+        <View style={styles.statusBarRight}>
+          <StatusBadge status={booking.status} />
+          {!CHAT_CLOSED.includes(booking.status) && (
+            <PressableScale
+              style={styles.chatButton}
+              onPress={() => navigation.navigate('Chat', { bookingId })}
+              haptic="light"
+            >
+              <Ionicons name="chatbubble-ellipses" size={18} color={color.gold} />
+            </PressableScale>
+          )}
+        </View>
       </View>
 
       <MapView
@@ -179,6 +196,15 @@ const styles = StyleSheet.create({
     borderBottomColor: color.border,
   },
   bookingNumber: { color: color.inkFaint, fontFamily: font.bodySemi, fontSize: 12, letterSpacing: 0.3 },
+  statusBarRight: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  chatButton: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    backgroundColor: `${color.gold}1c`,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   map: { flex: 1 },
   pin: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: '#fff' },
   driverMarker: {
