@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
 import type { SessionUser } from '@/lib/auth/session'
 import { notifyBookingEventInBackground } from '@/lib/notifications'
+import { autoChargeDeferredCardInBackground } from '@/app/actions/payments'
 import { getAppUrl } from '@/lib/app-url'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
@@ -110,6 +111,13 @@ export async function advanceDriverTrip(
   if (error) {
     console.error('[driverAdvanceTripAction]', error)
     return { success: false, error: 'Error al actualizar el viaje' }
+  }
+
+  // "Tarjeta al finalizar" — mismo criterio que updateBookingStatusAction
+  // (app/actions/bookings.ts): no-op si ya se cobró (pagó ahora) o si el
+  // pasajero declaró efectivo al reservar.
+  if (next === 'completed') {
+    autoChargeDeferredCardInBackground(bookingId)
   }
 
   // Notificar al pasajero

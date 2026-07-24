@@ -20,6 +20,7 @@ import { waitUntil, geolocation } from '@vercel/functions'
 import { notifyBookingEventInBackground, notify } from '@/lib/notifications'
 import { pushAdminNotification } from '@/lib/notifications/admin-feed'
 import { notifyDriverPushInBackground, notifyUserPushInBackground } from '@/lib/notifications/push'
+import { autoChargeDeferredCardInBackground } from '@/app/actions/payments'
 import { trackBookingFlight } from '@/lib/flights/refresh'
 import { geocodeBookingLocations } from '@/lib/maps/reverse-geocode'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
@@ -552,6 +553,13 @@ export async function updateBookingStatusAction(
     return { success: false, error: 'Error al actualizar estado' }
   }
 
+  // "Tarjeta al finalizar" — si el pasajero declaró ese método al reservar y
+  // todavía no hay un pago exitoso (p.ej. no eligió "pagar ahora"), se cobra
+  // solo en este momento. No-op si ya se cobró o si el método era efectivo.
+  if (newStatus === 'completed') {
+    autoChargeDeferredCardInBackground(bookingId)
+  }
+
   // ── F1.10 Policy Engine: fee de cancelación / no-show ────────────────────────
   if ((newStatus === 'cancelled' || newStatus === 'no_show') && booking.total_amount) {
     const { data: company } = await admin
@@ -1078,6 +1086,11 @@ export async function createPublicBookingAction(data: {
   // wizard público de la web nunca lo manda (default 'web' a nivel de BD);
   // la ruta /api/mobile/passenger/book de la app SÍ lo manda explícito.
   source?: 'web' | 'mobile_app'
+  // Método de pago declarado al reservar (Sprint 5, app pasajero) — 'card'
+  // cubre tanto "pagar ahora" como "cobrar al finalizar" (ver
+  // autoChargeDeferredCardInBackground en payments.ts). El guest checkout de
+  // la web nunca lo manda (queda NULL, se concilia manual igual que siempre).
+  paymentMethodIntent?: 'card' | 'cash'
 }): Promise<{ success: boolean; error?: string; data?: BookingResult }> {
   // F1.17 — rate limit por IP
   if (!(await checkRateLimit('public_booking', 5))) {
@@ -1253,6 +1266,7 @@ export async function createPublicBookingAction(data: {
       route_polyline:   quote.route_polyline,
       promo_code_id:        promoCodeId,
       promo_discount_amount: promoCodeId ? discountAmount : null,
+      payment_method_intent: data.paymentMethodIntent ?? null,
     })
     .select('id, booking_number')
     .single()

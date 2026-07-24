@@ -22,6 +22,12 @@ module.exports = {
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
     backgroundColor: '#faf9f6',
+    // Necesario para que WebBrowser.openAuthSessionAsync detecte el regreso
+    // del checkout de Whop (pagar ahora / guardar tarjeta) y cierre el
+    // navegador in-app automáticamente — ver createCardSetupCheckoutAction y
+    // createPublicCheckoutAction en apps/web, que usan
+    // "luxeride-passenger://..." como redirect_url.
+    scheme: 'luxeride-passenger',
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.jprsdigitalconnect.luxeride.passenger',
@@ -47,7 +53,7 @@ module.exports = {
     web: {
       favicon: './assets/favicon.png',
     },
-    plugins: ['expo-font', '@react-native-community/datetimepicker'],
+    plugins: ['expo-font', '@react-native-community/datetimepicker', 'expo-web-browser'],
     extra: {
       eas: {
         // Proyecto EAS creado por `npx eas-cli credentials` (2026-07-22),

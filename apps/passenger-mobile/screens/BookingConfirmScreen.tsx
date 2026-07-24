@@ -1,22 +1,29 @@
 // ── Paso 3: confirmar reserva ───────────────────────────────────────────────
-// Sin cobro todavía (Sprint 3 — pago vía Whop, mismo proveedor que ya usa el
-// resto de la plataforma, NO Stripe; ver getSavedWhopCardAction /
-// chargeWithSavedWhopCardAction en apps/web/app/actions/payments.ts como
-// referencia). El operador cobra manualmente por ahora, igual que ya
-// soporta el sistema con pagos cash/Zelle/transferencia.
+// Método de pago declarado AL RESERVAR (no al terminar el viaje, como era
+// antes) — mismo modelo que Uber: "Pagar ahora" (prioridad, cobra de una vez
+// vía checkout de Whop) o "Tarjeta al finalizar"/"Efectivo" (se declara la
+// intención, bookings.payment_method_intent, y el cobro de tarjeta ocurre
+// solo al completar el viaje — ver autoChargeDeferredCardInBackground en
+// apps/web/app/actions/payments.ts). "Tarjeta al finalizar" exige guardar
+// una tarjeta (checkout de Whop en modo "setup", cobra $0) ANTES de poder
+// confirmar si el pasajero no tiene ninguna en archivo todavía — sin esto no
+// habría forma real de cobrar el viaje al terminar.
 
 import { useEffect, useState } from 'react'
-import { View, Text, TextInput, StyleSheet, ScrollView } from 'react-native'
+import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import * as WebBrowser from 'expo-web-browser'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { supabase } from '../lib/supabase'
 import { callPassengerApi } from '../lib/api'
 import { Button, Card, Field, SectionLabel } from '../components/ui'
 import { PressableScale } from '../components/PressableScale'
 import { color, font, radius, space } from '../lib/theme'
-import type { BookingStackParamList } from '../lib/types'
+import type { BookingStackParamList, PaymentChoice } from '../lib/types'
 
 type BookingFor = 'self' | 'other'
+
+const SETUP_REDIRECT_URL = 'luxeride-passenger://payment-setup-complete'
 
 type Props = NativeStackScreenProps<BookingStackParamList, 'BookingConfirm'>
 
@@ -31,6 +38,7 @@ function row(label: string, value: string) {
 
 export function BookingConfirmScreen({ route, navigation }: Props) {
   const { draft, quote } = route.params
+  const companySlug = process.env.EXPO_PUBLIC_COMPANY_SLUG ?? ''
   const [bookingFor, setBookingFor] = useState<BookingFor>('self')
   const [myName, setMyName] = useState('')
   const [myPhone, setMyPhone] = useState('')
@@ -40,6 +48,14 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [focusedField, setFocusedField] = useState<string | null>(null)
+
+  const [paymentChoice, setPaymentChoice] = useState<PaymentChoice>('pay_now')
+  const [hasSavedCard, setHasSavedCard] = useState<boolean | null>(null)
+  const [savedCard, setSavedCard] = useState<{ last4: string | null; brand: string | null } | null>(null)
+  const [checkedPhone, setCheckedPhone] = useState<string | null>(null)
+  const [checkingCard, setCheckingCard] = useState(false)
+  const [settingUpCard, setSettingUpCard] = useState(false)
+  const [cardSetupError, setCardSetupError] = useState('')
 
   useEffect(() => {
     async function prefill() {
@@ -76,7 +92,52 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
       setPassengerName('')
       setPassengerPhone('')
     }
+    // El teléfono cambió — la tarjeta guardada (si la había) era de OTRO
+    // número, hay que volver a consultar.
+    setHasSavedCard(null)
+    setSavedCard(null)
+    setCheckedPhone(null)
   }
+
+  async function checkSavedCard(phone: string) {
+    if (!phone.trim() || checkingCard) return
+    setCheckingCard(true)
+    const result = await callPassengerApi<{ found: boolean; card?: { last4: string | null; brand: string | null } }>(
+      'saved-card-by-phone',
+      { companySlug, phone: phone.trim() },
+    )
+    setCheckingCard(false)
+    setCheckedPhone(phone.trim())
+    setHasSavedCard(Boolean(result.found))
+    setSavedCard(result.card ?? null)
+  }
+
+  function selectPaymentChoice(choice: PaymentChoice) {
+    setPaymentChoice(choice)
+    setCardSetupError('')
+    if (choice === 'card_later' && passengerPhone.trim() && checkedPhone !== passengerPhone.trim()) {
+      checkSavedCard(passengerPhone)
+    }
+  }
+
+  async function setupCard() {
+    setCardSetupError('')
+    setSettingUpCard(true)
+    const result = await callPassengerApi<{ data?: { url: string } }>('setup-card', {
+      companySlug,
+      phone: passengerPhone.trim(),
+    })
+    if (!result.success || !result.data?.url) {
+      setSettingUpCard(false)
+      setCardSetupError(result.error ?? 'No se pudo iniciar el guardado de la tarjeta')
+      return
+    }
+    await WebBrowser.openAuthSessionAsync(result.data.url, SETUP_REDIRECT_URL)
+    await checkSavedCard(passengerPhone)
+    setSettingUpCard(false)
+  }
+
+  const cardLaterBlocked = paymentChoice === 'card_later' && !hasSavedCard
 
   async function confirm() {
     setError('')
@@ -84,8 +145,11 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
       setError('Nombre y teléfono son requeridos')
       return
     }
+    if (cardLaterBlocked) {
+      setError('Guarda tu tarjeta para continuar, o elige otro método de pago')
+      return
+    }
     setLoading(true)
-    const companySlug = process.env.EXPO_PUBLIC_COMPANY_SLUG ?? ''
     const result = await callPassengerApi<{ data?: { bookingId: string; bookingNumber: string } }>('book', {
       quoteId: quote.quoteId,
       companySlug,
@@ -100,12 +164,25 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
       dropoffAddress: draft.dropoffAddress,
       dropoffLat: draft.dropoffLat,
       dropoffLng: draft.dropoffLng,
+      paymentMethodIntent: paymentChoice === 'cash' ? 'cash' : 'card',
     })
-    setLoading(false)
     if (!result.success || !result.data) {
+      setLoading(false)
       setError(result.error ?? 'No se pudo crear la reserva')
       return
     }
+
+    if (paymentChoice === 'pay_now') {
+      const checkout = await callPassengerApi<{ data?: { url: string } }>('checkout', {
+        companySlug,
+        bookingId: result.data.bookingId,
+      })
+      if (checkout.success && checkout.data?.url) {
+        await WebBrowser.openAuthSessionAsync(checkout.data.url, SETUP_REDIRECT_URL)
+      }
+    }
+
+    setLoading(false)
     navigation.replace('BookingSuccess', { bookingId: result.data.bookingId, bookingNumber: result.data.bookingNumber })
   }
 
@@ -123,6 +200,80 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
           <Text style={styles.totalLabel}>Total estimado</Text>
           <Text style={styles.totalValue}>${quote.totalAmount.toFixed(2)} {quote.currency}</Text>
         </View>
+      </Card>
+
+      <Card style={styles.section}>
+        <SectionLabel>Método de pago</SectionLabel>
+
+        <PressableScale onPress={() => selectPaymentChoice('pay_now')} haptic="light">
+          <View style={[styles.payNow, paymentChoice === 'pay_now' && styles.payNowActive]}>
+            <View style={styles.payNowHeader}>
+              <Ionicons name="flash" size={18} color={paymentChoice === 'pay_now' ? '#fff' : color.gold} />
+              <Text style={[styles.payNowTitle, paymentChoice === 'pay_now' && styles.payNowTitleActive]}>
+                Pagar ahora
+              </Text>
+              <View style={styles.recommendedPill}>
+                <Text style={styles.recommendedPillText}>Recomendado</Text>
+              </View>
+            </View>
+            <Text style={[styles.payNowSubtitle, paymentChoice === 'pay_now' && styles.payNowSubtitleActive]}>
+              Cobra tu viaje ahora con tarjeta
+            </Text>
+          </View>
+        </PressableScale>
+
+        <View style={styles.altRow}>
+          <PressableScale onPress={() => selectPaymentChoice('card_later')} style={styles.altItem} haptic="light">
+            <View style={[styles.altChip, paymentChoice === 'card_later' && styles.altChipActive]}>
+              <Ionicons name="card-outline" size={15} color={paymentChoice === 'card_later' ? color.gold : color.inkFaint} />
+              <Text style={[styles.altChipText, paymentChoice === 'card_later' && styles.altChipTextActive]}>
+                Tarjeta al finalizar
+              </Text>
+            </View>
+          </PressableScale>
+          <PressableScale onPress={() => selectPaymentChoice('cash')} style={styles.altItem} haptic="light">
+            <View style={[styles.altChip, paymentChoice === 'cash' && styles.altChipActive]}>
+              <Ionicons name="cash-outline" size={15} color={paymentChoice === 'cash' ? color.gold : color.inkFaint} />
+              <Text style={[styles.altChipText, paymentChoice === 'cash' && styles.altChipTextActive]}>
+                Efectivo
+              </Text>
+            </View>
+          </PressableScale>
+        </View>
+
+        {paymentChoice === 'card_later' && (
+          <View style={styles.cardStatusBox}>
+            {checkingCard ? (
+              <View style={styles.cardStatusRow}>
+                <ActivityIndicator color={color.gold} size="small" />
+                <Text style={styles.cardStatusText}>Buscando tarjeta guardada…</Text>
+              </View>
+            ) : hasSavedCard ? (
+              <View style={styles.cardStatusRow}>
+                <Ionicons name="checkmark-circle" size={16} color={color.success} />
+                <Text style={styles.cardStatusText}>
+                  {savedCard ? `Tarjeta ${savedCard.brand ?? ''} •••• ${savedCard.last4 ?? '····'} lista` : 'Tarjeta guardada lista'}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.cardSetupBanner}>
+                <Text style={styles.cardSetupText}>Guarda tu tarjeta para poder cobrar al finalizar el viaje.</Text>
+                <Button
+                  label="Guardar tarjeta"
+                  onPress={setupCard}
+                  loading={settingUpCard}
+                  variant="secondary"
+                  style={styles.cardSetupButton}
+                />
+                {cardSetupError ? <Text style={styles.cardStatusError}>{cardSetupError}</Text> : null}
+              </View>
+            )}
+          </View>
+        )}
+
+        {paymentChoice === 'cash' && (
+          <Text style={styles.cashNote}>Le pagas directo al conductor cuando termine el viaje.</Text>
+        )}
       </Card>
 
       <Card style={styles.section}>
@@ -156,7 +307,12 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
           icon="call-outline"
           placeholder={bookingFor === 'other' ? 'Teléfono de la persona' : 'Teléfono'}
           value={passengerPhone}
-          onChangeText={setPassengerPhone}
+          onChangeText={(v) => {
+            setPassengerPhone(v)
+            setHasSavedCard(null)
+            setSavedCard(null)
+            setCheckedPhone(null)
+          }}
           keyboardType="phone-pad"
           focused={focusedField === 'phone'}
           onFocus={() => setFocusedField('phone')}
@@ -182,8 +338,20 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
         </View>
       ) : null}
 
-      <Button label="Confirmar reserva" onPress={confirm} loading={loading} style={styles.submit} />
-      <Text style={styles.disclaimer}>El pago se coordina directamente con el operador. Próximamente pago en la app.</Text>
+      <Button
+        label="Confirmar reserva"
+        onPress={confirm}
+        loading={loading}
+        disabled={cardLaterBlocked}
+        style={styles.submit}
+      />
+      <Text style={styles.disclaimer}>
+        {paymentChoice === 'pay_now'
+          ? 'Se abrirá el pago seguro de Whop para completar tu cobro.'
+          : paymentChoice === 'card_later'
+            ? 'Se cobra automático a tu tarjeta cuando el viaje termine.'
+            : 'El pago se coordina directamente con el conductor.'}
+      </Text>
     </ScrollView>
   )
 }
@@ -219,6 +387,61 @@ const styles = StyleSheet.create({
   totalLabel: { color: color.ink, fontFamily: font.bodySemi, fontSize: 14 },
   totalValue: { color: color.gold, fontFamily: font.bodyBold, fontSize: 22 },
   section: { gap: space.md },
+  // "Pagar ahora" — el método principal, visualmente por encima de los otros
+  // dos (más grande, fondo dorado cuando seleccionado, pill "Recomendado").
+  payNow: {
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: color.gold,
+    padding: space.lg,
+    gap: 4,
+    backgroundColor: `${color.gold}14`,
+  },
+  payNowActive: { backgroundColor: color.gold },
+  payNowHeader: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  payNowTitle: { color: color.ink, fontFamily: font.bodyBold, fontSize: 16 },
+  payNowTitleActive: { color: '#fff' },
+  recommendedPill: {
+    marginLeft: 'auto',
+    backgroundColor: color.ink,
+    borderRadius: radius.pill,
+    paddingHorizontal: space.sm,
+    paddingVertical: 2,
+  },
+  recommendedPillText: { color: '#fff', fontFamily: font.bodySemi, fontSize: 10, letterSpacing: 0.3 },
+  payNowSubtitle: { color: color.inkFaint, fontFamily: font.body, fontSize: 12 },
+  payNowSubtitleActive: { color: '#fffc' },
+  altRow: { flexDirection: 'row', gap: space.sm },
+  altItem: { flex: 1 },
+  altChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: space.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.border,
+    backgroundColor: color.surfaceRaised,
+  },
+  altChipActive: { borderColor: color.gold, backgroundColor: `${color.gold}14` },
+  altChipText: { color: color.inkFaint, fontFamily: font.bodyMedium, fontSize: 12.5 },
+  altChipTextActive: { color: color.ink },
+  cardStatusBox: { marginTop: 2 },
+  cardStatusRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  cardStatusText: { color: color.inkFaint, fontFamily: font.body, fontSize: 12.5, flexShrink: 1 },
+  cardSetupBanner: {
+    gap: space.sm,
+    padding: space.md,
+    borderRadius: radius.md,
+    backgroundColor: color.surfaceRaised,
+    borderWidth: 1,
+    borderColor: color.border,
+  },
+  cardSetupText: { color: color.ink, fontFamily: font.body, fontSize: 12.5 },
+  cardSetupButton: { alignSelf: 'flex-start', paddingHorizontal: space.lg },
+  cardStatusError: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 12 },
+  cashNote: { color: color.inkFaint, fontFamily: font.body, fontSize: 12.5 },
   textarea: {
     color: color.ink,
     fontFamily: font.body,

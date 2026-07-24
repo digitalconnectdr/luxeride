@@ -75,6 +75,12 @@ export interface BookingPrefill {
   passengerCount?: number
 }
 
+// ── Método de pago declarado al reservar ──────────────────────────────────
+// 'pay_now' y 'card_later' comparten el mismo valor en el backend ('card')
+// — la diferencia es únicamente CUÁNDO se cobra (ver payment_method_intent
+// en bookings + autoChargeDeferredCardInBackground en apps/web).
+export type PaymentChoice = 'pay_now' | 'card_later' | 'cash'
+
 export interface TripMessage {
   id: string
   sender: 'client' | 'driver' | 'dispatcher'

@@ -1820,6 +1820,7 @@ export type Database = {
           quickbooks_sales_receipt_id: string | null
           promo_code_id: string | null
           promo_discount_amount: number | null
+          payment_method_intent: string | null
           partner_id: string | null
           created_by: string | null
           dispatched_by: string | null
@@ -1893,6 +1894,7 @@ export type Database = {
           quickbooks_sales_receipt_id?: string | null | undefined
           promo_code_id?: string | null | undefined
           promo_discount_amount?: number | null | undefined
+          payment_method_intent?: string | null | undefined
           partner_id?: string | null | undefined
           created_by?: string | null | undefined
           dispatched_by?: string | null | undefined
@@ -1966,6 +1968,7 @@ export type Database = {
           quickbooks_sales_receipt_id?: string | null | undefined
           promo_code_id?: string | null | undefined
           promo_discount_amount?: number | null | undefined
+          payment_method_intent?: string | null | undefined
           partner_id?: string | null | undefined
           created_by?: string | null | undefined
           dispatched_by?: string | null | undefined

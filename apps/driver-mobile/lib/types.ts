@@ -23,6 +23,10 @@ export interface DriverBooking {
   total_amount: number | null
   currency: string | null
   completed_at: string | null
+  // Declarado por el pasajero al reservar (app pasajero, Sprint 5) — 'card'
+  // cubre "pagar ahora" (ya cobrado) y "cobrar al finalizar" (se cobra solo
+  // al completar el viaje). NULL = reserva vieja o guest de la web, sin dato.
+  payment_method_intent: 'card' | 'cash' | null
 }
 
 export interface DriverRow {

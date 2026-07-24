@@ -3,6 +3,84 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Cobro de la diferencia cuando "Pagar ahora" + cargo extra durante el viaje (2026-07-25)
+
+El usuario preguntó qué pasa con pasajero/equipaje extra (`driverAddExtraChargeAction`)
+o una parada agregada (`applyStopToBooking`) cuando el pasajero ya pagó
+completo con "Pagar ahora" — ambas ya subían `bookings.total_amount` en
+tiempo real, pero antes de este fix el excedente se quedaba SIN forma
+automática de cobrarse en la mayoría de los casos (solo existía un checkout
+de seguimiento inmediato para el caso muy específico de parada agregada
+por el pasajero desde `/track/[id]` con Whop/Stripe Connect — para
+pasajero/equipaje extra, o parada agregada por el CONDUCTOR, no había nada).
+
+- **`chargeWithSavedWhopCardAction`** (app/actions/payments.ts) ya NO
+  rechaza si existe un pago exitoso previo — calcula cuánto se cobró
+  (`paidSoFarCents`) y cobra solo la DIFERENCIA (`total_amount` actual menos
+  lo ya pagado). Si no hay nada pagado, la diferencia ES el monto completo
+  (mismo comportamiento de siempre para quien llama esto sin pago previo:
+  el wizard público y "pagar con tarjeta guardada" en Mis viajes). Bloquea
+  con error solo si hay un cobro `processing` en curso (evita carrera).
+- Como `autoChargeDeferredCardInBackground` (llamado al completar el viaje,
+  ver entrada de abajo) ya reusa esta misma función, el flujo queda
+  unificado: no importa si el pasajero pagó todo de una vez, pagó al
+  finalizar, o le agregaron un cargo extra a mitad de camino — al completar
+  el viaje SIEMPRE se cobra automático cualquier saldo pendiente a la
+  tarjeta guardada, sin importar el origen del cargo (conductor o pasajero).
+- Sin cambios en `driverAddExtraChargeAction`/`applyStopToBooking` — siguen
+  subiendo `total_amount` igual que siempre, el fix está enteramente en
+  cómo se cobra después. El checkout de seguimiento inmediato para parada-
+  agregada-por-pasajero (`createStopChargeIfPaidOnline`) se dejó igual,
+  como un intento adicional de cobro proactivo — si el pasajero no lo paga,
+  el auto-cobro al completar el viaje lo recoge de todas formas.
+- Verificado: `tsc --noEmit`, `vitest run` (185/185), `npm run build` — los
+  3 limpios, incluye confirmar que los otros 2 call sites existentes de
+  `chargeWithSavedWhopCardAction` (wizard público, Mis viajes) no cambiaron
+  de comportamiento (nunca tienen un pago previo en ese punto).
+
+## ✅ Método de pago declarado al reservar (modelo Uber) — app pasajero (2026-07-25)
+
+El usuario pidió que el pago se declare desde el INICIO de la reserva (no al
+terminar el viaje como antes), con "Pagar ahora" como opción prioritaria
+visualmente, pero permitiendo también "Tarjeta al finalizar" (se cobra solo
+al completar el viaje, como Uber) o "Efectivo". Requirió investigar y usar
+la API de Whop "Setup Intents" (guardar tarjeta sin cobrar) — confirmado
+contra docs.whop.com que sí existe antes de construir nada.
+
+- **Migración 72**: `bookings.payment_method_intent` ('card' | 'cash').
+- **`lib/whop/checkout.ts`**: `createWhopSetupCheckout()` — checkout modo
+  `'setup'` de Whop (guarda tarjeta, cobra $0).
+- **`app/actions/payments.ts`**: `getSavedWhopCardByPhoneAction` /
+  `createCardSetupCheckoutAction` (corren ANTES de que la reserva exista,
+  por eso son por teléfono+slug, no por bookingId) y
+  `autoChargeDeferredCardInBackground(bookingId)` — cobra automático con
+  `chargeWithSavedWhopCardAction` (ya existente) cuando el viaje se
+  completa, solo si quedó declarado 'card' y no hay ya un pago exitoso.
+  Se llama desde `advanceDriverTrip` (driver.ts) y
+  `updateBookingStatusAction` (bookings.ts) — los dos lugares donde un viaje
+  puede pasar a 'completed'.
+- **Webhook `whop-connect`**: nuevo handler `setup_intent.succeeded` — guarda
+  el member_id en `passenger_whop_members` vía `metadata.company_id` +
+  `metadata.phone` (sin booking_id, porque en ese punto la reserva aún no
+  existe). **Pendiente del usuario**: suscribir el webhook a `setup_intent.*`
+  en el dashboard de Whop (hoy solo tiene `payment.*`/`refund.*`) — sin esto
+  el flujo de "Tarjeta al finalizar" sin tarjeta previa no completa.
+- **3 rutas móviles nuevas**: `saved-card-by-phone`, `setup-card`, `checkout`.
+- **`BookingConfirmScreen.tsx`**: "Pagar ahora" visualmente prioritario
+  (tarjeta dorada grande, pill "Recomendado"), "Tarjeta al finalizar" y
+  "Efectivo" como chips secundarios. Si elige "Tarjeta al finalizar" sin
+  tarjeta guardada, un banner bloquea "Confirmar reserva" hasta guardarla
+  (WebBrowser con el checkout de Whop en modo setup).
+- **`expo-web-browser`** instalado + `scheme: 'luxeride-passenger'` agregado
+  a `app.config.js` (necesario para que el navegador in-app detecte el
+  regreso del checkout de Whop).
+- **Driver-mobile**: badge "Paga con tarjeta" / "Paga en efectivo" en
+  `TripDetailScreen` — el conductor ve el método declarado desde que abre
+  el viaje, no al final.
+- Verificado: `tsc --noEmit` en los 3 apps, `vitest run` (185/185),
+  `npm run build` en `apps/web` (confirmó las 3 rutas nuevas + el webhook
+  compilando limpio).
+
 ## ✅ Chat con el conductor en la app pasajero + decisión de métodos de pago (2026-07-24)
 
 El usuario comparó un mockup de referencia (17 pantallas: 11 pasajero + 6

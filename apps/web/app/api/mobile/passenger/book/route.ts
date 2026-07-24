@@ -70,6 +70,10 @@ export async function POST(request: Request) {
     stops: Array.isArray(body?.stops) ? (body.stops as StopInput[]) : undefined,
     customerId: user.id,
     source: 'mobile_app',
+    paymentMethodIntent:
+      body?.paymentMethodIntent === 'card' || body?.paymentMethodIntent === 'cash'
+        ? body.paymentMethodIntent
+        : undefined,
   })
 
   return NextResponse.json(result, { status: result.success ? 200 : 400 })

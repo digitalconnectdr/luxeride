@@ -14,7 +14,7 @@ import { color, font, radius, space, STATUS_COLOR } from '../lib/theme'
 import { NEXT_ACTION_LABEL, STATUS_LABEL, type BookingStatus, type DriverBooking, type TripsStackParamList } from '../lib/types'
 
 const BOOKING_COLUMNS =
-  'id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, flight_number, flight_status, flight_delay_minutes, total_amount, currency, completed_at'
+  'id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, flight_number, flight_status, flight_delay_minutes, total_amount, currency, completed_at, payment_method_intent'
 
 const MAP_VISIBLE_STATUSES = new Set<BookingStatus>(['en_route', 'arrived'])
 
@@ -230,6 +230,19 @@ export function TripDetailScreen({ route, navigation }: Props) {
 
         <SectionLabel>Pasajero</SectionLabel>
         <Text style={styles.passengerName}>{trip.passenger_name ?? 'Sin nombre'}</Text>
+
+        {trip.payment_method_intent && (
+          <View style={styles.paymentBadge}>
+            <Ionicons
+              name={trip.payment_method_intent === 'cash' ? 'cash-outline' : 'card-outline'}
+              size={14}
+              color={color.inkMuted}
+            />
+            <Text style={styles.paymentBadgeText}>
+              {trip.payment_method_intent === 'cash' ? 'Paga en efectivo' : 'Paga con tarjeta'}
+            </Text>
+          </View>
+        )}
 
         <PressableScale style={styles.chatButton} onPress={() => navigation.navigate('Chat', { tripId: trip.id })} haptic="light">
           <Ionicons name="chatbubble-ellipses" size={18} color={color.bg} />
@@ -518,7 +531,22 @@ const styles = StyleSheet.create({
   },
   statusHeroText: { fontFamily: font.bodyBold, fontSize: 14 },
   divider: { height: 1, backgroundColor: color.border, marginVertical: space.lg },
-  passengerName: { color: color.ink, fontFamily: font.displaySemi, fontSize: 20, marginTop: space.xs, marginBottom: space.lg },
+  passengerName: { color: color.ink, fontFamily: font.displaySemi, fontSize: 20, marginTop: space.xs },
+  paymentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    marginTop: space.xs,
+    marginBottom: space.lg,
+    paddingHorizontal: space.sm,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+    backgroundColor: color.surfaceRaised,
+    borderWidth: 1,
+    borderColor: color.border,
+  },
+  paymentBadgeText: { color: color.inkMuted, fontFamily: font.bodyMedium, fontSize: 11.5 },
   chatButton: {
     flexDirection: 'row',
     alignItems: 'center',

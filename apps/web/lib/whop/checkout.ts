@@ -52,3 +52,43 @@ export async function createWhopCheckout(params: {
     return { ok: false }
   }
 }
+
+/**
+ * Checkout en modo "setup" (@whop/sdk `CheckoutModes = 'payment' | 'setup'`):
+ * guarda una tarjeta para uso futuro SIN cobrar nada ahora (Whop cobra $0 en
+ * este flujo — confirmado contra docs.whop.com/developer/guides/save-
+ * payment-methods, no es una suposición). Se usa cuando el pasajero elige
+ * "Tarjeta al finalizar" en la app y todavía no tiene ninguna tarjeta en
+ * archivo — sin esto no habría forma de cobrar el viaje al terminar.
+ *
+ * El webhook `setup_intent.succeeded` (whop-connect/route.ts) es quien
+ * finalmente guarda el member_id en passenger_whop_members, usando el
+ * `metadata` que se manda aquí (company_id + phone — NO booking_id, porque
+ * en este punto la reserva todavía no existe).
+ */
+export async function createWhopSetupCheckout(params: {
+  whopConnectCompanyId: string
+  redirectUrl: string
+  metadata: Record<string, string>
+}): Promise<{ ok: true; url: string } | { ok: false }> {
+  const client = getWhopClient()
+  if (!client) return { ok: false }
+
+  try {
+    const config = await client.checkoutConfigurations.create({
+      mode: 'setup',
+      company_id: params.whopConnectCompanyId,
+      metadata: params.metadata,
+      redirect_url: params.redirectUrl,
+    })
+
+    const url = config.purchase_url.startsWith('http')
+      ? config.purchase_url
+      : `https://whop.com${config.purchase_url}`
+
+    return { ok: true, url }
+  } catch (err) {
+    console.error('[createWhopSetupCheckout]', err)
+    return { ok: false }
+  }
+}

@@ -408,18 +408,15 @@ Pantallas:
   nativa de Google Maps Android (ver `.env.example`) — sin ella el mapa no
   renderiza. Fuera de alcance a propósito: el pasajero solo VE al
   conductor, no comparte su propia ubicación (no lo pide el mockup).
-- **Pago (Sprint 3) — CORRECCIÓN: es vía Whop, NO Stripe.** El plan
-  original decía "Apple/Google Pay vía Stripe checkout sheet" — eso no
-  aplica a este proyecto. El pago aquí siempre ha sido Whop
-  (`getSavedWhopCardAction`/`chargeWithSavedWhopCardAction`,
-  `passenger_whop_members`, ya construidos en
-  `apps/web/app/actions/payments.ts` para el checkout público). El Sprint 3
-  debe adaptar ESE flujo (buscar member de Whop guardado por
-  teléfono/empresa, cobrar sin checkout nuevo) a la app nativa, no construir
-  un `PaymentIntent`/Payment Sheet de Stripe desde cero. La columna
-  `user_profiles.stripe_customer_id` agregada en la migración 62 quedó mal
-  nombrada por este motivo — replantear antes de usarla, o eliminarla y
-  usar el mismo modelo de `passenger_whop_members`.
+- **Pago — ✅ hecho (2026-07-25), modelo Uber.** Vía Whop (NO Stripe, el plan
+  original decía "Apple/Google Pay vía Stripe checkout sheet" — no aplica).
+  El pasajero declara el método al RESERVAR (`bookings.payment_method_intent`,
+  migración 72): "Pagar ahora" (checkout completo de inmediato, prioridad
+  visual) / "Tarjeta al finalizar" (guarda tarjeta vía Whop Setup Intent si
+  no tiene una, cobra automático al completar el viaje —
+  `autoChargeDeferredCardInBackground` en `payments.ts`) / "Efectivo"
+  (declarado, conciliado manual como siempre). `user_profiles.stripe_customer_id`
+  de la migración 62 sigue sin usarse — quedó ahí, mal nombrado, no se tocó.
 - **Historial + recibos**: RLS ya lista (`customers_select_own_bookings`,
   confirmada en Sprint 1) — solo falta la UI nativa (Sprint 4, hoy es un
   stub "Próximamente" en `MyTripsScreen`). Re-reservar en 1 toque queda

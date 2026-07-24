@@ -3,8 +3,11 @@
 // empresa a LuxeRide): este recibe eventos de PAGOS hechos por PASAJEROS a
 // las cuentas conectadas de cada empresa. Requiere un webhook aparte creado
 // en el dashboard de Whop sobre la company padre (WHOP_PARENT_COMPANY_ID)
-// con "child resource events" habilitado, suscrito a payment.* y refund.* —
-// y su propio secreto, WHOP_CONNECT_WEBHOOK_SECRET (NO el de la Parte A).
+// con "child resource events" habilitado, suscrito a payment.*, refund.* Y
+// setup_intent.* (este último agregado para "Tarjeta al finalizar" — sin
+// esta suscripción, el webhook nunca recibe setup_intent.succeeded y
+// createCardSetupCheckoutAction se queda sin efecto real) — y su propio
+// secreto, WHOP_CONNECT_WEBHOOK_SECRET (NO el de la Parte A).
 //
 // Los nombres de evento aquí vienen del enum declarado en el SDK instalado
 // (@whop/sdk — dot notation: payment.succeeded, refund.created, etc.). La
@@ -44,6 +47,13 @@ interface WhopRefundData {
   id: string
   status: string
   payment: { id: string } | null
+}
+
+interface WhopSetupIntentData {
+  id: string
+  status: string
+  metadata: Record<string, unknown> | null
+  member: { id: string } | null
 }
 
 export async function POST(request: Request) {
@@ -127,6 +137,26 @@ export async function POST(request: Request) {
         await query.eq('id', paymentId)
       } else if (data.checkout_configuration_id) {
         await query.eq('whop_checkout_id', data.checkout_configuration_id)
+      }
+      return NextResponse.json({ received: true })
+    }
+
+    // Método de pago declarado al reservar (Sprint 5, "Tarjeta al finalizar"
+    // sin tarjeta en archivo aún) — createCardSetupCheckoutAction manda
+    // metadata { company_id, phone } (NO booking_id: en ese punto la reserva
+    // todavía no existe), así que acá no hace falta ninguna consulta a
+    // bookings, a diferencia del handler de payment.succeeded de arriba.
+    if (eventTypeMatches(type, 'setup_intent.succeeded')) {
+      const data = body!.data as WhopSetupIntentData
+      const companyId = (data.metadata?.company_id as string | undefined) ?? null
+      const phone = (data.metadata?.phone as string | undefined)?.trim() ?? null
+      if (data.member?.id && companyId && phone) {
+        await admin
+          .from('passenger_whop_members')
+          .upsert(
+            { company_id: companyId, phone, whop_member_id: data.member.id },
+            { onConflict: 'company_id,phone' },
+          )
       }
       return NextResponse.json({ received: true })
     }

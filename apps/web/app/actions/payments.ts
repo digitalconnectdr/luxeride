@@ -5,11 +5,12 @@
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { waitUntil } from '@vercel/functions'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
 import { getStripe } from '@/lib/stripe/server'
 import { getWhopClient } from '@/lib/whop/connect-server'
-import { createWhopCheckout } from '@/lib/whop/checkout'
+import { createWhopCheckout, createWhopSetupCheckout } from '@/lib/whop/checkout'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
 import { getAppUrl } from '@/lib/app-url'
 
@@ -681,6 +682,15 @@ export async function getSavedWhopCardAction(
 // Reutiliza exactamente el mismo cálculo de monto y el mismo flujo de webhook
 // (payment.succeeded actualiza el registro `payments` por metadata.payment_id)
 // que el checkout normal — la única diferencia es el método de cobro.
+//
+// Cobra la DIFERENCIA pendiente, no el monto completo a ciegas: si ya hay un
+// pago exitoso (p.ej. el pasajero eligió "Pagar ahora" y luego el conductor
+// agregó un pasajero/equipaje extra o una parada — todos suben
+// bookings.total_amount en tiempo real, ver driverAddExtraChargeAction/
+// applyStopToBooking en app/actions/trip.ts), se cobra solo el excedente.
+// Si no hay ningún pago previo, el excedente ES el monto completo — mismo
+// comportamiento de siempre para quien llama esto sin pago previo (el
+// checkout del wizard público y "pagar con tarjeta guardada" en Mis viajes).
 export async function chargeWithSavedWhopCardAction(
   bookingId: string,
   gratuityPct?: number,
@@ -705,13 +715,26 @@ export async function chargeWithSavedWhopCardAction(
   }
   if (!booking.passenger_phone) return { success: false, error: 'Sin teléfono en la reserva' }
 
-  const { data: existing } = await admin
+  // No se rechaza solo porque ya exista un pago — se cobra la DIFERENCIA
+  // pendiente. Cubre "Pagar ahora" + un cargo extra después (pasajero/
+  // equipaje extra del conductor, o una parada agregada) que sube
+  // bookings.total_amount: sin esto, ese delta se quedaba sin forma de
+  // cobrarse automático, igual que hoy le pasa a esos mismos cargos cuando
+  // el viaje se pagó completo de una vez. 'processing' sí bloquea (evita
+  // una carrera con un cobro que todavía no resuelve).
+  const { data: existingPayments } = await admin
     .from('payments')
-    .select('id')
+    .select('amount, status')
     .eq('booking_id', booking.id)
     .in('status', ['succeeded', 'processing'])
-    .limit(1)
-  if (existing?.length) return { success: false, error: 'Esta reservación ya tiene un pago registrado' }
+  if (existingPayments?.some((p) => p.status === 'processing')) {
+    return { success: false, error: 'Ya hay un cobro en proceso para esta reservación' }
+  }
+  const paidSoFarCents = Math.round(
+    (existingPayments ?? [])
+      .filter((p) => p.status === 'succeeded')
+      .reduce((sum, p) => sum + Number(p.amount), 0) * 100,
+  )
 
   const { data: member } = await admin
     .from('passenger_whop_members')
@@ -743,8 +766,18 @@ export async function chargeWithSavedWhopCardAction(
   const card = page?.data.find((m) => m.typename === 'CardPaymentMethod')
   if (!card) return { success: false, error: 'No se encontró la tarjeta guardada en Whop' }
 
-  const { currency, amountCents, feeCents, mainLabel, isDeposit, gratPct } =
+  const { currency, amountCents: fullAmountCents, mainLabel, isDeposit, gratPct } =
     computeChargeAmounts(booking, company.settings, gratuityPct)
+
+  // Diferencia real a cobrar: el total completo (o el % de depósito, si la
+  // empresa lo exige) MENOS lo que ya se cobró con éxito antes.
+  const amountCents = fullAmountCents - paidSoFarCents
+  if (amountCents <= 0) {
+    return { success: false, error: 'Esta reservación ya está pagada por completo' }
+  }
+  const feeCents = Math.round(amountCents * (platformFeePct(company.settings) / 100))
+  const isTopUp = paidSoFarCents > 0
+  const chargeLabel = isTopUp ? `Cargo adicional | ${mainLabel}` : mainLabel
 
   const { data: payment, error: payErr } = await admin
     .from('payments')
@@ -757,7 +790,7 @@ export async function chargeWithSavedWhopCardAction(
       net_amount: (amountCents - feeCents) / 100,
       status: 'pending',
       payment_method: 'card',
-      description: `${mainLabel}${gratPct > 0 ? ` (incl. propina ${gratPct}%)` : ''} | tarjeta guardada`,
+      description: `${chargeLabel}${gratPct > 0 ? ` (incl. propina ${gratPct}%)` : ''} | tarjeta guardada`,
     })
     .select('id')
     .single()
@@ -776,7 +809,7 @@ export async function chargeWithSavedWhopCardAction(
         initial_price: amountCents / 100,
         application_fee_amount: feeCents > 0 ? feeCents / 100 : undefined,
         plan_type: 'one_time',
-        title: mainLabel,
+        title: chargeLabel,
         product: {
           external_identifier: `luxeride-booking-${booking.company_id}`,
           title: 'Reservaciones LuxeRide',
@@ -786,7 +819,7 @@ export async function chargeWithSavedWhopCardAction(
         payment_id: payment.id,
         booking_id: booking.id,
         company_id: booking.company_id,
-        kind: isDeposit ? 'deposit' : 'full',
+        kind: isTopUp ? 'top_up' : isDeposit ? 'deposit' : 'full',
       },
     })
   } catch (err) {
@@ -797,4 +830,123 @@ export async function chargeWithSavedWhopCardAction(
 
   revalidatePath(`/admin/bookings/${booking.id}`)
   return { success: true }
+}
+
+// ─── Método de pago declarado al reservar (app pasajero, Sprint 5) ────────────
+// A diferencia de getSavedWhopCardAction/chargeWithSavedWhopCardAction (que
+// requieren una reserva ya creada), estas dos corren ANTES de que la reserva
+// exista — en BookingConfirmScreen, cuando el pasajero elige "Tarjeta al
+// finalizar" y hay que saber (o crear) su tarjeta guardada por teléfono, no
+// por booking_id. companySlug + phone son suficientes: no exponen nada que
+// un guest normal del checkout público no pueda ya inferir (el slug es
+// público, el teléfono lo escribe el propio usuario).
+
+export async function getSavedWhopCardByPhoneAction(
+  companySlug: string,
+  phone: string,
+): Promise<{ found: boolean; card?: SavedWhopCard }> {
+  const cleanPhone = phone?.trim()
+  if (!cleanPhone) return { found: false }
+
+  const admin = createAdminClient()
+  const { data: company } = await admin
+    .from('companies')
+    .select('id, whop_connect_company_id, active_payment_provider, whop_connect_onboarded')
+    .eq('slug', companySlug)
+    .maybeSingle()
+  if (
+    !company?.whop_connect_company_id ||
+    company.active_payment_provider !== 'whop' ||
+    !company.whop_connect_onboarded
+  ) {
+    return { found: false }
+  }
+
+  const { data: member } = await admin
+    .from('passenger_whop_members')
+    .select('whop_member_id')
+    .eq('company_id', company.id)
+    .eq('phone', cleanPhone)
+    .maybeSingle()
+  if (!member) return { found: false }
+
+  const client = getWhopClient()
+  if (!client) return { found: false }
+
+  try {
+    const page = await client.paymentMethods.list({
+      member_id: member.whop_member_id,
+      company_id: company.whop_connect_company_id,
+    })
+    const card = page.data.find(
+      (m): m is Extract<typeof m, { typename: 'CardPaymentMethod' }> => m.typename === 'CardPaymentMethod',
+    )
+    if (!card) return { found: false }
+    return { found: true, card: { last4: card.card.last4, brand: card.card.brand } }
+  } catch (err) {
+    console.error('[getSavedWhopCardByPhoneAction]', err)
+    return { found: false }
+  }
+}
+
+// Abre un checkout de Whop en modo "setup" (guarda tarjeta, cobra $0) para un
+// pasajero que todavía no tiene ninguna tarjeta en archivo y eligió "Tarjeta
+// al finalizar" — la app bloquea "Confirmar reserva" hasta que esto se
+// complete con éxito (webhook setup_intent.succeeded, ver whop-connect/route.ts).
+export async function createCardSetupCheckoutAction(
+  companySlug: string,
+  phone: string,
+): Promise<ActionResult<{ url: string }>> {
+  if (!(await checkRateLimit('card_setup_checkout', 5))) {
+    return { success: false, error: RATE_LIMIT_ERROR }
+  }
+  const cleanPhone = phone?.trim()
+  if (!cleanPhone) return { success: false, error: 'Teléfono requerido' }
+
+  const admin = createAdminClient()
+  const { data: company } = await admin
+    .from('companies')
+    .select('id, whop_connect_company_id, active_payment_provider, whop_connect_onboarded')
+    .eq('slug', companySlug)
+    .maybeSingle()
+  if (
+    !company?.whop_connect_company_id ||
+    company.active_payment_provider !== 'whop' ||
+    !company.whop_connect_onboarded
+  ) {
+    return { success: false, error: 'Pagos con Whop no disponibles para esta empresa' }
+  }
+
+  const result = await createWhopSetupCheckout({
+    whopConnectCompanyId: company.whop_connect_company_id,
+    redirectUrl: `luxeride-passenger://payment-setup-complete`,
+    metadata: { company_id: company.id, phone: cleanPhone },
+  })
+  if (!result.ok) return { success: false, error: 'Error al iniciar el guardado de la tarjeta' }
+
+  return { success: true, data: { url: result.url } }
+}
+
+// ─── Auto-cobro al completar el viaje (método "Tarjeta al finalizar") ─────────
+// Llamado desde advanceDriverTrip (app/actions/driver.ts) y
+// updateBookingStatusAction (app/actions/bookings.ts) — los DOS lugares
+// donde una reserva puede pasar a 'completed'. Sin bloquear la respuesta:
+// si el pasajero eligió "Pagar ahora" ya hay un pago exitoso registrado y
+// chargeWithSavedWhopCardAction lo detecta y no hace nada; si eligió
+// "Efectivo", payment_method_intent no es 'card' y esta función no llama a
+// nada. Solo dispara el cobro real cuando quedó pendiente de verdad.
+export async function autoChargeDeferredCardInBackground(bookingId: string): Promise<void> {
+  const job = (async () => {
+    const admin = createAdminClient()
+    const { data: booking } = await admin
+      .from('bookings')
+      .select('payment_method_intent')
+      .eq('id', bookingId)
+      .maybeSingle()
+    if (booking?.payment_method_intent !== 'card') return
+    await chargeWithSavedWhopCardAction(bookingId)
+  })().catch((err) => {
+    console.error('[autoChargeDeferredCardInBackground]', err)
+  })
+  waitUntil(job)
 }
