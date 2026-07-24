@@ -19,6 +19,7 @@ import { BrandingProvider, useBranding } from './lib/branding'
 import { color, font } from './lib/theme'
 import { ScreenLoader } from './components/ui'
 import { AuthScreen } from './screens/AuthScreen'
+import { HomeScreen } from './screens/HomeScreen'
 import { NewBookingScreen } from './screens/NewBookingScreen'
 import { VehicleSelectScreen } from './screens/VehicleSelectScreen'
 import { BookingConfirmScreen } from './screens/BookingConfirmScreen'
@@ -52,6 +53,7 @@ function BookingStackScreen() {
 
 type TabIcon = { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }
 const TAB_ICON: Record<string, TabIcon> = {
+  Inicio: { active: 'home', inactive: 'home-outline' },
   Reservar: { active: 'car-sport', inactive: 'car-sport-outline' },
   'Mis viajes': { active: 'time', inactive: 'time-outline' },
   Perfil: { active: 'person-circle', inactive: 'person-circle-outline' },
@@ -177,6 +179,7 @@ function AuthGate() {
           tabBarIcon: ({ focused }) => <TabIconView routeName={route.name} focused={focused} />,
         })}
       >
+        <Tab.Screen name="Inicio" component={HomeScreen} options={{ headerShown: true, title: 'Inicio', ...lightHeader }} />
         <Tab.Screen name="Reservar" component={BookingStackScreen} />
         <Tab.Screen name="Mis viajes" component={MyTripsScreen} options={{ headerShown: true, title: 'Mis viajes', ...lightHeader }} />
         <Tab.Screen name="Perfil" component={ProfileScreen} options={{ headerShown: true, title: 'Perfil', ...lightHeader }} />

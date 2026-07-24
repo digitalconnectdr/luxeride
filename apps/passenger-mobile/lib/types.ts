@@ -85,6 +85,7 @@ export type BookingStackParamList = {
 }
 
 export type RootTabParamList = {
+  Inicio: undefined
   Reservar: undefined
   'Mis viajes': undefined
   Perfil: undefined

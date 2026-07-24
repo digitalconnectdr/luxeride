@@ -63,6 +63,16 @@ export function ProfileScreen() {
   const [saveError, setSaveError] = useState('')
   const [saved, setSaved] = useState(false)
 
+  const [ratingAvg, setRatingAvg] = useState<number | null>(null)
+  const [ratingCount, setRatingCount] = useState(0)
+
+  const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSaved, setPasswordSaved] = useState(false)
+
   const [addresses, setAddresses] = useState<SavedAddress[] | null>(null)
   const [addingAddress, setAddingAddress] = useState(false)
   const [newLabel, setNewLabel] = useState('')
@@ -96,6 +106,22 @@ export function ProfileScreen() {
         setPhone(profile.phone ?? '')
         setDateOfBirth(parseDob(profile.date_of_birth))
       }
+
+      // Calificación del pasajero: no existe una columna agregada (a
+      // diferencia de drivers.rating, que sí tiene trigger) — se promedia
+      // en el momento sobre bookings.driver_rating, la misma columna que ya
+      // usa /driver/trips para que el conductor califique al pasajero.
+      const { data: ratedTrips } = await supabase
+        .from('bookings')
+        .select('driver_rating')
+        .eq('customer_id', auth.user.id)
+        .not('driver_rating', 'is', null)
+      if (ratedTrips && ratedTrips.length) {
+        const sum = ratedTrips.reduce((acc, r) => acc + (r.driver_rating ?? 0), 0)
+        setRatingAvg(sum / ratedTrips.length)
+        setRatingCount(ratedTrips.length)
+      }
+
       await loadAddresses(auth.user.id)
       setLoading(false)
     }
@@ -164,6 +190,30 @@ export function ProfileScreen() {
     await loadAddresses(userId)
   }
 
+  async function changePassword() {
+    setPasswordError('')
+    setPasswordSaved(false)
+    if (newPassword.length < 8) {
+      setPasswordError('La contraseña debe tener al menos 8 caracteres')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Las contraseñas no coinciden')
+      return
+    }
+    setChangingPassword(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setChangingPassword(false)
+    if (error) {
+      setPasswordError('No se pudo cambiar la contraseña. Intenta de nuevo.')
+      return
+    }
+    setNewPassword('')
+    setConfirmPassword('')
+    setShowPasswordForm(false)
+    setPasswordSaved(true)
+  }
+
   function confirmDeleteAddress(item: SavedAddress) {
     Alert.alert('Eliminar dirección', `¿Eliminar "${item.label}"?`, [
       { text: 'Cancelar', style: 'cancel' },
@@ -186,6 +236,20 @@ export function ProfileScreen() {
         <BrandMark size={64} />
         <Text style={styles.name}>{firstName || 'Pasajero'} {lastName}</Text>
         <Text style={styles.email}>{email}</Text>
+        {phone ? <Text style={styles.email}>{phone}</Text> : null}
+        <View style={styles.ratingRow}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Ionicons
+              key={n}
+              name={ratingAvg != null && n <= Math.round(ratingAvg) ? 'star' : 'star-outline'}
+              size={16}
+              color={color.gold}
+            />
+          ))}
+          <Text style={styles.ratingText}>
+            {ratingAvg != null ? `${ratingAvg.toFixed(1)} · ${ratingCount} viaje${ratingCount === 1 ? '' : 's'} calificado${ratingCount === 1 ? '' : 's'}` : 'Aún sin calificaciones'}
+          </Text>
+        </View>
       </View>
 
       <Card style={styles.brandCard}>
@@ -334,6 +398,61 @@ export function ProfileScreen() {
         )}
       </View>
 
+      <View style={styles.section}>
+        <SectionLabel>Seguridad</SectionLabel>
+        {!showPasswordForm ? (
+          <PressableScale onPress={() => { setShowPasswordForm(true); setPasswordSaved(false) }}>
+            <View style={styles.securityRow}>
+              <Ionicons name="lock-closed-outline" size={16} color={color.gold} />
+              <Text style={styles.securityRowText}>Cambiar contraseña</Text>
+            </View>
+          </PressableScale>
+        ) : (
+          <Card style={styles.newAddressCard}>
+            <Field
+              icon="lock-closed-outline"
+              placeholder="Nueva contraseña"
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry
+              focused={focusedField === 'newPassword'}
+              onFocus={() => setFocusedField('newPassword')}
+              onBlur={() => setFocusedField(null)}
+            />
+            <Field
+              icon="lock-closed-outline"
+              placeholder="Confirmar contraseña"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              focused={focusedField === 'confirmPassword'}
+              onFocus={() => setFocusedField('confirmPassword')}
+              onBlur={() => setFocusedField(null)}
+            />
+            {passwordError ? <Text style={styles.error}>{passwordError}</Text> : null}
+            <View style={styles.newAddressActions}>
+              <PressableScale onPress={() => { setShowPasswordForm(false); setNewPassword(''); setConfirmPassword(''); setPasswordError('') }}>
+                <Text style={styles.cancelText}>Cancelar</Text>
+              </PressableScale>
+              <Button
+                label="Guardar contraseña"
+                icon="checkmark"
+                onPress={changePassword}
+                loading={changingPassword}
+                disabled={!newPassword || !confirmPassword}
+                style={styles.saveAddressBtn}
+              />
+            </View>
+          </Card>
+        )}
+        {passwordSaved && !showPasswordForm ? (
+          <View style={styles.savedRow}>
+            <Ionicons name="checkmark-circle" size={14} color={color.success} />
+            <Text style={styles.savedText}>Contraseña actualizada</Text>
+          </View>
+        ) : null}
+      </View>
+
       <Button
         label="Cerrar sesión"
         variant="secondary"
@@ -377,6 +496,20 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', gap: space.sm, paddingVertical: space.xl },
   name: { color: color.ink, fontFamily: font.display, fontSize: 22 },
   email: { color: color.inkFaint, fontFamily: font.body, fontSize: 13 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: space.xs },
+  ratingText: { color: color.inkFaint, fontFamily: font.bodyMedium, fontSize: 12, marginLeft: 4 },
+  securityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingVertical: space.md,
+    paddingHorizontal: space.lg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.border,
+    backgroundColor: color.surface,
+  },
+  securityRowText: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 14 },
   brandCard: { flexDirection: 'row' },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   infoText: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 14 },

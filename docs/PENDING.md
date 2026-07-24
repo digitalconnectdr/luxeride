@@ -3,6 +3,53 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ App de pasajero: pestaña Inicio, reservar para otro, Perfil ampliado (2026-07-23)
+
+Feedback del usuario probando el build real: (1) al iniciar sesión caía
+directo en "Reservar" sin ningún momento de bienvenida/marca, (2) solo 3
+pestañas abajo, faltaba "Inicio", (3) Perfil demasiado básico — pidió
+cambio de contraseña, datos completos, calificación en estrellas, modo
+oscuro, direcciones guardadas (ya hecho) y reservar para otra persona. Se
+aclaró con el usuario el alcance de dos puntos ambiguos antes de construir:
+"reservar para otra persona" = reservar y pagar uno mismo pero que el
+viaje sea para alguien más; modo oscuro se pospone (ver abajo).
+
+- **Pestaña "Inicio" nueva** (`HomeScreen.tsx`, primera pestaña) — saluda
+  por nombre, muestra la marca de la empresa, destaca el próximo viaje
+  activo si existe (con acceso directo a verlo en vivo), botón principal
+  "Reservar un viaje" y accesos rápidos a Mis viajes/Perfil. 4 pestañas
+  ahora: Inicio, Reservar, Mis viajes, Perfil.
+- **"Reservar para otra persona"** (`BookingConfirmScreen.tsx`) — chips
+  "Para mí" / "Para otra persona" sobre los campos de nombre/teléfono.
+  Cero cambios de backend: `bookings.passenger_name`/`passenger_phone` ya
+  eran columnas separadas de `customer_id` (pensadas originalmente para el
+  guest checkout de la web) — solo se expone la opción de llenarlas con
+  otros datos en vez de auto-rellenar los del dueño de la cuenta. La
+  reserva sigue apareciendo en "Mis viajes" de quien la hizo.
+- **Perfil ampliado**:
+  - Calificación en estrellas: no existe una columna agregada para el
+    pasajero (a diferencia de `drivers.rating`, que sí tiene trigger) — se
+    promedia en el momento sobre `bookings.driver_rating` (la misma columna
+    que ya usa el conductor para calificar al pasajero desde
+    `/driver/trips`). Sin migración nueva.
+  - Cambio de contraseña: `supabase.auth.updateUser({ password })` —
+    sesión ya autenticada, no pide la contraseña actual (mismo modelo que
+    "¿Olvidaste tu contraseña?" de la web).
+  - Teléfono agregado al header junto a nombre/correo (dato que ya se
+    editaba pero no se mostraba destacado arriba).
+- **Modo oscuro — pospuesto, documentado como pendiente real**: hoy
+  `lib/theme.ts` exporta `color`/`font`/`space`/`radius` como objetos fijos
+  que cada pantalla importa directo — un modo oscuro real requiere (a) una
+  paleta oscura paralela, (b) un `ThemeContext` con el modo persistido
+  (AsyncStorage), y (c) migrar CADA pantalla + `components/ui.tsx` de
+  `StyleSheet.create` con `color` fijo a estilos computados dentro del
+  componente vía un hook `useTheme()` — no es un interruptor rápido, toca
+  las 8 pantallas. El usuario decidió posponerlo para una sesión dedicada
+  en vez de ahora.
+- **Verificado**: `tsc --noEmit` limpio. Sin verificación visual en
+  emulador (no disponible en este entorno).
+- **Pendiente del usuario**: instalar el próximo build de EAS.
+
 ## ✅ App de pasajero: pasada de pulido visual (2026-07-23)
 
 El usuario pidió pulir la presentación general ("la veo débil"), sin

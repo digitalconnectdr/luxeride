@@ -12,8 +12,11 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { supabase } from '../lib/supabase'
 import { callPassengerApi } from '../lib/api'
 import { Button, Card, Field, SectionLabel } from '../components/ui'
+import { PressableScale } from '../components/PressableScale'
 import { color, font, radius, space } from '../lib/theme'
 import type { BookingStackParamList } from '../lib/types'
+
+type BookingFor = 'self' | 'other'
 
 type Props = NativeStackScreenProps<BookingStackParamList, 'BookingConfirm'>
 
@@ -28,6 +31,9 @@ function row(label: string, value: string) {
 
 export function BookingConfirmScreen({ route, navigation }: Props) {
   const { draft, quote } = route.params
+  const [bookingFor, setBookingFor] = useState<BookingFor>('self')
+  const [myName, setMyName] = useState('')
+  const [myPhone, setMyPhone] = useState('')
   const [passengerName, setPassengerName] = useState('')
   const [passengerPhone, setPassengerPhone] = useState('')
   const [specialInstructions, setSpecialInstructions] = useState('')
@@ -45,12 +51,32 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
         .eq('id', auth.user.id)
         .single()
       if (profile) {
-        setPassengerName(`${profile.first_name} ${profile.last_name}`.trim())
+        const name = `${profile.first_name} ${profile.last_name}`.trim()
+        setMyName(name)
+        setMyPhone(profile.phone ?? '')
+        setPassengerName(name)
         setPassengerPhone(profile.phone ?? '')
       }
     }
     prefill()
   }, [])
+
+  // "Reservar para otra persona" no necesita nada nuevo en el backend:
+  // bookings.passenger_name/passenger_phone YA son columnas separadas de
+  // customer_id (el dueño de la cuenta que paga/reserva), pensadas
+  // originalmente para el guest checkout de la web — aquí solo se expone
+  // la opción de llenarlas con otros datos en vez de auto-rellenar los
+  // propios. La reserva sigue apareciendo en "Mis viajes" de quien reserva.
+  function selectBookingFor(next: BookingFor) {
+    setBookingFor(next)
+    if (next === 'self') {
+      setPassengerName(myName)
+      setPassengerPhone(myPhone)
+    } else {
+      setPassengerName('')
+      setPassengerPhone('')
+    }
+  }
 
   async function confirm() {
     setError('')
@@ -101,9 +127,25 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
 
       <Card style={styles.section}>
         <SectionLabel>Datos del pasajero</SectionLabel>
+        <View style={styles.forWhomRow}>
+          <PressableScale onPress={() => selectBookingFor('self')} haptic="light">
+            <View style={[styles.forWhomChip, bookingFor === 'self' && styles.forWhomChipActive]}>
+              <Text style={[styles.forWhomChipText, bookingFor === 'self' && styles.forWhomChipTextActive]}>
+                Para mí
+              </Text>
+            </View>
+          </PressableScale>
+          <PressableScale onPress={() => selectBookingFor('other')} haptic="light">
+            <View style={[styles.forWhomChip, bookingFor === 'other' && styles.forWhomChipActive]}>
+              <Text style={[styles.forWhomChipText, bookingFor === 'other' && styles.forWhomChipTextActive]}>
+                Para otra persona
+              </Text>
+            </View>
+          </PressableScale>
+        </View>
         <Field
           icon="person-outline"
-          placeholder="Nombre completo"
+          placeholder={bookingFor === 'other' ? 'Nombre de la persona' : 'Nombre completo'}
           value={passengerName}
           onChangeText={setPassengerName}
           focused={focusedField === 'name'}
@@ -112,7 +154,7 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
         />
         <Field
           icon="call-outline"
-          placeholder="Teléfono"
+          placeholder={bookingFor === 'other' ? 'Teléfono de la persona' : 'Teléfono'}
           value={passengerPhone}
           onChangeText={setPassengerPhone}
           keyboardType="phone-pad"
@@ -150,6 +192,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.bg },
   scroll: { padding: space.lg, gap: space.lg },
   divider: { height: 1, backgroundColor: color.border, marginVertical: space.sm },
+  forWhomRow: { flexDirection: 'row', gap: space.sm },
+  forWhomChip: {
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.border,
+    backgroundColor: color.surfaceRaised,
+  },
+  forWhomChipActive: { backgroundColor: color.gold, borderColor: color.gold },
+  forWhomChipText: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 13 },
+  forWhomChipTextActive: { color: '#fff' },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, gap: space.md },
   rowLabel: { color: color.inkFaint, fontFamily: font.body, fontSize: 13 },
   rowValue: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1, textAlign: 'right' },
