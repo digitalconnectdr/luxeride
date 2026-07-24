@@ -11,12 +11,12 @@ import { getAppUrl } from '@/lib/app-url'
 import { buildLandingStructuredData } from '@/lib/seo/structured-data'
 
 const SHOWCASE_IMAGES = [
-  // Experiencia de reserva | auto deportivo oscuro
-  'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1100&q=70',
+  // Experiencia de reserva | foto propia (Cadillac Escalade-V)
+  '/images/showcase/clientes.jpg',
   // Dispatch | carretera de noche
   'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=1100&q=70',
-  // Pagos | sedán negro
-  'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1100&q=70',
+  // Pagos | foto propia (Chevrolet Tahoe)
+  '/images/showcase/negocio.jpg',
 ]
 
 // Flota por clase de vehículo (Unsplash, licencia libre | endpoint estable por slug).
