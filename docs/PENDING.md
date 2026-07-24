@@ -2661,6 +2661,52 @@ distintos): `WHOP_PLAN_ID_CUSTOM_DOMAIN_BYOD`/`WHOP_CHECKOUT_URL_CUSTOM_DOMAIN_B
 (mensual $15). Antes de depender del flujo BYOD en producción, agregar un
 dominio de prueba real y confirmar el shape de respuesta de Vercel.
 
+### M. Cargos adicionales recurrentes — LuxeRide cobra al operador ✅ completado 2026-07-24
+Surgió de la sección L: el servicio "consíganme un dominio" no puede tener
+precio fijo ($15/mes) porque el costo real de un dominio varía mucho según
+disponibilidad — cobrar de más perdería plata en dominios caros. Solución:
+en vez de un plan de Whop con precio único, el super-admin configura un
+**cargo manual por empresa** (etiqueta, monto real acordado, frecuencia
+mensual/anual) y el sistema lo cobra automáticamente. Genérico desde el
+inicio (decisión del usuario) — sirve para cualquier cargo especial futuro,
+no solo dominio.
+
+- **Arquitectura de cobro**: el operador guarda UNA vez una tarjeta con la
+  cuenta PADRE de Whop de LuxeRide (`WHOP_PARENT_COMPANY_ID`) —
+  `createCompanyBillingSetupCheckout()` en `lib/whop/checkout.ts`, mismo
+  mecanismo de "setup checkout" que ya usan los PASAJEROS para guardar
+  tarjeta con cada operador, solo que aquí es LuxeRide quien cobra
+  (autorización única, confirmada por el usuario — no se pide aprobación
+  por cada cobro individual).
+- **Migración 74**: `companies.whop_billing_member_id`/`whop_billing_card_saved_at`
+  + tabla `company_extra_charges` (la plantilla: label, amount_cents,
+  frequency_months 1|12, next_charge_date, active) + tabla
+  `company_extra_charge_payments` (el HISTORIAL de cada cobro individual —
+  separada a propósito para poder **reversar/acreditar UN cobro puntual sin
+  afectar los demás**, ej. si por error se cobró dos veces).
+- **Webhook `whop-connect/route.ts`**: rama nueva en `setup_intent.succeeded`
+  (distinguida por `metadata.kind === 'company_billing'`) que guarda
+  `whop_billing_member_id` en `companies` en vez de `passenger_whop_members`;
+  y en `payment.succeeded`/`payment.failed` una rama por
+  `metadata.extra_charge_payment_id` que confirma/falla el cobro.
+- **Cron `api/cron/company-extra-charges`** (diario, `0 18 * * *`): cobra
+  cargos vencidos vía `client.payments.create()` contra la tarjeta guardada.
+  Avanza `next_charge_date` SOLO si la llamada a Whop no lanzó error — evita
+  reintentar (y cobrar dos veces) al día siguiente sobre un cobro que Whop
+  ya aceptó; si falta tarjeta o la llamada falla, no avanza (reintento
+  natural al día siguiente).
+- **`/super-admin/companies/[id]`**: nueva tarjeta "Cargos adicionales" —
+  crear/pausar/eliminar cargos + tabla de historial de cobros con botón
+  "Reversar" (llama `whop.payments.refund()`, mismo método ya usado por
+  `refundPaymentAction` en `app/actions/payments.ts`) por cada cobro exitoso.
+- **`/admin/settings`**: nueva sección "Facturación adicional" (solo si el
+  operador tiene cargos activos o ya guardó tarjeta) — solo lectura de los
+  cargos + botón "Guardar método de pago" si falta.
+
+**Pendiente del usuario:** ninguna env var nueva (reusa `WHOP_API_KEY` +
+`WHOP_PARENT_COMPANY_ID` + `WHOP_CONNECT_WEBHOOK_SECRET` ya configuradas
+para Whop Connect). Correr la migración 74 en Supabase (SQL abajo).
+
 ## Backlog de DESARROLLO (0–6 ✅ COMPLETO, ver resumen arriba — detalle histórico abajo)
 
 0. ✅ **Limpieza de marca**: literales "LuxeRide" hardcodeados migrados a

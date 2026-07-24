@@ -37,6 +37,7 @@ export type CompanyPlan = 'free' | 'starter' | 'professional' | 'elite' | 'enter
 export type EnterpriseLeadStatus = 'new' | 'contacted' | 'converted' | 'rejected'
 export type DomainRequestStatus = 'pending' | 'purchased' | 'rejected'
 export type CustomDomainStatus = 'pending_verification' | 'verified' | 'failed'
+export type ExtraChargePaymentStatus = 'pending' | 'succeeded' | 'failed' | 'refunded'
 export type FeatureRequestType = 'feature' | 'bug'
 export type FeatureRequestStatus = 'submitted' | 'pending' | 'in_progress' | 'resolved'
 export type FeatureRequestSource = 'admin' | 'driver' | 'customer'
@@ -143,6 +144,8 @@ export type Database = {
           custom_domain: string | null
           custom_domain_status: CustomDomainStatus | null
           custom_domain_added_at: string | null
+          whop_billing_member_id: string | null
+          whop_billing_card_saved_at: string | null
           created_at: string
           updated_at: string
         }
@@ -202,6 +205,8 @@ export type Database = {
           custom_domain?: string | null | undefined
           custom_domain_status?: CustomDomainStatus | null | undefined
           custom_domain_added_at?: string | null | undefined
+          whop_billing_member_id?: string | null | undefined
+          whop_billing_card_saved_at?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -261,6 +266,8 @@ export type Database = {
           custom_domain?: string | null | undefined
           custom_domain_status?: CustomDomainStatus | null | undefined
           custom_domain_added_at?: string | null | undefined
+          whop_billing_member_id?: string | null | undefined
+          whop_billing_card_saved_at?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -866,6 +873,97 @@ export type Database = {
           resolved_by?: string | null | undefined
           resolved_at?: string | null | undefined
           created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── company_extra_charges (cargos recurrentes LuxeRide → operador) ────────
+      company_extra_charges: {
+        Row: {
+          id: string
+          company_id: string
+          label: string
+          amount_cents: number
+          currency: string
+          frequency_months: number
+          next_charge_date: string
+          active: boolean
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          label: string
+          amount_cents: number
+          currency?: string | undefined
+          frequency_months?: number | undefined
+          next_charge_date: string
+          active?: boolean | undefined
+          created_by?: string | null | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          label?: string | undefined
+          amount_cents?: number | undefined
+          currency?: string | undefined
+          frequency_months?: number | undefined
+          next_charge_date?: string | undefined
+          active?: boolean | undefined
+          created_by?: string | null | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── company_extra_charge_payments (historial de cada cobro individual) ────
+      company_extra_charge_payments: {
+        Row: {
+          id: string
+          extra_charge_id: string
+          company_id: string
+          amount_cents: number
+          currency: string
+          status: ExtraChargePaymentStatus
+          whop_payment_id: string | null
+          failure_message: string | null
+          charged_at: string
+          refunded_at: string | null
+          refunded_by: string | null
+          refund_reason: string | null
+        }
+        Insert: {
+          id?: string | undefined
+          extra_charge_id: string
+          company_id: string
+          amount_cents: number
+          currency: string
+          status: ExtraChargePaymentStatus
+          whop_payment_id?: string | null | undefined
+          failure_message?: string | null | undefined
+          charged_at?: string | undefined
+          refunded_at?: string | null | undefined
+          refunded_by?: string | null | undefined
+          refund_reason?: string | null | undefined
+        }
+        Update: {
+          id?: string | undefined
+          extra_charge_id?: string | undefined
+          company_id?: string | undefined
+          amount_cents?: number | undefined
+          currency?: string | undefined
+          status?: ExtraChargePaymentStatus | undefined
+          whop_payment_id?: string | null | undefined
+          failure_message?: string | null | undefined
+          charged_at?: string | undefined
+          refunded_at?: string | null | undefined
+          refunded_by?: string | null | undefined
+          refund_reason?: string | null | undefined
         }
         Relationships: []
       }

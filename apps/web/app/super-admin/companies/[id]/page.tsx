@@ -6,6 +6,8 @@ import { StatusSelect, PlanSelect } from '@/components/super-admin/status-forms'
 import { CommissionInput } from '@/components/super-admin/commission-input'
 import { AffiliateNetworkToggle } from '@/components/super-admin/affiliate-network-toggle'
 import { CompanyAddonToggle } from '@/components/super-admin/company-addon-toggle'
+import { CompanyExtraCharges } from '@/components/super-admin/company-extra-charges'
+import { listCompanyExtraChargesAction, listCompanyExtraChargePaymentsAction } from '@/app/actions/company-billing'
 import { currentYearMonth } from '@/lib/tracking/live-tracking-quota'
 import { InfoTip } from '@/components/ui/info-tip'
 import type { CompanyStatus } from '@/lib/supabase/database.types'
@@ -64,6 +66,11 @@ export default async function CompanyDetailPage({ params }: PageProps) {
   ])
 
   if (companyError || !company) return notFound()
+
+  const [extraCharges, extraChargePayments] = await Promise.all([
+    listCompanyExtraChargesAction(params.id),
+    listCompanyExtraChargePaymentsAction(params.id),
+  ])
 
   const addonByKey = new Map((addonRows ?? []).map((a) => [a.addon_key, a]))
   const planIncludesAddons = isAddonIncludedInPlan(company.plan)
@@ -261,6 +268,13 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             })}
           </div>
         </div>
+
+        <CompanyExtraCharges
+          companyId={company.id}
+          cardSaved={Boolean(company.whop_billing_member_id)}
+          charges={extraCharges}
+          payments={extraChargePayments}
+        />
       </div>
 
       {/* Company info */}

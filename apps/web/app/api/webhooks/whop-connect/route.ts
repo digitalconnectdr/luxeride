@@ -83,6 +83,21 @@ export async function POST(request: Request) {
   try {
     if (eventTypeMatches(type, 'payment.succeeded')) {
       const data = body!.data as WhopPaymentData
+
+      // Cargos adicionales (LuxeRide → operador) — confirmación asíncrona del
+      // cobro que el cron ya marcó 'succeeded' de forma optimista al recibir
+      // respuesta síncrona de client.payments.create(). Esto solo rellena el
+      // whop_payment_id real si por algo faltó.
+      const extraChargePaymentId = (data.metadata?.extra_charge_payment_id as string | undefined) ?? null
+      if (extraChargePaymentId) {
+        await admin
+          .from('company_extra_charge_payments')
+          .update({ status: 'succeeded', whop_payment_id: data.id })
+          .eq('id', extraChargePaymentId)
+          .neq('status', 'refunded')
+        return NextResponse.json({ received: true, extraChargePaymentConfirmed: extraChargePaymentId })
+      }
+
       const paymentId = (data.metadata?.payment_id as string | undefined) ?? null
 
       const query = admin
@@ -126,6 +141,17 @@ export async function POST(request: Request) {
 
     if (eventTypeMatches(type, 'payment.failed')) {
       const data = body!.data as WhopPaymentData
+
+      const extraChargePaymentId = (data.metadata?.extra_charge_payment_id as string | undefined) ?? null
+      if (extraChargePaymentId) {
+        await admin
+          .from('company_extra_charge_payments')
+          .update({ status: 'failed', whop_payment_id: data.id, failure_message: data.failure_message ?? null })
+          .eq('id', extraChargePaymentId)
+          .neq('status', 'succeeded')
+        return NextResponse.json({ received: true, extraChargePaymentFailed: extraChargePaymentId })
+      }
+
       const paymentId = (data.metadata?.payment_id as string | undefined) ?? null
 
       const query = admin
@@ -149,6 +175,21 @@ export async function POST(request: Request) {
     if (eventTypeMatches(type, 'setup_intent.succeeded')) {
       const data = body!.data as WhopSetupIntentData
       const companyId = (data.metadata?.company_id as string | undefined) ?? null
+      const kind = (data.metadata?.kind as string | undefined) ?? null
+
+      // Cargos adicionales (LuxeRide → operador, ver createCompanyBillingSetupCheckout):
+      // se distingue del guardado de tarjeta de PASAJEROS de abajo por
+      // metadata.kind, ya que este flujo no manda `phone`.
+      if (kind === 'company_billing') {
+        if (data.member?.id && companyId) {
+          await admin
+            .from('companies')
+            .update({ whop_billing_member_id: data.member.id, whop_billing_card_saved_at: new Date().toISOString() })
+            .eq('id', companyId)
+        }
+        return NextResponse.json({ received: true, companyBillingCardSaved: companyId })
+      }
+
       const phone = (data.metadata?.phone as string | undefined)?.trim() ?? null
       if (data.member?.id && companyId && phone) {
         await admin

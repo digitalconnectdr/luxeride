@@ -1,4 +1,4 @@
-import { getWhopClient } from './connect-server'
+import { getWhopClient, getWhopParentCompanyId } from './connect-server'
 
 /**
  * Whop Connect — Fase 2: cobro real por viaje.
@@ -89,6 +89,43 @@ export async function createWhopSetupCheckout(params: {
     return { ok: true, url }
   } catch (err) {
     console.error('[createWhopSetupCheckout]', err)
+    return { ok: false }
+  }
+}
+
+/**
+ * Setup checkout para que un OPERADOR guarde tarjeta directamente con la
+ * cuenta PADRE de Whop de LuxeRide (WHOP_PARENT_COMPANY_ID) — a diferencia de
+ * createWhopSetupCheckout() de arriba, que guarda la tarjeta de un PASAJERO
+ * con la cuenta CONECTADA de cada operador. Aquí LuxeRide es quien cobra
+ * después (ver app/api/cron/company-extra-charges), no el operador.
+ * metadata lleva `kind: 'company_billing'` para que el webhook
+ * (whop-connect/route.ts) distinga este flujo del de guardado de tarjeta de
+ * pasajeros y actualice companies.whop_billing_member_id en vez de
+ * passenger_whop_members.
+ */
+export async function createCompanyBillingSetupCheckout(params: {
+  companyId: string
+  redirectUrl: string
+}): Promise<{ ok: true; url: string } | { ok: false }> {
+  const client = getWhopClient()
+  if (!client) return { ok: false }
+
+  try {
+    const config = await client.checkoutConfigurations.create({
+      mode: 'setup',
+      company_id: getWhopParentCompanyId(),
+      metadata: { kind: 'company_billing', company_id: params.companyId },
+      redirect_url: params.redirectUrl,
+    })
+
+    const url = config.purchase_url.startsWith('http')
+      ? config.purchase_url
+      : `https://whop.com${config.purchase_url}`
+
+    return { ok: true, url }
+  } catch (err) {
+    console.error('[createCompanyBillingSetupCheckout]', err)
     return { ok: false }
   }
 }

@@ -35,6 +35,7 @@ import { CoverForm } from '@/components/admin/cover-form'
 import { ServicesManager, type Service } from '@/components/admin/services-manager'
 import { EnterpriseLeadModal } from '@/components/admin/enterprise-lead-modal'
 import { ActivePaymentProviderSelect } from '@/components/admin/active-payment-provider-select'
+import { CompanyBillingSection } from '@/components/admin/company-billing-section'
 import { getDict, getLocale } from '@/lib/i18n/server'
 import { getAppUrl } from '@/lib/app-url'
 import type { CompanyPlan } from '@/lib/supabase/database.types'
@@ -125,11 +126,18 @@ export default async function SettingsPage({
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('name, slug, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, whop_connect_company_id, whop_connect_onboarded, active_payment_provider, logo_url, primary_color, tagline, hero_image_url, about, status, plan, subscription_ends_at, whop_membership_id, quickbooks_realm_id, quickbooks_connected_at, quickbooks_sync_enabled, quickbooks_last_synced_at')
+    .select('name, slug, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, whop_connect_company_id, whop_connect_onboarded, active_payment_provider, logo_url, primary_color, tagline, hero_image_url, about, status, plan, subscription_ends_at, whop_membership_id, whop_billing_member_id, quickbooks_realm_id, quickbooks_connected_at, quickbooks_sync_enabled, quickbooks_last_synced_at')
     .eq('id', user.company_id)
     .single()
 
   if (!company) return <p className="p-8 text-sl-on-surface-muted">Empresa no encontrada.</p>
+
+  const { data: extraChargesRaw } = await admin
+    .from('company_extra_charges')
+    .select('id, label, amount_cents, currency, frequency_months, next_charge_date, active')
+    .eq('company_id', user.company_id)
+    .eq('active', true)
+    .order('created_at', { ascending: false })
 
   const { data: planQuotasRaw } = await admin.from('plan_quotas').select('plan, monthly_price')
   const priceByPlan = Object.fromEntries((planQuotasRaw ?? []).map((p) => [p.plan, p.monthly_price])) as Record<string, number | null>
@@ -334,6 +342,25 @@ export default async function SettingsPage({
           </div>
         )}
       </section>
+
+      {/* ── Facturación adicional (cargos aparte del plan, ej. hosting de dominio) ── */}
+      {(extraChargesRaw ?? []).length > 0 || company.whop_billing_member_id ? (
+        <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
+          <CompanyBillingSection
+            cardSaved={Boolean(company.whop_billing_member_id)}
+            charges={(extraChargesRaw ?? []).map((c) => ({
+              id: c.id,
+              label: c.label,
+              amountCents: c.amount_cents,
+              currency: c.currency,
+              frequencyMonths: c.frequency_months,
+              nextChargeDate: c.next_charge_date,
+              active: c.active,
+            }))}
+            t={t}
+          />
+        </section>
+      ) : null}
 
       {/* ── Link de reservas del operador ── */}
       {company.slug && (
