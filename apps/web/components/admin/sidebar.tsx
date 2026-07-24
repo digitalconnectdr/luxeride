@@ -31,6 +31,7 @@ import {
   FileSignature,
   Bot,
   TrendingUp,
+  Globe,
   Store,
   Gauge,
   Settings,
@@ -194,6 +195,7 @@ export function AdminSidebar({
         ...(isAddonVisible('esignature') ? [{ href: '/admin/esignature', label: nav.esignature, icon: FileSignature }] : []),
         ...(isAddonVisible('ai_chat') ? [{ href: '/admin/assistant', label: nav.assistant, icon: Bot }] : []),
         ...(isAddonVisible('ai_growth') ? [{ href: '/admin/growth-assistant', label: nav.growthAssistant, icon: TrendingUp }] : []),
+        ...(isAddonVisible('custom_domain') ? [{ href: '/admin/domain', label: nav.customDomain, icon: Globe }] : []),
         { href: '/admin/partners', label: nav.partners, icon: Store },
         ...(flags.isOwner
           ? [

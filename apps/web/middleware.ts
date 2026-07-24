@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
 import type { UserRole } from '@/lib/auth/permissions'
 import { getDefaultRoute, ADMIN_ROLES } from '@/lib/auth/permissions'
+import { getAppUrl } from '@/lib/app-url'
 
 // Explicit type for setAll parameter — same reason as in lib/supabase/server.ts:
 // TypeScript can't infer from the union cookie options type in createServerClient.
@@ -30,8 +31,49 @@ const RESERVED_SEGMENTS = new Set([
   'privacy', 'terms', 'en', 'es', 'pt',
 ])
 
+// Consulta directa a la REST API de Supabase (fetch plano, sin supabase-js) —
+// mismo motivo que lib/vercel/domains.ts: middleware corre en Edge Runtime,
+// se evita cargar el cliente completo solo para una consulta de una columna.
+// Usa el service role porque companies NO tiene policy de SELECT para anon
+// (mismo patrón que app/(booking)/book/[slug]/page.tsx, que ya lee companies
+// con createAdminClient para servir el micrositio público).
+async function resolveCustomDomainSlug(host: string): Promise<string | null> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!supabaseUrl || !serviceKey) return null
+
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/companies?custom_domain=eq.${encodeURIComponent(host)}&custom_domain_status=eq.verified&select=slug&limit=1`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+    )
+    if (!res.ok) return null
+    const rows = (await res.json()) as { slug: string }[]
+    return rows[0]?.slug ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // ── Dominio personalizado: "/" → /book/<slug> de la empresa verificada ─────
+  // Solo la raíz — el resto de rutas (/track, /quote, /review, /payment, /api)
+  // ya funcionan igual sin importar el host, son por ID no por slug. Se
+  // excluye cualquier host de la plataforma (incluyendo *.vercel.app, que
+  // cubre tanto el dominio de producción como cada preview deploy) para no
+  // hacer una consulta extra en el camino normal.
+  const host = (request.headers.get('host') ?? '').split(':')[0].toLowerCase()
+  const platformHost = new URL(getAppUrl()).hostname
+  if (pathname === '/' && host && host !== platformHost && host !== 'localhost' && !host.endsWith('.vercel.app')) {
+    const slug = await resolveCustomDomainSlug(host)
+    if (slug) {
+      const url = request.nextUrl.clone()
+      url.pathname = `/book/${slug}`
+      return NextResponse.rewrite(url)
+    }
+  }
 
   // ── Link corto del operador: /<slug> → reescribe a /book/<slug> ──────────────
   // Permite compartir getluxeride.vercel.app/revival en vez de /book/revival.

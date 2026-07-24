@@ -15,6 +15,7 @@ import {
   Bot,
   TrendingUp,
   Handshake,
+  Globe,
   Check,
   type LucideIcon,
 } from 'lucide-react'
@@ -28,6 +29,7 @@ const ICONS: Record<MarketplaceItemKey, LucideIcon> = {
   ai_chat: Bot,
   ai_growth: TrendingUp,
   affiliate_network: Handshake,
+  custom_domain: Globe,
 }
 
 export interface MarketplaceTierData {

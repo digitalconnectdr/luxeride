@@ -12,6 +12,7 @@ import {
   Bot,
   TrendingUp,
   Handshake,
+  Globe,
   type LucideIcon,
 } from 'lucide-react'
 import type { CompanyPlan } from '@/lib/supabase/database.types'
@@ -36,6 +37,12 @@ import {
   getAiGrowthCheckoutUrl,
   type AiGrowthTier,
 } from '@/lib/billing/ai-growth-addon'
+import {
+  CUSTOM_DOMAIN_ADDON_KEY,
+  CUSTOM_DOMAIN_MONTHLY_PRICE,
+  getCustomDomainCheckoutUrl,
+  isCustomDomainAddonActive,
+} from '@/lib/billing/custom-domain-addon'
 
 /** Identificador estable de cada servicio en la tienda (no siempre == addon_key de la BD, ver ai_chat/ai_growth que agrupan 2 tiers bajo un solo item). */
 export type MarketplaceItemKey =
@@ -45,6 +52,7 @@ export type MarketplaceItemKey =
   | 'ai_chat'
   | 'ai_growth'
   | 'affiliate_network'
+  | 'custom_domain'
 
 export const MARKETPLACE_ITEM_KEYS: readonly MarketplaceItemKey[] = [
   'driver_payroll',
@@ -53,6 +61,7 @@ export const MARKETPLACE_ITEM_KEYS: readonly MarketplaceItemKey[] = [
   'ai_chat',
   'ai_growth',
   'affiliate_network',
+  'custom_domain',
 ]
 
 export interface MarketplaceTier {
@@ -161,6 +170,17 @@ export function getMarketplaceItems(): MarketplaceItem[] {
       includedInElitePlan: true,
       hasFixedPrice: false,
       isActive: ({ plan, affiliateNetworkEnabled }) => plan === 'elite' || plan === 'enterprise' || affiliateNetworkEnabled,
+    },
+    {
+      key: 'custom_domain',
+      icon: Globe,
+      route: '/admin/domain',
+      tiers: flatTier(CUSTOM_DOMAIN_ADDON_KEY, CUSTOM_DOMAIN_MONTHLY_PRICE, getCustomDomainCheckoutUrl()),
+      // Nunca incluido por plan — ver custom-domain-addon.ts (puede implicar
+      // un costo real de renovación de dominio si lo compramos nosotros).
+      includedInElitePlan: false,
+      hasFixedPrice: true,
+      isActive: ({ enabledAddonKeys }) => isCustomDomainAddonActive(enabledAddonKeys),
     },
   ]
 }

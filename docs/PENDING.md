@@ -1702,8 +1702,8 @@ del cliente. Plan por niveles (de menor a mayor esfuerzo):
 2. **Subdominio** `<slug>.dominio.com`: requiere dominio propio (no
    *.vercel.app) + wildcard domain en Vercel + middleware que lea el subdominio
    (host header) y resuelva la empresa. Es el estándar SaaS.
-3. **Dominio propio del cliente** `reservas.suempresa.com`: Vercel custom
-   domains por empresa (límite en plan Hobby; requiere upgrade).
+3. ✅ **Dominio propio del cliente** `reservas.suempresa.com` (HECHO 2026-07-24,
+   add-on nuevo "Dominio personalizado" $15/mes — ver sección L abajo).
 4. ✅ **PWA branded por empresa** (HECHO 2026-07-09): manifest dinámico por
    empresa ya existía para pasajero (`/manifest/[slug]`) y conductor
    (`/manifest/driver/[slug]`); se agregó el que faltaba para el panel admin
@@ -2597,6 +2597,51 @@ plan". Ver `docs/COMPETITIVE-ANALYSIS.md` (actualizado).
 - UI de upsell (banner/modal cuando se llega al límite, hoy solo el mensaje
   de error del server action) — se puede refinar en una pasada de diseño
   aparte si se quiere algo más que el mensaje de texto plano.
+
+### L. Dominio personalizado — BYOD + "consíganme uno" ✅ completado 2026-07-24
+Pedido del usuario: que el link final del micrositio sea el dominio propio
+del cliente (`reservas.suempresa.com` en vez de `getluxeride.vercel.app/book/slug`)
+Y que LuxeRide pueda cobrar por proveer el dominio a los clientes que no
+tengan uno. Se construyeron ambos caminos juntos desde el inicio (decisión
+explícita del usuario, no phaseado):
+
+- **Add-on nuevo "Dominio personalizado"** ($15/mes, `lib/billing/custom-domain-addon.ts`)
+  — deliberadamente FUERA del mecanismo genérico de add-ons (nunca incluido
+  gratis en Elite/Enterprise, mismo motivo que el add-on de Asistente IA):
+  puede implicar un costo real de renovación de dominio si LuxeRide lo compra.
+- **Migración 73** (`custom_domain`/`custom_domain_status`/`custom_domain_added_at`
+  en `companies` + tabla nueva `domain_requests` con RLS solo-super_admin,
+  mismo patrón que `enterprise_leads`).
+- **`lib/vercel/domains.ts`**: wrapper delgado sobre la API de Dominios de
+  Vercel (`VERCEL_API_TOKEN`/`VERCEL_PROJECT_ID`/`VERCEL_TEAM_ID` opcional) —
+  agregar/verificar/quitar un dominio del proyecto. Nota: los shapes de
+  respuesta siguen la documentación pública, no se confirmaron aún contra una
+  llamada real (agregar un dominio de prueba antes de depender en producción).
+- **`app/actions/domains.ts`**: núcleo compartido `connectDomainToCompany()`
+  usado por ambos caminos — BYOD (`addCustomDomainAction`, gateado por el
+  add-on activo) y resolución de super-admin (`resolveDomainRequestAction`).
+- **Middleware** (`middleware.ts`): si el host de la request no es la
+  plataforma (excluye cualquier `*.vercel.app`, cubre prod + previews) y el
+  path es exactamente `/`, busca `companies.custom_domain` verificado y
+  reescribe a `/book/<slug>` — el resto de rutas (`/track`, `/quote`, etc.)
+  no cambian porque son por ID, no por slug. Consulta REST directa (fetch,
+  sin supabase-js) para no cargar el cliente completo en el Edge Runtime.
+- **`/admin/domain`**: gestión BYOD (conectar dominio, instrucciones de DNS,
+  reverificar, desconectar) + formulario "no tengo dominio, consíganme uno"
+  (deja fila en `domain_requests`).
+- **`/super-admin/domains`**: cola de solicitudes con "Marcar como comprado"
+  (el super-admin escribe el dominio real que compró manualmente — NO hay
+  integración de compra, es dinero real fuera del sistema) o "Rechazar".
+- Catálogo del marketplace, sidebar (admin + super-admin) e i18n EN/ES/PT
+  completos.
+
+**Pendiente del usuario:** configurar en Vercel/entorno las env vars
+`VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` (si aplica),
+`WHOP_PLAN_ID_CUSTOM_DOMAIN_ADDON`, `WHOP_CHECKOUT_URL_CUSTOM_DOMAIN_ADDON`,
+y crear el producto "Dominio personalizado" en Whop. Correr la migración 73
+en Supabase (SQL abajo). Antes de depender del flujo BYOD en producción,
+agregar un dominio de prueba real y confirmar el shape de respuesta de
+Vercel.
 
 ## Backlog de DESARROLLO (0–6 ✅ COMPLETO, ver resumen arriba — detalle histórico abajo)
 
