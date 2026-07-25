@@ -87,6 +87,8 @@ interface Props {
   referralsDict?: Dictionary['admin']['referrals']
   /** Servicios de pago activos para esta empresa — ver lib/billing/catalog.ts. Los que faltan aquí se ocultan del menú hasta comprarse en la tienda. */
   visibleMarketplaceKeys: MarketplaceItemKey[]
+  /** companies.custom_domain ya tiene valor — dominio conectado por cualquiera de los 2 caminos (BYOD pagado o "consíganme uno" ya resuelto). El nav de Dominio personalizado solo aparece con esto o con el addon BYOD pagado — antes de eso, se llega a /admin/domain solo desde las tarjetas de Servicios adicionales. */
+  hasCustomDomain: boolean
   /** Recomendar función / reportar problema — el trigger vive en AdminTopBar (solo desktop), así que se repite aquí para la barra móvil. */
   featureRequestLabels: FeatureRequestLabels
 }
@@ -110,6 +112,7 @@ export function AdminSidebar({
   referralTier,
   referralsDict,
   visibleMarketplaceKeys,
+  hasCustomDomain,
   featureRequestLabels,
 }: Props) {
   const pathname = usePathname()
@@ -195,7 +198,9 @@ export function AdminSidebar({
         ...(isAddonVisible('esignature') ? [{ href: '/admin/esignature', label: nav.esignature, icon: FileSignature }] : []),
         ...(isAddonVisible('ai_chat') ? [{ href: '/admin/assistant', label: nav.assistant, icon: Bot }] : []),
         ...(isAddonVisible('ai_growth') ? [{ href: '/admin/growth-assistant', label: nav.growthAssistant, icon: TrendingUp }] : []),
-        { href: '/admin/domain', label: nav.customDomain, icon: Globe },
+        ...(isAddonVisible('custom_domain_byod') || hasCustomDomain
+          ? [{ href: '/admin/domain', label: nav.customDomain, icon: Globe }]
+          : []),
         { href: '/admin/partners', label: nav.partners, icon: Store },
         ...(flags.isOwner
           ? [

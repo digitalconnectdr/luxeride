@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { BookingStatusBadge } from '@/components/bookings/booking-status-badge'
@@ -17,6 +17,21 @@ const ALL_STATUSES: BookingStatus[] = [
   'pending', 'assigned', 'en_route', 'arrived', 'in_progress',
   'completed', 'cancelled', 'no_show',
 ]
+
+const BOOKINGS_PAGE_SIZE = 20
+
+// Columnas realmente ordenables — pickup/dropoff (JSON) y pago (calculado
+// desde otra tabla) quedan fuera porque no hay una columna simple a la que
+// mapear un ORDER BY.
+const SORT_COLUMNS: Record<string, string> = {
+  number: 'booking_number',
+  passenger: 'passenger_name',
+  status: 'status',
+  datetime: 'scheduled_at',
+  total: 'total_amount',
+  rating: 'rating',
+}
+const DEFAULT_SORT = 'datetime'
 
 interface LocationJson {
   address?: string
@@ -38,10 +53,27 @@ function formatDate(iso: string, tag: string): string {
   })
 }
 
+// El filtro .or() de PostgREST usa "," y "(" ")" como sintaxis — envolver el
+// valor entre comillas dobles permite que el texto de búsqueda los contenga
+// sin romper el query (mismo helper que ya usa CustomersTab en /admin/team).
+function escapeIlikePattern(term: string): string {
+  return `"%${term.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}%"`
+}
+
+interface BookingsSearchParams {
+  status?: string
+  q?: string
+  from?: string
+  to?: string
+  sort?: string
+  dir?: string
+  page?: string
+}
+
 export default async function AdminBookingsPage({
   searchParams,
 }: {
-  searchParams: { status?: string }
+  searchParams: BookingsSearchParams
 }) {
   const user = await requireRole(
     'super_admin', 'company_owner', 'company_admin', 'dispatcher', 'accounting',
@@ -62,6 +94,49 @@ export default async function AdminBookingsPage({
   const admin      = createAdminClient()
   const companyId  = user.company_id
   const filterStatus = searchParams.status as BookingStatus | undefined
+  const q = (searchParams.q ?? '').trim()
+  const from = searchParams.from ?? ''
+  const to = searchParams.to ?? ''
+  const sortKey = searchParams.sort && SORT_COLUMNS[searchParams.sort] ? searchParams.sort : DEFAULT_SORT
+  const sortDir: 'asc' | 'desc' = searchParams.dir === 'asc' ? 'asc' : 'desc'
+  const sortColumn = SORT_COLUMNS[sortKey]
+  const hasSearchFilters = !!(q || from || to)
+
+  function buildHref(overrides: {
+    status?: BookingStatus | null
+    sort?: string
+    dir?: 'asc' | 'desc'
+    page?: number
+  }): string {
+    const params = new URLSearchParams()
+    const targetStatus = overrides.status !== undefined ? overrides.status : filterStatus
+    if (targetStatus) params.set('status', targetStatus)
+    if (q) params.set('q', q)
+    if (from) params.set('from', from)
+    if (to) params.set('to', to)
+    const targetSort = overrides.sort ?? sortKey
+    const targetDir = overrides.dir ?? sortDir
+    if (targetSort !== DEFAULT_SORT) params.set('sort', targetSort)
+    if (targetDir !== 'desc') params.set('dir', targetDir)
+    const targetPage = overrides.page ?? 1
+    if (targetPage > 1) params.set('page', String(targetPage))
+    const qs = params.toString()
+    return qs ? `/admin/bookings?${qs}` : '/admin/bookings'
+  }
+
+  function clearSearchHref(): string {
+    const params = new URLSearchParams()
+    if (filterStatus) params.set('status', filterStatus)
+    if (sortKey !== DEFAULT_SORT) params.set('sort', sortKey)
+    if (sortDir !== 'desc') params.set('dir', sortDir)
+    const qs = params.toString()
+    return qs ? `/admin/bookings?${qs}` : '/admin/bookings'
+  }
+
+  function sortHref(key: string): string {
+    const nextDir: 'asc' | 'desc' = sortKey === key && sortDir === 'asc' ? 'desc' : 'asc'
+    return buildHref({ sort: key, dir: nextDir, page: 1 })
+  }
 
   // Stats por estado — counts vía head:true (no transfiere filas). Antes se
   // traían TODAS las reservas de la empresa solo para tallarlas en memoria,
@@ -84,19 +159,33 @@ export default async function AdminBookingsPage({
     counts[s] = statusCountResults[i].count ?? 0
   })
 
-  // Lista filtrada
+  // Lista filtrada + paginada — .range() en vez de .limit(100) fijo, para no
+  // saturar la página ni el navegador cuando una empresa acumula mucho
+  // volumen de reservas; { count: 'exact' } calcula el total de páginas.
   let query = admin
     .from('bookings')
-    .select('id, booking_number, status, type, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, total_amount, currency, vehicle_type_id, driver_id, rating')
+    .select('id, booking_number, status, type, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, total_amount, currency, vehicle_type_id, driver_id, rating', { count: 'exact' })
     .eq('company_id', companyId)
-    .order('scheduled_at', { ascending: false })
-    .limit(100)
 
   if (filterStatus) {
     query = query.eq('status', filterStatus)
   }
+  if (q) {
+    const pattern = escapeIlikePattern(q)
+    query = query.or(`passenger_name.ilike.${pattern},passenger_phone.ilike.${pattern}`)
+  }
+  if (from) query = query.gte('scheduled_at', `${from}T00:00:00`)
+  if (to) query = query.lte('scheduled_at', `${to}T23:59:59`)
 
-  const { data: bookings } = await query
+  const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1)
+  const offset = (page - 1) * BOOKINGS_PAGE_SIZE
+
+  const { data: bookings, count: filteredCount } = await query
+    .order(sortColumn, { ascending: sortDir === 'asc' })
+    .range(offset, offset + BOOKINGS_PAGE_SIZE - 1)
+
+  const filteredTotal = filteredCount ?? 0
+  const totalPages = Math.max(1, Math.ceil(filteredTotal / BOOKINGS_PAGE_SIZE))
 
   // Método de pago por reserva — para cada booking_id nos quedamos con el
   // pago exitoso más reciente (o, si no hubo ninguno exitoso, el más
@@ -131,6 +220,25 @@ export default async function AdminBookingsPage({
   const totalActive = (counts['pending'] ?? 0) + (counts['assigned'] ?? 0) +
     (counts['en_route'] ?? 0) + (counts['arrived'] ?? 0) + (counts['in_progress'] ?? 0)
 
+  function SortHeader({ label, sortKeyName, align }: { label: string; sortKeyName: string; align?: 'right' }) {
+    const active = sortKey === sortKeyName
+    return (
+      <th className={`px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted ${align === 'right' ? 'text-right' : 'text-left'}`}>
+        <Link
+          href={sortHref(sortKeyName)}
+          className={`inline-flex items-center gap-1 hover:text-sl-on-surface transition-colors ${active ? 'text-bronze' : ''}`}
+        >
+          {label}
+          {active ? (
+            sortDir === 'asc' ? <ArrowUp size={11} /> : <ArrowDown size={11} />
+          ) : (
+            <ArrowUpDown size={10} className="opacity-30" />
+          )}
+        </Link>
+      </th>
+    )
+  }
+
   return (
     <div className="p-8 max-w-[1400px] mx-auto space-y-5">
 
@@ -155,7 +263,7 @@ export default async function AdminBookingsPage({
       {/* Stat pills por estado */}
       <div className="flex flex-wrap items-center gap-1 bg-white border border-sl-outline-variant rounded-full p-1.5 w-fit">
         <Link
-          href="/admin/bookings"
+          href={buildHref({ status: null, page: 1 })}
           className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
             !filterStatus ? 'bg-gold text-gray-900 shadow-sm' : 'text-sl-on-surface-muted hover:text-sl-on-surface'
           }`}
@@ -166,7 +274,7 @@ export default async function AdminBookingsPage({
           counts[s] ? (
             <Link
               key={s}
-              href={`/admin/bookings?status=${s}`}
+              href={buildHref({ status: s, page: 1 })}
               className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
                 filterStatus === s ? 'bg-gold text-gray-900 shadow-sm' : 'text-sl-on-surface-muted hover:text-sl-on-surface'
               }`}
@@ -177,11 +285,58 @@ export default async function AdminBookingsPage({
         ))}
       </div>
 
+      {/* Búsqueda por pasajero + rango de fechas */}
+      <form method="get" className="flex flex-wrap items-end gap-3">
+        {filterStatus && <input type="hidden" name="status" value={filterStatus} />}
+        {sortKey !== DEFAULT_SORT && <input type="hidden" name="sort" value={sortKey} />}
+        {sortDir !== 'desc' && <input type="hidden" name="dir" value={sortDir} />}
+        <div className="flex-1 min-w-[220px]">
+          <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.colPassenger}</label>
+          <input
+            type="text"
+            name="q"
+            defaultValue={q}
+            placeholder={t.searchPlaceholder}
+            className="w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface placeholder:text-sl-on-surface-muted/50 focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
+          />
+        </div>
+        <div>
+          <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.fromLabel}</label>
+          <input
+            type="date"
+            name="from"
+            defaultValue={from}
+            className="text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
+          />
+        </div>
+        <div>
+          <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.toLabel}</label>
+          <input
+            type="date"
+            name="to"
+            defaultValue={to}
+            className="text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze"
+          />
+        </div>
+        <button type="submit" className="px-4 py-2 text-sm font-semibold bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-all">
+          {t.filterButton}
+        </button>
+        {hasSearchFilters && (
+          <Link href={clearSearchHref()} className="text-xs text-sl-on-surface-muted hover:text-sl-on-surface">
+            {t.clearFilters}
+          </Link>
+        )}
+      </form>
+
       {/* Tabla */}
       {!bookings?.length ? (
         <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-12 text-center">
           <p className="text-sm text-sl-on-surface-muted">
-            {filterStatus ? t.emptyFiltered.replace('{status}', statusLabels[filterStatus]) : t.empty}
+            {filterStatus
+              ? t.emptyFiltered.replace('{status}', statusLabels[filterStatus])
+              : hasSearchFilters
+                ? t.noResultsFiltered
+                : t.empty}
           </p>
           <Link
             href="/admin/bookings/new"
@@ -196,15 +351,15 @@ export default async function AdminBookingsPage({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gold/20">
-                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colNumber}</th>
-                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPassenger}</th>
-                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colStatus}</th>
-                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDateTime}</th>
+                <SortHeader label={t.colNumber} sortKeyName="number" />
+                <SortHeader label={t.colPassenger} sortKeyName="passenger" />
+                <SortHeader label={t.colStatus} sortKeyName="status" />
+                <SortHeader label={t.colDateTime} sortKeyName="datetime" />
                 <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPickup}</th>
                 <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colDropoff}</th>
-                <th className="text-right px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colTotal}</th>
+                <SortHeader label={t.colTotal} sortKeyName="total" align="right" />
                 <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colPayment}</th>
-                <th className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.colRating}</th>
+                <SortHeader label={t.colRating} sortKeyName="rating" />
               </tr>
             </thead>
             <tbody className="divide-y divide-sl-outline-variant/50">
@@ -263,6 +418,18 @@ export default async function AdminBookingsPage({
             </tbody>
           </table>
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-sl-outline-variant text-xs text-sl-on-surface-muted">
+              {page > 1 ? (
+                <Link href={buildHref({ page: page - 1 })} className="text-bronze hover:text-bronze/80">{t.prevPage}</Link>
+              ) : <span />}
+              <span>{t.pageInfo.replace('{page}', String(page)).replace('{total}', String(totalPages))}</span>
+              {page < totalPages ? (
+                <Link href={buildHref({ page: page + 1 })} className="text-bronze hover:text-bronze/80">{t.nextPage}</Link>
+              ) : <span />}
+            </div>
+          )}
         </div>
       )}
     </div>

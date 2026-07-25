@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Handshake,
   Globe,
+  Search,
   type LucideIcon,
 } from 'lucide-react'
 import type { CompanyPlan } from '@/lib/supabase/database.types'
@@ -53,6 +54,7 @@ export type MarketplaceItemKey =
   | 'ai_growth'
   | 'affiliate_network'
   | 'custom_domain_byod'
+  | 'custom_domain_request'
 
 export const MARKETPLACE_ITEM_KEYS: readonly MarketplaceItemKey[] = [
   'driver_payroll',
@@ -62,6 +64,7 @@ export const MARKETPLACE_ITEM_KEYS: readonly MarketplaceItemKey[] = [
   'ai_growth',
   'affiliate_network',
   'custom_domain_byod',
+  'custom_domain_request',
 ]
 
 export interface MarketplaceTier {
@@ -80,6 +83,8 @@ export interface MarketplaceActivationContext {
   /** company_addons.addon_key con enabled=true para esta empresa. */
   enabledAddonKeys: Set<string>
   affiliateNetworkEnabled: boolean
+  /** companies.custom_domain ya tiene valor — dominio conectado, por cualquiera de los 2 caminos (BYOD o "consíganme uno"). */
+  hasCustomDomain: boolean
 }
 
 export interface MarketplaceItem {
@@ -95,6 +100,8 @@ export interface MarketplaceItem {
   hasFixedPrice: boolean
   /** 'once' = cargo único (ej. conexión BYOD de dominio) — ausente/'monthly' = cuota recurrente de siempre. */
   billingCadence?: 'monthly' | 'once'
+  /** true = sin checkout/precio, el CTA es "Solicitar" (formulario interno) en vez de Comprar/Contactar soporte. */
+  requestOnly?: boolean
   isActive: (ctx: MarketplaceActivationContext) => boolean
 }
 
@@ -188,6 +195,19 @@ export function getMarketplaceItems(): MarketplaceItem[] {
       hasFixedPrice: true,
       billingCadence: 'once',
       isActive: ({ plan, enabledAddonKeys }) => isCustomDomainByodActive(plan, enabledAddonKeys),
+    },
+    {
+      key: 'custom_domain_request',
+      icon: Search,
+      route: '/admin/domain',
+      // Sin checkout ni precio fijo — el costo real del dominio varía por
+      // disponibilidad, ver lib/billing/custom-domain-addon.ts. El CTA es
+      // "Solicitar" (formulario interno en /admin/domain), no un botón de pago.
+      tiers: null,
+      includedInElitePlan: false,
+      hasFixedPrice: false,
+      requestOnly: true,
+      isActive: ({ hasCustomDomain }) => hasCustomDomain,
     },
   ]
 }

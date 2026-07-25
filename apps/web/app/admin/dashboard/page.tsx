@@ -338,15 +338,8 @@ export default async function AdminDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Tendencia — barras, con selector de rango (semana / semana pasada / 30d / 90d) */}
         <div className="bg-white border border-[#e5e1d8] rounded-2xl shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
-              {t.trendWeek}
-            </p>
-            <div className="w-7 h-7 rounded-lg bg-[#f6f4ef] flex items-center justify-center shrink-0">
-              <CalendarDays size={14} className="text-[#8a6520]" strokeWidth={1.75} />
-            </div>
-          </div>
           <BookingsTrendChart
+            title={t.trendWeek}
             initialData={weekTrend}
             rangeLabels={{
               this_week: t.trendRangeThisWeek,

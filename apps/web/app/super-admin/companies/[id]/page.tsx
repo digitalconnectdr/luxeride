@@ -79,8 +79,15 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     (company.settings as { payments?: { platform_fee_pct?: number } } | null)?.payments?.platform_fee_pct ?? 0
 
   const allUsers = users ?? []
-  const activeCount = allUsers.filter((u) => u.is_active).length
   const usersById = new Map(allUsers.map((u) => [u.id, u]))
+
+  // Staff operativo (incluye cuentas corporativas B2B) vs pasajeros — antes
+  // se mezclaban en una sola tabla "Users"; separados para que coincida con
+  // el mismo criterio que ya usa /admin/team (STAFF_ROLES vs role=customer).
+  const teamUsers = allUsers.filter((u) => u.role !== 'customer')
+  const passengerUsers = allUsers.filter((u) => u.role === 'customer')
+  const teamActiveCount = teamUsers.filter((u) => u.is_active).length
+  const passengerActiveCount = passengerUsers.filter((u) => u.is_active).length
 
   const topMapUsageBookingIds = (mapUsageRows ?? []).map((r) => r.booking_id)
   const { data: mapUsageBookings } = topMapUsageBookingIds.length
@@ -317,18 +324,18 @@ export default async function CompanyDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Users */}
+      {/* Team — staff operativo (incluye cuentas corporativas B2B), sin pasajeros */}
       <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-sl-outline-variant flex items-center justify-between">
           <h2 className="text-sm font-semibold text-sl-on-surface">
-            Users ({allUsers.length})
+            Team ({teamUsers.length})
           </h2>
-          <span className="text-xs text-sl-on-surface-muted">{activeCount} active</span>
+          <span className="text-xs text-sl-on-surface-muted">{teamActiveCount} active</span>
         </div>
 
-        {allUsers.length === 0 ? (
+        {teamUsers.length === 0 ? (
           <div className="px-6 py-12 text-center text-sm text-sl-on-surface-muted">
-            No users in this company yet.
+            No team members in this company yet.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -346,7 +353,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-sl-outline-variant/50">
-              {allUsers.map((u) => (
+              {teamUsers.map((u) => (
                 <tr key={u.id} className="hover:bg-sl-bg/40 transition-colors">
                   <td className="px-6 py-4">
                     <p className="font-medium text-sl-on-surface">
@@ -362,6 +369,76 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                     >
                       {u.role.replace(/_/g, ' ')}
                     </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-xs text-sl-on-surface-muted">{u.phone ?? '—'}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                        u.is_active
+                          ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                          : 'bg-sl-outline-variant/20 text-sl-on-surface-muted border-sl-outline-variant/40'
+                      }`}
+                    >
+                      {u.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-xs text-sl-on-surface-muted">
+                      {new Date(u.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          </div>
+        )}
+      </div>
+
+      {/* Passengers — pasajeros de la app móvil o creados manualmente, separados del staff */}
+      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-sl-outline-variant flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-sl-on-surface">
+            Passengers ({passengerUsers.length})
+          </h2>
+          <span className="text-xs text-sl-on-surface-muted">{passengerActiveCount} active</span>
+        </div>
+
+        {passengerUsers.length === 0 ? (
+          <div className="px-6 py-12 text-center text-sm text-sl-on-surface-muted">
+            No passengers in this company yet.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-sl-outline-variant">
+                {['Name', 'Phone', 'Status', 'Joined'].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-6 py-3 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-sl-outline-variant/50">
+              {passengerUsers.map((u) => (
+                <tr key={u.id} className="hover:bg-sl-bg/40 transition-colors">
+                  <td className="px-6 py-4">
+                    <p className="font-medium text-sl-on-surface">
+                      {u.first_name} {u.last_name}
+                    </p>
+                    <p className="text-[11px] text-sl-on-surface-muted font-mono mt-0.5">
+                      {u.id.slice(0, 8)}…
+                    </p>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-xs text-sl-on-surface-muted">{u.phone ?? '—'}</span>

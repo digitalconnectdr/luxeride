@@ -15,13 +15,18 @@ export default async function MarketplacePage() {
 
   const admin = createAdminClient()
   const [{ data: company }, { data: addonRows }] = await Promise.all([
-    admin.from('companies').select('plan, email, affiliate_network_enabled').eq('id', user.company_id).single(),
+    admin.from('companies').select('plan, email, affiliate_network_enabled, custom_domain').eq('id', user.company_id).single(),
     admin.from('company_addons').select('addon_key').eq('company_id', user.company_id).eq('enabled', true),
   ])
   if (!company) return <p className="p-8 text-sl-on-surface-muted">Empresa no encontrada.</p>
 
   const enabledAddonKeys = new Set((addonRows ?? []).map((r) => r.addon_key))
-  const ctx = { plan: company.plan, enabledAddonKeys, affiliateNetworkEnabled: company.affiliate_network_enabled }
+  const ctx = {
+    plan: company.plan,
+    enabledAddonKeys,
+    affiliateNetworkEnabled: company.affiliate_network_enabled,
+    hasCustomDomain: Boolean(company.custom_domain),
+  }
 
   const dict = getDict()
   const t = dict.admin.marketplace
@@ -43,6 +48,7 @@ export default async function MarketplacePage() {
       includedInElitePlan: item.includedInElitePlan,
       hasFixedPrice: item.hasFixedPrice,
       billingCadence: item.billingCadence,
+      requestOnly: item.requestOnly,
       name: copy.name,
       shortDesc: copy.shortDesc,
       features: copy.features,

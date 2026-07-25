@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Handshake,
   Globe,
+  Search,
   Check,
   type LucideIcon,
 } from 'lucide-react'
@@ -30,6 +31,7 @@ const ICONS: Record<MarketplaceItemKey, LucideIcon> = {
   ai_growth: TrendingUp,
   affiliate_network: Handshake,
   custom_domain_byod: Globe,
+  custom_domain_request: Search,
 }
 
 export interface MarketplaceTierData {
@@ -50,6 +52,8 @@ export interface MarketplaceCardData {
   hasFixedPrice: boolean
   /** 'once' = cargo único — ausente/'monthly' = cuota recurrente de siempre. */
   billingCadence?: 'monthly' | 'once'
+  /** true = sin checkout/precio, el CTA es "Solicitar" (formulario interno) en vez de Comprar/Contactar soporte. */
+  requestOnly?: boolean
   name: string
   shortDesc: string
   features: string[]
@@ -103,6 +107,7 @@ function unitCost(tier: MarketplaceTierData): number | null {
 type T = Dictionary['admin']['marketplace']
 
 function priceLabel(card: MarketplaceCardData, t: T): string | null {
+  if (card.requestOnly) return t.requestOnlyPriceLabel
   if (!card.hasFixedPrice || !card.tiers || card.tiers.length === 0) return null
   const suffix = card.billingCadence === 'once' ? t.oneTime : t.perMonth
   if (card.tiers.length === 1) return `$${card.tiers[0].price}${suffix}`
@@ -273,7 +278,9 @@ export function MarketplaceGrid({
                 <p className="text-xs text-sl-on-surface-muted mb-3">{t.includedInElite}</p>
               )}
 
-              {!selected.hasFixedPrice ? (
+              {selected.requestOnly ? (
+                <RequestOnlyAction route={selected.route} isActive={selected.isActive} name={selected.name} t={t} />
+              ) : !selected.hasFixedPrice ? (
                 selectedTier?.checkoutUrl ? (
                   <BuyAction checkoutUrl={selectedTier.checkoutUrl} companyEmail={companyEmail} t={t} />
                 ) : (
@@ -361,6 +368,20 @@ function BuyAction({ checkoutUrl, companyEmail, t }: { checkoutUrl: string; comp
     <div className="space-y-2">
       <BuyLink checkoutUrl={checkoutUrl} t={t} />
       <EmailNote companyEmail={companyEmail} t={t} />
+    </div>
+  )
+}
+
+function RequestOnlyAction({ route, isActive, name, t }: { route: string; isActive: boolean; name: string; t: T }) {
+  return (
+    <div className="space-y-2">
+      <Link
+        href={route}
+        className="inline-flex items-center gap-2 px-4 py-2.5 bg-gold text-gray-900 text-sm font-semibold rounded-xl hover:bg-gold/90 shadow-sm transition-colors"
+      >
+        {isActive ? t.goToFeature.replace('{feature}', name) : t.requestButton}
+      </Link>
+      {!isActive && <p className="text-xs text-sl-on-surface-muted">{t.requestOnlyHint}</p>}
     </div>
   )
 }

@@ -62,13 +62,14 @@ export default async function AdminLayout({
   let primaryColor: string | null = null
   let companyPlan: CompanyPlan = 'starter'
   let visibleMarketplaceKeys: MarketplaceItemKey[] = []
+  let hasCustomDomain = false
   if (user.company_id) {
     try {
       const admin = createAdminClient()
       const [{ data, error }, { data: addonRows }] = await Promise.all([
         admin
           .from('companies')
-          .select('name, logo_url, status, subscription_ends_at, affiliate_network_enabled, is_external_affiliate, primary_color, plan')
+          .select('name, logo_url, status, subscription_ends_at, affiliate_network_enabled, is_external_affiliate, primary_color, plan, custom_domain')
           .eq('id', user.company_id)
           .single(),
         admin
@@ -87,6 +88,7 @@ export default async function AdminLayout({
         primaryColor = data.primary_color
         companyStatus = data.status
         companyPlan = data.plan
+        hasCustomDomain = Boolean((data as { custom_domain?: string | null }).custom_domain)
         if (data.subscription_ends_at) {
           const msLeft = new Date(data.subscription_ends_at).getTime() - Date.now()
           subscriptionDaysLeft = Math.floor(msLeft / 86_400_000)
@@ -96,7 +98,7 @@ export default async function AdminLayout({
         // empresa aun no ha comprado (ver lib/billing/catalog.ts). ──────────
         const enabledAddonKeys = new Set((addonRows ?? []).map((r) => r.addon_key))
         visibleMarketplaceKeys = getMarketplaceItems()
-          .filter((item) => item.isActive({ plan: companyPlan, enabledAddonKeys, affiliateNetworkEnabled }))
+          .filter((item) => item.isActive({ plan: companyPlan, enabledAddonKeys, affiliateNetworkEnabled, hasCustomDomain }))
           .map((item) => item.key)
       }
     } catch (err) {
@@ -195,6 +197,7 @@ export default async function AdminLayout({
           referralTier={referralTier}
           referralsDict={referralsDict}
           visibleMarketplaceKeys={visibleMarketplaceKeys}
+          hasCustomDomain={hasCustomDomain}
           featureRequestLabels={dict.admin.featureRequest}
         />
 
