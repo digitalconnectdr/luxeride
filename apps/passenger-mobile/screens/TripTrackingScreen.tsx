@@ -53,7 +53,15 @@ interface TripDetail {
     rating: number | null
     totalTrips: number | null
   } | null
-  vehicle: { label: string; year: number | null; color: string | null; plate: string | null } | null
+  vehicle: {
+    label: string
+    year: number | null
+    color: string | null
+    plate: string | null
+    typeName: string | null
+    /** Foto de catálogo de la CLASE de vehículo (vehicle_types.base_image_url). */
+    imageUrl: string | null
+  } | null
   durationMinutes: number | null
   distanceMiles: number | null
 }
@@ -309,16 +317,22 @@ export function TripTrackingScreen({ route, navigation }: Props) {
           <View style={styles.card}>
             <Text style={styles.cardLabel}>Vehículo asignado</Text>
             <View style={styles.vehicleRow}>
-              <View style={styles.vehicleIcon}>
-                <Ionicons name="car-sport" size={20} color={c.gold} />
-              </View>
+              {detail.vehicle.imageUrl ? (
+                <Image source={{ uri: detail.vehicle.imageUrl }} style={styles.vehicleImage} resizeMode="cover" />
+              ) : (
+                <View style={styles.vehicleIcon}>
+                  <Ionicons name="car-sport" size={20} color={c.gold} />
+                </View>
+              )}
               <View style={styles.vehicleInfo}>
                 <Text style={styles.vehicleName}>
                   {detail.vehicle.label}
                   {detail.vehicle.year ? ` ${detail.vehicle.year}` : ''}
                 </Text>
                 <Text style={styles.vehicleMeta}>
-                  {[detail.vehicle.color, detail.vehicle.plate].filter(Boolean).join(' · ') || 'Sin datos'}
+                  {[detail.vehicle.color, detail.vehicle.plate].filter(Boolean).join(' · ') ||
+                    detail.vehicle.typeName ||
+                    'Por asignar'}
                 </Text>
               </View>
             </View>
@@ -443,12 +457,21 @@ const makeStyles = (c: Palette, shadow: ShadowSet) =>
     chatRowText: { flex: 1, color: c.ink, fontFamily: font.bodyMedium, fontSize: 13.5 },
     vehicleRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
     vehicleIcon: {
-      width: 44,
+      width: 64,
       height: 44,
       borderRadius: radius.md,
       backgroundColor: c.surfaceRaised,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    // Landscape, mismo ratio que la miniatura de /admin/fleet — las fotos de
+    // tipo de vehículo son apaisadas y un cuadrado las recortaba casi por
+    // completo.
+    vehicleImage: {
+      width: 64,
+      height: 44,
+      borderRadius: radius.md,
+      backgroundColor: c.surfaceRaised,
     },
     vehicleInfo: { flex: 1, gap: 2 },
     vehicleName: { color: c.ink, fontFamily: font.bodySemi, fontSize: 14.5 },

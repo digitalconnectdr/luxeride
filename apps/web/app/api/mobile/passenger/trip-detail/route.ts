@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient()
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, customer_id, driver_id, vehicle_id, duration_minutes, distance_miles, scheduled_at, en_route_at')
+    .select('id, customer_id, driver_id, vehicle_id, vehicle_type_id, duration_minutes, distance_miles, scheduled_at, en_route_at')
     .eq('id', bookingId)
     .single()
   if (!booking || booking.customer_id !== user.id) {
@@ -46,7 +46,10 @@ export async function POST(request: Request) {
   // Conductor: el nombre vive en user_profiles y la foto/calificación en
   // drivers — ambas filas comparten el mismo id (drivers.id ES el user id,
   // mismo patrón que usa /admin/bookings/[id]).
-  const [{ data: profile }, { data: driver }, { data: vehicle }] = await Promise.all([
+  // La foto del vehículo NO vive en `vehicles` (el auto físico), sino en
+  // `vehicle_types.base_image_url` — es la foto de catálogo de la clase de
+  // vehículo, la misma que ya se ve al elegir vehículo al reservar.
+  const [{ data: profile }, { data: driver }, { data: vehicle }, { data: vehicleType }] = await Promise.all([
     booking.driver_id
       ? admin.from('user_profiles').select('first_name, last_name, phone').eq('id', booking.driver_id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -54,9 +57,27 @@ export async function POST(request: Request) {
       ? admin.from('drivers').select('photo_url, rating, total_trips').eq('id', booking.driver_id).maybeSingle()
       : Promise.resolve({ data: null }),
     booking.vehicle_id
-      ? admin.from('vehicles').select('make, model, year, color, plate_number').eq('id', booking.vehicle_id).maybeSingle()
+      ? admin.from('vehicles').select('make, model, year, color, plate_number, vehicle_type_id').eq('id', booking.vehicle_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    booking.vehicle_type_id
+      ? admin.from('vehicle_types').select('name, base_image_url').eq('id', booking.vehicle_type_id).maybeSingle()
       : Promise.resolve({ data: null }),
   ])
+
+  // Si la reserva no trae vehicle_type_id pero el auto asignado sí tiene tipo,
+  // se resuelve por ahí — pasa en reservas creadas antes de que el tipo se
+  // guardara en la reserva.
+  let typeImage = vehicleType?.base_image_url ?? null
+  let typeName = vehicleType?.name ?? null
+  if (!typeImage && vehicle?.vehicle_type_id) {
+    const { data: fallbackType } = await admin
+      .from('vehicle_types')
+      .select('name, base_image_url')
+      .eq('id', vehicle.vehicle_type_id)
+      .maybeSingle()
+    typeImage = fallbackType?.base_image_url ?? null
+    typeName = typeName ?? fallbackType?.name ?? null
+  }
 
   return NextResponse.json({
     success: true,
@@ -76,8 +97,14 @@ export async function POST(request: Request) {
             year: vehicle.year ?? null,
             color: vehicle.color ?? null,
             plate: vehicle.plate_number ?? null,
+            typeName,
+            imageUrl: typeImage,
           }
-        : null,
+        : typeName
+          // Sin auto físico asignado todavía, pero sí se sabe la clase de
+          // vehículo reservada — mejor mostrar eso que nada.
+          ? { label: typeName, year: null, color: null, plate: null, typeName, imageUrl: typeImage }
+          : null,
       durationMinutes: booking.duration_minutes ?? null,
       distanceMiles: booking.distance_miles ?? null,
       scheduledAt: booking.scheduled_at,

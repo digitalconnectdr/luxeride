@@ -539,6 +539,73 @@ export async function toggleDriverAvailability(
 
 // useFormState-compatible with .bind(null, driverId):
 // bound call becomes (_prev, formData) => Promise<FleetActionResult>
+/**
+ * Sube (o quita) la foto del conductor. La columna `drivers.photo_url` ya
+ * existía y el conductor podía llenarla desde su propia app, pero el operador
+ * no tenía forma de hacerlo — y es él quien suele tener la foto corporativa.
+ * La foto se ve en el seguimiento del pasajero (web y app) para que sepa a
+ * quién esperar.
+ *
+ * Mismo bucket y ruta que usa la app del conductor (avatars/{userId}/avatar.jpg)
+ * para que ambos caminos escriban en el mismo lugar y no queden dos fotos
+ * compitiendo.
+ */
+export async function updateDriverPhoto(
+  driverId: string,
+  _prev: FleetActionResult | null,
+  formData: FormData
+): Promise<FleetActionResult> {
+  const user = await requireRole('company_owner', 'company_admin')
+  if (!user.company_id) return { success: false, error: 'No company' }
+
+  const admin = createAdminClient()
+  const { data: driver } = await admin
+    .from('drivers')
+    .select('company_id')
+    .eq('id', driverId)
+    .single()
+
+  if (driver?.company_id !== user.company_id) return { success: false, error: 'Not found' }
+
+  if (formData.get('remove') === 'true') {
+    const { error } = await admin.from('drivers').update({ photo_url: null }).eq('id', driverId)
+    if (error) return { success: false, error: error.message }
+    revalidatePath(`/admin/drivers/${driverId}`)
+    revalidatePath('/admin/drivers')
+    return { success: true }
+  }
+
+  const file = formData.get('photo')
+  if (!(file instanceof File) || file.size === 0) {
+    return { success: false, error: 'Selecciona una imagen.' }
+  }
+  if (file.size > 5_000_000) return { success: false, error: 'La imagen no puede superar 5 MB.' }
+  const ext = MIME_EXT[file.type]
+  if (!ext) return { success: false, error: 'Formato no válido. Usa PNG, JPG o WebP.' }
+
+  const path = `${driverId}/avatar.${ext}`
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const { error: upErr } = await admin.storage
+    .from('avatars')
+    .upload(path, buffer, { contentType: file.type, upsert: true })
+  if (upErr) {
+    console.error('[updateDriverPhoto]', upErr)
+    return { success: false, error: 'Error al subir la foto.' }
+  }
+
+  const { data: pub } = admin.storage.from('avatars').getPublicUrl(path)
+  // Cache-bust: el bucket es público y la ruta no cambia entre fotos, así que
+  // sin esto el navegador seguiría mostrando la anterior.
+  const url = `${pub.publicUrl}?v=${Date.now()}`
+
+  const { error } = await admin.from('drivers').update({ photo_url: url }).eq('id', driverId)
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath(`/admin/drivers/${driverId}`)
+  revalidatePath('/admin/drivers')
+  return { success: true }
+}
+
 export async function updateDriverLicense(
   driverId: string,
   _prev: FleetActionResult | null,

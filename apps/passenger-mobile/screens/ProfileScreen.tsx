@@ -17,7 +17,9 @@ import { View, Text, StyleSheet, Modal, Platform, ScrollView, Alert } from 'reac
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker'
+import * as WebBrowser from 'expo-web-browser'
 import { supabase } from '../lib/supabase'
+import { callPassengerApi } from '../lib/api'
 import { useBranding } from '../lib/branding'
 import { BrandMark } from '../components/BrandMark'
 import { PressableScale } from '../components/PressableScale'
@@ -55,7 +57,9 @@ const THEME_OPTIONS: { key: ThemeMode; label: string; icon: keyof typeof Ionicon
 ]
 
 /** Secciones colapsables del menú — solo una abierta a la vez. */
-type Panel = 'personal' | 'addresses' | 'security' | 'appearance'
+type Panel = 'personal' | 'payment' | 'addresses' | 'security' | 'appearance'
+
+const SETUP_REDIRECT_URL = 'luxeride-passenger://payment-setup-complete'
 
 function formatDob(d: Date): string {
   return d.toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -100,6 +104,14 @@ export function ProfileScreen() {
   const [changingPassword, setChangingPassword] = useState(false)
   const [passwordError, setPasswordError] = useState('')
   const [passwordSaved, setPasswordSaved] = useState(false)
+
+  // Tarjeta guardada — mismo mecanismo que ya usa el checkout al reservar
+  // (setup-card de Whop + búsqueda por teléfono), aquí expuesto como una
+  // sección propia para poder guardarla ANTES de reservar.
+  const [savedCard, setSavedCard] = useState<{ last4: string | null; brand: string | null } | null>(null)
+  const [cardChecked, setCardChecked] = useState(false)
+  const [settingUpCard, setSettingUpCard] = useState(false)
+  const [cardError, setCardError] = useState('')
 
   const [addresses, setAddresses] = useState<SavedAddress[] | null>(null)
   const [addingAddress, setAddingAddress] = useState(false)
@@ -165,7 +177,61 @@ export function ProfileScreen() {
   )
 
   function togglePanel(panel: Panel) {
-    setOpenPanel((cur) => (cur === panel ? null : panel))
+    setOpenPanel((cur) => {
+      const next = cur === panel ? null : panel
+      // La tarjeta se consulta al abrir la sección, no al montar la pantalla:
+      // es una llamada de red que la mayoría de visitas a Perfil no necesita.
+      if (next === 'payment' && !cardChecked) checkSavedCard()
+      return next
+    })
+  }
+
+  async function checkSavedCard() {
+    if (!phone.trim()) {
+      setCardChecked(true)
+      return
+    }
+    const result = await callPassengerApi<{ found: boolean; card?: { last4: string | null; brand: string | null } }>(
+      'saved-card-by-phone',
+      { companySlug: process.env.EXPO_PUBLIC_COMPANY_SLUG ?? '', phone: phone.trim() },
+    )
+    setCardChecked(true)
+    setSavedCard(result.found ? (result.card ?? null) : null)
+  }
+
+  async function setupCard() {
+    setCardError('')
+    setSettingUpCard(true)
+    const companySlug = process.env.EXPO_PUBLIC_COMPANY_SLUG ?? ''
+    const result = await callPassengerApi<{ data?: { url: string } }>('setup-card', {
+      companySlug,
+      phone: phone.trim(),
+    })
+    if (!result.success || !result.data?.url) {
+      setSettingUpCard(false)
+      setCardError(result.error ?? 'No se pudo iniciar el guardado de la tarjeta.')
+      return
+    }
+    await WebBrowser.openAuthSessionAsync(result.data.url, SETUP_REDIRECT_URL)
+
+    // Se consulta el estado real en Whop en vez de asumir: el pasajero
+    // necesita saber POR QUÉ no quedó guardada (rechazada, cancelada, el
+    // banco pidió un paso extra).
+    const status = await callPassengerApi<{ status?: string; errorMessage?: string | null }>('card-setup-status', {
+      companySlug,
+      phone: phone.trim(),
+    })
+    if (status.status === 'succeeded') {
+      await checkSavedCard()
+    } else {
+      setCardError(
+        status.errorMessage ||
+          (status.status === 'canceled'
+            ? 'Cancelaste el guardado de la tarjeta.'
+            : 'No se pudo confirmar el guardado. Intenta de nuevo.'),
+      )
+    }
+    setSettingUpCard(false)
   }
 
   function markDirty() {
@@ -383,6 +449,51 @@ export function ProfileScreen() {
                 <Text style={styles.savedText}>Cambios guardados</Text>
               </View>
             ) : null}
+          </Card>
+        )}
+
+        <MenuRow
+          icon="card-outline"
+          label="Métodos de pago"
+          value={savedCard ? `•••• ${savedCard.last4 ?? '····'}` : undefined}
+          onPress={() => togglePanel('payment')}
+          expanded={openPanel === 'payment'}
+        />
+        {openPanel === 'payment' && (
+          <Card style={styles.panel}>
+            {!phone.trim() ? (
+              <Text style={styles.panelHint}>
+                Agrega tu teléfono en Información personal para poder guardar una tarjeta — es el dato con el que se
+                identifica tu método de pago.
+              </Text>
+            ) : savedCard ? (
+              <>
+                <View style={styles.cardRow}>
+                  <Ionicons name="card" size={18} color={c.gold} />
+                  <View style={styles.cardTextWrap}>
+                    <Text style={styles.cardBrand}>
+                      {savedCard.brand ?? 'Tarjeta'} •••• {savedCard.last4 ?? '····'}
+                    </Text>
+                    <Text style={styles.panelHint}>Se usa para cobrar al terminar tus viajes.</Text>
+                  </View>
+                </View>
+                <Button
+                  label="Cambiar tarjeta"
+                  icon="swap-horizontal"
+                  variant="secondary"
+                  onPress={setupCard}
+                  loading={settingUpCard}
+                />
+              </>
+            ) : (
+              <>
+                <Text style={styles.panelHint}>
+                  Guarda una tarjeta para pagar más rápido y poder elegir &quot;Tarjeta al finalizar&quot; al reservar.
+                </Text>
+                <Button label="Guardar tarjeta" icon="add" onPress={setupCard} loading={settingUpCard} />
+              </>
+            )}
+            {cardError ? <Text style={styles.error}>{cardError}</Text> : null}
           </Card>
         )}
 
@@ -653,6 +764,9 @@ const makeStyles = (c: Palette) =>
     panel: { gap: space.md },
     panelStack: { gap: space.sm },
     panelHint: { color: c.inkFaint, fontFamily: font.body, fontSize: 12.5, lineHeight: 18 },
+    cardRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+    cardTextWrap: { flex: 1, gap: 2 },
+    cardBrand: { color: c.ink, fontFamily: font.bodySemi, fontSize: 14 },
     panelActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
     flexButton: { flex: 1 },
     row: { flexDirection: 'row', gap: space.md },

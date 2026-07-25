@@ -5,6 +5,7 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { DriverAvailabilityToggle } from '@/components/admin/fleet-controls'
 import { UpdateDriverLicenseForm } from '@/components/admin/update-driver-license-form'
+import { DriverPhotoForm } from '@/components/admin/driver-photo-form'
 import { DriverComplianceForm } from '@/components/admin/driver-compliance-form'
 import { COMPLIANCE_STATUS_CLS } from '@/lib/compliance/status-badge'
 import type { ComplianceStatus } from '@/lib/compliance/engine'
@@ -39,7 +40,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
   const driverQuery = admin
     .from('drivers')
     .select(`
-      id, license_number, license_expiry, license_state, current_vehicle_id, is_available, rating, total_trips, total_earnings,
+      id, license_number, license_expiry, license_state, current_vehicle_id, is_available, rating, total_trips, total_earnings, photo_url,
       compliance, chauffeur_permit_expires_at, compliance_status, compliance_score, operational_block, block_reason
     `)
     .eq('id', params.id)
@@ -151,11 +152,16 @@ export default async function DriverDetailPage({ params }: PageProps) {
           <span className="text-sl-on-surface">{profile.first_name} {profile.last_name}</span>
         </nav>
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center shrink-0">
-            <span className="text-lg font-semibold text-bronze">
-              {profile.first_name?.[0]}{profile.last_name?.[0]}
-            </span>
-          </div>
+          <DriverPhotoForm
+            driverId={params.id}
+            photoUrl={dr?.photo_url ?? null}
+            initials={`${profile.first_name?.[0] ?? ''}${profile.last_name?.[0] ?? ''}`}
+            labels={{
+              change: 'Cambiar foto',
+              remove: 'Quitar foto',
+              hint: 'Agrega una foto — el pasajero la ve al seguir su viaje.',
+            }}
+          />
           <div>
             <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">
               {profile.first_name} {profile.last_name}

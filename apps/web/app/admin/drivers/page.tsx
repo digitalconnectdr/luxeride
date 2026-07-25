@@ -28,7 +28,7 @@ export default async function DriversPage() {
 
   const driversQuery = admin
     .from('drivers')
-    .select('id, license_number, license_expiry, license_state, current_vehicle_id, is_available, rating, total_trips')
+    .select('id, license_number, license_expiry, license_state, current_vehicle_id, is_available, rating, total_trips, photo_url')
     .eq('company_id', companyId)
 
   const vehiclesQuery = admin
@@ -160,11 +160,20 @@ export default async function DriversPage() {
                     {/* Name */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center shrink-0">
-                          <span className="text-xs font-semibold text-bronze">
-                            {p.first_name?.[0]}{p.last_name?.[0]}
-                          </span>
-                        </div>
+                        {dr?.photo_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={dr.photo_url}
+                            alt=""
+                            className="w-8 h-8 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center shrink-0">
+                            <span className="text-xs font-semibold text-bronze">
+                              {p.first_name?.[0]}{p.last_name?.[0]}
+                            </span>
+                          </div>
+                        )}
                         <div>
                           <p className="font-medium text-sl-on-surface">
                             {p.first_name} {p.last_name}
