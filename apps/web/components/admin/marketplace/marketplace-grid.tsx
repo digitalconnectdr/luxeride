@@ -30,7 +30,6 @@ const ICONS: Record<MarketplaceItemKey, LucideIcon> = {
   ai_growth: TrendingUp,
   affiliate_network: Handshake,
   custom_domain_byod: Globe,
-  custom_domain: Globe,
 }
 
 export interface MarketplaceTierData {

@@ -1280,16 +1280,6 @@ export const en = {
           ],
           usage: 'Once active, a new "Custom Domain" page appears under Administration. Add the domain you already own and follow the DNS instructions shown to finish connecting it.',
         },
-        custom_domain: {
-          name: 'Get a Domain For You',
-          shortDesc: 'Don\'t have a domain yet? We buy and manage one for your booking site | a more professional, memorable link for your clients.',
-          features: [
-            'Don\'t have a domain? Tell us the name you\'d like and we\'ll purchase it for you.',
-            'We handle the renewal every year — one less thing to manage.',
-            'Your booking page keeps working exactly the same, only the address changes.',
-          ],
-          usage: 'Once active, a new "Custom Domain" page appears under Administration where you can request a domain. Our team purchases it and connects it — you\'ll see it appear there once it\'s ready.',
-        },
       },
     },
     help: {
@@ -1437,8 +1427,6 @@ export const en = {
       subtitle: 'Use your own domain for your booking site instead of getluxeride.vercel.app.',
       byodAddonTitle: 'Connect Your Domain — one-time setup',
       byodAddonBody: 'Already own a domain? Pay a one-time fee to connect it to your booking site — no monthly charge, you keep paying your own registrar.',
-      requestAddonTitle: 'Get a Domain For You — monthly',
-      requestAddonBody: 'Don\'t have a domain yet? Subscribe and request one — we purchase it and handle the yearly renewal.',
       currentDomainLabel: 'Current domain',
       noDomainYet: 'No domain connected yet.',
       statusVerified: 'Verified',

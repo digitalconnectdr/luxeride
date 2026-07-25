@@ -1281,16 +1281,6 @@ export const pt: Dictionary = {
           ],
           usage: 'Uma vez ativo, uma nova página "Domínio personalizado" aparece em Administração. Adicione lá o domínio que você já tem e siga as instruções de DNS exibidas para terminar de conectá-lo.',
         },
-        custom_domain: {
-          name: 'Consigam um domínio para mim',
-          shortDesc: 'Ainda não tem domínio? Nós compramos e gerenciamos um para sua página de reservas | um link mais profissional e fácil de lembrar para seus clientes.',
-          features: [
-            'Não tem domínio? Diga o nome que você gostaria e nós o compramos para você.',
-            'Nós cuidamos da renovação todo ano — uma coisa a menos para gerenciar.',
-            'Sua página de reservas continua funcionando exatamente igual, só muda o endereço.',
-          ],
-          usage: 'Uma vez ativo, uma nova página "Domínio personalizado" aparece em Administração onde você pode solicitar um domínio. Nossa equipe compra e conecta — você verá aparecer lá assim que estiver pronto.',
-        },
       },
     },
     help: {
@@ -1438,8 +1428,6 @@ export const pt: Dictionary = {
       subtitle: 'Use seu próprio domínio para sua página de reservas em vez de getluxeride.vercel.app.',
       byodAddonTitle: 'Conecte seu domínio — taxa única',
       byodAddonBody: 'Já tem um domínio? Pague uma taxa única para conectá-lo à sua página de reservas — sem mensalidade, você continua pagando ao seu próprio provedor.',
-      requestAddonTitle: 'Consigam um domínio para mim — mensal',
-      requestAddonBody: 'Ainda não tem domínio? Assine e solicite um — nós compramos e cuidamos da renovação anual.',
       currentDomainLabel: 'Domínio atual',
       noDomainYet: 'Ainda não há um domínio conectado.',
       statusVerified: 'Verificado',

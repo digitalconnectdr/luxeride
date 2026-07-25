@@ -38,10 +38,6 @@ import {
   type AiGrowthTier,
 } from '@/lib/billing/ai-growth-addon'
 import {
-  CUSTOM_DOMAIN_ADDON_KEY,
-  CUSTOM_DOMAIN_MONTHLY_PRICE,
-  getCustomDomainCheckoutUrl,
-  isCustomDomainAddonActive,
   CUSTOM_DOMAIN_BYOD_ADDON_KEY,
   CUSTOM_DOMAIN_BYOD_SETUP_FEE,
   getCustomDomainByodCheckoutUrl,
@@ -57,7 +53,6 @@ export type MarketplaceItemKey =
   | 'ai_growth'
   | 'affiliate_network'
   | 'custom_domain_byod'
-  | 'custom_domain'
 
 export const MARKETPLACE_ITEM_KEYS: readonly MarketplaceItemKey[] = [
   'driver_payroll',
@@ -67,7 +62,6 @@ export const MARKETPLACE_ITEM_KEYS: readonly MarketplaceItemKey[] = [
   'ai_growth',
   'affiliate_network',
   'custom_domain_byod',
-  'custom_domain',
 ]
 
 export interface MarketplaceTier {
@@ -185,24 +179,15 @@ export function getMarketplaceItems(): MarketplaceItem[] {
       route: '/admin/domain',
       // Cargo ÚNICO — conectar un dominio que el operador YA TIENE. Sin
       // costo variable para LuxeRide, por eso SÍ se incluye en Elite/
-      // Enterprise (mismo criterio que nómina/firma/promo codes).
+      // Enterprise (mismo criterio que nómina/firma/promo codes). El otro
+      // camino ("consíganme un dominio") NO tiene item de marketplace — no
+      // tiene precio fijo, es 100% manual vía domain_requests +
+      // company_extra_charges (ver app/actions/domains.ts).
       tiers: flatTier(CUSTOM_DOMAIN_BYOD_ADDON_KEY, CUSTOM_DOMAIN_BYOD_SETUP_FEE, getCustomDomainByodCheckoutUrl()),
       includedInElitePlan: true,
       hasFixedPrice: true,
       billingCadence: 'once',
       isActive: ({ plan, enabledAddonKeys }) => isCustomDomainByodActive(plan, enabledAddonKeys),
-    },
-    {
-      key: 'custom_domain',
-      icon: Globe,
-      route: '/admin/domain',
-      // Cuota MENSUAL — servicio de "consíganme un dominio": LuxeRide lo
-      // compra y renueva, por eso nunca se incluye por plan (ver
-      // custom-domain-addon.ts).
-      tiers: flatTier(CUSTOM_DOMAIN_ADDON_KEY, CUSTOM_DOMAIN_MONTHLY_PRICE, getCustomDomainCheckoutUrl()),
-      includedInElitePlan: false,
-      hasFixedPrice: true,
-      isActive: ({ enabledAddonKeys }) => isCustomDomainAddonActive(enabledAddonKeys),
     },
   ]
 }

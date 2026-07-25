@@ -2609,15 +2609,23 @@ explícita del usuario, no phaseado).
 el primer diseño cobraba $15/mes por CUALQUIER conexión de dominio, incluido
 BYOD. El usuario aclaró que eso no tiene sentido si el cliente ya tiene su
 propio sitio/dominio pagado aparte — LuxeRide no asume ningún costo continuo
-en ese caso. Se separó en DOS servicios con modelos de cobro distintos:
+en ese caso. Los dos caminos quedaron con modelos de cobro DISTINTOS:
 - **BYOD** (`custom_domain_byod`, `CUSTOM_DOMAIN_BYOD_SETUP_FEE = $29`) —
   cargo ÚNICO por conectar un dominio que el operador YA TIENE. Sin costo
   variable para LuxeRide → SÍ incluido gratis en Elite/Enterprise (mismo
   criterio que nómina/firma electrónica/promo codes). Vive en el mecanismo
-  GENÉRICO de add-ons (`company_addons`, vía `resolveAddonKeyForPlanId`).
-- **Consíganme uno** (`custom_domain`, `CUSTOM_DOMAIN_MONTHLY_PRICE = $15/mes`)
-  — cuota MENSUAL, porque aquí LuxeRide sí compra y renueva el dominio.
-  Nunca incluido por plan (mismo motivo que el add-on de Asistente IA).
+  GENÉRICO de add-ons (`company_addons`, vía `resolveAddonKeyForPlanId`), con
+  su propio producto de Whop (pago único).
+- **Consíganme uno** — **segunda corrección, mismo día**: el primer intento
+  de arreglo todavía dejaba un producto de Whop de $15/mes fijo para este
+  camino, lo cual repite el MISMO problema original (el costo real de un
+  dominio varía por disponibilidad, puede costar mucho más que $15). Se quitó
+  por completo — **no existe ningún producto de Whop para "consíganme uno"**.
+  Es 100% manual: `submitDomainRequestAction` es gratis y sin ningún gate de
+  addon → el super-admin cotiza/compra el dominio real fuera del sistema →
+  `resolveDomainRequestAction` lo conecta → el super-admin crea un cargo con
+  el precio REAL acordado vía el sistema de cargos adicionales (sección M) —
+  ahí es donde vive el precio "definido al momento de la implementación".
 - Desarrollo de un sitio 100% a medida (distinto a las 4 plantillas del
   micrositio) quedó **fuera de alcance deliberadamente** — es un servicio
   manual/cotización aparte, no una feature del sistema.
@@ -2626,8 +2634,8 @@ Piezas construidas:
 - **Migración 73** (`custom_domain`/`custom_domain_status`/`custom_domain_added_at`
   en `companies` + tabla nueva `domain_requests` con RLS solo-super_admin,
   mismo patrón que `enterprise_leads`) — **ya corrida en Supabase**.
-- **`lib/billing/custom-domain-addon.ts`**: los DOS servicios (BYOD one-time +
-  mensual) con sus propias env vars de Whop, precio y checkers de activación.
+- **`lib/billing/custom-domain-addon.ts`**: SOLO el add-on BYOD (pago único)
+  — env var de Whop, precio y checker de activación.
 - **`lib/vercel/domains.ts`**: wrapper delgado sobre la API de Dominios de
   Vercel (`VERCEL_API_TOKEN`/`VERCEL_PROJECT_ID`/`VERCEL_TEAM_ID` opcional) —
   agregar/verificar/quitar un dominio del proyecto. Nota: los shapes de
@@ -2636,30 +2644,35 @@ Piezas construidas:
 - **`app/actions/domains.ts`**: núcleo compartido `connectDomainToCompany()`
   usado por ambos caminos — BYOD (`addCustomDomainAction`, gateado por el
   cargo único o Elite/Enterprise) y resolución de super-admin
-  (`resolveDomainRequestAction`, sin gate — el super-admin siempre puede
-  resolver). `submitDomainRequestAction` gateado por la cuota mensual.
+  (`resolveDomainRequestAction`, sin gate). `submitDomainRequestAction` SIN
+  ningún gate — cualquier operador puede solicitar un dominio gratis.
 - **Middleware** (`middleware.ts`): si el host de la request no es la
   plataforma (excluye cualquier `*.vercel.app`, cubre prod + previews) y el
   path es exactamente `/`, busca `companies.custom_domain` verificado y
   reescribe a `/book/<slug>` — el resto de rutas (`/track`, `/quote`, etc.)
   no cambian porque son por ID, no por slug. Consulta REST directa (fetch,
   sin supabase-js) para no cargar el cliente completo en el Edge Runtime.
-- **`/admin/domain`**: DOS secciones independientes, cada una con su propio
-  upsell si no está activa — conectar dominio propio (BYOD, cargo único) y
-  "no tengo dominio, consíganme uno" (mensual, deja fila en `domain_requests`).
+- **`/admin/domain`**: columna 1 (BYOD) gateada por el cargo único o
+  Elite/Enterprise; columna 2 ("consíganme uno") siempre visible y gratis de
+  solicitar, sin upsell ni paywall.
 - **`/super-admin/domains`**: cola de solicitudes con "Marcar como comprado"
   (el super-admin escribe el dominio real que compró manualmente — NO hay
-  integración de compra, es dinero real fuera del sistema) o "Rechazar".
-- Catálogo del marketplace (2 items: `custom_domain_byod` cargo único +
-  `custom_domain` mensual), sidebar (admin + super-admin) e i18n EN/ES/PT
-  completos. `AddonUpsellCard` ahora soporta `cadence: 'once' | 'monthly'`.
+  integración de compra, es dinero real fuera del sistema) o "Rechazar". El
+  siguiente paso natural tras marcar "comprado" es crear el cargo recurrente
+  en `/super-admin/companies/[id]` (sección M).
+- Catálogo del marketplace: SOLO 1 item (`custom_domain_byod`, cargo único).
+  Nav del admin (`/admin/domain`) visible siempre, sin gate — la página
+  siempre tiene algo útil que mostrar (BYOD o la solicitud gratis).
+  `AddonUpsellCard` soporta `cadence: 'once' | 'monthly'` (queda disponible
+  para reusar en otros add-ons futuros, aunque ya no lo usa el camino
+  "consíganme uno").
 
 **Pendiente del usuario:** configurar env vars — Vercel: `VERCEL_API_TOKEN`,
-`VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` (si aplica). Whop (DOS productos
-distintos): `WHOP_PLAN_ID_CUSTOM_DOMAIN_BYOD`/`WHOP_CHECKOUT_URL_CUSTOM_DOMAIN_BYOD`
-(pago único ~$29) y `WHOP_PLAN_ID_CUSTOM_DOMAIN_ADDON`/`WHOP_CHECKOUT_URL_CUSTOM_DOMAIN_ADDON`
-(mensual $15). Antes de depender del flujo BYOD en producción, agregar un
-dominio de prueba real y confirmar el shape de respuesta de Vercel.
+`VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` (si aplica). Whop (UN SOLO producto,
+BYOD únicamente): `WHOP_PLAN_ID_CUSTOM_DOMAIN_BYOD`/`WHOP_CHECKOUT_URL_CUSTOM_DOMAIN_BYOD`
+(pago único ~$29). **"Consíganme uno" no necesita ningún producto de Whop.**
+Antes de depender del flujo BYOD en producción, agregar un dominio de
+prueba real y confirmar el shape de respuesta de Vercel.
 
 ### M. Cargos adicionales recurrentes — LuxeRide cobra al operador ✅ completado 2026-07-24
 Surgió de la sección L: el servicio "consíganme un dominio" no puede tener

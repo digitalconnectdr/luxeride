@@ -2,11 +2,8 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getDict } from '@/lib/i18n/server'
 import {
-  CUSTOM_DOMAIN_MONTHLY_PRICE,
   CUSTOM_DOMAIN_BYOD_SETUP_FEE,
-  getCustomDomainCheckoutUrl,
   getCustomDomainByodCheckoutUrl,
-  isCustomDomainAddonActive,
   isCustomDomainByodActive,
 } from '@/lib/billing/custom-domain-addon'
 import { AddonUpsellCard } from '@/components/admin/addon-upsell-card'
@@ -27,7 +24,6 @@ export default async function CustomDomainPage() {
   const t = getDict().admin.domain
   const enabledAddonKeys = new Set((addonRows ?? []).map((r) => r.addon_key))
   const byodActive = isCustomDomainByodActive(company.plan, enabledAddonKeys)
-  const requestServiceActive = isCustomDomainAddonActive(enabledAddonKeys)
   const hasDomain = Boolean(company.custom_domain)
 
   const { data: latestRequest } = hasDomain
@@ -67,20 +63,11 @@ export default async function CustomDomainPage() {
           />
         )}
 
-        {/* Columna 2: "consíganme uno" — cuota mensual, solo aplica si no hay dominio conectado todavía. */}
-        {!hasDomain && (
-          requestServiceActive ? (
-            <DomainRequestForm latestRequest={latestRequest} t={t} />
-          ) : (
-            <AddonUpsellCard
-              title={t.requestAddonTitle}
-              body={t.requestAddonBody}
-              price={CUSTOM_DOMAIN_MONTHLY_PRICE}
-              checkoutUrl={getCustomDomainCheckoutUrl()}
-              companyEmail={company.email}
-            />
-          )
-        )}
+        {/* Columna 2: "consíganme uno" — gratis de solicitar, sin precio fijo
+            (el costo real del dominio varía por disponibilidad). El
+            super-admin cotiza/compra manualmente y crea el cargo recurrente
+            con el precio real una vez conectado (ver company_extra_charges). */}
+        {!hasDomain && <DomainRequestForm latestRequest={latestRequest} t={t} />}
       </div>
     </div>
   )

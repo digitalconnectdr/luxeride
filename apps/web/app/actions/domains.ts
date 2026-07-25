@@ -9,11 +9,13 @@
 //     (custom_domain_byod, incluido en Elite/Enterprise) — no hay costo
 //     continuo para LuxeRide, el dominio lo sigue pagando el operador.
 // (b) Sin dominio — pide que se lo consigan (submitDomainRequestAction),
-//     gateado por la cuota MENSUAL (custom_domain) porque ahí sí LuxeRide
-//     compra y renueva el dominio. El super-admin lo COMPRA MANUALMENTE
-//     fuera del sistema (dinero real, no hay integración de compra) y entra
-//     el dominio real comprado (resolveDomainRequestAction), que reusa el
-//     mismo connectDomainToCompany.
+//     GRATIS y sin ningún gate de addon: el costo real de un dominio varía
+//     demasiado por disponibilidad para tener un precio fijo (decisión
+//     2026-07-24). El super-admin lo COMPRA MANUALMENTE fuera del sistema
+//     (dinero real, no hay integración de compra), entra el dominio real
+//     comprado (resolveDomainRequestAction, reusa connectDomainToCompany), y
+//     crea un cargo recurrente con el precio REAL acordado vía
+//     company_extra_charges (ver app/actions/company-billing.ts).
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
@@ -23,7 +25,7 @@ import {
   getVercelDomainStatus,
   removeDomainFromVercelProject,
 } from '@/lib/vercel/domains'
-import { isCustomDomainAddonActive, isCustomDomainByodActive } from '@/lib/billing/custom-domain-addon'
+import { isCustomDomainByodActive } from '@/lib/billing/custom-domain-addon'
 import type { DomainRequestStatus } from '@/lib/supabase/database.types'
 
 type ActionResult<T = undefined> = { success: boolean; error?: string; data?: T }
@@ -145,20 +147,10 @@ export async function submitDomainRequestAction(requestedName: string, notes?: s
   const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
-  const admin = createAdminClient()
-  const { data: rows } = await admin
-    .from('company_addons')
-    .select('addon_key')
-    .eq('company_id', user.company_id)
-    .eq('enabled', true)
-  const enabledKeys = new Set((rows ?? []).map((r) => r.addon_key))
-  if (!isCustomDomainAddonActive(enabledKeys)) {
-    return { success: false, error: 'Activa el add-on de dominio personalizado primero' }
-  }
-
   const clean = requestedName.trim()
   if (!clean) return { success: false, error: 'Escribe el nombre que te gustaría para tu dominio' }
 
+  const admin = createAdminClient()
   const { error } = await admin.from('domain_requests').insert({
     company_id: user.company_id,
     requested_by: user.id,
