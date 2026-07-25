@@ -27,6 +27,10 @@ export interface DriverBooking {
   // cubre "pagar ahora" (ya cobrado) y "cobrar al finalizar" (se cobra solo
   // al completar el viaje). NULL = reserva vieja o guest de la web, sin dato.
   payment_method_intent: 'card' | 'cash' | null
+  /** Instrucciones que el pasajero escribió al reservar (incluye sus notas fijas). */
+  special_instructions?: string | null
+  /** Preferencias congeladas al reservar — ver migración 76. */
+  passenger_preferences?: unknown
 }
 
 export interface DriverRow {

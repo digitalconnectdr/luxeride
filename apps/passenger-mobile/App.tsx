@@ -28,6 +28,7 @@ import { TripTrackingScreen } from './screens/TripTrackingScreen'
 import { ChatScreen } from './screens/ChatScreen'
 import { MyTripsScreen } from './screens/MyTripsScreen'
 import { NotificationsScreen } from './screens/NotificationsScreen'
+import { HelpScreen } from './screens/HelpScreen'
 import { ProfileScreen } from './screens/ProfileScreen'
 import type { BookingStackParamList, HomeStackParamList } from './lib/types'
 
@@ -72,6 +73,7 @@ function HomeStackScreen() {
       {/* Inicio trae su propia cabecera de marca dentro de la pantalla. */}
       <HomeStack.Screen name="HomeMain" component={HomeScreen} options={{ headerShown: false }} />
       <HomeStack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notificaciones' }} />
+      <HomeStack.Screen name="Help" component={HelpScreen} options={{ title: 'Centro de ayuda' }} />
     </HomeStack.Navigator>
   )
 }

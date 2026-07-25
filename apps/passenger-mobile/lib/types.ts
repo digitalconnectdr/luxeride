@@ -115,6 +115,7 @@ export type BookingStackParamList = {
 export type HomeStackParamList = {
   HomeMain: undefined
   Notifications: undefined
+  Help: undefined
 }
 
 export type RootTabParamList = {

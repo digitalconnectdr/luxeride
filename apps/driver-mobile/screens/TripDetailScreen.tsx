@@ -14,7 +14,42 @@ import { color, font, radius, space, STATUS_COLOR } from '../lib/theme'
 import { NEXT_ACTION_LABEL, STATUS_LABEL, type BookingStatus, type DriverBooking, type TripsStackParamList } from '../lib/types'
 
 const BOOKING_COLUMNS =
-  'id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, flight_number, flight_status, flight_delay_minutes, total_amount, currency, completed_at, payment_method_intent'
+  'id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, flight_number, flight_status, flight_delay_minutes, total_amount, currency, completed_at, payment_method_intent, special_instructions, passenger_preferences'
+
+/** Preferencias congeladas en la reserva (ver migración 76). */
+interface TripPreferences {
+  conversation?: string
+  temperature?: string
+  music?: string
+  luggageHelp?: boolean
+}
+
+const CONVERSATION_LABEL: Record<string, string> = {
+  quiet: 'Prefiere silencio',
+  chatty: 'Abierto a conversar',
+}
+const TEMPERATURE_LABEL: Record<string, string> = {
+  cool: 'Clima: fresco',
+  mild: 'Clima: templado',
+  warm: 'Clima: cálido',
+}
+const MUSIC_LABEL: Record<string, string> = {
+  none: 'Sin música',
+  soft: 'Música suave',
+  driver_choice: 'Música a tu elección',
+}
+
+/** Solo lo que el pasajero SÍ pidió — omitir "sin preferencia" evita que la
+ * lista se llene de ruido y se ignore entera. */
+function preferenceLines(p: TripPreferences | null): string[] {
+  if (!p) return []
+  const out: string[] = []
+  if (p.conversation && CONVERSATION_LABEL[p.conversation]) out.push(CONVERSATION_LABEL[p.conversation])
+  if (p.temperature && TEMPERATURE_LABEL[p.temperature]) out.push(TEMPERATURE_LABEL[p.temperature])
+  if (p.music && MUSIC_LABEL[p.music]) out.push(MUSIC_LABEL[p.music])
+  if (p.luggageHelp) out.push('Necesita ayuda con el equipaje')
+  return out
+}
 
 const MAP_VISIBLE_STATUSES = new Set<BookingStatus>(['en_route', 'arrived'])
 
@@ -243,6 +278,34 @@ export function TripDetailScreen({ route, navigation }: Props) {
             </Text>
           </View>
         )}
+
+        {/* Preferencias del pasajero — congeladas al reservar (migración 76).
+        Van ANTES del chat: son lo que el conductor debe saber antes de
+        arrancar, no algo que deba preguntar. */}
+        {(() => {
+          const lines = preferenceLines(trip.passenger_preferences as TripPreferences | null)
+          if (!lines.length) return null
+          return (
+            <View style={styles.prefsBox}>
+              <Text style={styles.prefsTitle}>Preferencias del pasajero</Text>
+              {lines.map((line) => (
+                <View key={line} style={styles.prefRow}>
+                  <Ionicons name="checkmark-circle-outline" size={13} color={color.gold} />
+                  <Text style={styles.prefText}>{line}</Text>
+                </View>
+              ))}
+            </View>
+          )
+        })()}
+
+        {/* Instrucciones del viaje — el conductor no las veía en ningún lado,
+        aunque el pasajero las escribía al reservar. */}
+        {trip.special_instructions ? (
+          <View style={styles.prefsBox}>
+            <Text style={styles.prefsTitle}>Instrucciones</Text>
+            <Text style={styles.prefText}>{trip.special_instructions}</Text>
+          </View>
+        ) : null}
 
         <PressableScale style={styles.chatButton} onPress={() => navigation.navigate('Chat', { tripId: trip.id })} haptic="light">
           <Ionicons name="chatbubble-ellipses" size={18} color={color.bg} />
@@ -547,6 +610,25 @@ const styles = StyleSheet.create({
     borderColor: color.border,
   },
   paymentBadgeText: { color: color.inkMuted, fontFamily: font.bodyMedium, fontSize: 11.5 },
+  prefsBox: {
+    marginTop: space.md,
+    padding: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.border,
+    backgroundColor: color.surfaceRaised,
+    gap: 5,
+  },
+  prefsTitle: {
+    color: color.inkFaint,
+    fontFamily: font.bodySemi,
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  prefRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  prefText: { color: color.ink, fontFamily: font.body, fontSize: 13, flexShrink: 1, lineHeight: 18 },
   chatButton: {
     flexDirection: 'row',
     alignItems: 'center',

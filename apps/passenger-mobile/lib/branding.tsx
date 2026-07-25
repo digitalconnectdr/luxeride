@@ -17,12 +17,18 @@ export interface Branding {
   name: string
   logoUrl: string | null
   primaryColor: string
+  /** Contacto de la EMPRESA OPERADORA — para dudas sobre el servicio. Un
+   * problema con la app se reporta aparte, desde el Centro de ayuda. */
+  supportPhone: string | null
+  supportEmail: string | null
 }
 
 const DEFAULT_BRANDING: Branding = {
   name: 'LuxeRide',
   logoUrl: null,
   primaryColor: darkPalette.gold,
+  supportPhone: null,
+  supportEmail: null,
 }
 
 const BrandingContext = createContext<{ branding: Branding; loading: boolean }>({
@@ -60,6 +66,8 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
             name: json.name ?? DEFAULT_BRANDING.name,
             logoUrl: json.logoUrl ?? null,
             primaryColor: json.primaryColor || DEFAULT_BRANDING.primaryColor,
+            supportPhone: json.supportPhone ?? null,
+            supportEmail: json.supportEmail ?? null,
           })
         }
       } catch {

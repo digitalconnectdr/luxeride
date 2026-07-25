@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('id, name, slug, logo_url, primary_color, status')
+    .select('id, name, slug, logo_url, primary_color, status, phone, email')
     .eq('slug', companySlug)
     .single()
 
@@ -48,5 +48,10 @@ export async function POST(request: Request) {
     slug: company.slug,
     logoUrl: company.logo_url,
     primaryColor: company.primary_color,
+    // Contacto de la EMPRESA OPERADORA — es a quien el pasajero debe escribir
+    // por su servicio (un problema con la app se reporta aparte, por
+    // /api/mobile/passenger/feedback, que llega a LuxeRide).
+    supportPhone: company.phone,
+    supportEmail: company.email,
   })
 }

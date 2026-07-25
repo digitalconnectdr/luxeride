@@ -21,6 +21,7 @@ import { notifyBookingEventInBackground, notify } from '@/lib/notifications'
 import { pushAdminNotification } from '@/lib/notifications/admin-feed'
 import { notifyDriverPushInBackground } from '@/lib/notifications/push'
 import { notifyPassengerInBackground, type PassengerNotificationType } from '@/lib/notifications/passenger-feed'
+import { toPreferences, hasAnyPreference, type PassengerPreferences } from '@/lib/passenger/preferences'
 import { autoChargeDeferredCardInBackground } from '@/app/actions/payments'
 import { trackBookingFlight } from '@/lib/flights/refresh'
 import { geocodeBookingLocations } from '@/lib/maps/reverse-geocode'
@@ -1241,6 +1242,35 @@ export async function createPublicBookingAction(data: {
   // del edge de Vercel); en local dev queda undefined → NULL.
   const geo = geolocation({ headers: headers() })
 
+  // ── Preferencias de viaje del pasajero ────────────────────────────────────
+  // Se COPIAN a la reserva, no se leen en vivo: el conductor lee la reserva
+  // (su RLS no le da acceso al perfil del pasajero), y si el pasajero cambia
+  // sus preferencias el mes que viene, este viaje debe seguir mostrando lo que
+  // se pidió hoy. Solo aplica a pasajeros con cuenta — el guest checkout de la
+  // web no tiene perfil donde guardarlas.
+  let prefsSnapshot: PassengerPreferences | null = null
+  if (data.customerId) {
+    const { data: prefRow } = await admin
+      .from('passenger_preferences')
+      .select('conversation, temperature, music, luggage_help, standing_notes, preferred_vehicle_type_id')
+      .eq('customer_id', data.customerId)
+      .maybeSingle()
+    if (prefRow) {
+      const prefs = toPreferences(prefRow as Record<string, unknown>)
+      if (hasAnyPreference(prefs)) prefsSnapshot = prefs
+    }
+  }
+
+  // Las notas fijas van al principio de las instrucciones del viaje: el
+  // conductor lee ese campo, no una sección aparte, y son indicaciones que
+  // aplican a cada recogida ("portón azul, no tocar bocina").
+  const tripInstructions = data.specialInstructions?.trim().slice(0, 1000) || null
+  const standingNotes = prefsSnapshot?.standingNotes?.trim() || null
+  const mergedInstructions =
+    standingNotes && tripInstructions
+      ? `${standingNotes}\n${tripInstructions}`.slice(0, 1000)
+      : standingNotes || tripInstructions
+
   const { data: booking, error } = await admin
     .from('bookings')
     .insert({
@@ -1262,7 +1292,8 @@ export async function createPublicBookingAction(data: {
       waypoints:        sanitizeStops(data.stops) as unknown as Json[],
       scheduled_at:     data.scheduledAt,
       flight_number:    data.flightNumber?.trim().slice(0, 20) || null,
-      special_instructions: data.specialInstructions?.trim().slice(0, 1000) || null,
+      special_instructions: mergedInstructions,
+      passenger_preferences: prefsSnapshot as unknown as Json,
       meet_and_greet:   Boolean(data.meetAndGreet),
       price_quote_id:   data.quoteId,
       base_amount:      quote.base_amount,

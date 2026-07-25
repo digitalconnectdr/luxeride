@@ -1606,6 +1606,41 @@ export type Database = {
         Relationships: []
       }
 
+      // ── Preferencias de viaje del pasajero (migración 76) ────────────────────
+      passenger_preferences: {
+        Row: {
+          customer_id: string
+          conversation: string
+          temperature: string
+          music: string
+          luggage_help: boolean
+          standing_notes: string | null
+          preferred_vehicle_type_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          customer_id: string
+          conversation?: string | undefined
+          temperature?: string | undefined
+          music?: string | undefined
+          luggage_help?: boolean | undefined
+          standing_notes?: string | null | undefined
+          preferred_vehicle_type_id?: string | null | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          customer_id?: string | undefined
+          conversation?: string | undefined
+          temperature?: string | undefined
+          music?: string | undefined
+          luggage_help?: boolean | undefined
+          standing_notes?: string | null | undefined
+          preferred_vehicle_type_id?: string | null | undefined
+          updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       passenger_notification_reads: {
         Row: {
           user_id: string
@@ -2019,6 +2054,7 @@ export type Database = {
           promo_code_id: string | null
           promo_discount_amount: number | null
           payment_method_intent: string | null
+          passenger_preferences: Json | null
           partner_id: string | null
           created_by: string | null
           dispatched_by: string | null
@@ -2093,6 +2129,7 @@ export type Database = {
           promo_code_id?: string | null | undefined
           promo_discount_amount?: number | null | undefined
           payment_method_intent?: string | null | undefined
+          passenger_preferences?: Json | null | undefined
           partner_id?: string | null | undefined
           created_by?: string | null | undefined
           dispatched_by?: string | null | undefined
@@ -2167,6 +2204,7 @@ export type Database = {
           promo_code_id?: string | null | undefined
           promo_discount_amount?: number | null | undefined
           payment_method_intent?: string | null | undefined
+          passenger_preferences?: Json | null | undefined
           partner_id?: string | null | undefined
           created_by?: string | null | undefined
           dispatched_by?: string | null | undefined

@@ -13,7 +13,7 @@
 // bloque vive ahora detrás de su propia fila.
 
 import { useCallback, useEffect, useState } from 'react'
-import { View, Text, StyleSheet, Modal, Platform, ScrollView, Alert } from 'react-native'
+import { View, Text, TextInput, StyleSheet, Modal, Platform, ScrollView, Alert, Linking } from 'react-native'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker'
@@ -57,7 +57,57 @@ const THEME_OPTIONS: { key: ThemeMode; label: string; icon: keyof typeof Ionicon
 ]
 
 /** Secciones colapsables del menú — solo una abierta a la vez. */
-type Panel = 'personal' | 'payment' | 'addresses' | 'security' | 'appearance'
+type Panel = 'personal' | 'payment' | 'addresses' | 'preferences' | 'security' | 'appearance'
+
+// ── Preferencias de viaje ──────────────────────────────────────────────────
+// Referencia de mercado: Uber Black deja fijar temperatura, nivel de
+// conversación y ayuda con equipaje; Blacklane ajusta música y temperatura.
+// Las notas fijas son propias — hoy el pasajero reescribe "portón azul, no
+// tocar bocina" en cada reserva.
+interface TripPreferences {
+  conversation: string
+  temperature: string
+  music: string
+  luggageHelp: boolean
+  standingNotes: string | null
+  preferredVehicleTypeId: string | null
+}
+
+const PREF_OPTIONS: {
+  key: 'conversation' | 'temperature' | 'music'
+  label: string
+  options: { value: string; label: string }[]
+}[] = [
+  {
+    key: 'conversation',
+    label: 'Conversación',
+    options: [
+      { value: 'no_preference', label: 'Sin preferencia' },
+      { value: 'quiet', label: 'Prefiero silencio' },
+      { value: 'chatty', label: 'Me gusta conversar' },
+    ],
+  },
+  {
+    key: 'temperature',
+    label: 'Temperatura',
+    options: [
+      { value: 'no_preference', label: 'Sin preferencia' },
+      { value: 'cool', label: 'Fresco' },
+      { value: 'mild', label: 'Templado' },
+      { value: 'warm', label: 'Cálido' },
+    ],
+  },
+  {
+    key: 'music',
+    label: 'Música',
+    options: [
+      { value: 'no_preference', label: 'Sin preferencia' },
+      { value: 'none', label: 'Sin música' },
+      { value: 'soft', label: 'Suave' },
+      { value: 'driver_choice', label: 'El conductor elige' },
+    ],
+  },
+]
 
 const SETUP_REDIRECT_URL = 'luxeride-passenger://payment-setup-complete'
 
@@ -112,6 +162,11 @@ export function ProfileScreen() {
   const [cardChecked, setCardChecked] = useState(false)
   const [settingUpCard, setSettingUpCard] = useState(false)
   const [cardError, setCardError] = useState('')
+
+  const [prefs, setPrefs] = useState<TripPreferences | null>(null)
+  const [vehicleTypes, setVehicleTypes] = useState<{ id: string; name: string }[]>([])
+  const [prefsSaving, setPrefsSaving] = useState(false)
+  const [prefsSaved, setPrefsSaved] = useState(false)
 
   const [addresses, setAddresses] = useState<SavedAddress[] | null>(null)
   const [addingAddress, setAddingAddress] = useState(false)
@@ -182,8 +237,33 @@ export function ProfileScreen() {
       // La tarjeta se consulta al abrir la sección, no al montar la pantalla:
       // es una llamada de red que la mayoría de visitas a Perfil no necesita.
       if (next === 'payment' && !cardChecked) checkSavedCard()
+      if (next === 'preferences' && !prefs) loadPreferences()
       return next
     })
+  }
+
+  async function loadPreferences() {
+    const result = await callPassengerApi<{
+      preferences?: TripPreferences
+      vehicleTypes?: { id: string; name: string }[]
+    }>('preferences', { companySlug: process.env.EXPO_PUBLIC_COMPANY_SLUG ?? '' })
+    if (result.success && result.preferences) {
+      setPrefs(result.preferences)
+      setVehicleTypes(result.vehicleTypes ?? [])
+    }
+  }
+
+  function setPref<K extends keyof TripPreferences>(key: K, value: TripPreferences[K]) {
+    setPrefs((cur) => (cur ? { ...cur, [key]: value } : cur))
+    setPrefsSaved(false)
+  }
+
+  async function savePreferences() {
+    if (!prefs) return
+    setPrefsSaving(true)
+    const result = await callPassengerApi('preferences', { save: true, ...prefs })
+    setPrefsSaving(false)
+    if (result.success) setPrefsSaved(true)
   }
 
   async function checkSavedCard() {
@@ -600,6 +680,114 @@ export function ProfileScreen() {
           </View>
         )}
 
+        <MenuRow
+          icon="options-outline"
+          label="Preferencias de viaje"
+          onPress={() => togglePanel('preferences')}
+          expanded={openPanel === 'preferences'}
+        />
+        {openPanel === 'preferences' && (
+          <Card style={styles.panel}>
+            {!prefs ? (
+              <Text style={styles.panelHint}>Cargando…</Text>
+            ) : (
+              <>
+                <Text style={styles.panelHint}>
+                  Tu conductor las ve antes de recogerte. Se aplican a cada viaje que reserves.
+                </Text>
+
+                {PREF_OPTIONS.map((group) => (
+                  <View key={group.key} style={styles.prefGroup}>
+                    <Text style={styles.prefLabel}>{group.label}</Text>
+                    <View style={styles.prefChips}>
+                      {group.options.map((opt) => {
+                        const active = prefs[group.key] === opt.value
+                        return (
+                          <PressableScale
+                            key={opt.value}
+                            onPress={() => setPref(group.key, opt.value)}
+                            haptic="light"
+                          >
+                            <View style={[styles.chip, active && styles.chipActive]}>
+                              <Text style={[styles.chipText, active && styles.chipTextActive]}>{opt.label}</Text>
+                            </View>
+                          </PressableScale>
+                        )
+                      })}
+                    </View>
+                  </View>
+                ))}
+
+                <PressableScale onPress={() => setPref('luggageHelp', !prefs.luggageHelp)} haptic="light">
+                  <View style={styles.toggleRow}>
+                    <Ionicons
+                      name={prefs.luggageHelp ? 'checkbox' : 'square-outline'}
+                      size={20}
+                      color={prefs.luggageHelp ? c.gold : c.inkFaint}
+                    />
+                    <Text style={styles.toggleText}>Suelo necesitar ayuda con el equipaje</Text>
+                  </View>
+                </PressableScale>
+
+                {vehicleTypes.length > 0 && (
+                  <View style={styles.prefGroup}>
+                    <Text style={styles.prefLabel}>Vehículo preferido</Text>
+                    <View style={styles.prefChips}>
+                      <PressableScale onPress={() => setPref('preferredVehicleTypeId', null)} haptic="light">
+                        <View style={[styles.chip, !prefs.preferredVehicleTypeId && styles.chipActive]}>
+                          <Text style={[styles.chipText, !prefs.preferredVehicleTypeId && styles.chipTextActive]}>
+                            Sin preferencia
+                          </Text>
+                        </View>
+                      </PressableScale>
+                      {vehicleTypes.map((vt) => {
+                        const active = prefs.preferredVehicleTypeId === vt.id
+                        return (
+                          <PressableScale
+                            key={vt.id}
+                            onPress={() => setPref('preferredVehicleTypeId', vt.id)}
+                            haptic="light"
+                          >
+                            <View style={[styles.chip, active && styles.chipActive]}>
+                              <Text style={[styles.chipText, active && styles.chipTextActive]}>{vt.name}</Text>
+                            </View>
+                          </PressableScale>
+                        )
+                      })}
+                    </View>
+                  </View>
+                )}
+
+                <View style={styles.prefGroup}>
+                  <Text style={styles.prefLabel}>Notas fijas para el conductor</Text>
+                  <TextInput
+                    style={styles.textarea}
+                    placeholder="Ej. portón azul, no tocar bocina, llamar al llegar…"
+                    placeholderTextColor={c.inkFaint}
+                    value={prefs.standingNotes ?? ''}
+                    onChangeText={(v) => setPref('standingNotes', v)}
+                    multiline
+                    numberOfLines={3}
+                    maxLength={500}
+                  />
+                  <Text style={styles.panelHint}>
+                    Se agregan al inicio de las instrucciones de cada viaje, para que no las escribas cada vez.
+                  </Text>
+                </View>
+
+                {prefsSaved ? (
+                  <View style={styles.savedRow}>
+                    <Ionicons name="checkmark-circle" size={14} color={c.success} />
+                    <Text style={styles.savedText}>Preferencias guardadas</Text>
+                  </View>
+                ) : (
+                  <Button label="Guardar preferencias" icon="checkmark" onPress={savePreferences} loading={prefsSaving} />
+                )}
+              </>
+            )}
+          </Card>
+        )}
+
         {/* Notificaciones — el centro vive en la pestaña Inicio (su propio
         stack), así que desde aquí se navega cruzando pestañas. */}
         <MenuRow
@@ -694,6 +882,25 @@ export function ProfileScreen() {
         )}
       </View>
 
+      {/* ── SOPORTE ── */}
+      <View style={styles.section}>
+        <SectionLabel>Soporte</SectionLabel>
+        <MenuRow
+          icon="help-circle-outline"
+          label="Centro de ayuda"
+          onPress={() => navigation.navigate('Inicio', { screen: 'Help' })}
+        />
+        {/* Contacto directo con la EMPRESA OPERADORA — el detalle de a quién
+        escribir según el caso vive en el Centro de ayuda. */}
+        {branding.supportPhone ? (
+          <MenuRow
+            icon="call-outline"
+            label={`Llamar a ${branding.name}`}
+            onPress={() => Linking.openURL(`tel:${branding.supportPhone}`)}
+          />
+        ) : null}
+      </View>
+
       <MenuRow icon="log-out-outline" label="Cerrar sesión" onPress={confirmSignOut} danger />
 
       {showDobPicker &&
@@ -767,6 +974,23 @@ const makeStyles = (c: Palette) =>
     cardRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
     cardTextWrap: { flex: 1, gap: 2 },
     cardBrand: { color: c.ink, fontFamily: font.bodySemi, fontSize: 14 },
+    prefGroup: { gap: space.sm },
+    prefLabel: { color: c.ink, fontFamily: font.bodySemi, fontSize: 13 },
+    prefChips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
+    toggleRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+    toggleText: { flex: 1, color: c.ink, fontFamily: font.body, fontSize: 13.5 },
+    textarea: {
+      color: c.ink,
+      fontFamily: font.body,
+      fontSize: 14,
+      backgroundColor: c.surfaceRaised,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      padding: space.md,
+      minHeight: 72,
+      textAlignVertical: 'top',
+    },
     panelActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
     flexButton: { flex: 1 },
     row: { flexDirection: 'row', gap: space.md },
