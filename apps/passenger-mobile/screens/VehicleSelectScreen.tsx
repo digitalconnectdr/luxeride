@@ -3,14 +3,14 @@
 // getPublicVehicleQuotesAction — mismo motor de precios que la web, sin
 // duplicar nada) apenas se entra a la pantalla.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { View, Text, StyleSheet, FlatList, Image } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { callPassengerApi } from '../lib/api'
-import { Card, EmptyState, ScreenLoader } from '../components/ui'
+import { Card, EmptyState, ScreenLoader, MetaChip } from '../components/ui'
 import { PressableScale } from '../components/PressableScale'
-import { color, font, radius, space, shadow } from '../lib/theme'
+import { font, radius, space, useThemedStyles, usePalette, type Palette, type ShadowSet } from '../lib/theme'
 import type { BookingStackParamList, VehicleQuote } from '../lib/types'
 
 type Props = NativeStackScreenProps<BookingStackParamList, 'VehicleSelect'>
@@ -24,6 +24,8 @@ const CLASS_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 export function VehicleSelectScreen({ route, navigation }: Props) {
   const { draft } = route.params
+  const styles = useThemedStyles(makeStyles)
+  const c = usePalette()
   const [quotes, setQuotes] = useState<VehicleQuote[] | null>(null)
   const [error, setError] = useState('')
 
@@ -56,6 +58,15 @@ export function VehicleSelectScreen({ route, navigation }: Props) {
     }
   }, [draft])
 
+  // El mockup destaca una tarjeta con un badge. En vez de un "Más popular"
+  // que no podemos sostener con datos (no se lleva registro de qué tipo se
+  // reserva más), se destaca la opción MÁS BARATA — eso sí sale del propio
+  // resultado de la cotización y le sirve de verdad al pasajero.
+  const cheapestId = useMemo(() => {
+    if (!quotes || quotes.length < 2) return null
+    return quotes.reduce((best, q) => (q.totalAmount < best.totalAmount ? q : best), quotes[0]).vehicleType.id
+  }, [quotes])
+
   if (!quotes && !error) return <ScreenLoader />
 
   if (error) {
@@ -75,61 +86,103 @@ export function VehicleSelectScreen({ route, navigation }: Props) {
       ListEmptyComponent={
         <EmptyState icon="car-outline" title="No hay vehículos disponibles" subtitle="Intenta con otro horario" />
       }
-      renderItem={({ item }) => (
-        <PressableScale onPress={() => navigation.navigate('BookingConfirm', { draft, quote: item })}>
-          <Card style={styles.card}>
-            <View style={item.vehicleType.imageUrl ? styles.imageWrap : styles.iconWrap}>
-              {item.vehicleType.imageUrl ? (
-                <Image source={{ uri: item.vehicleType.imageUrl }} style={styles.vehicleImage} resizeMode="cover" />
-              ) : (
-                <Ionicons name={CLASS_ICON[item.vehicleType.class] ?? 'car-outline'} size={22} color={color.gold} />
+      renderItem={({ item }) => {
+        const isCheapest = item.vehicleType.id === cheapestId
+        return (
+          <PressableScale onPress={() => navigation.navigate('BookingConfirm', { draft, quote: item })}>
+            <Card style={[styles.card, isCheapest && styles.cardHighlight]}>
+              {isCheapest && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>Mejor precio</Text>
+                </View>
               )}
-            </View>
-            <View style={styles.info}>
-              <Text style={styles.name}>{item.vehicleType.name}</Text>
-              <Text style={styles.meta}>
-                {item.vehicleType.capacity} pasajeros
-                {item.durationMinutes ? ` · ${item.durationMinutes} min` : ''}
-                {item.distanceMiles ? ` · ${item.distanceMiles.toFixed(1)} mi` : ''}
-              </Text>
-            </View>
-            <Text style={styles.price}>${item.totalAmount.toFixed(0)}</Text>
-          </Card>
-        </PressableScale>
-      )}
+
+              <View style={styles.topRow}>
+                <View style={item.vehicleType.imageUrl ? styles.imageWrap : styles.iconWrap}>
+                  {item.vehicleType.imageUrl ? (
+                    <Image source={{ uri: item.vehicleType.imageUrl }} style={styles.vehicleImage} resizeMode="cover" />
+                  ) : (
+                    <Ionicons name={CLASS_ICON[item.vehicleType.class] ?? 'car-outline'} size={22} color={c.gold} />
+                  )}
+                </View>
+
+                <View style={styles.info}>
+                  <Text style={styles.name} numberOfLines={2}>
+                    {item.vehicleType.name}
+                  </Text>
+                </View>
+
+                <View style={styles.priceWrap}>
+                  <Text style={styles.price}>${item.totalAmount.toFixed(0)}</Text>
+                  <Text style={styles.currency}>{item.currency}</Text>
+                </View>
+              </View>
+
+              <View style={styles.metaRow}>
+                <MetaChip icon="people-outline" label={`${item.vehicleType.capacity} pasajeros`} />
+                {item.durationMinutes ? <MetaChip icon="time-outline" label={`${item.durationMinutes} min`} /> : null}
+                {item.distanceMiles ? (
+                  <MetaChip icon="navigate-outline" label={`${item.distanceMiles.toFixed(1)} mi`} />
+                ) : null}
+              </View>
+            </Card>
+          </PressableScale>
+        )
+      }}
     />
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: color.bg },
-  list: { padding: space.lg, gap: space.md },
-  card: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },
-  iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: color.surfaceRaised,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    ...shadow.card,
-  },
-  // Caja horizontal (no cuadrada) para fotos reales de vehículo: las fotos
-  // subidas en /admin/fleet son landscape (mismo ratio ~1.45:1 que la
-  // miniatura h-11 w-16 de esa página) — un cuadrado con resizeMode="cover"
-  // recortaba el vehículo casi por completo.
-  imageWrap: {
-    width: 76,
-    height: 52,
-    borderRadius: radius.md,
-    backgroundColor: color.surfaceRaised,
-    overflow: 'hidden',
-    ...shadow.card,
-  },
-  vehicleImage: { width: '100%', height: '100%' },
-  info: { flex: 1, gap: 2 },
-  name: { color: color.ink, fontFamily: font.bodySemi, fontSize: 15 },
-  meta: { color: color.inkFaint, fontFamily: font.body, fontSize: 12 },
-  price: { color: color.ink, fontFamily: font.bodyBold, fontSize: 20 },
-})
+const makeStyles = (c: Palette, shadow: ShadowSet) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg },
+    list: { padding: space.lg, gap: space.md },
+    card: { gap: space.md, padding: space.lg, overflow: 'visible' },
+    cardHighlight: { borderColor: c.borderGold, borderWidth: 1.5 },
+    badge: {
+      position: 'absolute',
+      top: -9,
+      right: space.lg,
+      backgroundColor: c.gold,
+      borderRadius: radius.pill,
+      paddingHorizontal: space.md,
+      paddingVertical: 3,
+      ...shadow.glow,
+    },
+    badgeText: { color: c.onGold, fontFamily: font.bodySemi, fontSize: 10, letterSpacing: 0.3 },
+    topRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+    iconWrap: {
+      width: 76,
+      height: 52,
+      borderRadius: radius.md,
+      backgroundColor: c.surfaceRaised,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    // Caja horizontal (no cuadrada) para fotos reales de vehículo: las fotos
+    // subidas en /admin/fleet son landscape (mismo ratio ~1.45:1 que la
+    // miniatura h-11 w-16 de esa página) — un cuadrado con resizeMode="cover"
+    // recortaba el vehículo casi por completo.
+    imageWrap: {
+      width: 88,
+      height: 60,
+      borderRadius: radius.md,
+      backgroundColor: c.surfaceRaised,
+      overflow: 'hidden',
+    },
+    vehicleImage: { width: '100%', height: '100%' },
+    info: { flex: 1 },
+    name: { color: c.ink, fontFamily: font.bodySemi, fontSize: 15, lineHeight: 20 },
+    priceWrap: { alignItems: 'flex-end' },
+    price: { color: c.ink, fontFamily: font.bodyBold, fontSize: 22 },
+    currency: { color: c.inkFaint, fontFamily: font.bodyMedium, fontSize: 10.5, marginTop: -2 },
+    metaRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: space.md,
+      paddingTop: space.md,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+  })

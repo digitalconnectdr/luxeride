@@ -13,13 +13,15 @@ import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
 import { PressableScale } from '../components/PressableScale'
 import { ScreenLoader, EmptyState } from '../components/ui'
-import { color, font, radius, space } from '../lib/theme'
+import { font, radius, space, useThemedStyles, usePalette, type Palette } from '../lib/theme'
 import type { BookingStackParamList, TripMessage } from '../lib/types'
 
 type Props = NativeStackScreenProps<BookingStackParamList, 'Chat'>
 
 export function ChatScreen({ route }: Props) {
   const { bookingId } = route.params
+  const styles = useThemedStyles(makeStyles)
+  const c = usePalette()
   const [messages, setMessages] = useState<TripMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
@@ -117,54 +119,55 @@ export function ChatScreen({ route }: Props) {
         <TextInput
           style={styles.input}
           placeholder="Escribe un mensaje..."
-          placeholderTextColor={color.inkFaint}
+          placeholderTextColor={c.inkFaint}
           value={text}
           onChangeText={setText}
           multiline
         />
         <PressableScale style={[styles.sendButton, !text.trim() && styles.sendButtonDisabled]} onPress={send} disabled={!text.trim() || sending} haptic="light">
-          <Ionicons name="send" size={17} color={color.bg} />
+          <Ionicons name="send" size={17} color={c.bg} />
         </PressableScale>
       </View>
     </KeyboardAvoidingView>
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: color.bg },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.bg },
   emptyWrap: { flex: 1, justifyContent: 'center' },
   list: { padding: space.xl, gap: space.sm, flexGrow: 1 },
   bubbleRow: { flexDirection: 'row' },
   bubbleRowClient: { justifyContent: 'flex-end' },
   bubble: { maxWidth: '78%', borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.sm },
-  bubbleDriver: { backgroundColor: color.surfaceRaised, borderBottomLeftRadius: 4 },
-  bubbleClient: { backgroundColor: color.gold, borderBottomRightRadius: 4 },
-  bubbleText: { color: color.ink, fontFamily: font.body, fontSize: 14, lineHeight: 19 },
-  bubbleTextClient: { color: color.bg },
-  bubbleTime: { color: color.inkFaint, fontFamily: font.body, fontSize: 10, marginTop: 4, textAlign: 'right' },
-  bubbleTimeClient: { color: `${color.bg}99` },
+  bubbleDriver: { backgroundColor: c.surfaceRaised, borderBottomLeftRadius: 4 },
+  bubbleClient: { backgroundColor: c.gold, borderBottomRightRadius: 4 },
+  bubbleText: { color: c.ink, fontFamily: font.body, fontSize: 14, lineHeight: 19 },
+  bubbleTextClient: { color: c.bg },
+  bubbleTime: { color: c.inkFaint, fontFamily: font.body, fontSize: 10, marginTop: 4, textAlign: 'right' },
+  bubbleTimeClient: { color: `${c.bg}99` },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: space.sm,
     padding: space.lg,
     borderTopWidth: 1,
-    borderTopColor: color.border,
-    backgroundColor: color.bgElevated,
+    borderTopColor: c.border,
+    backgroundColor: c.bgElevated,
   },
   input: {
     flex: 1,
-    backgroundColor: color.surface,
-    color: color.ink,
+    backgroundColor: c.surface,
+    color: c.ink,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: color.border,
+    borderColor: c.border,
     paddingHorizontal: space.md,
     paddingVertical: 10,
     fontFamily: font.body,
     fontSize: 14,
     maxHeight: 100,
   },
-  sendButton: { width: 40, height: 40, borderRadius: radius.pill, backgroundColor: color.gold, alignItems: 'center', justifyContent: 'center' },
+  sendButton: { width: 40, height: 40, borderRadius: radius.pill, backgroundColor: c.gold, alignItems: 'center', justifyContent: 'center' },
   sendButtonDisabled: { opacity: 0.4 },
-})
+  })

@@ -12,9 +12,9 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
 import { callPassengerApi } from '../lib/api'
-import { Button, Card, EmptyState, ScreenLoader, StatusBadge } from '../components/ui'
+import { Button, Card, EmptyState, ScreenLoader, StatusBadge, MetaChip } from '../components/ui'
 import { PressableScale } from '../components/PressableScale'
-import { color, font, radius, space } from '../lib/theme'
+import { font, radius, space, useThemedStyles, usePalette, type Palette } from '../lib/theme'
 import type { BookingStatus } from '../lib/types'
 
 interface TripRow {
@@ -66,11 +66,29 @@ const REBOOKABLE_STATUSES: BookingStatus[] = ['completed']
 // Indicador de cercanía: mientras más cerca el viaje, más "urgente" el color
 // (verde -> ámbar -> rojo), igual que el semáforo de StatusBadge pero para
 // el tiempo restante en vez del estado.
-function urgency(hoursUntil: number): { label: string; tint: string } {
-  if (hoursUntil < 6) return { label: 'Muy pronto', tint: color.danger }
-  if (hoursUntil < 24) return { label: 'Hoy', tint: color.warning }
+function urgency(hoursUntil: number, c: Palette): { label: string; tint: string } {
+  if (hoursUntil < 6) return { label: 'Muy pronto', tint: c.danger }
+  if (hoursUntil < 24) return { label: 'Hoy', tint: c.warning }
   const days = Math.round(hoursUntil / 24)
-  return { label: days <= 1 ? 'Mañana' : `En ${days} días`, tint: color.success }
+  return { label: days <= 1 ? 'Mañana' : `En ${days} días`, tint: c.success }
+}
+
+// ── Pestañas de la lista ───────────────────────────────────────────────────
+// Antes todo caía en una sola lista cronológica: con historial acumulado,
+// encontrar el viaje de mañana implicaba pasar por encima de todos los
+// completados.
+type TripTab = 'upcoming' | 'completed' | 'cancelled'
+
+const TABS: { key: TripTab; label: string }[] = [
+  { key: 'upcoming', label: 'Próximos' },
+  { key: 'completed', label: 'Completados' },
+  { key: 'cancelled', label: 'Cancelados' },
+]
+
+function tabFor(status: BookingStatus): TripTab {
+  if (status === 'completed') return 'completed'
+  if (status === 'cancelled' || status === 'no_show') return 'cancelled'
+  return 'upcoming'
 }
 
 interface TripCardProps {
@@ -87,6 +105,8 @@ interface TripCardProps {
 // apps/driver-mobile/screens/EarningsScreen.tsx ("Calificar pasajero"), aquí
 // invertido: el PASAJERO califica el viaje/conductor.
 function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps) {
+  const styles = useThemedStyles(makeStyles)
+  const c = usePalette()
   const [ratingOpen, setRatingOpen] = useState(false)
   const [stars, setStars] = useState(0)
   const [comment, setComment] = useState('')
@@ -158,7 +178,7 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
   const date = new Date(item.scheduled_at)
   const hoursUntil = (date.getTime() - Date.now()) / 3_600_000
   const showUrgency = isActive && hoursUntil > 0 && hoursUntil < 240 // hasta 10 días
-  const urgencyInfo = showUrgency ? urgency(hoursUntil) : null
+  const urgencyInfo = showUrgency ? urgency(hoursUntil, c) : null
   const canRebook =
     REBOOKABLE_STATUSES.includes(item.status) &&
     item.pickup_location?.lat != null && item.pickup_location?.lng != null &&
@@ -188,13 +208,13 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
         </View>
 
         <View style={styles.addressRow}>
-          <View style={[styles.dot, { backgroundColor: color.gold }]} />
+          <View style={[styles.dot, { backgroundColor: c.gold }]} />
           <Text style={styles.address} numberOfLines={1}>
             {item.pickup_location?.address ?? 'Origen'}
           </Text>
         </View>
         <View style={styles.addressRow}>
-          <View style={[styles.dot, { backgroundColor: color.danger }]} />
+          <View style={[styles.dot, { backgroundColor: c.danger }]} />
           <Text style={styles.address} numberOfLines={1}>
             {item.dropoff_location?.address ?? 'Destino'}
           </Text>
@@ -222,7 +242,7 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
 
         {isActive && (
           <View style={styles.activeHint}>
-            <Ionicons name="navigate-outline" size={13} color={color.gold} />
+            <Ionicons name="navigate-outline" size={13} color={c.gold} />
             <Text style={styles.activeHintText}>Toca para ver el viaje en vivo</Text>
           </View>
         )}
@@ -230,7 +250,7 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
         {canRebook && (
           <PressableScale onPress={onRebook}>
             <View style={styles.rebookBtn}>
-              <Ionicons name="repeat-outline" size={14} color={color.gold} />
+              <Ionicons name="repeat-outline" size={14} color={c.gold} />
               <Text style={styles.rebookText}>Reservar de nuevo</Text>
             </View>
           </PressableScale>
@@ -238,14 +258,14 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
 
         {item.rated_at ? (
           <View style={styles.ratedRow}>
-            <Ionicons name="star" size={12} color={color.gold} />
+            <Ionicons name="star" size={12} color={c.gold} />
             <Text style={styles.ratedText}>Ya calificaste este viaje</Text>
           </View>
         ) : canRate ? (
           <>
             <PressableScale onPress={() => setRatingOpen((v) => !v)}>
               <View style={styles.rateBtn}>
-                <Ionicons name="star-outline" size={14} color={color.gold} />
+                <Ionicons name="star-outline" size={14} color={c.gold} />
                 <Text style={styles.rateBtnText}>Calificar viaje</Text>
               </View>
             </PressableScale>
@@ -255,14 +275,14 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
                 <View style={styles.starsRow}>
                   {[1, 2, 3, 4, 5].map((n) => (
                     <PressableScale key={n} onPress={() => setStars(n)} haptic="light" hitSlop={6}>
-                      <Ionicons name={n <= stars ? 'star' : 'star-outline'} size={28} color={color.gold} />
+                      <Ionicons name={n <= stars ? 'star' : 'star-outline'} size={28} color={c.gold} />
                     </PressableScale>
                   ))}
                 </View>
                 <TextInput
                   style={styles.commentInput}
                   placeholder="Comentario (opcional)"
-                  placeholderTextColor={color.inkFaint}
+                  placeholderTextColor={c.inkFaint}
                   value={comment}
                   onChangeText={setComment}
                   multiline
@@ -278,7 +298,7 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
         {savedCard && !paid && (
           <View style={styles.payPanel}>
             <View style={styles.payRow}>
-              <Ionicons name="card-outline" size={14} color={color.gold} />
+              <Ionicons name="card-outline" size={14} color={c.gold} />
               <Text style={styles.payText}>
                 Pagar viaje con {savedCard.brand ?? 'tarjeta'} •••• {savedCard.last4 ?? '····'}
               </Text>
@@ -306,7 +326,7 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
         )}
         {paid && (
           <View style={styles.ratedRow}>
-            <Ionicons name="checkmark-circle" size={12} color={color.success} />
+            <Ionicons name="checkmark-circle" size={12} color={c.success} />
             <Text style={styles.ratedText}>Pago recibido, ¡gracias!</Text>
           </View>
         )}
@@ -315,7 +335,7 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
           <>
             <PressableScale onPress={toggleReceipt}>
               <View style={styles.rebookBtn}>
-                <Ionicons name="receipt-outline" size={14} color={color.gold} />
+                <Ionicons name="receipt-outline" size={14} color={c.gold} />
                 <Text style={styles.rebookText}>{receiptOpen ? 'Ocultar recibo' : 'Ver recibo'}</Text>
               </View>
             </PressableScale>
@@ -375,6 +395,7 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
 }
 
 function ReceiptLine({ label, amount, currency }: { label: string; amount: number | null; currency: string }) {
+  const styles = useThemedStyles(makeStyles)
   if (amount == null) return null
   return (
     <View style={styles.receiptRow}>
@@ -391,9 +412,12 @@ export function MyTripsScreen() {
   // (que es donde vive TripTracking) — React Navigation soporta navegar a un
   // screen anidado de otra pestaña, pero no hay un tipo compartido para eso.
   const navigation = useNavigation<any>()
+  const styles = useThemedStyles(makeStyles)
+  const c = usePalette()
   const [trips, setTrips] = useState<TripRow[] | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
+  const [tab, setTab] = useState<TripTab>('upcoming')
 
   const load = useCallback(async () => {
     const { data, error: loadError } = await supabase
@@ -452,43 +476,123 @@ export function MyTripsScreen() {
     )
   }
 
+  const all = trips ?? []
+  const counts: Record<TripTab, number> = {
+    upcoming: all.filter((t) => tabFor(t.status) === 'upcoming').length,
+    completed: all.filter((t) => tabFor(t.status) === 'completed').length,
+    cancelled: all.filter((t) => tabFor(t.status) === 'cancelled').length,
+  }
+  // Los próximos se leen mejor del más cercano al más lejano; el historial,
+  // del más reciente hacia atrás (que es como llega la consulta).
+  const visible = all
+    .filter((t) => tabFor(t.status) === tab)
+    .sort((a, b) =>
+      tab === 'upcoming'
+        ? new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
+        : new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime(),
+    )
+
+  const emptyCopy: Record<TripTab, { title: string; subtitle: string }> = {
+    upcoming: {
+      title: 'Sin viajes próximos',
+      subtitle: 'Cuando reserves un viaje, lo verás aquí.',
+    },
+    completed: { title: 'Sin viajes completados', subtitle: 'Tus viajes terminados aparecerán aquí.' },
+    cancelled: { title: 'Sin viajes cancelados', subtitle: 'Aquí verás los viajes que no se realizaron.' },
+  }
+
   return (
-    <FlatList
-      style={styles.container}
-      contentContainerStyle={styles.list}
-      data={trips}
-      keyExtractor={(item) => item.id}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.gold} />}
-      ListEmptyComponent={
-        <EmptyState
-          icon="time-outline"
-          title="Historial de viajes"
-          subtitle="Aún no tienes reservas. Cuando reserves un viaje, lo verás aquí."
-        />
-      }
-      renderItem={({ item }) => (
-        <TripCard
-          item={item}
-          onNavigateTracking={() =>
-            navigation.navigate('Reservar', { screen: 'TripTracking', params: { bookingId: item.id } })
-          }
-          onRebook={() => rebook(item)}
-          onRated={load}
-        />
-      )}
-    />
+    <View style={styles.container}>
+      <View style={styles.tabBar}>
+        {TABS.map((t) => {
+          const active = tab === t.key
+          return (
+            <PressableScale key={t.key} onPress={() => setTab(t.key)} haptic="light" style={styles.tabItem}>
+              <View style={[styles.tab, active && styles.tabActive]}>
+                <Text style={[styles.tabText, active && styles.tabTextActive]} numberOfLines={1}>
+                  {t.label}
+                </Text>
+                {counts[t.key] > 0 && (
+                  <View style={[styles.tabCount, active && styles.tabCountActive]}>
+                    <Text style={[styles.tabCountText, active && styles.tabCountTextActive]}>{counts[t.key]}</Text>
+                  </View>
+                )}
+              </View>
+            </PressableScale>
+          )
+        })}
+      </View>
+
+      <FlatList
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        data={visible}
+        keyExtractor={(item) => item.id}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.gold} />}
+        ListEmptyComponent={
+          <EmptyState icon="time-outline" title={emptyCopy[tab].title} subtitle={emptyCopy[tab].subtitle} />
+        }
+        renderItem={({ item }) => (
+          <TripCard
+            item={item}
+            onNavigateTracking={() =>
+              navigation.navigate('Reservar', { screen: 'TripTracking', params: { bookingId: item.id } })
+            }
+            onRebook={() => rebook(item)}
+            onRated={load}
+          />
+        )}
+      />
+    </View>
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: color.bg },
-  list: { padding: space.lg, gap: space.md },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.bg },
+  tabBar: {
+    flexDirection: 'row',
+    gap: space.xs,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    paddingBottom: space.sm,
+    backgroundColor: c.bg,
+  },
+  tabItem: { flex: 1 },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.sm,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.surface,
+  },
+  tabActive: { backgroundColor: c.goldWash, borderColor: c.borderGold },
+  tabText: { color: c.inkFaint, fontFamily: font.bodyMedium, fontSize: 12.5 },
+  tabTextActive: { color: c.gold, fontFamily: font.bodySemi },
+  tabCount: {
+    minWidth: 18,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: radius.pill,
+    backgroundColor: c.surfaceRaised,
+    alignItems: 'center',
+  },
+  tabCountActive: { backgroundColor: c.gold },
+  tabCountText: { color: c.inkFaint, fontFamily: font.bodySemi, fontSize: 10 },
+  tabCountTextActive: { color: c.onGold },
+  list: { flex: 1 },
+  listContent: { padding: space.lg, gap: space.md },
   card: { gap: space.sm },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  number: { color: color.ink, fontFamily: font.bodyBold, fontSize: 14 },
+  number: { color: c.ink, fontFamily: font.bodyBold, fontSize: 14 },
   addressRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  address: { flex: 1, color: color.inkFaint, fontFamily: font.body, fontSize: 13 },
+  address: { flex: 1, color: c.inkFaint, fontFamily: font.body, fontSize: 13 },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -496,10 +600,10 @@ const styles = StyleSheet.create({
     marginTop: space.xs,
     paddingTop: space.sm,
     borderTopWidth: 1,
-    borderTopColor: color.border,
+    borderTopColor: c.border,
   },
   dateGroup: { gap: 4, flexShrink: 1 },
-  date: { color: color.inkFaint, fontFamily: font.bodyMedium, fontSize: 12 },
+  date: { color: c.inkFaint, fontFamily: font.bodyMedium, fontSize: 12 },
   urgencyPill: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
@@ -512,9 +616,9 @@ const styles = StyleSheet.create({
   },
   urgencyDot: { width: 5, height: 5, borderRadius: 2.5 },
   urgencyText: { fontFamily: font.bodySemi, fontSize: 10 },
-  price: { color: color.ink, fontFamily: font.bodyBold, fontSize: 16 },
+  price: { color: c.ink, fontFamily: font.bodyBold, fontSize: 16 },
   activeHint: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
-  activeHintText: { color: color.gold, fontFamily: font.bodyMedium, fontSize: 11 },
+  activeHintText: { color: c.gold, fontFamily: font.bodyMedium, fontSize: 11 },
   rebookBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -524,11 +628,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: color.border,
+    borderColor: c.border,
   },
-  rebookText: { color: color.gold, fontFamily: font.bodySemi, fontSize: 12 },
+  rebookText: { color: c.gold, fontFamily: font.bodySemi, fontSize: 12 },
   ratedRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
-  ratedText: { color: color.inkFaint, fontFamily: font.bodyMedium, fontSize: 11 },
+  ratedText: { color: c.inkFaint, fontFamily: font.bodyMedium, fontSize: 11 },
   rateBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -538,53 +642,53 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: color.border,
+    borderColor: c.border,
   },
-  rateBtnText: { color: color.gold, fontFamily: font.bodySemi, fontSize: 12 },
+  rateBtnText: { color: c.gold, fontFamily: font.bodySemi, fontSize: 12 },
   ratingPanel: { marginTop: space.sm, gap: space.sm },
   starsRow: { flexDirection: 'row', gap: space.sm, alignSelf: 'center' },
   commentInput: {
-    backgroundColor: color.bg,
-    color: color.ink,
+    backgroundColor: c.bg,
+    color: c.ink,
     fontFamily: font.body,
     fontSize: 13,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: color.border,
+    borderColor: c.border,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
     minHeight: 56,
     textAlignVertical: 'top',
   },
-  ratingError: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 12 },
-  payPanel: { marginTop: space.sm, gap: space.sm, paddingTop: space.sm, borderTopWidth: 1, borderTopColor: color.border },
+  ratingError: { color: c.danger, fontFamily: font.bodyMedium, fontSize: 12 },
+  payPanel: { marginTop: space.sm, gap: space.sm, paddingTop: space.sm, borderTopWidth: 1, borderTopColor: c.border },
   payRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  payText: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 12, flexShrink: 1 },
+  payText: { color: c.ink, fontFamily: font.bodyMedium, fontSize: 12, flexShrink: 1 },
   tipRow: { flexDirection: 'row', gap: space.xs, flexWrap: 'wrap' },
   tipChip: {
     paddingHorizontal: space.md,
     paddingVertical: 6,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.surfaceRaised,
+    borderColor: c.border,
+    backgroundColor: c.surfaceRaised,
   },
-  tipChipActive: { backgroundColor: color.gold, borderColor: color.gold },
-  tipChipText: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 12 },
-  tipChipTextActive: { color: '#fff' },
-  receiptPanel: { marginTop: space.sm, gap: 6, paddingTop: space.sm, borderTopWidth: 1, borderTopColor: color.border },
+  tipChipActive: { backgroundColor: c.gold, borderColor: c.gold },
+  tipChipText: { color: c.ink, fontFamily: font.bodyMedium, fontSize: 12 },
+  tipChipTextActive: { color: c.onGold },
+  receiptPanel: { marginTop: space.sm, gap: 6, paddingTop: space.sm, borderTopWidth: 1, borderTopColor: c.border },
   receiptRow: { flexDirection: 'row', justifyContent: 'space-between', gap: space.sm },
-  receiptLabel: { flex: 1, color: color.inkFaint, fontFamily: font.body, fontSize: 12 },
-  receiptValue: { color: color.ink, fontFamily: font.bodyBold, fontSize: 12 },
+  receiptLabel: { flex: 1, color: c.inkFaint, fontFamily: font.body, fontSize: 12 },
+  receiptValue: { color: c.ink, fontFamily: font.bodyBold, fontSize: 12 },
   receiptTotalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 4,
     paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: color.border,
+    borderTopColor: c.border,
   },
-  receiptTotalLabel: { color: color.ink, fontFamily: font.bodySemi, fontSize: 13 },
-  receiptTotalValue: { color: color.ink, fontFamily: font.bodyBold, fontSize: 13 },
-  receiptMuted: { color: color.inkFaint, fontFamily: font.body, fontSize: 11 },
-})
+  receiptTotalLabel: { color: c.ink, fontFamily: font.bodySemi, fontSize: 13 },
+  receiptTotalValue: { color: c.ink, fontFamily: font.bodyBold, fontSize: 13 },
+  receiptMuted: { color: c.inkFaint, fontFamily: font.body, fontSize: 11 },
+  })

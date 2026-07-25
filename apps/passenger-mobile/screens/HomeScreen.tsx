@@ -4,6 +4,10 @@
 // entrar a mitad de una tarea, no como abrir la app. Esta pantalla es la
 // primera pestaña: saluda, muestra la marca, y si hay un viaje activo/
 // próximo lo destaca antes que nada.
+//
+// El saludo va alineado a la izquierda (antes centrado): el mockup de
+// referencia trata esta pantalla como un panel personal, no como una
+// portada, y el bloque centrado empujaba todo lo accionable hacia abajo.
 
 import { useCallback, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView } from 'react-native'
@@ -14,7 +18,7 @@ import { useBranding } from '../lib/branding'
 import { BrandMark } from '../components/BrandMark'
 import { PressableScale } from '../components/PressableScale'
 import { Button, Card, StatusBadge } from '../components/ui'
-import { color, font, radius, space } from '../lib/theme'
+import { font, radius, space, useThemedStyles, useTheme, type Palette, type ShadowSet } from '../lib/theme'
 import type { BookingStatus } from '../lib/types'
 
 const ACTIVE_STATUSES: BookingStatus[] = ['pending', 'assigned', 'en_route', 'arrived', 'in_progress']
@@ -34,8 +38,11 @@ export function HomeScreen() {
   // mismo patrón ya usado en MyTripsScreen.
   const navigation = useNavigation<any>()
   const { branding } = useBranding()
+  const styles = useThemedStyles(makeStyles)
+  const { c, mode, setMode } = useTheme()
   const [firstName, setFirstName] = useState('')
   const [upcoming, setUpcoming] = useState<UpcomingTrip | null>(null)
+  const [upcomingCount, setUpcomingCount] = useState(0)
 
   const load = useCallback(async () => {
     const { data: auth } = await supabase.auth.getUser()
@@ -53,8 +60,9 @@ export function HomeScreen() {
       .select('id, booking_number, status, scheduled_at, pickup_location, dropoff_location')
       .in('status', ACTIVE_STATUSES)
       .order('scheduled_at', { ascending: true })
-      .limit(1)
-    setUpcoming((trips?.[0] as UpcomingTrip) ?? null)
+    const list = (trips ?? []) as UpcomingTrip[]
+    setUpcoming(list[0] ?? null)
+    setUpcomingCount(list.length)
   }, [])
 
   useFocusEffect(
@@ -63,92 +71,150 @@ export function HomeScreen() {
     }, [load]),
   )
 
+  // El tema se alterna entre claro y oscuro explícitos; "seguir al sistema"
+  // vive en Perfil, donde hay espacio para explicar qué hace cada opción.
+  function toggleTheme() {
+    setMode(c.mode === 'dark' ? 'light' : 'dark')
+  }
+
+  const upcomingDate = upcoming ? new Date(upcoming.scheduled_at) : null
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-      <View style={styles.hero}>
-        <BrandMark size={72} />
-        <Text style={styles.greeting}>Hola{firstName ? `, ${firstName}` : ''}</Text>
-        <Text style={styles.subtitle}>Viajando con {branding.name}</Text>
-      </View>
-
-      {upcoming && (
-        <PressableScale
-          onPress={() =>
-            navigation.navigate('Reservar', { screen: 'TripTracking', params: { bookingId: upcoming.id } })
-          }
-        >
-          <Card style={styles.upcomingCard}>
-            <View style={styles.upcomingHeader}>
-              <Text style={styles.upcomingLabel}>Tu próximo viaje</Text>
-              <StatusBadge status={upcoming.status} />
-            </View>
-            <Text style={styles.upcomingNumber}>{upcoming.booking_number}</Text>
-            <Text style={styles.upcomingAddress} numberOfLines={1}>
-              {upcoming.pickup_location?.address ?? 'Origen'} → {upcoming.dropoff_location?.address ?? 'Destino'}
-            </Text>
-            <View style={styles.upcomingCta}>
-              <Text style={styles.upcomingCtaText}>Ver en vivo</Text>
-              <Ionicons name="arrow-forward" size={14} color={color.gold} />
-            </View>
-          </Card>
-        </PressableScale>
-      )}
-
-      <Button
-        label="Reservar un viaje"
-        icon="car-sport"
-        onPress={() => navigation.navigate('Reservar', { screen: 'NewBooking' })}
-        style={styles.mainCta}
-      />
-
-      <View style={styles.quickRow}>
-        <PressableScale onPress={() => navigation.navigate('Mis viajes')} style={styles.quickItem}>
-          <View style={styles.quickCard}>
-            <Ionicons name="time-outline" size={22} color={color.gold} />
-            <Text style={styles.quickText}>Mis viajes</Text>
-          </View>
-        </PressableScale>
-        <PressableScale onPress={() => navigation.navigate('Perfil')} style={styles.quickItem}>
-          <View style={styles.quickCard}>
-            <Ionicons name="person-outline" size={22} color={color.gold} />
-            <Text style={styles.quickText}>Perfil</Text>
+    <View style={styles.container}>
+      {/* Cabecera de marca: logo a la izquierda y, a la derecha, el cambio
+      rápido de tema (el mockup pone una campana ahí, pero esta app todavía
+      no tiene centro de notificaciones — un icono que no hace nada sería
+      peor que no ponerlo). */}
+      <View style={styles.topBar}>
+        <BrandMark size={38} />
+        <View style={styles.topBarSpacer} />
+        <PressableScale onPress={toggleTheme} hitSlop={10} haptic="light">
+          <View style={styles.iconButton}>
+            <Ionicons name={c.mode === 'dark' ? 'sunny-outline' : 'moon-outline'} size={18} color={c.gold} />
           </View>
         </PressableScale>
       </View>
-    </ScrollView>
+
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scroll}>
+        <View style={styles.hero}>
+          <Text style={styles.greeting}>Hola{firstName ? `, ${firstName}` : ''}</Text>
+          <Text style={styles.brandLine}>Viajando con {branding.name}</Text>
+        </View>
+
+        {upcoming && (
+          <PressableScale
+            onPress={() =>
+              navigation.navigate('Reservar', { screen: 'TripTracking', params: { bookingId: upcoming.id } })
+            }
+          >
+            <Card style={styles.upcomingCard}>
+              <View style={styles.upcomingHeader}>
+                <Text style={styles.upcomingLabel}>Tu próximo viaje</Text>
+                <StatusBadge status={upcoming.status} />
+              </View>
+              <Text style={styles.upcomingNumber}>{upcoming.booking_number}</Text>
+              <Text style={styles.upcomingAddress} numberOfLines={2}>
+                {upcoming.pickup_location?.address ?? 'Origen'} → {upcoming.dropoff_location?.address ?? 'Destino'}
+              </Text>
+              {upcomingDate && (
+                <Text style={styles.upcomingDate}>
+                  {upcomingDate.toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' })} ·{' '}
+                  {upcomingDate.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              )}
+              <View style={styles.upcomingCta}>
+                <Text style={styles.upcomingCtaText}>Ver en vivo</Text>
+                <Ionicons name="arrow-forward" size={14} color={c.gold} />
+              </View>
+            </Card>
+          </PressableScale>
+        )}
+
+        <Button
+          label="Reservar un viaje"
+          icon="car-sport"
+          onPress={() => navigation.navigate('Reservar', { screen: 'NewBooking' })}
+          style={styles.mainCta}
+        />
+
+        <View style={styles.quickRow}>
+          <PressableScale onPress={() => navigation.navigate('Mis viajes')} style={styles.quickItem}>
+            <View style={styles.quickCard}>
+              <Ionicons name="time-outline" size={20} color={c.gold} />
+              <Text style={styles.quickText}>Mis viajes</Text>
+              <Text style={styles.quickSubtext}>
+                {upcomingCount > 0
+                  ? `${upcomingCount} próximo${upcomingCount === 1 ? '' : 's'}`
+                  : 'Ver historial'}
+              </Text>
+            </View>
+          </PressableScale>
+          <PressableScale onPress={() => navigation.navigate('Perfil')} style={styles.quickItem}>
+            <View style={styles.quickCard}>
+              <Ionicons name="person-outline" size={20} color={c.gold} />
+              <Text style={styles.quickText}>Perfil</Text>
+              <Text style={styles.quickSubtext}>Ver y editar</Text>
+            </View>
+          </PressableScale>
+        </View>
+      </ScrollView>
+    </View>
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: color.bg },
-  scroll: { padding: space.lg, gap: space.lg, paddingTop: space.xxl },
-  hero: { alignItems: 'center', gap: space.sm, paddingBottom: space.sm },
-  greeting: { color: color.ink, fontFamily: font.display, fontSize: 26, marginTop: space.sm },
-  subtitle: { color: color.inkFaint, fontFamily: font.body, fontSize: 13 },
-  upcomingCard: { gap: 4 },
-  upcomingHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  upcomingLabel: {
-    color: color.inkFaint,
-    fontFamily: font.bodySemi,
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  upcomingNumber: { color: color.ink, fontFamily: font.bodyBold, fontSize: 16, marginTop: 4 },
-  upcomingAddress: { color: color.inkFaint, fontFamily: font.body, fontSize: 13 },
-  upcomingCta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: space.xs },
-  upcomingCtaText: { color: color.gold, fontFamily: font.bodySemi, fontSize: 12 },
-  mainCta: { marginTop: space.xs },
-  quickRow: { flexDirection: 'row', gap: space.md },
-  quickItem: { flex: 1 },
-  quickCard: {
-    alignItems: 'center',
-    gap: space.xs,
-    paddingVertical: space.lg,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.surface,
-  },
-  quickText: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 13 },
-})
+const makeStyles = (c: Palette, shadow: ShadowSet) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg },
+    scrollView: { flex: 1 },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: space.lg,
+      paddingTop: space.xxl + space.md,
+      paddingBottom: space.md,
+      backgroundColor: c.bg,
+    },
+    topBarSpacer: { flex: 1 },
+    iconButton: {
+      width: 38,
+      height: 38,
+      borderRadius: radius.pill,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    scroll: { padding: space.lg, gap: space.lg, paddingTop: space.sm },
+    hero: { gap: 2 },
+    greeting: { color: c.ink, fontFamily: font.display, fontSize: 30 },
+    brandLine: { color: c.gold, fontFamily: font.bodyMedium, fontSize: 13 },
+    upcomingCard: { gap: 4, ...shadow.card },
+    upcomingHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
+    upcomingLabel: {
+      color: c.inkFaint,
+      fontFamily: font.bodySemi,
+      fontSize: 10.5,
+      letterSpacing: 1.1,
+      textTransform: 'uppercase',
+    },
+    upcomingNumber: { color: c.ink, fontFamily: font.bodyBold, fontSize: 18, marginTop: 6 },
+    upcomingAddress: { color: c.inkMuted, fontFamily: font.body, fontSize: 13, lineHeight: 19 },
+    upcomingDate: { color: c.inkFaint, fontFamily: font.bodyMedium, fontSize: 12, marginTop: 2 },
+    upcomingCta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: space.sm },
+    upcomingCtaText: { color: c.gold, fontFamily: font.bodySemi, fontSize: 12.5 },
+    mainCta: { marginTop: space.xs },
+    quickRow: { flexDirection: 'row', gap: space.md },
+    quickItem: { flex: 1 },
+    quickCard: {
+      gap: 3,
+      paddingVertical: space.lg,
+      paddingHorizontal: space.lg,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.surface,
+    },
+    quickText: { color: c.ink, fontFamily: font.bodySemi, fontSize: 13.5, marginTop: 2 },
+    quickSubtext: { color: c.inkFaint, fontFamily: font.body, fontSize: 11.5 },
+  })

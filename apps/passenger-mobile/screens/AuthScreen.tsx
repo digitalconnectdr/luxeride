@@ -16,7 +16,7 @@ import { callPassengerApi } from '../lib/api'
 import { useBranding } from '../lib/branding'
 import { BrandMark } from '../components/BrandMark'
 import { Button, Field, FieldButton } from '../components/ui'
-import { color, font, radius, space } from '../lib/theme'
+import { font, radius, space, useThemedStyles, usePalette, type Palette } from '../lib/theme'
 
 function formatDob(d: Date): string {
   return d.toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -26,6 +26,8 @@ type Mode = 'login' | 'signup'
 
 export function AuthScreen({ roleError }: { roleError?: string }) {
   const { branding } = useBranding()
+  const styles = useThemedStyles(makeStyles)
+  const c = usePalette()
   const [mode, setMode] = useState<Mode>('login')
 
   const [email, setEmail] = useState('')
@@ -195,7 +197,7 @@ export function AuthScreen({ roleError }: { roleError?: string }) {
 
           {displayError ? (
             <View style={styles.errorRow}>
-              <Ionicons name="alert-circle" size={16} color={color.danger} />
+              <Ionicons name="alert-circle" size={16} color={c.danger} />
               <Text style={styles.error}>{displayError}</Text>
             </View>
           ) : null}
@@ -247,31 +249,32 @@ export function AuthScreen({ roleError }: { roleError?: string }) {
 // lo cambia libremente, esto solo evita arrancar en "hoy".
 const DEFAULT_DOB = new Date(new Date().getFullYear() - 25, 0, 1)
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: color.bg },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.bg },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: space.xl },
   brandBlock: { alignItems: 'center', marginBottom: space.xxxl, gap: space.md },
-  title: { color: color.ink, fontFamily: font.display, fontSize: 32, letterSpacing: 0.3 },
-  subtitle: { color: color.inkFaint, fontFamily: font.bodySemi, fontSize: 11, letterSpacing: 2.5 },
+  title: { color: c.ink, fontFamily: font.display, fontSize: 32, letterSpacing: 0.3 },
+  subtitle: { color: c.inkFaint, fontFamily: font.bodySemi, fontSize: 11, letterSpacing: 2.5 },
   form: { gap: space.md },
   row: { flexDirection: 'row', gap: space.md },
   rowItem: { flex: 1 },
   pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   pickerSheet: {
-    backgroundColor: color.bgElevated,
+    backgroundColor: c.bgElevated,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     padding: space.lg,
     gap: space.md,
   },
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.xs },
-  error: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1 },
+  error: { color: c.danger, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1 },
   submit: { marginTop: space.sm },
   toggle: {
-    color: color.gold,
+    color: c.gold,
     fontFamily: font.bodySemi,
     fontSize: 13,
     textAlign: 'center',
     marginTop: space.xxl,
   },
-})
+  })

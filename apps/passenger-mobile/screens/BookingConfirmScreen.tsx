@@ -16,9 +16,9 @@ import * as WebBrowser from 'expo-web-browser'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { supabase } from '../lib/supabase'
 import { callPassengerApi } from '../lib/api'
-import { Button, Card, Field, SectionLabel } from '../components/ui'
+import { Button, Card, LabeledField, SectionLabel } from '../components/ui'
 import { PressableScale } from '../components/PressableScale'
-import { color, font, radius, space } from '../lib/theme'
+import { font, radius, space, useThemedStyles, usePalette, type Palette } from '../lib/theme'
 import type { BookingStackParamList, PaymentChoice } from '../lib/types'
 
 type BookingFor = 'self' | 'other'
@@ -27,17 +27,22 @@ const SETUP_REDIRECT_URL = 'luxeride-passenger://payment-setup-complete'
 
 type Props = NativeStackScreenProps<BookingStackParamList, 'BookingConfirm'>
 
-function row(label: string, value: string) {
-  return (
-    <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>{value}</Text>
-    </View>
-  )
-}
-
 export function BookingConfirmScreen({ route, navigation }: Props) {
   const { draft, quote } = route.params
+  const styles = useThemedStyles(makeStyles)
+  const c = usePalette()
+
+  // Inline (no a nivel de módulo) porque necesita los estilos ya resueltos
+  // para el tema activo.
+  function row(label: string, value: string) {
+    return (
+      <View style={styles.row}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        <Text style={styles.rowValue}>{value}</Text>
+      </View>
+    )
+  }
+
   const companySlug = process.env.EXPO_PUBLIC_COMPANY_SLUG ?? ''
   const [bookingFor, setBookingFor] = useState<BookingFor>('self')
   const [myName, setMyName] = useState('')
@@ -204,7 +209,17 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
     }
 
     setLoading(false)
-    navigation.replace('BookingSuccess', { bookingId: result.data.bookingId, bookingNumber: result.data.bookingNumber })
+    navigation.replace('BookingSuccess', {
+      bookingId: result.data.bookingId,
+      bookingNumber: result.data.bookingNumber,
+      summary: {
+        pickupAddress: draft.pickupAddress,
+        dropoffAddress: draft.dropoffAddress,
+        scheduledAt: draft.scheduledAt,
+        passengerCount: draft.passengerCount,
+        vehicleName: quote.vehicleType.name,
+      },
+    })
   }
 
   return (
@@ -215,8 +230,19 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
         {row('Vehículo', quote.vehicleType.name)}
         {row('Origen', draft.pickupAddress)}
         {row('Destino', draft.dropoffAddress)}
-        {row('Fecha', new Date(draft.scheduledAt).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' }))}
-        {row('Pasajeros', String(draft.passengerCount))}
+        {row('Fecha y hora', new Date(draft.scheduledAt).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' }))}
+        {row('Pasajeros', `${draft.passengerCount} pasajero${draft.passengerCount === 1 ? '' : 's'}`)}
+        {quote.durationMinutes || quote.distanceMiles
+          ? row(
+              'Tiempo estimado',
+              [
+                quote.durationMinutes ? `${quote.durationMinutes} min` : null,
+                quote.distanceMiles ? `${quote.distanceMiles.toFixed(1)} mi` : null,
+              ]
+                .filter(Boolean)
+                .join(' · '),
+            )
+          : null}
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Total estimado</Text>
           <Text style={styles.totalValue}>${quote.totalAmount.toFixed(2)} {quote.currency}</Text>
@@ -229,7 +255,7 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
         <PressableScale onPress={() => selectPaymentChoice('pay_now')} haptic="light">
           <View style={[styles.payNow, paymentChoice === 'pay_now' && styles.payNowActive]}>
             <View style={styles.payNowHeader}>
-              <Ionicons name="flash" size={18} color={paymentChoice === 'pay_now' ? '#fff' : color.gold} />
+              <Ionicons name="flash" size={18} color={paymentChoice === 'pay_now' ? c.onGold : c.gold} />
               <Text style={[styles.payNowTitle, paymentChoice === 'pay_now' && styles.payNowTitleActive]}>
                 Pagar ahora
               </Text>
@@ -246,7 +272,7 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
         <View style={styles.altRow}>
           <PressableScale onPress={() => selectPaymentChoice('card_later')} style={styles.altItem} haptic="light">
             <View style={[styles.altChip, paymentChoice === 'card_later' && styles.altChipActive]}>
-              <Ionicons name="card-outline" size={15} color={paymentChoice === 'card_later' ? color.gold : color.inkFaint} />
+              <Ionicons name="card-outline" size={15} color={paymentChoice === 'card_later' ? c.gold : c.inkFaint} />
               <Text style={[styles.altChipText, paymentChoice === 'card_later' && styles.altChipTextActive]}>
                 Tarjeta al finalizar
               </Text>
@@ -254,7 +280,7 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
           </PressableScale>
           <PressableScale onPress={() => selectPaymentChoice('cash')} style={styles.altItem} haptic="light">
             <View style={[styles.altChip, paymentChoice === 'cash' && styles.altChipActive]}>
-              <Ionicons name="cash-outline" size={15} color={paymentChoice === 'cash' ? color.gold : color.inkFaint} />
+              <Ionicons name="cash-outline" size={15} color={paymentChoice === 'cash' ? c.gold : c.inkFaint} />
               <Text style={[styles.altChipText, paymentChoice === 'cash' && styles.altChipTextActive]}>
                 Efectivo
               </Text>
@@ -266,12 +292,12 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
           <View style={styles.cardStatusBox}>
             {checkingCard ? (
               <View style={styles.cardStatusRow}>
-                <ActivityIndicator color={color.gold} size="small" />
+                <ActivityIndicator color={c.gold} size="small" />
                 <Text style={styles.cardStatusText}>Buscando tarjeta guardada…</Text>
               </View>
             ) : hasSavedCard ? (
               <View style={styles.cardStatusRow}>
-                <Ionicons name="checkmark-circle" size={16} color={color.success} />
+                <Ionicons name="checkmark-circle" size={16} color={c.success} />
                 <Text style={styles.cardStatusText}>
                   {savedCard ? `Tarjeta ${savedCard.brand ?? ''} •••• ${savedCard.last4 ?? '····'} lista` : 'Tarjeta guardada lista'}
                 </Text>
@@ -315,18 +341,20 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
             </View>
           </PressableScale>
         </View>
-        <Field
+        <LabeledField
           icon="person-outline"
-          placeholder={bookingFor === 'other' ? 'Nombre de la persona' : 'Nombre completo'}
+          label={bookingFor === 'other' ? 'Nombre de la persona' : 'Nombre completo'}
+          placeholder="Nombre y apellido"
           value={passengerName}
           onChangeText={setPassengerName}
           focused={focusedField === 'name'}
           onFocus={() => setFocusedField('name')}
           onBlur={() => setFocusedField(null)}
         />
-        <Field
+        <LabeledField
           icon="call-outline"
-          placeholder={bookingFor === 'other' ? 'Teléfono de la persona' : 'Teléfono'}
+          label={bookingFor === 'other' ? 'Teléfono de la persona' : 'Teléfono móvil'}
+          placeholder="Número de contacto"
           value={passengerPhone}
           onChangeText={(v) => {
             setPassengerPhone(v)
@@ -344,7 +372,7 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
         <TextInput
           style={styles.textarea}
           placeholder="Ej. número de vuelo, puerta del edificio, señas particulares…"
-          placeholderTextColor={color.inkFaint}
+          placeholderTextColor={c.inkFaint}
           value={specialInstructions}
           onChangeText={setSpecialInstructions}
           multiline
@@ -354,13 +382,14 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
 
       {error ? (
         <View style={styles.errorRow}>
-          <Ionicons name="alert-circle" size={16} color={color.danger} />
+          <Ionicons name="alert-circle" size={16} color={c.danger} />
           <Text style={styles.error}>{error}</Text>
         </View>
       ) : null}
 
       <Button
         label="Confirmar reserva"
+        icon="lock-closed"
         onPress={confirm}
         loading={loading}
         disabled={cardLaterBlocked}
@@ -377,25 +406,26 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: color.bg },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.bg },
   scroll: { padding: space.lg, gap: space.lg },
-  divider: { height: 1, backgroundColor: color.border, marginVertical: space.sm },
+  divider: { height: 1, backgroundColor: c.border, marginVertical: space.sm },
   forWhomRow: { flexDirection: 'row', gap: space.sm },
   forWhomChip: {
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.surfaceRaised,
+    borderColor: c.border,
+    backgroundColor: c.surfaceRaised,
   },
-  forWhomChipActive: { backgroundColor: color.gold, borderColor: color.gold },
-  forWhomChipText: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 13 },
-  forWhomChipTextActive: { color: '#fff' },
+  forWhomChipActive: { backgroundColor: c.gold, borderColor: c.gold },
+  forWhomChipText: { color: c.ink, fontFamily: font.bodyMedium, fontSize: 13 },
+  forWhomChipTextActive: { color: c.onGold },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, gap: space.md },
-  rowLabel: { color: color.inkFaint, fontFamily: font.body, fontSize: 13 },
-  rowValue: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1, textAlign: 'right' },
+  rowLabel: { color: c.inkFaint, fontFamily: font.body, fontSize: 13 },
+  rowValue: { color: c.ink, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1, textAlign: 'right' },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -403,35 +433,35 @@ const styles = StyleSheet.create({
     marginTop: space.md,
     paddingTop: space.md,
     borderTopWidth: 1,
-    borderTopColor: color.border,
+    borderTopColor: c.border,
   },
-  totalLabel: { color: color.ink, fontFamily: font.bodySemi, fontSize: 14 },
-  totalValue: { color: color.gold, fontFamily: font.bodyBold, fontSize: 22 },
+  totalLabel: { color: c.ink, fontFamily: font.bodySemi, fontSize: 14 },
+  totalValue: { color: c.gold, fontFamily: font.bodyBold, fontSize: 22 },
   section: { gap: space.md },
   // "Pagar ahora" — el método principal, visualmente por encima de los otros
   // dos (más grande, fondo dorado cuando seleccionado, pill "Recomendado").
   payNow: {
     borderRadius: radius.lg,
     borderWidth: 1.5,
-    borderColor: color.gold,
+    borderColor: c.gold,
     padding: space.lg,
     gap: 4,
-    backgroundColor: `${color.gold}14`,
+    backgroundColor: `${c.gold}14`,
   },
-  payNowActive: { backgroundColor: color.gold },
+  payNowActive: { backgroundColor: c.gold },
   payNowHeader: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  payNowTitle: { color: color.ink, fontFamily: font.bodyBold, fontSize: 16 },
-  payNowTitleActive: { color: '#fff' },
+  payNowTitle: { color: c.ink, fontFamily: font.bodyBold, fontSize: 16 },
+  payNowTitleActive: { color: c.onGold },
   recommendedPill: {
     marginLeft: 'auto',
-    backgroundColor: color.ink,
+    backgroundColor: c.ink,
     borderRadius: radius.pill,
     paddingHorizontal: space.sm,
     paddingVertical: 2,
   },
-  recommendedPillText: { color: '#fff', fontFamily: font.bodySemi, fontSize: 10, letterSpacing: 0.3 },
-  payNowSubtitle: { color: color.inkFaint, fontFamily: font.body, fontSize: 12 },
-  payNowSubtitleActive: { color: '#fffc' },
+  recommendedPillText: { color: c.bg, fontFamily: font.bodySemi, fontSize: 10, letterSpacing: 0.3 },
+  payNowSubtitle: { color: c.inkFaint, fontFamily: font.body, fontSize: 12 },
+  payNowSubtitleActive: { color: `${c.onGold}cc` },
   altRow: { flexDirection: 'row', gap: space.sm },
   altItem: { flex: 1 },
   altChip: {
@@ -442,41 +472,41 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.surfaceRaised,
+    borderColor: c.border,
+    backgroundColor: c.surfaceRaised,
   },
-  altChipActive: { borderColor: color.gold, backgroundColor: `${color.gold}14` },
-  altChipText: { color: color.inkFaint, fontFamily: font.bodyMedium, fontSize: 12.5 },
-  altChipTextActive: { color: color.ink },
+  altChipActive: { borderColor: c.gold, backgroundColor: `${c.gold}14` },
+  altChipText: { color: c.inkFaint, fontFamily: font.bodyMedium, fontSize: 12.5 },
+  altChipTextActive: { color: c.ink },
   cardStatusBox: { marginTop: 2 },
   cardStatusRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  cardStatusText: { color: color.inkFaint, fontFamily: font.body, fontSize: 12.5, flexShrink: 1 },
+  cardStatusText: { color: c.inkFaint, fontFamily: font.body, fontSize: 12.5, flexShrink: 1 },
   cardSetupBanner: {
     gap: space.sm,
     padding: space.md,
     borderRadius: radius.md,
-    backgroundColor: color.surfaceRaised,
+    backgroundColor: c.surfaceRaised,
     borderWidth: 1,
-    borderColor: color.border,
+    borderColor: c.border,
   },
-  cardSetupText: { color: color.ink, fontFamily: font.body, fontSize: 12.5 },
+  cardSetupText: { color: c.ink, fontFamily: font.body, fontSize: 12.5 },
   cardSetupButton: { alignSelf: 'flex-start', paddingHorizontal: space.lg },
-  cardStatusError: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 12 },
-  cashNote: { color: color.inkFaint, fontFamily: font.body, fontSize: 12.5 },
+  cardStatusError: { color: c.danger, fontFamily: font.bodyMedium, fontSize: 12 },
+  cashNote: { color: c.inkFaint, fontFamily: font.body, fontSize: 12.5 },
   textarea: {
-    color: color.ink,
+    color: c.ink,
     fontFamily: font.body,
     fontSize: 14,
-    backgroundColor: color.surfaceRaised,
+    backgroundColor: c.surfaceRaised,
     borderWidth: 1,
-    borderColor: color.border,
+    borderColor: c.border,
     borderRadius: radius.md,
     padding: space.md,
     minHeight: 72,
     textAlignVertical: 'top',
   },
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  error: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1 },
+  error: { color: c.danger, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1 },
   submit: { marginTop: space.sm },
-  disclaimer: { color: color.inkFaint, fontFamily: font.body, fontSize: 11, textAlign: 'center' },
-})
+  disclaimer: { color: c.inkFaint, fontFamily: font.body, fontSize: 11, textAlign: 'center' },
+  })

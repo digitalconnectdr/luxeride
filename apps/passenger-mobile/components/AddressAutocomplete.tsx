@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 import { View, Text, TextInput, StyleSheet, ActivityIndicator, Pressable } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { searchAddress, resolvePlace, newPlacesSessionToken, type PlacePrediction, type PlaceDetails } from '../lib/places'
-import { color, font, radius, space, shadow } from '../lib/theme'
+import { font, radius, space, useThemedStyles, usePalette, type Palette, type ShadowSet } from '../lib/theme'
 
 interface Props {
   icon: keyof typeof Ionicons.glyphMap
@@ -23,6 +23,8 @@ interface Props {
 const DEBOUNCE_MS = 300
 
 export function AddressAutocomplete({ icon, iconColor, placeholder, value, onChangeText, onSelect }: Props) {
+  const styles = useThemedStyles(makeStyles)
+  const c = usePalette()
   const [predictions, setPredictions] = useState<PlacePrediction[]>([])
   const [loading, setLoading] = useState(false)
   const [focused, setFocused] = useState(false)
@@ -71,24 +73,24 @@ export function AddressAutocomplete({ icon, iconColor, placeholder, value, onCha
   return (
     <View style={styles.wrap}>
       <View style={styles.inputRow}>
-        <Ionicons name={icon} size={14} color={iconColor ?? color.inkFaint} />
+        <Ionicons name={icon} size={14} color={iconColor ?? c.inkFaint} />
         <TextInput
           style={styles.input}
           placeholder={placeholder}
-          placeholderTextColor={color.inkFaint}
+          placeholderTextColor={c.inkFaint}
           value={value}
           onChangeText={handleChangeText}
           onFocus={() => setFocused(true)}
           onBlur={() => setTimeout(() => setFocused(false), 150)}
         />
-        {loading && <ActivityIndicator size="small" color={color.gold} />}
+        {loading && <ActivityIndicator size="small" color={c.gold} />}
       </View>
 
       {focused && predictions.length > 0 && (
         <View style={styles.dropdown}>
           {predictions.map((p) => (
             <Pressable key={p.placeId} style={styles.suggestion} onPress={() => handleSelect(p)}>
-              <Ionicons name="location-outline" size={16} color={color.inkFaint} />
+              <Ionicons name="location-outline" size={16} color={c.inkFaint} />
               <Text style={styles.suggestionText} numberOfLines={2}>{p.description}</Text>
             </Pressable>
           ))}
@@ -98,36 +100,37 @@ export function AddressAutocomplete({ icon, iconColor, placeholder, value, onCha
   )
 }
 
-const styles = StyleSheet.create({
-  wrap: { position: 'relative', zIndex: 10 },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    paddingVertical: space.sm,
-  },
-  input: { flex: 1, color: color.ink, fontFamily: font.body, fontSize: 15, paddingVertical: 4 },
-  dropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    backgroundColor: color.bgElevated,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.border,
-    marginTop: 4,
-    zIndex: 20,
-    ...shadow.floating,
-  },
-  suggestion: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: space.sm,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-  },
-  suggestionText: { flex: 1, color: color.ink, fontFamily: font.body, fontSize: 13 },
-})
+const makeStyles = (c: Palette, shadow: ShadowSet) =>
+  StyleSheet.create({
+    wrap: { position: 'relative', zIndex: 10 },
+    inputRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      paddingVertical: space.sm,
+    },
+    input: { flex: 1, color: c.ink, fontFamily: font.body, fontSize: 15, paddingVertical: 4 },
+    dropdown: {
+      position: 'absolute',
+      top: '100%',
+      left: 0,
+      right: 0,
+      backgroundColor: c.bgElevated,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginTop: 4,
+      zIndex: 20,
+      ...shadow.floating,
+    },
+    suggestion: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: space.sm,
+      paddingHorizontal: space.md,
+      paddingVertical: space.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    suggestionText: { flex: 1, color: c.ink, fontFamily: font.body, fontSize: 13 },
+  })

@@ -11,7 +11,7 @@
 // CADA empresa que la usa, sin tocar código por cliente.
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { color as themeColor } from './theme'
+import { darkPalette } from './theme'
 
 export interface Branding {
   name: string
@@ -22,7 +22,7 @@ export interface Branding {
 const DEFAULT_BRANDING: Branding = {
   name: 'LuxeRide',
   logoUrl: null,
-  primaryColor: themeColor.gold,
+  primaryColor: darkPalette.gold,
 }
 
 const BrandingContext = createContext<{ branding: Branding; loading: boolean }>({

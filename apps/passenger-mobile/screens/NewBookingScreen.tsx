@@ -20,7 +20,7 @@ import { supabase } from '../lib/supabase'
 import { AddressAutocomplete } from '../components/AddressAutocomplete'
 import { PressableScale } from '../components/PressableScale'
 import { Button, Card, SectionLabel } from '../components/ui'
-import { color, font, radius, space } from '../lib/theme'
+import { font, radius, space, useThemedStyles, usePalette, type Palette } from '../lib/theme'
 import type { BookingStackParamList } from '../lib/types'
 
 interface SavedAddress { id: string; label: string; address: string; lat: number; lng: number }
@@ -68,6 +68,8 @@ function formatCustomDateTime(d: Date): string {
 }
 
 export function NewBookingScreen({ navigation, route }: Props) {
+  const styles = useThemedStyles(makeStyles)
+  const c = usePalette()
   // "Reservar de nuevo" desde Mis viajes llega con prefill — no hay
   // placeId/código postal guardados en bookings, así que se marca como "no
   // resuelto por autocomplete" (placeId vacío) pero sí trae lat/lng reales,
@@ -125,6 +127,16 @@ export function NewBookingScreen({ navigation, route }: Props) {
       setDropoffAddress(item.address)
       setDropoffResolved({ lat: item.lat, lng: item.lng, placeId: '', postalCode: null })
     }
+  }
+
+  // Intercambiar origen y destino — el viaje de vuelta es el caso más común
+  // después de reservar la ida, y sin esto había que reescribir las dos
+  // direcciones a mano.
+  function swapAddresses() {
+    setPickupAddress(dropoffAddress)
+    setPickupResolved(dropoffResolved)
+    setDropoffAddress(pickupAddress)
+    setDropoffResolved(pickupResolved)
   }
 
   function scheduledAtValue(): Date {
@@ -223,26 +235,37 @@ export function NewBookingScreen({ navigation, route }: Props) {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Card style={styles.addressCard}>
-          <SectionLabel>Origen</SectionLabel>
-          <AddressAutocomplete
-            icon="ellipse"
-            iconColor={color.gold}
-            placeholder="Dirección de recogida"
-            value={pickupAddress}
-            onChangeText={(text) => {
-              setPickupAddress(text)
-              setPickupResolved(null)
-            }}
-            onSelect={(details) =>
-              setPickupResolved({ lat: details.lat, lng: details.lng, placeId: details.placeId, postalCode: details.postalCode })
-            }
-          />
+          <View style={styles.routeHeader}>
+            <SectionLabel>Ruta del viaje</SectionLabel>
+            <PressableScale onPress={swapAddresses} hitSlop={8} haptic="light">
+              <View style={styles.swapButton}>
+                <Ionicons name="swap-vertical" size={16} color={c.gold} />
+              </View>
+            </PressableScale>
+          </View>
+
+          <View style={styles.routeField}>
+            <AddressAutocomplete
+              icon="ellipse"
+              iconColor={c.gold}
+              placeholder="Dirección de recogida"
+              value={pickupAddress}
+              onChangeText={(text) => {
+                setPickupAddress(text)
+                setPickupResolved(null)
+              }}
+              onSelect={(details) =>
+                setPickupResolved({ lat: details.lat, lng: details.lng, placeId: details.placeId, postalCode: details.postalCode })
+              }
+            />
+            <Text style={styles.routeCaption}>Dirección de recogida</Text>
+          </View>
           {savedAddresses.length > 0 && (
             <View style={styles.savedRow}>
               {savedAddresses.map((item) => (
                 <PressableScale key={item.id} onPress={() => pickSaved(item, 'pickup')} haptic="light">
                   <View style={styles.savedChip}>
-                    <Ionicons name={SAVED_ICON[item.label] ?? 'location-outline'} size={11} color={color.gold} />
+                    <Ionicons name={SAVED_ICON[item.label] ?? 'location-outline'} size={11} color={c.gold} />
                     <Text style={styles.savedChipText}>{item.label}</Text>
                   </View>
                 </PressableScale>
@@ -252,26 +275,28 @@ export function NewBookingScreen({ navigation, route }: Props) {
 
           <View style={styles.divider} />
 
-          <SectionLabel>Destino</SectionLabel>
-          <AddressAutocomplete
-            icon="location"
-            iconColor={color.danger}
-            placeholder="Dirección de destino"
-            value={dropoffAddress}
-            onChangeText={(text) => {
-              setDropoffAddress(text)
-              setDropoffResolved(null)
-            }}
-            onSelect={(details) =>
-              setDropoffResolved({ lat: details.lat, lng: details.lng, placeId: details.placeId, postalCode: details.postalCode })
-            }
-          />
+          <View style={styles.routeField}>
+            <AddressAutocomplete
+              icon="location"
+              iconColor={c.danger}
+              placeholder="Dirección de destino"
+              value={dropoffAddress}
+              onChangeText={(text) => {
+                setDropoffAddress(text)
+                setDropoffResolved(null)
+              }}
+              onSelect={(details) =>
+                setDropoffResolved({ lat: details.lat, lng: details.lng, placeId: details.placeId, postalCode: details.postalCode })
+              }
+            />
+            <Text style={styles.routeCaption}>Dirección de destino</Text>
+          </View>
           {savedAddresses.length > 0 && (
             <View style={styles.savedRow}>
               {savedAddresses.map((item) => (
                 <PressableScale key={item.id} onPress={() => pickSaved(item, 'dropoff')} haptic="light">
                   <View style={styles.savedChip}>
-                    <Ionicons name={SAVED_ICON[item.label] ?? 'location-outline'} size={11} color={color.gold} />
+                    <Ionicons name={SAVED_ICON[item.label] ?? 'location-outline'} size={11} color={c.gold} />
                     <Text style={styles.savedChipText}>{item.label}</Text>
                   </View>
                 </PressableScale>
@@ -295,7 +320,7 @@ export function NewBookingScreen({ navigation, route }: Props) {
             })}
             <PressableScale onPress={openCustomPicker} haptic="light">
               <View style={[styles.chip, styles.chipCustom, timeOption === CUSTOM_OPTION && styles.chipActive]}>
-                <Ionicons name="calendar-outline" size={13} color={timeOption === CUSTOM_OPTION ? '#fff' : color.ink} />
+                <Ionicons name="calendar-outline" size={13} color={timeOption === CUSTOM_OPTION ? c.onGold : c.ink} />
                 <Text style={[styles.chipText, timeOption === CUSTOM_OPTION && styles.chipTextActive]}>
                   {timeOption === CUSTOM_OPTION && customDateTime ? formatCustomDateTime(customDateTime) : 'Elegir fecha y hora'}
                 </Text>
@@ -369,7 +394,7 @@ export function NewBookingScreen({ navigation, route }: Props) {
 
         {error ? (
           <View style={styles.errorRow}>
-            <Ionicons name="alert-circle" size={16} color={color.danger} />
+            <Ionicons name="alert-circle" size={16} color={c.danger} />
             <Text style={styles.error}>{error}</Text>
           </View>
         ) : null}
@@ -380,66 +405,88 @@ export function NewBookingScreen({ navigation, route }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: color.bg },
-  scroll: { padding: space.lg, gap: space.lg },
-  addressCard: { zIndex: 10, overflow: 'visible' },
-  divider: { height: 1, backgroundColor: color.border, marginVertical: space.sm },
-  savedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs, marginTop: -space.xs, marginBottom: space.xs },
-  savedChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: space.sm,
-    paddingVertical: 5,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.surfaceRaised,
-  },
-  savedChipText: { color: color.ink, fontFamily: font.bodyMedium, fontSize: 11 },
-  section: { gap: space.sm },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: color.surfaceRaised,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.pill,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.sm,
-  },
-  chipText: { fontFamily: font.bodyMedium, fontSize: 13, color: color.ink },
-  chipActive: { backgroundColor: color.gold, borderColor: color.gold },
-  chipTextActive: { color: '#fff' },
-  chipCustom: { borderStyle: 'dashed' },
-  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  pickerSheet: {
-    backgroundColor: color.bgElevated,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    padding: space.lg,
-    gap: space.md,
-  },
-  stepper: { flexDirection: 'row', alignItems: 'center', gap: space.xl },
-  stepperBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.pill,
-    backgroundColor: color.surfaceRaised,
-    borderWidth: 1,
-    borderColor: color.border,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    fontFamily: font.bodySemi,
-    fontSize: 20,
-    color: color.ink,
-    overflow: 'hidden',
-  },
-  stepperValue: { fontFamily: font.bodyBold, fontSize: 20, color: color.ink, minWidth: 24, textAlign: 'center' },
-  errorRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  error: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1 },
-  submit: { marginTop: space.md },
-})
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg },
+    scroll: { padding: space.lg, gap: space.lg },
+    addressCard: { zIndex: 10, overflow: 'visible' },
+    routeHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: space.xs,
+    },
+    swapButton: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.pill,
+      backgroundColor: c.goldWash,
+      borderWidth: 1,
+      borderColor: c.borderGold,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    routeField: { gap: 0 },
+    // Etiqueta bajo la dirección — el input ya usa el texto como valor, así
+    // que la etiqueta no puede vivir en el placeholder: desaparecería en
+    // cuanto el pasajero escriba algo.
+    routeCaption: { color: c.inkFaint, fontFamily: font.body, fontSize: 11, marginLeft: 22, marginTop: -2 },
+    divider: { height: 1, backgroundColor: c.border, marginVertical: space.sm },
+    savedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs, marginTop: space.xs, marginBottom: space.xs },
+    savedChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: space.sm,
+      paddingVertical: 5,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.surfaceRaised,
+    },
+    savedChipText: { color: c.ink, fontFamily: font.bodyMedium, fontSize: 11 },
+    section: { gap: space.sm },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: c.surfaceRaised,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.pill,
+      paddingHorizontal: space.lg,
+      paddingVertical: space.sm,
+    },
+    chipText: { fontFamily: font.bodyMedium, fontSize: 13, color: c.ink },
+    chipActive: { backgroundColor: c.gold, borderColor: c.gold },
+    chipTextActive: { color: c.onGold },
+    chipCustom: { borderStyle: 'dashed' },
+    pickerOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'flex-end' },
+    pickerSheet: {
+      backgroundColor: c.bgElevated,
+      borderTopLeftRadius: radius.lg,
+      borderTopRightRadius: radius.lg,
+      padding: space.lg,
+      gap: space.md,
+    },
+    stepper: { flexDirection: 'row', alignItems: 'center', gap: space.xl },
+    stepperBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.pill,
+      backgroundColor: c.surfaceRaised,
+      borderWidth: 1,
+      borderColor: c.border,
+      textAlign: 'center',
+      textAlignVertical: 'center',
+      fontFamily: font.bodySemi,
+      fontSize: 20,
+      color: c.ink,
+      overflow: 'hidden',
+    },
+    stepperValue: { fontFamily: font.bodyBold, fontSize: 20, color: c.ink, minWidth: 24, textAlign: 'center' },
+    errorRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+    error: { color: c.danger, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1 },
+    submit: { marginTop: space.md },
+  })

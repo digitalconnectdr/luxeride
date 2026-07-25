@@ -90,11 +90,24 @@ export interface TripMessage {
 }
 
 // ── Navegación ──────────────────────────────────────────────────────────
+/**
+ * Resumen que la pantalla de éxito muestra sin tener que volver a consultar
+ * la reserva recién creada — todos estos datos ya están en memoria en el
+ * paso de confirmación.
+ */
+export interface BookingSuccessSummary {
+  pickupAddress: string
+  dropoffAddress: string
+  scheduledAt: string
+  passengerCount: number
+  vehicleName: string
+}
+
 export type BookingStackParamList = {
   NewBooking: { prefill?: BookingPrefill } | undefined
   VehicleSelect: { draft: BookingDraft }
   BookingConfirm: { draft: BookingDraft; quote: VehicleQuote }
-  BookingSuccess: { bookingId: string; bookingNumber: string }
+  BookingSuccess: { bookingId: string; bookingNumber: string; summary?: BookingSuccessSummary }
   TripTracking: { bookingId: string }
   Chat: { bookingId: string }
 }

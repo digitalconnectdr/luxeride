@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { View, StyleSheet, Text } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
-import { NavigationContainer } from '@react-navigation/native'
+import { NavigationContainer, DefaultTheme, DarkTheme, type Theme } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
@@ -16,7 +16,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { registerForPushNotifications } from './lib/push'
 import { BrandingProvider, useBranding } from './lib/branding'
-import { color, font } from './lib/theme'
+import { ThemeProvider, useTheme, useThemedStyles, font, type Palette } from './lib/theme'
 import { ScreenLoader } from './components/ui'
 import { AuthScreen } from './screens/AuthScreen'
 import { HomeScreen } from './screens/HomeScreen'
@@ -33,21 +33,29 @@ import type { BookingStackParamList } from './lib/types'
 const Tab = createBottomTabNavigator()
 const BookingStack = createNativeStackNavigator<BookingStackParamList>()
 
-const lightHeader = {
-  headerStyle: { backgroundColor: color.bgElevated },
-  headerShadowVisible: false,
-  headerTintColor: color.ink,
-  headerTitleStyle: { color: color.ink, fontFamily: font.bodySemi, fontSize: 16 },
+/** Opciones de header del stack — se recalculan al cambiar de tema. */
+function useHeaderOptions() {
+  const { c } = useTheme()
+  return useMemo(
+    () => ({
+      headerStyle: { backgroundColor: c.bgElevated },
+      headerShadowVisible: false,
+      headerTintColor: c.ink,
+      headerTitleStyle: { color: c.ink, fontFamily: font.bodySemi, fontSize: 16 },
+    }),
+    [c],
+  )
 }
 
 function BookingStackScreen() {
+  const header = useHeaderOptions()
   return (
-    <BookingStack.Navigator screenOptions={lightHeader}>
+    <BookingStack.Navigator screenOptions={header}>
       <BookingStack.Screen name="NewBooking" component={NewBookingScreen} options={{ title: 'Nueva reserva' }} />
       <BookingStack.Screen name="VehicleSelect" component={VehicleSelectScreen} options={{ title: 'Elige tu vehículo' }} />
-      <BookingStack.Screen name="BookingConfirm" component={BookingConfirmScreen} options={{ title: 'Confirmar' }} />
+      <BookingStack.Screen name="BookingConfirm" component={BookingConfirmScreen} options={{ title: 'Confirmación' }} />
       <BookingStack.Screen name="BookingSuccess" component={BookingSuccessScreen} options={{ title: '', headerBackVisible: false }} />
-      <BookingStack.Screen name="TripTracking" component={TripTrackingScreen} options={{ title: 'Tu viaje' }} />
+      <BookingStack.Screen name="TripTracking" component={TripTrackingScreen} options={{ title: 'Seguimiento en vivo' }} />
       <BookingStack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat con tu conductor' }} />
     </BookingStack.Navigator>
   )
@@ -62,10 +70,12 @@ const TAB_ICON: Record<string, TabIcon> = {
 }
 
 function TabIconView({ routeName, focused }: { routeName: string; focused: boolean }) {
+  const styles = useThemedStyles(makeStyles)
+  const { c } = useTheme()
   const icons = TAB_ICON[routeName]
   return (
     <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
-      <Ionicons name={focused ? icons.active : icons.inactive} size={22} color={focused ? color.gold : color.inkFaint} />
+      <Ionicons name={focused ? icons.active : icons.inactive} size={22} color={focused ? c.gold : c.inkFaint} />
     </View>
   )
 }
@@ -81,18 +91,21 @@ export default function App() {
     PlayfairDisplay_600SemiBold_Italic,
   })
 
-  if (!fontsReady) {
-    return (
-      <View style={styles.loading}>
-        <ScreenLoader />
-      </View>
-    )
-  }
-
+  // ThemeProvider por fuera de todo: el loader de fuentes ya necesita pintar
+  // el fondo del tema correcto, no un blanco fijo.
   return (
-    <BrandingProvider>
-      <AuthGate />
-    </BrandingProvider>
+    <ThemeProvider>
+      <BrandingProvider>{fontsReady ? <AuthGate /> : <BootScreen />}</BrandingProvider>
+    </ThemeProvider>
+  )
+}
+
+function BootScreen() {
+  const styles = useThemedStyles(makeStyles)
+  return (
+    <View style={styles.loading}>
+      <ScreenLoader />
+    </View>
   )
 }
 
@@ -103,6 +116,26 @@ function AuthGate() {
   const [checkingSession, setCheckingSession] = useState(true)
   const [roleError, setRoleError] = useState('')
   const { branding } = useBranding()
+  const { c } = useTheme()
+  const styles = useThemedStyles(makeStyles)
+
+  // Tema de React Navigation — sin esto, el contenedor pinta su propio fondo
+  // blanco durante las transiciones entre pantallas, con un flash claro en
+  // medio de la app oscura.
+  const navTheme = useMemo<Theme>(() => {
+    const base = c.mode === 'dark' ? DarkTheme : DefaultTheme
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        primary: c.gold,
+        background: c.bg,
+        card: c.bgElevated,
+        text: c.ink,
+        border: c.border,
+      },
+    }
+  }, [c])
 
   // Esta app es SOLO para pasajeros. Mismo patrón que driver-mobile: la
   // validación de rol pasa ANTES de poner `session` en un valor no nulo, así
@@ -149,9 +182,12 @@ function AuthGate() {
     if (session) registerForPushNotifications(session.user.id)
   }, [session])
 
+  const statusBarStyle = c.mode === 'dark' ? 'light' : 'dark'
+
   if (checkingSession) {
     return (
       <View style={styles.loading}>
+        <StatusBar style={statusBarStyle} />
         <Text style={styles.loadingMark}>{branding.name}</Text>
         <ScreenLoader />
       </View>
@@ -161,52 +197,66 @@ function AuthGate() {
   if (!session) {
     return (
       <>
-        <StatusBar style="dark" />
+        <StatusBar style={statusBarStyle} />
         <AuthScreen roleError={roleError} />
       </>
     )
   }
 
+  const headerOptions = {
+    headerStyle: { backgroundColor: c.bgElevated },
+    headerShadowVisible: false,
+    headerTintColor: c.ink,
+    headerTitleStyle: { color: c.ink, fontFamily: font.bodySemi, fontSize: 16 },
+  }
+
   return (
-    <NavigationContainer>
-      <StatusBar style="dark" />
+    <NavigationContainer theme={navTheme}>
+      <StatusBar style={statusBarStyle} />
       <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarShowLabel: true,
           tabBarStyle: styles.tabBar,
-          tabBarActiveTintColor: color.gold,
-          tabBarInactiveTintColor: color.inkFaint,
+          tabBarActiveTintColor: c.gold,
+          tabBarInactiveTintColor: c.inkFaint,
           tabBarLabelStyle: styles.tabLabel,
           tabBarIcon: ({ focused }) => <TabIconView routeName={route.name} focused={focused} />,
         })}
       >
-        <Tab.Screen name="Inicio" component={HomeScreen} options={{ headerShown: true, title: 'Inicio', ...lightHeader }} />
+        {/* Inicio y Perfil traen su propia cabecera dentro de la pantalla
+        (logo + campana / avatar), así que aquí van sin header nativo. */}
+        <Tab.Screen name="Inicio" component={HomeScreen} />
         <Tab.Screen name="Reservar" component={BookingStackScreen} />
-        <Tab.Screen name="Mis viajes" component={MyTripsScreen} options={{ headerShown: true, title: 'Mis viajes', ...lightHeader }} />
-        <Tab.Screen name="Perfil" component={ProfileScreen} options={{ headerShown: true, title: 'Perfil', ...lightHeader }} />
+        <Tab.Screen
+          name="Mis viajes"
+          component={MyTripsScreen}
+          options={{ headerShown: true, title: 'Mis viajes', ...headerOptions }}
+        />
+        <Tab.Screen name="Perfil" component={ProfileScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   )
 }
 
-const styles = StyleSheet.create({
-  loading: { flex: 1, backgroundColor: color.bg, justifyContent: 'center', alignItems: 'center', gap: 24 },
-  loadingMark: { color: color.gold, fontFamily: font.display, fontSize: 22, letterSpacing: 1 },
-  tabBar: {
-    backgroundColor: color.bgElevated,
-    borderTopColor: color.border,
-    borderTopWidth: 1,
-    height: 84,
-    paddingTop: 10,
-  },
-  tabLabel: { fontFamily: font.bodyMedium, fontSize: 11, marginTop: 2 },
-  tabIconWrap: {
-    width: 40,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabIconWrapActive: { backgroundColor: `${color.gold}1c` },
-})
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    loading: { flex: 1, backgroundColor: c.bg, justifyContent: 'center', alignItems: 'center', gap: 24 },
+    loadingMark: { color: c.gold, fontFamily: font.display, fontSize: 22, letterSpacing: 1 },
+    tabBar: {
+      backgroundColor: c.bgElevated,
+      borderTopColor: c.border,
+      borderTopWidth: 1,
+      height: 84,
+      paddingTop: 10,
+    },
+    tabLabel: { fontFamily: font.bodyMedium, fontSize: 11, marginTop: 2 },
+    tabIconWrap: {
+      width: 40,
+      height: 28,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tabIconWrapActive: { backgroundColor: c.goldWash },
+  })
