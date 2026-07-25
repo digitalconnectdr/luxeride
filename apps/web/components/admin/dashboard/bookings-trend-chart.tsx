@@ -61,7 +61,7 @@ export function BookingsTrendChart({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-1">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">{title}</p>
         <div className="flex items-center gap-1">
           {RANGES.map((r) => {
@@ -93,6 +93,11 @@ export function BookingsTrendChart({
           })}
         </div>
       </div>
+
+      {/* Los iconos por sí solos no bastan para saber qué se está viendo —
+      esta etiqueta queda siempre visible (no depende de pasar el mouse) con
+      el rango actualmente seleccionado. */}
+      <p className="text-xs font-medium text-bronze mb-3">{rangeLabels[range]}</p>
 
       <div className={`flex items-end gap-[3px] h-24 transition-opacity ${isPending ? 'opacity-50' : ''}`}>
         {data.map((d, i) => (
