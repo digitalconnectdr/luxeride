@@ -23,12 +23,24 @@ import {
   type AffiliateTripStatus,
 } from '@/lib/affiliates/engine'
 import { resolveZoneId, type ServiceZoneForMatch } from '@/lib/pricing/zones'
+import {
+  scoreDrivers,
+  parseDispatchWeights,
+  haversineMiles,
+  type DriverScoreInput,
+} from '@/lib/dispatch/scoring'
 
 // Margen entre el fin estimado de un viaje y el inicio del siguiente para no
 // considerarlos en conflicto — tiempo de traslado/descanso razonable.
 const BUFFER_MINUTES = 45
 // Duración asumida cuando el viaje no tiene duration_minutes calculado aún.
 const DEFAULT_DURATION_MINUTES = 60
+// Antigüedad máxima de una posición GPS para usarla como proximidad. Más vieja
+// que esto ya no dice dónde está el conductor, dice dónde estuvo.
+const PRESENCE_FRESHNESS_MINUTES = 90
+// Ventana de rechazos que cuenta para la confiabilidad. Un mal mes no debe
+// perseguir al conductor para siempre.
+const REJECTION_LOOKBACK_DAYS = 30
 
 interface AutoAssignBooking {
   id: string
@@ -74,10 +86,25 @@ export async function tryAutoAssignDriver(
   // empresa lo apagó, la reserva se queda pendiente para asignación manual.
   const { data: company } = await admin
     .from('companies')
-    .select('auto_assign_enabled')
+    .select('auto_assign_enabled, settings')
     .eq('id', booking.company_id)
     .single()
   if (company && company.auto_assign_enabled === false) return { assigned: false }
+
+  const weights = parseDispatchWeights(
+    (company?.settings as Record<string, unknown> | null)?.dispatch_weights,
+  )
+
+  // Tipo de vehículo pedido y punto de recogida: no vienen en AutoAssignBooking
+  // (los tres call sites arman ese objeto con distintos SELECT), así que se
+  // consultan aquí una sola vez para no tener que tocarlos.
+  const { data: bookingDetails } = await admin
+    .from('bookings')
+    .select('vehicle_type_id, pickup_location')
+    .eq('id', booking.id)
+    .single()
+  const requiredVehicleTypeId = bookingDetails?.vehicle_type_id ?? null
+  const pickupPoint = bookingDetails?.pickup_location as { lat?: number; lng?: number } | null
 
   // Conductores en servicio de la empresa. Sección J: un conductor bloqueado
   // por compliance (licencia/permiso vencido) nunca es candidato, ni siquiera
@@ -97,9 +124,16 @@ export async function tryAutoAssignDriver(
   // fuera hasta que se le reasigne un vehículo en regla.
   const vehicleIdsInPlay = Array.from(new Set(Array.from(currentVehicleByDriver.values()).filter((v): v is string => !!v)))
   const { data: vehicleBlockRows } = vehicleIdsInPlay.length
-    ? await admin.from('vehicles').select('id, operational_block').in('id', vehicleIdsInPlay)
-    : { data: [] as { id: string; operational_block: boolean }[] }
+    ? await admin.from('vehicles').select('id, operational_block, vehicle_type_id').in('id', vehicleIdsInPlay)
+    : { data: [] as { id: string; operational_block: boolean; vehicle_type_id: string | null }[] }
   const blockedVehicleIds = new Set((vehicleBlockRows ?? []).filter((v) => v.operational_block).map((v) => v.id))
+
+  // Tipo de vehículo del carro que trae cada conductor — para no mandar un
+  // sedán a una reserva que pidió (y pagó) una SUV. Solo excluye cuando el
+  // tipo se CONOCE y no coincide: un conductor sin vehículo asignado sigue
+  // siendo candidato, porque muchos operadores chicos no llevan
+  // `current_vehicle_id` al día y excluirlos apagaría el dispatch entero.
+  const typeByVehicleId = new Map((vehicleBlockRows ?? []).map((v) => [v.id, v.vehicle_type_id]))
 
   // Solo cuentan como "activos" los perfiles de conductor que siguen activos.
   const { data: activeProfiles } = await admin
@@ -170,13 +204,71 @@ export async function tryAutoAssignDriver(
     const vehicleId = currentVehicleByDriver.get(id)
     if (vehicleId && blockedVehicleIds.has(vehicleId)) return false
     if (vehicleId && vehicleConflicted.has(vehicleId)) return false
+    // Filtro duro de tipo de vehículo (ver typeByVehicleId arriba).
+    if (requiredVehicleTypeId && vehicleId) {
+      const driverType = typeByVehicleId.get(vehicleId)
+      if (driverType && driverType !== requiredVehicleTypeId) return false
+    }
     return true
   })
   if (!candidates.length) return { assigned: false }
 
-  // Menos viajes hoy primero; empate → orden estable (el primero encontrado).
-  candidates.sort((a, b) => (todayCount.get(a) ?? 0) - (todayCount.get(b) ?? 0))
-  const driverId = candidates[0]
+  // ── Señales del score compuesto (ver lib/dispatch/scoring.ts) ──────────────
+
+  // Proximidad: última posición reportada por la app del conductor. Se ignora
+  // si está vieja — un GPS de ayer haría creer que el conductor sigue ahí.
+  const presenceCutoff = new Date(Date.now() - PRESENCE_FRESHNESS_MINUTES * 60_000).toISOString()
+  const { data: presenceRows } = await admin
+    .from('driver_presence')
+    .select('driver_id, latitude, longitude, updated_at')
+    .in('driver_id', candidates)
+    .gte('updated_at', presenceCutoff)
+
+  const distanceByDriver = new Map<string, number>()
+  if (typeof pickupPoint?.lat === 'number' && typeof pickupPoint?.lng === 'number') {
+    for (const p of presenceRows ?? []) {
+      distanceByDriver.set(
+        p.driver_id,
+        haversineMiles({ lat: p.latitude, lng: p.longitude }, { lat: pickupPoint.lat, lng: pickupPoint.lng }),
+      )
+    }
+  }
+
+  // Calificación promedio (la mantiene el trigger de driver_rating).
+  const { data: ratingRows } = await admin
+    .from('drivers')
+    .select('id, rating')
+    .in('id', candidates)
+  const ratingByDriver = new Map((ratingRows ?? []).map((d) => [d.id, d.rating]))
+
+  // Confiabilidad: rechazos recientes. `booking_events.actor_id` es el
+  // conductor que rechazó, así que no hace falta pasar por bookings.
+  const rejectionCutoff = new Date(Date.now() - REJECTION_LOOKBACK_DAYS * 86_400_000).toISOString()
+  const { data: rejectionRows } = await admin
+    .from('booking_events')
+    .select('actor_id')
+    .eq('company_id', booking.company_id)
+    .eq('type', 'driver_rejected')
+    .gte('created_at', rejectionCutoff)
+    .in('actor_id', candidates)
+
+  const rejectionsByDriver = new Map<string, number>()
+  for (const r of rejectionRows ?? []) {
+    if (!r.actor_id) continue
+    rejectionsByDriver.set(r.actor_id, (rejectionsByDriver.get(r.actor_id) ?? 0) + 1)
+  }
+
+  const scoreInputs: DriverScoreInput[] = candidates.map((id) => ({
+    driverId: id,
+    tripsToday: todayCount.get(id) ?? 0,
+    rating: ratingByDriver.get(id) ?? null,
+    distanceMiles: distanceByDriver.get(id) ?? null,
+    recentRejections: rejectionsByDriver.get(id) ?? 0,
+  }))
+
+  const ranked = scoreDrivers(scoreInputs, weights)
+  const winner = ranked[0]
+  const driverId = winner.driverId
 
   // Vehículo con el que el conductor está trabajando ahora mismo — así el
   // pasajero ve marca/placa en /track aunque la asignación haya sido automática.
@@ -200,7 +292,24 @@ export async function tryAutoAssignDriver(
     type: 'driver_assigned',
     actor: 'system',
     reason: 'Auto-asignación',
-    metadata: { driver_id: driverId, vehicle_id: vehicleId, auto: true },
+    // El desglose queda en la bitácora: cuando el operador pregunte "¿por qué
+    // le tocó a este?", la respuesta está en la reserva y no en un log.
+    metadata: {
+      driver_id: driverId,
+      vehicle_id: vehicleId,
+      auto: true,
+      score: winner.total,
+      score_breakdown: {
+        proximity: winner.proximity,
+        fairness: winner.fairness,
+        rating: winner.rating,
+        reliability: winner.reliability,
+      },
+      candidates: candidates.length,
+      distance_miles: distanceByDriver.has(driverId)
+        ? Math.round(distanceByDriver.get(driverId)! * 10) / 10
+        : null,
+    },
   })
 
   const pickup = (booking.pickup_location as { address?: string } | null)?.address ?? ''

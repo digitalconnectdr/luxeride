@@ -1,7 +1,8 @@
 'use client'
 // ── Auto-asignación: Automático / Manual ────────────────────────────────────────
 // En Automático, cada reserva nueva se intenta asignar sola (lib/dispatch/
-// auto-assign.ts) al conductor en servicio con menos viajes completados hoy.
+// auto-assign.ts) al conductor con mayor puntaje compuesto: cercanía, reparto
+// justo, calificación y confiabilidad (lib/dispatch/scoring.ts).
 // En Manual, todo queda pendiente para que Dispatch asigne a mano.
 
 import { useState, useTransition } from 'react'

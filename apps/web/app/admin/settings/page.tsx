@@ -10,6 +10,8 @@ import {
 } from '@/app/actions/settings'
 import { HourChipsField } from '@/components/admin/hour-chips-field'
 import { parsePolicy, parseExtraFees } from '@/lib/policy/engine'
+import { updateDispatchWeightsAction } from '@/app/actions/dispatch-settings'
+import { parseDispatchWeights } from '@/lib/dispatch/scoring'
 import {
   createConnectOnboardingAction,
   refreshConnectStatusAction,
@@ -179,6 +181,8 @@ export default async function SettingsPage({
   const bookingAction:  (fd: FormData) => void = updateBookingSettingsAction
   const gratuityAction: (fd: FormData) => void = updateGratuitySettingsAction
   const remindersAction: (fd: FormData) => void = updateNotificationRemindersAction
+  const dispatchWeightsAction: (fd: FormData) => void = updateDispatchWeightsAction
+  const dispatchWeights = parseDispatchWeights((company.settings as Record<string, unknown> | null)?.dispatch_weights)
   const connectAction:  () => void = createConnectOnboardingAction
   const refreshAction:  () => void = refreshConnectStatusAction
   const policyAction:   (fd: FormData) => void = updatePolicySettingsAction
@@ -1001,6 +1005,43 @@ export default async function SettingsPage({
           <div className="flex justify-end pt-1">
             <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
               {t.saveReminders}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      {/* ── Pesos de la auto-asignacion (lib/dispatch/scoring.ts) ── */}
+      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
+        <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.dispatchWeightsTitle}</h2>
+        <p className="text-xs text-sl-on-surface-muted mb-5 max-w-[75ch]">{t.dispatchWeightsIntro}</p>
+        <form action={dispatchWeightsAction} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5">
+            {([
+              { name: 'proximity',   label: t.dispatchWeightProximity,   hint: t.dispatchWeightProximityHint,   value: dispatchWeights.proximity },
+              { name: 'fairness',    label: t.dispatchWeightFairness,    hint: t.dispatchWeightFairnessHint,    value: dispatchWeights.fairness },
+              { name: 'rating',      label: t.dispatchWeightRating,      hint: t.dispatchWeightRatingHint,      value: dispatchWeights.rating },
+              { name: 'reliability', label: t.dispatchWeightReliability, hint: t.dispatchWeightReliabilityHint, value: dispatchWeights.reliability },
+            ]).map((w) => (
+              <div key={w.name}>
+                <label className={labelCls} htmlFor={`weight-${w.name}`}>{w.label}</label>
+                <input
+                  id={`weight-${w.name}`}
+                  name={w.name}
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="5"
+                  defaultValue={w.value}
+                  className={inputCls}
+                />
+                <p className="mt-1 text-[11px] text-sl-on-surface-muted">{w.hint}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-sl-on-surface-muted">{t.dispatchWeightsHint}</p>
+          <div className="flex justify-end pt-1">
+            <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
+              {t.saveDispatchWeights}
             </button>
           </div>
         </form>
