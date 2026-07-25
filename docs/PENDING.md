@@ -3,6 +3,53 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Tarifa dinámica real + score compuesto de auto-asignación (2026-07-25)
+
+Dos huecos que el usuario marcó como graves. En ambos casos la base de datos
+ya tenía las columnas; lo que faltaba era usarlas.
+
+**Precios — `pricing_rules` tenía cuatro columnas muertas:**
+- `holiday_surcharge_pct` se guardaba y se pasaba por la UI pero NUNCA se
+  aplicaba: el motor no sabía qué día es feriado. Se creó
+  `company_holidays` (migración 77, YA CORRIDA) + `lib/pricing/holidays.ts`,
+  y `calculateFare` ahora lo aplica usando la fecha LOCAL de la empresa
+  (`getLocalTimeParts` devuelve `isoDate` en la misma llamada a `Intl` que la
+  hora, para no cobrar el feriado equivocado en viajes de medianoche).
+- `surge_enabled` / `surge_multiplier` funcionaban en el motor pero iban como
+  `<input type="hidden">`: el operador no podía encenderlos. Ahora son campos
+  editables (checkbox + multiplicador topado a 5x).
+- `valid_from` / `valid_until` / `days_of_week` no se consultaban en ningún
+  lado: una regla de "temporada alta 15 dic – 15 ene" se aplicaba todo el
+  año. `bestRule` ahora descarta reglas fuera de vigencia ANTES de cualquier
+  prioridad, y los tres campos son editables.
+- FAQ desplegable en "Reglas de precio" (pedido explícito): cómo se elige la
+  regla, cómo se acumulan los recargos, qué pasa si nada aplica.
+- Panel de feriados de la empresa en la misma página.
+
+**Dispatch — `lib/dispatch/scoring.ts` (nuevo, puro, 17 tests):**
+El algoritmo ordenaba SOLO por "menos viajes completados hoy". Justo pero
+ciego. Ahora hay cuatro señales normalizadas 0-100 y ponderadas:
+- **Cercanía** (haversine contra `driver_presence`, que ya existía para el
+  mapa del Dispatch Board). GPS de más de 90 min se ignora; sin GPS el
+  conductor saca puntaje medio, ni premio ni castigo.
+- **Reparto justo** — medido sobre la DIFERENCIA entre el que más y el que
+  menos viajes lleva. Medirlo contra el máximo daba 0 a todos cuando estaban
+  empatados; mismo orden pero puntaje engañoso en la bitácora. Lo encontró un
+  test.
+- **Calificación** (`drivers.rating`) — conductor nuevo sin estrellas no queda
+  penalizado.
+- **Confiabilidad** — rechazos en `booking_events` de los últimos 30 días.
+
+Además: filtro DURO por tipo de vehículo (ya no se manda un sedán a una
+reserva que pidió SUV), pesos configurables por empresa en Configuración
+(`companies.settings.dispatch_weights`, con merge para no pisar el resto), y
+el desglose del puntaje queda en `booking_events` para que el operador pueda
+ver por qué le tocó a ese conductor.
+
+**Sin verificar en navegador**: `/admin/pricing` y `/admin/settings` requieren
+sesión iniciada y no puedo autenticarme. Verificado con `tsc`, 214 tests y
+`npm run build`.
+
 ## ✅ Visibilidad al pasajero si falla el guardado de tarjeta (2026-07-25)
 
 El usuario suscribió el webhook `whop-connect` a `setup_intent.succeeded` +
