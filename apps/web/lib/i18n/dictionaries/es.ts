@@ -1199,7 +1199,7 @@ export const es: Dictionary = {
       manageButton: 'Administrar',
       requestButton: 'Solicitar dominio',
       requestOnlyHint: 'Sin costo fijo — te cotizamos el precio real del dominio disponible y te contactamos antes de comprarlo.',
-      requestOnlyPriceLabel: 'Solicitud gratuita',
+      requestOnlyPriceLabel: 'Costo variable',
       goToFeature: 'Ir a {feature} →',
       contactSupportTitle: 'Aún no disponible para autoservicio',
       contactSupportBody: 'Contacta a soporte para activar este servicio en tu cuenta.',

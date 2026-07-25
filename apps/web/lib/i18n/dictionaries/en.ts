@@ -1198,7 +1198,7 @@ export const en = {
       manageButton: 'Manage',
       requestButton: 'Request domain',
       requestOnlyHint: "No fixed price — we quote the real cost of the domain you want and reach out before buying it.",
-      requestOnlyPriceLabel: 'Free to request',
+      requestOnlyPriceLabel: 'Variable cost',
       goToFeature: 'Go to {feature} →',
       contactSupportTitle: 'Not available for self-service yet',
       contactSupportBody: 'Contact support to activate this add-on for your account.',
