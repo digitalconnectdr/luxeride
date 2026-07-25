@@ -120,6 +120,15 @@ async function StaffTab({
     .in('role', STAFF_ROLES)
     .order('created_at', { ascending: true })
 
+  // La foto vive en `drivers`, no en `user_profiles` — solo los conductores
+  // tienen una (es la que ve el pasajero al seguir su viaje). Una sola consulta
+  // por los ids de esta página, no una por fila.
+  const driverIds = (members ?? []).filter((m) => m.role === 'driver').map((m) => m.id)
+  const { data: driverPhotos } = driverIds.length
+    ? await admin.from('drivers').select('id, photo_url').in('id', driverIds)
+    : { data: [] as { id: string; photo_url: string | null }[] }
+  const photoById = new Map((driverPhotos ?? []).map((d) => [d.id, d.photo_url]))
+
   return (
     <>
       <div className="flex justify-end -mt-2">
@@ -226,15 +235,33 @@ async function StaffTab({
                   return (
                     <tr key={member.id} className="hover:bg-sl-bg/40 transition-colors">
                       <td className="px-6 py-4">
-                        <p className="font-medium text-sl-on-surface">
-                          {member.first_name} {member.last_name}
-                          {isSelf && (
-                            <span className="ml-2 text-xs text-sl-on-surface-muted font-normal">{t.you}</span>
+                        <div className="flex items-center gap-3">
+                          {photoById.get(member.id) ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={photoById.get(member.id)!}
+                              alt=""
+                              className="w-8 h-8 rounded-full object-cover shrink-0"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center shrink-0">
+                              <span className="text-xs font-semibold text-bronze">
+                                {member.first_name?.[0]}{member.last_name?.[0]}
+                              </span>
+                            </div>
                           )}
-                        </p>
-                        {member.phone && (
-                          <p className="text-xs text-sl-on-surface-muted mt-0.5">{member.phone}</p>
-                        )}
+                          <div className="min-w-0">
+                            <p className="font-medium text-sl-on-surface">
+                              {member.first_name} {member.last_name}
+                              {isSelf && (
+                                <span className="ml-2 text-xs text-sl-on-surface-muted font-normal">{t.you}</span>
+                              )}
+                            </p>
+                            {member.phone && (
+                              <p className="text-xs text-sl-on-surface-muted mt-0.5">{member.phone}</p>
+                            )}
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         {isOwnerRole || isSelf ? (
