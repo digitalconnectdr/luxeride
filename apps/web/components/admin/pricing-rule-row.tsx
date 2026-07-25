@@ -5,6 +5,7 @@ import { Pencil } from 'lucide-react'
 import { updatePricingRuleAction } from '@/app/actions/pricing'
 import { PricingRuleActiveToggle, PricingRuleDeleteButton } from './pricing-controls'
 import { ZoneSelectFields } from './zone-select-fields'
+import { PricingAdvancedFields } from './pricing-advanced-fields'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 import type { PricingModel } from '@/lib/supabase/database.types'
 
@@ -39,6 +40,9 @@ interface Rule {
   holiday_surcharge_pct: number | string | null
   surge_enabled: boolean | null
   surge_multiplier: number | string | null
+  valid_from: string | null
+  valid_until: string | null
+  days_of_week: number[] | null
   priority: number | null
   is_active: boolean
 }
@@ -88,9 +92,6 @@ export function PricingRuleRow({
             {/* Campos no editables aquí — se preservan tal cual */}
             <input type="hidden" name="airport_pickup_fee" defaultValue={num(rule.airport_pickup_fee)} />
             <input type="hidden" name="airport_dropoff_fee" defaultValue={num(rule.airport_dropoff_fee)} />
-            <input type="hidden" name="holiday_surcharge_pct" defaultValue={num(rule.holiday_surcharge_pct)} />
-            <input type="hidden" name="surge_enabled" defaultValue={rule.surge_enabled ? 'true' : 'false'} />
-            <input type="hidden" name="surge_multiplier" defaultValue={num(rule.surge_multiplier) || 1} />
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
@@ -169,6 +170,20 @@ export function PricingRuleRow({
               </div>
             </div>
 
+            <div className="mt-4 pt-4 border-t border-sl-outline-variant/60">
+              <PricingAdvancedFields
+                t={t}
+                defaults={{
+                  holidaySurchargePct: num(rule.holiday_surcharge_pct),
+                  surgeEnabled: rule.surge_enabled ?? false,
+                  surgeMultiplier: num(rule.surge_multiplier),
+                  validFrom: rule.valid_from,
+                  validUntil: rule.valid_until,
+                  daysOfWeek: rule.days_of_week,
+                }}
+              />
+            </div>
+
             <div className="flex items-center gap-3 mt-3">
               <button type="submit" disabled={isPending} className="px-4 py-2 text-sm font-semibold bg-gold text-gray-900 rounded-lg hover:bg-gold/90 disabled:opacity-60 transition-all">
                 {isPending ? actions.saving : actions.save}
@@ -189,6 +204,27 @@ export function PricingRuleRow({
       <td className="px-5 py-3.5">
         <p className="font-medium text-sl-on-surface">{rule.name}</p>
         <p className="text-xs text-sl-on-surface-muted mt-0.5">{vtName ?? t.allVehicleTypes}</p>
+        {/* Surge encendida y vigencia limitada cambian el precio sin que se vea
+            en la columna "Base" — se avisan aquí para que no pasen inadvertidas. */}
+        {(rule.surge_enabled || rule.valid_from || rule.valid_until || rule.days_of_week?.length) && (
+          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+            {rule.surge_enabled && (
+              <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800">
+                {num(rule.surge_multiplier) > 1 ? `${num(rule.surge_multiplier)}×` : '1×'}
+              </span>
+            )}
+            {(rule.valid_from || rule.valid_until) && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded border border-sl-outline-variant text-sl-on-surface-muted tabular-nums">
+                {rule.valid_from ?? '…'} → {rule.valid_until ?? '…'}
+              </span>
+            )}
+            {rule.days_of_week?.length ? (
+              <span className="text-[10px] px-1.5 py-0.5 rounded border border-sl-outline-variant text-sl-on-surface-muted">
+                {rule.days_of_week.map((d) => t.dayShort[d]).join(' ')}
+              </span>
+            ) : null}
+          </div>
+        )}
       </td>
       <td className="px-5 py-3.5">
         <span className={`inline-flex text-xs font-medium px-2 py-0.5 rounded-full border ${MODEL_BADGE[rule.model as PricingModel] ?? ''}`}>

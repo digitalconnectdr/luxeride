@@ -24,6 +24,7 @@ function rule(overrides: Partial<PricingRuleFields> = {}): PricingRuleFields {
     airport_dropoff_fee: null,
     night_surcharge_pct: null,
     weekend_surcharge_pct: null,
+    holiday_surcharge_pct: null,
     surge_enabled: false,
     surge_multiplier: null,
     ...overrides,
@@ -163,6 +164,60 @@ describe('calculateFare | recargos con timezone (el bug de UTC)', () => {
     expect(fare.surchargeAmount).toBe(6) // 15% de 40
   })
 
+  // ── Recargo de feriado (migración 77) ────────────────────────────────────
+  // Hasta ahora holiday_surcharge_pct se guardaba pero NUNCA se aplicaba: el
+  // motor no tenía forma de saber qué día era feriado. Estos casos cubren esa
+  // corrección.
+
+  it('aplica recargo de feriado cuando la fecha local está en la lista', () => {
+    const fare = calculateFare(
+      rule({ holiday_surcharge_pct: 25 }),
+      10, 20, WEEKDAY_AFTERNOON, 'one_way', TZ_SD, null,
+      ['2026-06-17'],
+    )
+    expect(fare.surchargeAmount).toBe(10) // 25% de 40
+  })
+
+  it('NO aplica recargo si la fecha no es feriado', () => {
+    const fare = calculateFare(
+      rule({ holiday_surcharge_pct: 25 }),
+      10, 20, WEEKDAY_AFTERNOON, 'one_way', TZ_SD, null,
+      ['2026-12-25'],
+    )
+    expect(fare.surchargeAmount).toBe(0)
+  })
+
+  it('NO aplica recargo si no se pasan feriados (comportamiento anterior intacto)', () => {
+    const fare = calculateFare(
+      rule({ holiday_surcharge_pct: 25 }),
+      10, 20, WEEKDAY_AFTERNOON, 'one_way', TZ_SD,
+    )
+    expect(fare.surchargeAmount).toBe(0)
+  })
+
+  it('usa la fecha LOCAL, no la UTC, para decidir si es feriado', () => {
+    // 2026-01-01T02:00Z = 31 de diciembre 22:00 en Santo Domingo (UTC-4).
+    // Con la fecha UTC daría 1 de enero; lo correcto es el 31 de diciembre.
+    const newYearsEveLocal = new Date('2026-01-01T02:00:00Z')
+    const fare = calculateFare(
+      rule({ holiday_surcharge_pct: 50 }),
+      10, 20, newYearsEveLocal, 'one_way', TZ_SD, null,
+      ['2025-12-31'],
+    )
+    expect(fare.surchargeAmount).toBe(20) // 50% de 40 — cobró por el 31, no por el 1
+  })
+
+  it('feriado y fin de semana se acumulan cuando el feriado cae sábado o domingo', () => {
+    // Domingo 2026-06-14 14:00 SD = 18:00 UTC
+    const sundayHoliday = new Date('2026-06-14T18:00:00Z')
+    const fare = calculateFare(
+      rule({ weekend_surcharge_pct: 15, holiday_surcharge_pct: 25 }),
+      10, 20, sundayHoliday, 'one_way', TZ_SD, null,
+      ['2026-06-14'],
+    )
+    expect(fare.surchargeAmount).toBe(16) // 6 (finde) + 10 (feriado)
+  })
+
   it('timezone inválido cae a UTC sin lanzar', () => {
     const fare = calculateFare(
       rule({ night_surcharge_pct: 20 }),
@@ -295,5 +350,55 @@ describe('getLocalTimeParts', () => {
   it('sin timezone usa UTC', () => {
     const parts = getLocalTimeParts(new Date('2026-06-17T18:00:00Z'), null)
     expect(parts.hour).toBe(18)
+  })
+})
+
+describe('vigencia de reglas (valid_from / valid_until / days_of_week)', () => {
+  const WED = { isoDate: '2026-06-17', day: 3 }
+
+  it('sin `when` todas las reglas aplican (compatibilidad con llamadas viejas)', () => {
+    const expired = rule({ id: 'expired', vehicle_type_id: null, valid_until: '2020-01-01' })
+    expect(bestRule([expired], null)?.id).toBe('expired')
+  })
+
+  it('descarta una regla vencida y cae a la siguiente', () => {
+    const seasonal = rule({ id: 'seasonal', vehicle_type_id: 'vt1', valid_until: '2026-01-15' })
+    const general = rule({ id: 'general', vehicle_type_id: null })
+    expect(bestRule([seasonal, general], 'vt1', undefined, WED)?.id).toBe('general')
+  })
+
+  it('descarta una regla que aún no arranca', () => {
+    const future = rule({ id: 'future', vehicle_type_id: 'vt1', valid_from: '2026-12-15' })
+    const general = rule({ id: 'general', vehicle_type_id: null })
+    expect(bestRule([future, general], 'vt1', undefined, WED)?.id).toBe('general')
+  })
+
+  it('aplica dentro de la ventana, incluidos los bordes', () => {
+    const inWindow = rule({ id: 'in', vehicle_type_id: 'vt1', valid_from: '2026-06-17', valid_until: '2026-06-17' })
+    expect(bestRule([inWindow], 'vt1', undefined, WED)?.id).toBe('in')
+  })
+
+  it('days_of_week limita a los días marcados', () => {
+    const weekendOnly = rule({ id: 'weekend', vehicle_type_id: 'vt1', days_of_week: [0, 6] })
+    const general = rule({ id: 'general', vehicle_type_id: null })
+    // Miércoles → no aplica la de fin de semana
+    expect(bestRule([weekendOnly, general], 'vt1', undefined, WED)?.id).toBe('general')
+    // Sábado → sí
+    expect(bestRule([weekendOnly, general], 'vt1', undefined, { isoDate: '2026-06-20', day: 6 })?.id).toBe('weekend')
+  })
+
+  it('days_of_week vacío se trata como "todos los días", no como "ninguno"', () => {
+    const empty = rule({ id: 'empty', vehicle_type_id: 'vt1', days_of_week: [] })
+    expect(bestRule([empty], 'vt1', undefined, WED)?.id).toBe('empty')
+  })
+
+  it('una regla de zona vencida no gana sobre la general vigente', () => {
+    const zoneExpired = rule({
+      id: 'zone', model: 'zone_based', vehicle_type_id: null,
+      origin_zone_id: 'a', destination_zone_id: 'b', valid_until: '2026-01-01',
+    })
+    const generic = rule({ id: 'generic', vehicle_type_id: null })
+    const zonePair = { originZoneId: 'a', destinationZoneId: 'b' }
+    expect(bestRule([zoneExpired, generic], null, zonePair, WED)?.id).toBe('generic')
   })
 })

@@ -877,6 +877,32 @@ export type Database = {
         Relationships: []
       }
 
+      // ── company_holidays (feriados por empresa — recargo de tarifa) ───────────
+      company_holidays: {
+        Row: {
+          id: string
+          company_id: string
+          holiday_date: string
+          name: string
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          holiday_date: string
+          name: string
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          holiday_date?: string | undefined
+          name?: string | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── company_extra_charges (cargos recurrentes LuxeRide → operador) ────────
       company_extra_charges: {
         Row: {

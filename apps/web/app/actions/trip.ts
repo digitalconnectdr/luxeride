@@ -9,7 +9,8 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
 import type { SessionUser } from '@/lib/auth/session'
 import { parsePolicy, computeCancellationFee, parseExtraFees } from '@/lib/policy/engine'
-import { calculateFare, bestRule, type PricingRuleFields } from '@/lib/pricing/engine'
+import { calculateFare, bestRule, getLocalTimeParts, type PricingRuleFields } from '@/lib/pricing/engine'
+import { fetchHolidayDates } from '@/lib/pricing/holidays'
 import { calculateRoute } from '@/lib/maps/routes'
 import { getStripe } from '@/lib/stripe/server'
 import { createWhopCheckout } from '@/lib/whop/checkout'
@@ -225,15 +226,26 @@ async function recomputeWithStop(
         .single()
       const { data: rulesRaw } = await admin
         .from('pricing_rules')
-        .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, surge_enabled, surge_multiplier, vehicle_type_id, priority')
+        .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, holiday_surcharge_pct, surge_enabled, surge_multiplier, valid_from, valid_until, days_of_week, vehicle_type_id, priority')
         .eq('company_id', booking.company_id)
         .eq('is_active', true)
         .order('priority', { ascending: false })
-      const rule = bestRule((rulesRaw ?? []) as unknown as PricingRuleFields[], booking.vehicle_type_id)
+      // La parada se re-cotiza con la MISMA regla que aplicaría al viaje: si
+      // la reserva es de un día feriado o de temporada alta, agregar una
+      // parada no puede saltarse ese recargo.
+      const scheduledAt = new Date(booking.scheduled_at)
+      const holidayDates = await fetchHolidayDates(admin, booking.company_id, scheduledAt, company?.timezone)
+      const rule = bestRule(
+        (rulesRaw ?? []) as unknown as PricingRuleFields[],
+        booking.vehicle_type_id,
+        undefined,
+        getLocalTimeParts(scheduledAt, company?.timezone),
+      )
       if (rule) {
         const fare = calculateFare(
           rule, distanceMi, durationMin,
-          new Date(booking.scheduled_at), booking.type as BookingType, company?.timezone,
+          scheduledAt, booking.type as BookingType, company?.timezone, null,
+          holidayDates,
         )
         newTotal = fare.totalAmount
         extra = Math.max(0, Math.round((newTotal - Number(booking.total_amount ?? 0)) * 100) / 100)

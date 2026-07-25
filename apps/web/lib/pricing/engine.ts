@@ -20,8 +20,14 @@ export interface PricingRuleFields {
   airport_dropoff_fee: number | null
   night_surcharge_pct: number | null
   weekend_surcharge_pct: number | null
+  holiday_surcharge_pct: number | null
   surge_enabled: boolean | null
   surge_multiplier: number | null
+  /** Vigencia (columnas que existen desde el inicio y nunca se usaron). */
+  valid_from?: string | null
+  valid_until?: string | null
+  /** Días en que la regla aplica: 0=domingo … 6=sábado. NULL = todos. */
+  days_of_week?: number[] | null
 }
 
 export interface ZonePair {
@@ -40,13 +46,17 @@ function round2(n: number): number {
 }
 
 /**
- * Hora y día de la semana LOCALES de la empresa.
+ * Hora, día de la semana y fecha (YYYY-MM-DD) LOCALES de la empresa.
  * Si el timezone es inválido, cae a UTC (comportamiento anterior).
+ *
+ * La fecha sale de la MISMA llamada a Intl que la hora: un viaje a las 23:00
+ * del 31 de diciembre en Santo Domingo ya es 1 de enero en UTC, así que
+ * calcular la fecha por separado con getUTCDate() daría el feriado equivocado.
  */
 export function getLocalTimeParts(
   date: Date,
   timeZone: string | null | undefined,
-): { hour: number; day: number } {
+): { hour: number; day: number; isoDate: string } {
   if (timeZone) {
     try {
       const fmt = new Intl.DateTimeFormat('en-US', {
@@ -54,23 +64,33 @@ export function getLocalTimeParts(
         hour: 'numeric',
         hourCycle: 'h23',
         weekday: 'short',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
       })
       const parts = fmt.formatToParts(date)
       const hourStr = parts.find((p) => p.type === 'hour')?.value
       const weekday = parts.find((p) => p.type === 'weekday')?.value
+      const year = parts.find((p) => p.type === 'year')?.value
+      const month = parts.find((p) => p.type === 'month')?.value
+      const dayNum = parts.find((p) => p.type === 'day')?.value
       const DAY_INDEX: Record<string, number> = {
         Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
       }
       const hour = hourStr != null ? parseInt(hourStr, 10) : NaN
       const day = weekday != null ? DAY_INDEX[weekday] : undefined
-      if (!Number.isNaN(hour) && day !== undefined) {
-        return { hour, day }
+      if (!Number.isNaN(hour) && day !== undefined && year && month && dayNum) {
+        return { hour, day, isoDate: `${year}-${month}-${dayNum}` }
       }
     } catch {
       // timezone inválido — fallback a UTC
     }
   }
-  return { hour: date.getUTCHours(), day: date.getUTCDay() }
+  return {
+    hour: date.getUTCHours(),
+    day: date.getUTCDay(),
+    isoDate: date.toISOString().slice(0, 10),
+  }
 }
 
 /**
@@ -86,6 +106,12 @@ export function calculateFare(
   bookingType: BookingType,
   timezone?: string | null,
   requestedHours?: number | null,
+  /**
+   * Fechas de feriado de la empresa en formato 'YYYY-MM-DD' (ver
+   * company_holidays, migración 77). Sin esto `holiday_surcharge_pct` no se
+   * puede aplicar — que es exactamente por qué fue código muerto hasta ahora.
+   */
+  holidayDates?: readonly string[] | null,
 ): FareResult {
   let base = 0
 
@@ -125,13 +151,20 @@ export function calculateFare(
 
   // Recargos — hora local de la empresa
   let surcharge = 0
-  const { hour, day } = getLocalTimeParts(scheduledAt, timezone)
+  const { hour, day, isoDate } = getLocalTimeParts(scheduledAt, timezone)
 
   if ((hour >= 22 || hour < 6) && rule.night_surcharge_pct) {
     surcharge += base * (rule.night_surcharge_pct / 100)
   }
   if ((day === 0 || day === 6) && rule.weekend_surcharge_pct) {
     surcharge += base * (rule.weekend_surcharge_pct / 100)
+  }
+  // Feriado: se acumula con el de fin de semana si el feriado cae sábado o
+  // domingo — son dos razones distintas para cobrar más (día no laborable Y
+  // fecha especial), y el operador que configuró ambos porcentajes espera
+  // que ambos cuenten.
+  if (holidayDates?.length && rule.holiday_surcharge_pct && holidayDates.includes(isoDate)) {
+    surcharge += base * (rule.holiday_surcharge_pct / 100)
   }
   if (bookingType === 'airport_pickup' && rule.airport_pickup_fee) {
     surcharge += rule.airport_pickup_fee
@@ -151,6 +184,37 @@ export function calculateFare(
 }
 
 /**
+ * Momento del viaje ya resuelto en la zona horaria de la empresa. Se pasa a
+ * bestRule para poder descartar reglas fuera de vigencia sin que la función
+ * tenga que saber nada de timezones.
+ */
+export interface RuleWhen {
+  /** 'YYYY-MM-DD' local de la empresa. */
+  isoDate: string
+  /** 0=domingo … 6=sábado, local de la empresa. */
+  day: number
+}
+
+/**
+ * ¿Esta regla aplica para la fecha del viaje?
+ *
+ * `valid_from`, `valid_until` y `days_of_week` existen en la tabla desde el
+ * inicio pero nunca se consultaban: una regla "Temporada alta 15 dic – 15 ene"
+ * se guardaba bien y se aplicaba todo el año. Sin fecha del viaje (llamadas
+ * viejas que no pasan `when`) se mantiene el comportamiento anterior: todo
+ * aplica.
+ */
+export function isRuleApplicable(rule: PricingRuleFields, when?: RuleWhen): boolean {
+  if (!when) return true
+  if (rule.valid_from && when.isoDate < rule.valid_from) return false
+  if (rule.valid_until && when.isoDate > rule.valid_until) return false
+  // Un arreglo vacío se trata como "sin restricción", no como "ningún día":
+  // guardar [] por accidente no debe dejar a la empresa sin precio.
+  if (rule.days_of_week?.length && !rule.days_of_week.includes(when.day)) return false
+  return true
+}
+
+/**
  * Mejor regla para un tipo de vehículo (+ opcionalmente un par de zona
  * origen/destino). Prioridad:
  *   1. Regla "Por zona" que coincida EXACTO con el par de zonas Y el tipo
@@ -165,10 +229,15 @@ export function calculateFare(
  * Las reglas vienen ordenadas por priority DESC.
  */
 export function bestRule(
-  rules: PricingRuleFields[],
+  allRules: PricingRuleFields[],
   vehicleTypeId: string | null,
   zonePair?: ZonePair,
+  when?: RuleWhen,
 ): PricingRuleFields | undefined {
+  // La vigencia se filtra ANTES de cualquier prioridad: una regla vencida no
+  // es la "mejor regla", no existe para este viaje.
+  const rules = when ? allRules.filter((r) => isRuleApplicable(r, when)) : allRules
+
   if (zonePair?.originZoneId && zonePair?.destinationZoneId) {
     const zoneMatch =
       rules.find(

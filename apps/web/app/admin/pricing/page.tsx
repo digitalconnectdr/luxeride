@@ -3,7 +3,11 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { createPricingRuleAction } from '@/app/actions/pricing'
 import { PricingRuleRow } from '@/components/admin/pricing-rule-row'
 import { PricingModelField } from '@/components/admin/pricing-model-field'
-import { getDict } from '@/lib/i18n/server'
+import { PricingAdvancedFields } from '@/components/admin/pricing-advanced-fields'
+import { PricingFaq } from '@/components/admin/pricing-faq'
+import { CompanyHolidays } from '@/components/admin/company-holidays'
+import { getLocalTimeParts } from '@/lib/pricing/engine'
+import { getDict, getLocale } from '@/lib/i18n/server'
 import { InfoTip } from '@/components/ui/info-tip'
 
 export default async function PricingPage() {
@@ -11,10 +15,16 @@ export default async function PricingPage() {
 
   const admin = createAdminClient()
 
-  const [{ data: rules }, { data: vehicleTypes }, { data: zones }] = await Promise.all([
+  const [
+    { data: rules },
+    { data: vehicleTypes },
+    { data: zones },
+    { data: holidays },
+    { data: company },
+  ] = await Promise.all([
     admin
       .from('pricing_rules')
-      .select('id, name, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, minimum_hours, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, holiday_surcharge_pct, surge_enabled, surge_multiplier, priority, is_active, vehicle_type_id')
+      .select('id, name, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, minimum_hours, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, holiday_surcharge_pct, surge_enabled, surge_multiplier, valid_from, valid_until, days_of_week, priority, is_active, vehicle_type_id')
       .eq('company_id', user.company_id!)
       .order('priority', { ascending: false })
       .order('name', { ascending: true }),
@@ -30,6 +40,16 @@ export default async function PricingPage() {
       .eq('company_id', user.company_id!)
       .eq('is_active', true)
       .order('name'),
+    admin
+      .from('company_holidays')
+      .select('id, holiday_date, name')
+      .eq('company_id', user.company_id!)
+      .order('holiday_date', { ascending: true }),
+    admin
+      .from('companies')
+      .select('timezone')
+      .eq('id', user.company_id!)
+      .single(),
   ])
 
   // Map vehicle type id → name for display
@@ -40,6 +60,12 @@ export default async function PricingPage() {
   const dict = getDict().admin
   const t = dict.pricing
   const actions = dict.actions
+
+  // "Hoy" en la zona horaria de la empresa: sirve para marcar feriados ya
+  // pasados sin depender del reloj del navegador del operador, que puede
+  // estar en otro país.
+  const { isoDate: todayIso } = getLocalTimeParts(new Date(), company?.timezone)
+  const locale = getLocale()
 
   return (
     <div className="p-8 max-w-[1400px] mx-auto space-y-5">
@@ -57,6 +83,9 @@ export default async function PricingPage() {
           {rules?.length ?? 0} {t.count}
         </span>
       </div>
+
+      {/* Ayuda: cómo se eligen las reglas y cómo se acumulan los recargos */}
+      <PricingFaq t={t.faq} />
 
       {/* Add Rule Form */}
       <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5">
@@ -197,6 +226,10 @@ export default async function PricingPage() {
 
           </div>
 
+          <div className="mb-4 pt-4 border-t border-sl-outline-variant/60">
+            <PricingAdvancedFields t={t} />
+          </div>
+
           <div className="flex justify-end">
             <button
               type="submit"
@@ -246,6 +279,15 @@ export default async function PricingPage() {
           </div>
         </div>
       )}
+
+      {/* Feriados: sin esto el "Recargo de feriado" de las reglas nunca aplica */}
+      <CompanyHolidays
+        holidays={holidays ?? []}
+        todayIso={todayIso}
+        locale={locale}
+        t={t.holidays}
+        actions={actions}
+      />
     </div>
   )
 }

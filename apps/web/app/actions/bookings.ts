@@ -28,8 +28,9 @@ import { geocodeBookingLocations } from '@/lib/maps/reverse-geocode'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
 import { checkMonthlyBookingLimit } from '@/lib/plans/limits'
 import { getAppUrl } from '@/lib/app-url'
-import { calculateFare, bestRule, type PricingRuleFields } from '@/lib/pricing/engine'
+import { calculateFare, bestRule, getLocalTimeParts, type PricingRuleFields } from '@/lib/pricing/engine'
 import { resolveZoneId, type ServiceZoneForMatch } from '@/lib/pricing/zones'
+import { fetchHolidayDates } from '@/lib/pricing/holidays'
 import { tryAutoAssignDriver, tryAutoFarmToAffiliates, windowFor, overlaps } from '@/lib/dispatch/auto-assign'
 import { isAddonActive } from '@/lib/billing/addons'
 import { validatePromoCode, computeDiscount } from '@/lib/promo/engine'
@@ -206,7 +207,7 @@ export async function calculateQuoteAction(
   const [{ data: rulesRaw }, { data: zonesRaw }] = await Promise.all([
     admin
       .from('pricing_rules')
-      .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, minimum_hours, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, surge_enabled, surge_multiplier, vehicle_type_id, priority')
+      .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, minimum_hours, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, holiday_surcharge_pct, surge_enabled, surge_multiplier, valid_from, valid_until, days_of_week, vehicle_type_id, priority')
       .eq('company_id', user.company_id)
       .eq('is_active', true)
       .order('priority', { ascending: false }),
@@ -225,7 +226,13 @@ export async function calculateQuoteAction(
   const originZoneId = resolveZoneId(zones, { lat: pickupLat, lng: pickupLng, postalCode: pickupPostalCode })
   const destinationZoneId = resolveZoneId(zones, { lat: dropoffLat, lng: dropoffLng, postalCode: dropoffPostalCode })
 
-  const rule = bestRule(rulesRaw as unknown as PricingRuleFields[], vehicleTypeId, { originZoneId, destinationZoneId })
+  const ruleWhen = getLocalTimeParts(scheduledAt, companyTz?.timezone)
+  const rule = bestRule(
+    rulesRaw as unknown as PricingRuleFields[],
+    vehicleTypeId,
+    { originZoneId, destinationZoneId },
+    ruleWhen,
+  )
   if (!rule) {
     return {
       success: false,
@@ -239,8 +246,10 @@ export async function calculateQuoteAction(
   const distanceMiles  = route?.distanceMi ?? 0
   const durationMinutes = route?.durationMinutes ?? 0
 
+  const holidayDates = await fetchHolidayDates(admin, user.company_id, scheduledAt, companyTz?.timezone)
   const fare = calculateFare(
     rule, distanceMiles, durationMinutes, scheduledAt, bookingType, companyTz?.timezone, requestedHours,
+    holidayDates,
   )
 
   // Guardar cotización (admin client — no hay INSERT policy de usuario en price_quotes)
@@ -923,7 +932,7 @@ export async function getPublicVehicleQuotesAction(
   const [{ data: rulesRaw }, { data: zonesRaw }] = await Promise.all([
     admin
       .from('pricing_rules')
-      .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, minimum_hours, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, surge_enabled, surge_multiplier, vehicle_type_id, priority')
+      .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, minimum_hours, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, holiday_surcharge_pct, surge_enabled, surge_multiplier, valid_from, valid_until, days_of_week, vehicle_type_id, priority')
       .eq('company_id', companyId)
       .eq('is_active', true)
       .order('priority', { ascending: false }),
@@ -948,10 +957,21 @@ export async function getPublicVehicleQuotesAction(
   const distanceMiles  = route?.distanceMi ?? 0
   const durationMinutes = route?.durationMinutes ?? 0
 
+  // Una sola consulta antes del bucle: todos los tipos de vehículo se cotizan
+  // para la MISMA fecha, así que preguntar por el feriado dentro del bucle
+  // repetiría la misma consulta N veces.
+  const holidayDates = await fetchHolidayDates(admin, companyId, scheduledAt, company.timezone)
+  const ruleWhen = getLocalTimeParts(scheduledAt, company.timezone)
+
   const quotes: VehicleQuote[] = []
 
   for (const vt of vehicleTypes) {
-    const rule = bestRule(rulesRaw as unknown as PricingRuleFields[], vt.id, { originZoneId, destinationZoneId })
+    const rule = bestRule(
+      rulesRaw as unknown as PricingRuleFields[],
+      vt.id,
+      { originZoneId, destinationZoneId },
+      ruleWhen,
+    )
 
     if (!rule) {
       quotes.push({
@@ -968,6 +988,7 @@ export async function getPublicVehicleQuotesAction(
 
     const fare = calculateFare(
       rule, distanceMiles, durationMinutes, scheduledAt, bookingType, company.timezone, data.requestedHours,
+      holidayDates,
     )
     // El ajuste de tarifa del partner (si aplica) se hornea en el total
     // guardado en price_quotes — todo lo que viene despues (createPublicBookingAction)
