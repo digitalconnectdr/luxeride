@@ -1574,6 +1574,54 @@ export type Database = {
         Relationships: []
       }
 
+      // ── Centro de notificaciones del pasajero (migración 75) ──────────────────
+      passenger_notifications: {
+        Row: {
+          id: string
+          customer_id: string
+          type: string
+          title: string
+          body: string | null
+          booking_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          customer_id: string
+          type: string
+          title: string
+          body?: string | null | undefined
+          booking_id?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          customer_id?: string | undefined
+          type?: string | undefined
+          title?: string | undefined
+          body?: string | null | undefined
+          booking_id?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      passenger_notification_reads: {
+        Row: {
+          user_id: string
+          last_seen_at: string
+        }
+        Insert: {
+          user_id: string
+          last_seen_at?: string | undefined
+        }
+        Update: {
+          user_id?: string | undefined
+          last_seen_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── live_tracking_usage_by_booking (consumo de mapa por viaje) ────────────
       live_tracking_usage_by_booking: {
         Row: {

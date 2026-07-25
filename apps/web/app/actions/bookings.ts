@@ -19,7 +19,8 @@ import {
 import { waitUntil, geolocation } from '@vercel/functions'
 import { notifyBookingEventInBackground, notify } from '@/lib/notifications'
 import { pushAdminNotification } from '@/lib/notifications/admin-feed'
-import { notifyDriverPushInBackground, notifyUserPushInBackground } from '@/lib/notifications/push'
+import { notifyDriverPushInBackground } from '@/lib/notifications/push'
+import { notifyPassengerInBackground, type PassengerNotificationType } from '@/lib/notifications/passenger-feed'
 import { autoChargeDeferredCardInBackground } from '@/app/actions/payments'
 import { trackBookingFlight } from '@/lib/flights/refresh'
 import { geocodeBookingLocations } from '@/lib/maps/reverse-geocode'
@@ -618,17 +619,23 @@ export async function updateBookingStatusAction(
   // 'pending' (ese paso ya se ve en pantalla al confirmar la reserva) — solo
   // para los momentos en que el pasajero probablemente no tiene la app
   // abierta y se beneficia de un aviso empujado.
-  const PUSH_BY_STATUS: Partial<Record<BookingStatus, string>> = {
-    en_route:  'Tu conductor va en camino',
-    arrived:   'Tu conductor ha llegado',
-    completed: 'Viaje completado',
-    cancelled: 'Tu reserva fue cancelada',
+  const PUSH_BY_STATUS: Partial<Record<BookingStatus, { title: string; type: PassengerNotificationType }>> = {
+    en_route:  { title: 'Tu conductor va en camino', type: 'driver_en_route' },
+    arrived:   { title: 'Tu conductor ha llegado',   type: 'driver_arrived' },
+    completed: { title: 'Viaje completado',          type: 'trip_completed' },
+    cancelled: { title: 'Tu reserva fue cancelada',  type: 'booking_cancelled' },
   }
-  const pushTitle = PUSH_BY_STATUS[newStatus]
-  if (pushTitle && booking.customer_id) {
-    notifyUserPushInBackground(booking.customer_id, pushTitle, booking.booking_number, {
+  const pushInfo = PUSH_BY_STATUS[newStatus]
+  if (pushInfo && booking.customer_id) {
+    // notifyPassenger (no notifyUserPush a secas) para que el aviso también
+    // quede en el centro de notificaciones de la app — un push descartado o
+    // recibido con el teléfono apagado se perdía para siempre.
+    notifyPassengerInBackground({
+      customerId: booking.customer_id,
+      type: pushInfo.type,
+      title: pushInfo.title,
+      body: booking.booking_number,
       bookingId: booking.id,
-      type: notifyType,
     })
   }
 
@@ -776,12 +783,13 @@ export async function assignDriverAction(
 
   if (booking.customer_id) {
     const driverFirstName = driverProfile?.first_name ?? 'Tu conductor'
-    notifyUserPushInBackground(
-      booking.customer_id,
-      'Conductor asignado',
-      `${driverFirstName} va en camino a recogerte — ${booking.booking_number}`,
-      { bookingId: booking.id, type: 'driver_assigned' },
-    )
+    notifyPassengerInBackground({
+      customerId: booking.customer_id,
+      type: 'driver_assigned',
+      title: 'Conductor asignado',
+      body: `${driverFirstName} va en camino a recogerte — ${booking.booking_number}`,
+      bookingId: booking.id,
+    })
   }
 
   if (isReassignment && previousDriverId) {

@@ -202,9 +202,11 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
   return (
     <PressableScale onPress={onNavigateTracking}>
       <Card style={styles.card}>
+        {/* Badge primero y número después, como en el mockup: el estado es
+        lo que el pasajero busca al escanear la lista, el código no. */}
         <View style={styles.row}>
-          <Text style={styles.number}>{item.booking_number}</Text>
           <StatusBadge status={item.status} />
+          <Text style={styles.number}>{item.booking_number}</Text>
         </View>
 
         <View style={styles.addressRow}>
@@ -238,6 +240,12 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
               ${item.total_amount.toFixed(0)} {item.currency ?? 'USD'}
             </Text>
           )}
+        </View>
+
+        {/* Meta del viaje — pasajeros (los datos de vehículo/maletas no
+        viven en bookings, así que no se inventan). */}
+        <View style={styles.metaRow}>
+          <MetaChip icon="people-outline" label={`${item.passenger_count} pasajero${item.passenger_count === 1 ? '' : 's'}`} />
         </View>
 
         {isActive && (
@@ -616,7 +624,10 @@ const makeStyles = (c: Palette) =>
   },
   urgencyDot: { width: 5, height: 5, borderRadius: 2.5 },
   urgencyText: { fontFamily: font.bodySemi, fontSize: 10 },
-  price: { color: c.ink, fontFamily: font.bodyBold, fontSize: 16 },
+  // Dorado, como en el mockup: el precio es el dato que el pasajero compara
+  // entre viajes, y en tinta normal competía con el número de reserva.
+  price: { color: c.gold, fontFamily: font.bodyBold, fontSize: 16 },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
   activeHint: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   activeHintText: { color: c.gold, fontFamily: font.bodyMedium, fontSize: 11 },
   rebookBtn: {

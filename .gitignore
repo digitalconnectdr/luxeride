@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Obsidian vault (notas personales, no parte del código)
 /LuxeRide/
+
+# Artefactos locales de Expo (no van al repo)
+apps/*/.expo/

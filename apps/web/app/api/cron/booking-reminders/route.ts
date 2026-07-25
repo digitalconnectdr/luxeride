@@ -12,6 +12,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { sendBookingReminder } from '@/lib/notifications'
+import { notifyPassenger } from '@/lib/notifications/passenger-feed'
 import { getAppUrl } from '@/lib/app-url'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
@@ -173,7 +174,21 @@ async function handleRequest(request: Request) {
             to: b.customer_id,
             body: `${b.booking_number} el ${when}`,
           })
-          if (result.sent) passengerSent += 1
+          if (result.sent) {
+            passengerSent += 1
+            // Solo si el push REALMENTE salió: sendBookingReminder deduplica
+            // por booking+umbral+canal, así que si ya se había mandado antes
+            // devuelve sent=false y aquí no se duplica el aviso en la campana.
+            // push:false porque el push nativo ya lo mandó la línea de arriba.
+            await notifyPassenger({
+              customerId: b.customer_id,
+              type: 'booking_reminder',
+              title: 'Recordatorio de viaje',
+              body: `${b.booking_number} · ${when}`,
+              bookingId: b.id,
+              push: false,
+            })
+          }
         }
       }
 

@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { View, Text, StyleSheet, Modal, Platform, ScrollView, Alert } from 'react-native'
-import { useFocusEffect } from '@react-navigation/native'
+import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import { supabase } from '../lib/supabase'
@@ -72,6 +72,9 @@ export function ProfileScreen() {
   const { branding } = useBranding()
   const styles = useThemedStyles(makeStyles)
   const { c, mode, setMode } = useTheme()
+  // any: navegación cruzada entre pestañas del Tab.Navigator raíz, sin tipo
+  // compartido (mismo patrón que HomeScreen/MyTripsScreen).
+  const navigation = useNavigation<any>()
 
   const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState('')
@@ -485,6 +488,14 @@ export function ProfileScreen() {
             )}
           </View>
         )}
+
+        {/* Notificaciones — el centro vive en la pestaña Inicio (su propio
+        stack), así que desde aquí se navega cruzando pestañas. */}
+        <MenuRow
+          icon="notifications-outline"
+          label="Notificaciones"
+          onPress={() => navigation.navigate('Inicio', { screen: 'Notifications' })}
+        />
 
         <MenuRow
           icon="shield-checkmark-outline"

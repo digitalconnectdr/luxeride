@@ -379,16 +379,21 @@ export function NewBookingScreen({ navigation, route }: Props) {
             </Modal>
           ))}
 
+        {/* Etiqueta y control en la MISMA fila (como el mockup) — apilados
+        ocupaban el doble de alto para un solo número. */}
         <View style={styles.section}>
           <SectionLabel>Pasajeros</SectionLabel>
-          <View style={styles.stepper}>
-            <Text style={styles.stepperBtn} onPress={() => setPassengerCount((c) => Math.max(1, c - 1))}>
-              −
-            </Text>
-            <Text style={styles.stepperValue}>{passengerCount}</Text>
-            <Text style={styles.stepperBtn} onPress={() => setPassengerCount((c) => Math.min(10, c + 1))}>
-              +
-            </Text>
+          <View style={styles.stepperRow}>
+            <Text style={styles.stepperLabel}>Pasajeros</Text>
+            <View style={styles.stepper}>
+              <Text style={styles.stepperBtn} onPress={() => setPassengerCount((n) => Math.max(1, n - 1))}>
+                −
+              </Text>
+              <Text style={styles.stepperValue}>{passengerCount}</Text>
+              <Text style={styles.stepperBtn} onPress={() => setPassengerCount((n) => Math.min(10, n + 1))}>
+                +
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -470,7 +475,19 @@ const makeStyles = (c: Palette) =>
       padding: space.lg,
       gap: space.md,
     },
-    stepper: { flexDirection: 'row', alignItems: 'center', gap: space.xl },
+    stepperRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: space.lg,
+      paddingVertical: space.md,
+    },
+    stepperLabel: { color: c.ink, fontFamily: font.bodyMedium, fontSize: 14 },
+    stepper: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
     stepperBtn: {
       width: 40,
       height: 40,

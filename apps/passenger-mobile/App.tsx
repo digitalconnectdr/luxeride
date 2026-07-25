@@ -27,11 +27,15 @@ import { BookingSuccessScreen } from './screens/BookingSuccessScreen'
 import { TripTrackingScreen } from './screens/TripTrackingScreen'
 import { ChatScreen } from './screens/ChatScreen'
 import { MyTripsScreen } from './screens/MyTripsScreen'
+import { NotificationsScreen } from './screens/NotificationsScreen'
 import { ProfileScreen } from './screens/ProfileScreen'
-import type { BookingStackParamList } from './lib/types'
+import type { BookingStackParamList, HomeStackParamList } from './lib/types'
 
 const Tab = createBottomTabNavigator()
 const BookingStack = createNativeStackNavigator<BookingStackParamList>()
+// Inicio necesita su propio stack para poder abrir el centro de
+// notificaciones desde la campana sin salirse de la pestaña.
+const HomeStack = createNativeStackNavigator<HomeStackParamList>()
 
 /** Opciones de header del stack — se recalculan al cambiar de tema. */
 function useHeaderOptions() {
@@ -58,6 +62,17 @@ function BookingStackScreen() {
       <BookingStack.Screen name="TripTracking" component={TripTrackingScreen} options={{ title: 'Seguimiento en vivo' }} />
       <BookingStack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat con tu conductor' }} />
     </BookingStack.Navigator>
+  )
+}
+
+function HomeStackScreen() {
+  const header = useHeaderOptions()
+  return (
+    <HomeStack.Navigator screenOptions={header}>
+      {/* Inicio trae su propia cabecera de marca dentro de la pantalla. */}
+      <HomeStack.Screen name="HomeMain" component={HomeScreen} options={{ headerShown: false }} />
+      <HomeStack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notificaciones' }} />
+    </HomeStack.Navigator>
   )
 }
 
@@ -226,7 +241,7 @@ function AuthGate() {
       >
         {/* Inicio y Perfil traen su propia cabecera dentro de la pantalla
         (logo + campana / avatar), así que aquí van sin header nativo. */}
-        <Tab.Screen name="Inicio" component={HomeScreen} />
+        <Tab.Screen name="Inicio" component={HomeStackScreen} />
         <Tab.Screen name="Reservar" component={BookingStackScreen} />
         <Tab.Screen
           name="Mis viajes"

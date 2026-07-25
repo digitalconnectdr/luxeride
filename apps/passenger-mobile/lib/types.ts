@@ -112,6 +112,11 @@ export type BookingStackParamList = {
   Chat: { bookingId: string }
 }
 
+export type HomeStackParamList = {
+  HomeMain: undefined
+  Notifications: undefined
+}
+
 export type RootTabParamList = {
   Inicio: undefined
   Reservar: undefined

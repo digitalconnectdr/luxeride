@@ -14,6 +14,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
+import { callPassengerApi } from '../lib/api'
 import { useBranding } from '../lib/branding'
 import { BrandMark } from '../components/BrandMark'
 import { PressableScale } from '../components/PressableScale'
@@ -43,6 +44,7 @@ export function HomeScreen() {
   const [firstName, setFirstName] = useState('')
   const [upcoming, setUpcoming] = useState<UpcomingTrip | null>(null)
   const [upcomingCount, setUpcomingCount] = useState(0)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   const load = useCallback(async () => {
     const { data: auth } = await supabase.auth.getUser()
@@ -63,6 +65,11 @@ export function HomeScreen() {
     const list = (trips ?? []) as UpcomingTrip[]
     setUpcoming(list[0] ?? null)
     setUpcomingCount(list.length)
+
+    // markSeen:false — abrir Inicio no cuenta como haber leído los avisos;
+    // eso pasa solo al entrar al centro de notificaciones.
+    const notif = await callPassengerApi<{ unreadCount?: number }>('notifications', { markSeen: false })
+    if (notif.success) setUnreadCount(notif.unreadCount ?? 0)
   }, [])
 
   useFocusEffect(
@@ -81,16 +88,24 @@ export function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Cabecera de marca: logo a la izquierda y, a la derecha, el cambio
-      rápido de tema (el mockup pone una campana ahí, pero esta app todavía
-      no tiene centro de notificaciones — un icono que no hace nada sería
-      peor que no ponerlo). */}
+      {/* Cabecera de marca: logo a la izquierda; a la derecha, cambio rápido
+      de tema y la campana de notificaciones con su contador de no leídos. */}
       <View style={styles.topBar}>
         <BrandMark size={38} />
         <View style={styles.topBarSpacer} />
         <PressableScale onPress={toggleTheme} hitSlop={10} haptic="light">
           <View style={styles.iconButton}>
             <Ionicons name={c.mode === 'dark' ? 'sunny-outline' : 'moon-outline'} size={18} color={c.gold} />
+          </View>
+        </PressableScale>
+        <PressableScale onPress={() => navigation.navigate('Notifications')} hitSlop={10} haptic="light">
+          <View style={styles.iconButton}>
+            <Ionicons name="notifications-outline" size={18} color={c.gold} />
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
           </View>
         </PressableScale>
       </View>
@@ -184,7 +199,25 @@ const makeStyles = (c: Palette, shadow: ShadowSet) =>
       borderColor: c.border,
       alignItems: 'center',
       justifyContent: 'center',
+      marginLeft: space.sm,
+      // overflow visible para que el badge pueda sobresalir del círculo.
+      overflow: 'visible',
     },
+    badge: {
+      position: 'absolute',
+      top: -3,
+      right: -3,
+      minWidth: 17,
+      height: 17,
+      borderRadius: radius.pill,
+      backgroundColor: c.danger,
+      borderWidth: 1.5,
+      borderColor: c.bg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 3,
+    },
+    badgeText: { color: '#fff', fontFamily: font.bodyBold, fontSize: 9.5 },
     scroll: { padding: space.lg, gap: space.lg, paddingTop: space.sm },
     hero: { gap: 2 },
     greeting: { color: c.ink, fontFamily: font.display, fontSize: 30 },
