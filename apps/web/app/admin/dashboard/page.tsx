@@ -19,6 +19,8 @@ import { LOCALE_BCP47 } from '@/lib/i18n/config'
 import { brand } from '@/lib/brand'
 import { gatherOnboardingCounts } from '@/lib/onboarding/gather'
 import { computeOnboardingChecklist, getOnboardingProgress, type OnboardingItem } from '@/lib/onboarding/checklist'
+import { BookingsTrendChart } from '@/components/admin/dashboard/bookings-trend-chart'
+import type { TrendPoint } from '@/app/actions/dashboard'
 
 export const metadata: Metadata = { title: `Dashboard | ${brand.name}` }
 
@@ -41,11 +43,12 @@ export default async function AdminDashboardPage() {
 
   // Fetch fleet + driver + booking stats
   let stats = { vehicles: 0, driversAvail: 0, fleet: 0 }
-  let bookingStats = { pending: 0, active: 0, today: 0, completedMonth: 0 }
+  let bookingStats = { pending: 0, active: 0, today: 0, completedMonth: 0, cancelledMonth: 0 }
   let revenue = { month: 0, today: 0 }
-  let recentBookings: { id: string; booking_number: string; status: string; passenger_name: string | null; scheduled_at: string; total_amount: number | null }[] = []
+  let recentBookings: { id: string; booking_number: string; status: string; passenger_name: string | null; scheduled_at: string; total_amount: number | null; driver_id: string | null }[] = []
+  let driverNameById = new Map<string, string>()
   let upcomingBookings: { id: string; booking_number: string; status: string; passenger_name: string | null; scheduled_at: string }[] = []
-  let weekTrend: { day: string; count: number }[] = []
+  let weekTrend: TrendPoint[] = []
   let onboardingItems: OnboardingItem[] = []
   let onboardingProgress = { completed: 0, total: 0 }
 
@@ -72,6 +75,7 @@ export default async function AdminDashboardPage() {
       { count: pendingCount },
       { count: activeCount },
       { count: todayCount },
+      { count: cancelledMonthCount },
       { data: completedMonth },
       { data: weekRows },
       { data: recent },
@@ -85,6 +89,12 @@ export default async function AdminDashboardPage() {
       admin.from('bookings').select('id', { count: 'exact', head: true }).eq('company_id', companyId).gte('scheduled_at', todayStart.toISOString()),
       admin
         .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .in('status', ['cancelled', 'no_show'])
+        .or(`cancelled_at.gte.${monthStart.toISOString()},no_show_at.gte.${monthStart.toISOString()}`),
+      admin
+        .from('bookings')
         .select('total_amount, completed_at')
         .eq('company_id', companyId)
         .eq('status', 'completed')
@@ -96,7 +106,7 @@ export default async function AdminDashboardPage() {
         .gte('created_at', weekStart.toISOString()),
       admin
         .from('bookings')
-        .select('id, booking_number, status, passenger_name, scheduled_at, total_amount')
+        .select('id, booking_number, status, passenger_name, scheduled_at, total_amount, driver_id')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(5),
@@ -122,6 +132,7 @@ export default async function AdminDashboardPage() {
       active:         activeCount ?? 0,
       today:          todayCount ?? 0,
       completedMonth: completedMonth?.length ?? 0,
+      cancelledMonth: cancelledMonthCount ?? 0,
     }
 
     revenue = {
@@ -138,7 +149,7 @@ export default async function AdminDashboardPage() {
       const dayStart = new Date(weekStart.getTime() + i * 24 * 3_600_000)
       const dayEnd = new Date(dayStart.getTime() + 24 * 3_600_000)
       return {
-        day: t.dayLabels[i],
+        label: t.dayLabels[i],
         count: (weekRows ?? []).filter((b) => {
           const created = new Date(b.created_at)
           return created >= dayStart && created < dayEnd
@@ -148,6 +159,15 @@ export default async function AdminDashboardPage() {
 
     recentBookings = recent ?? []
     upcomingBookings = upcoming ?? []
+
+    const driverIds = [...new Set(recentBookings.map((b) => b.driver_id).filter((id): id is string => !!id))]
+    if (driverIds.length > 0) {
+      const { data: driverRows } = await admin
+        .from('user_profiles')
+        .select('id, first_name, last_name')
+        .in('id', driverIds)
+      driverNameById = new Map((driverRows ?? []).map((d) => [d.id, `${d.first_name} ${d.last_name}`]))
+    }
 
     const onboardingCounts = await gatherOnboardingCounts(admin, companyId)
     onboardingItems = computeOnboardingChecklist(onboardingCounts)
@@ -291,14 +311,34 @@ export default async function AdminDashboardPage() {
               {companyId ? bookingStats.completedMonth : '—'}
             </p>
           </Link>
+          <div className="h-10 w-px bg-[#e5e1d8] hidden sm:block" />
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
+              {t.avgTicket}
+            </p>
+            <p className="text-2xl font-playfair font-semibold text-[#1d1b18] mt-1">
+              {companyId && bookingStats.completedMonth > 0
+                ? `$${(revenue.month / bookingStats.completedMonth).toFixed(2)}`
+                : '—'}
+            </p>
+          </div>
+          <div className="h-10 w-px bg-[#e5e1d8] hidden sm:block" />
+          <Link href="/admin/bookings?status=cancelled" className="group">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
+              {t.cancelledMonth}
+            </p>
+            <p className="text-2xl font-playfair font-semibold text-[#1d1b18] mt-1 group-hover:text-[#8a6520] transition-colors">
+              {companyId ? bookingStats.cancelledMonth : '—'}
+            </p>
+          </Link>
         </div>
       </div>
 
-      {/* Tendencia 7 días + Próximos viajes */}
+      {/* Tendencia + Próximos viajes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* Tendencia — gráfica de línea con puntos, alimentada con datos reales */}
+        {/* Tendencia — barras, con selector de rango (semana / semana pasada / 30d / 90d) */}
         <div className="bg-white border border-[#e5e1d8] rounded-2xl shadow-sm p-6">
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-4">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a]">
               {t.trendWeek}
             </p>
@@ -306,43 +346,15 @@ export default async function AdminDashboardPage() {
               <CalendarDays size={14} className="text-[#8a6520]" strokeWidth={1.75} />
             </div>
           </div>
-          {(() => {
-            const max = Math.max(1, ...weekTrend.map((d) => d.count))
-            const chartW = 320
-            const chartH = 96
-            const stepX = weekTrend.length > 1 ? chartW / (weekTrend.length - 1) : 0
-            const points = weekTrend.map((d, i) => ({
-              x: i * stepX,
-              y: chartH - (d.count / max) * chartH,
-              count: d.count,
-            }))
-            const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
-            return (
-              <div className="flex gap-3">
-                <div className="flex flex-col justify-between text-[10px] text-[#75716a] py-0.5" style={{ height: chartH }}>
-                  <span>{max}</span>
-                  <span>{Math.round(max / 2)}</span>
-                  <span>0</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <svg viewBox={`0 0 ${chartW} ${chartH}`} className="w-full" style={{ height: chartH }} preserveAspectRatio="none">
-                    <line x1="0" y1="0" x2={chartW} y2="0" stroke="#e5e1d8" strokeWidth="1" />
-                    <line x1="0" y1={chartH / 2} x2={chartW} y2={chartH / 2} stroke="#e5e1d8" strokeWidth="1" />
-                    <line x1="0" y1={chartH} x2={chartW} y2={chartH} stroke="#e5e1d8" strokeWidth="1" />
-                    <path d={pathD} fill="none" stroke="#8a6520" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    {points.map((p, i) => (
-                      <circle key={i} cx={p.x} cy={p.y} r="3" fill="#8a6520" />
-                    ))}
-                  </svg>
-                  <div className="flex justify-between mt-1.5">
-                    {weekTrend.map((d, i) => (
-                      <span key={i} className="text-[10px] text-[#75716a]">{d.day}</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )
-          })()}
+          <BookingsTrendChart
+            initialData={weekTrend}
+            rangeLabels={{
+              this_week: t.trendRangeThisWeek,
+              last_week: t.trendRangeLastWeek,
+              last_30: t.trendRangeLast30,
+              last_90: t.trendRangeLast90,
+            }}
+          />
         </div>
 
         {/* Próximos viajes */}
@@ -418,6 +430,12 @@ export default async function AdminDashboardPage() {
                   <th className="text-left font-semibold text-[10px] uppercase tracking-widest text-[#75716a] px-3 py-2.5">
                     {t.passengerLabel}
                   </th>
+                  <th className="text-left font-semibold text-[10px] uppercase tracking-widest text-[#75716a] px-3 py-2.5">
+                    {t.dateTimeLabel}
+                  </th>
+                  <th className="text-left font-semibold text-[10px] uppercase tracking-widest text-[#75716a] px-3 py-2.5">
+                    {t.driverLabel}
+                  </th>
                   <th className="text-right font-semibold text-[10px] uppercase tracking-widest text-[#75716a] px-3 py-2.5">
                     {t.amountLabel}
                   </th>
@@ -438,6 +456,10 @@ export default async function AdminDashboardPage() {
                       </span>
                     </td>
                     <td className="px-3 py-3 text-[#75716a]">{b.passenger_name ?? '—'}</td>
+                    <td className="px-3 py-3 text-[#75716a] whitespace-nowrap">
+                      {new Date(b.scheduled_at).toLocaleString(dateLocale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="px-3 py-3 text-[#75716a]">{b.driver_id ? driverNameById.get(b.driver_id) ?? '—' : '—'}</td>
                     <td className="px-3 py-3 text-right font-semibold text-[#1d1b18]">
                       {b.total_amount != null ? `$${Number(b.total_amount).toFixed(2)}` : '—'}
                     </td>
