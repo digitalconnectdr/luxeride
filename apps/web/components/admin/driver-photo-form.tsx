@@ -9,7 +9,8 @@
 // selector de archivo. Un botón aparte al lado duplicaría el objetivo de clic
 // sin agregar claridad.
 
-import { useActionState, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
+import { useFormState, useFormStatus } from 'react-dom'
 import Image from 'next/image'
 import { Camera, Trash2, Loader2 } from 'lucide-react'
 import { updateDriverPhoto } from '@/app/actions/fleet'
@@ -27,7 +28,7 @@ interface Props {
 
 export function DriverPhotoForm({ driverId, photoUrl, initials, labels }: Props) {
   const action = updateDriverPhoto.bind(null, driverId)
-  const [state, formAction, pending] = useActionState(action, null)
+  const [state, formAction] = useFormState(action, null)
   const formRef = useRef<HTMLFormElement>(null)
   const removeRef = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<string | null>(null)
@@ -48,12 +49,45 @@ export function DriverPhotoForm({ driverId, photoUrl, initials, labels }: Props)
     formRef.current?.requestSubmit()
   }
 
-  const shown = preview ?? photoUrl
-
   return (
     <form ref={formRef} action={formAction} className="flex items-center gap-3">
       <input ref={removeRef} type="hidden" name="remove" value="false" />
+      {/* El estado de envío vive en un hijo: `useFormStatus` solo lo reporta
+          desde dentro del <form>, no desde el componente que lo declara. */}
+      <PhotoFields
+        shown={preview ?? photoUrl}
+        hasPhoto={Boolean(photoUrl)}
+        initials={initials}
+        labels={labels}
+        error={state?.error ?? null}
+        onFileChange={onFileChange}
+        onRemove={onRemove}
+      />
+    </form>
+  )
+}
 
+function PhotoFields({
+  shown,
+  hasPhoto,
+  initials,
+  labels,
+  error,
+  onFileChange,
+  onRemove,
+}: {
+  shown: string | null
+  hasPhoto: boolean
+  initials: string
+  labels: Props['labels']
+  error: string | null
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onRemove: () => void
+}) {
+  const { pending } = useFormStatus()
+
+  return (
+    <>
       <label
         className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 cursor-pointer group"
         title={labels.change}
@@ -65,8 +99,13 @@ export function DriverPhotoForm({ driverId, photoUrl, initials, labels }: Props)
             {initials}
           </span>
         )}
-        {/* Capa de hover: deja claro que el avatar es accionable. */}
-        <span className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+        {/* Capa de hover: deja claro que el avatar es accionable. Mientras sube
+            se queda visible, para que el spinner no dependa del mouse. */}
+        <span
+          className={`absolute inset-0 bg-black/50 transition-opacity flex items-center justify-center ${
+            pending ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}
+        >
           {pending ? (
             <Loader2 size={16} className="text-white animate-spin" />
           ) : (
@@ -84,7 +123,7 @@ export function DriverPhotoForm({ driverId, photoUrl, initials, labels }: Props)
       </label>
 
       <div className="min-w-0">
-        {photoUrl && !pending && (
+        {hasPhoto && !pending && (
           <button
             type="button"
             onClick={onRemove}
@@ -94,9 +133,9 @@ export function DriverPhotoForm({ driverId, photoUrl, initials, labels }: Props)
             {labels.remove}
           </button>
         )}
-        {!photoUrl && !pending && <p className="text-xs text-sl-on-surface-muted">{labels.hint}</p>}
-        {state?.error && <p className="text-xs text-red-500 mt-0.5">{state.error}</p>}
+        {!hasPhoto && !pending && <p className="text-xs text-sl-on-surface-muted">{labels.hint}</p>}
+        {error && <p className="text-xs text-red-500 mt-0.5">{error}</p>}
       </div>
-    </form>
+    </>
   )
 }

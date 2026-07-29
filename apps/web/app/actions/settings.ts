@@ -57,8 +57,6 @@ export async function updateBookingSettingsAction(
   const advanceHours       = parseInt(formData.get('advance_booking_hours') as string ?? '2', 10) || 2
   const maxAdvanceDays     = parseInt(formData.get('max_advance_days') as string ?? '90', 10) || 90
   const allowInstant       = formData.get('allow_instant_booking') === 'true'
-  const requireDeposit     = formData.get('require_deposit') === 'true'
-  const depositPercentage  = parseFloat(formData.get('deposit_percentage') as string ?? '0') || 0
 
   // Sección H, item 3 — horario de operación (HH:mm, o vacío = sin restricción)
   // y fechas bloqueadas (una por línea, YYYY-MM-DD).
@@ -85,14 +83,17 @@ export async function updateBookingSettingsAction(
   if (!company) return { success: false, error: 'Empresa no encontrada' }
 
   const currentSettings = (company.settings as Record<string, unknown>) ?? {}
+  const currentBooking = (currentSettings.booking as Record<string, unknown>) ?? {}
   const updatedSettings = {
     ...currentSettings,
     booking: {
+      // El depósito se edita en /admin/pricing, no en este formulario: hay que
+      // arrastrar los valores actuales o guardar los horarios de operación
+      // apagaría el depósito de la empresa sin que nadie lo tocara.
+      ...currentBooking,
       advance_booking_hours: advanceHours,
       max_advance_days:      maxAdvanceDays,
       allow_instant_booking: allowInstant,
-      require_deposit:       requireDeposit,
-      deposit_percentage:    depositPercentage,
       operating_hours_start: operatingHoursStart,
       operating_hours_end:   operatingHoursEnd,
       blackout_dates:        blackoutDates,
@@ -109,6 +110,58 @@ export async function updateBookingSettingsAction(
     return { success: false, error: 'Error al actualizar configuración de reservaciones' }
   }
 
+  revalidatePath('/admin/settings')
+  return { success: true }
+}
+
+// ── Depósito por adelantado ───────────────────────────────────────────────────
+// Vive dentro de `settings.booking` (donde siempre estuvo) pero se edita en
+// /admin/pricing junto al resto de lo monetario. Se guarda con merge sobre el
+// resto de `booking` por la misma razón que arriba, en el sentido inverso:
+// guardar el depósito no puede borrar los horarios de operación.
+
+export async function updateDepositSettingsAction(
+  formData: FormData,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('company_owner')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const requireDeposit = formData.get('require_deposit') === 'true'
+  const rawPct = parseFloat(formData.get('deposit_percentage') as string ?? '0')
+  const depositPercentage = Number.isNaN(rawPct) ? 0 : Math.min(100, Math.max(0, rawPct))
+
+  const admin = createAdminClient()
+
+  const { data: company } = await admin
+    .from('companies')
+    .select('settings')
+    .eq('id', user.company_id)
+    .single()
+
+  if (!company) return { success: false, error: 'Empresa no encontrada' }
+
+  const currentSettings = (company.settings as Record<string, unknown>) ?? {}
+  const currentBooking = (currentSettings.booking as Record<string, unknown>) ?? {}
+  const updatedSettings = {
+    ...currentSettings,
+    booking: {
+      ...currentBooking,
+      require_deposit:    requireDeposit,
+      deposit_percentage: depositPercentage,
+    },
+  }
+
+  const { error } = await admin
+    .from('companies')
+    .update({ settings: updatedSettings })
+    .eq('id', user.company_id)
+
+  if (error) {
+    console.error('[updateDepositSettingsAction]', error)
+    return { success: false, error: 'Error al actualizar el depósito' }
+  }
+
+  revalidatePath('/admin/pricing')
   revalidatePath('/admin/settings')
   return { success: true }
 }
@@ -160,6 +213,7 @@ export async function updatePolicySettingsAction(
     return { success: false, error: 'Error al actualizar políticas' }
   }
 
+  revalidatePath('/admin/pricing')
   revalidatePath('/admin/settings')
   return { success: true }
 }
@@ -211,6 +265,7 @@ export async function updateExtraFeesAction(
     return { success: false, error: 'Error al actualizar los cargos extra' }
   }
 
+  revalidatePath('/admin/pricing')
   revalidatePath('/admin/settings')
   return { success: true }
 }
@@ -326,6 +381,7 @@ export async function updateGratuitySettingsAction(
     return { success: false, error: 'Error al actualizar configuración de gratuity' }
   }
 
+  revalidatePath('/admin/pricing')
   revalidatePath('/admin/settings')
   return { success: true }
 }

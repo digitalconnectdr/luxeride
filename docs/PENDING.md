@@ -3,6 +3,34 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Reorganización de "lo monetario" a /admin/pricing (2026-07-25)
+
+El usuario notó que Reglas de precio y Configuración tenían configuración
+monetaria repartida (propinas, cargos extra en viaje, depósito, política de
+cancelación vivían en Configuración; las reglas de tarifa en otra página).
+Pidió agruparlo para que la empresa no tenga que saltar de un sitio a otro.
+
+- `/admin/pricing` ahora es una página con pestañas (`PricingTabs`, mismo
+  patrón pill-tab que Growth Assistant): **Reglas · Propinas y cargos ·
+  Depósito y cancelación · Feriados**.
+- Se movieron ahí: Propinas (`updateGratuitySettingsAction`), Cargos extra en
+  viaje (`updateExtraFeesAction`), Política de cancelación
+  (`updatePolicySettingsAction`), y el Depósito por adelantado — este último
+  es nuevo (`updateDepositSettingsAction`) porque antes vivía mezclado dentro
+  del formulario de "Reservas" (horarios de operación, fechas bloqueadas).
+- `updateBookingSettingsAction` ahora hace merge sobre `settings.booking` en
+  vez de sobrescribirlo completo: si no, guardar los horarios de operación
+  borraría el depósito de la empresa sin que nadie lo tocara (y viceversa).
+- Cobros (Whop Connect, QuickBooks) se quedan en Configuración a propósito:
+  es conectar una cuenta externa, no fijar un precio — tarea de una sola vez,
+  no algo que se ajuste cada semana.
+- Sidebar: la entrada pasó de "Reglas de precio" a "Tarifas y cargos" para
+  reflejar que ya no son solo reglas.
+- **Pendiente que el usuario pidió explícitamente NO hacer ahora**: agrupar
+  el resto de `/admin/settings` (16 secciones en un solo scroll) en pestañas
+  — Empresa · Marca y micrositio · Reservas · Integraciones · Operación. Lo
+  pidió como tarea futura separada, cuando decida retomarlo.
+
 ## ✅ Tarifa dinámica real + score compuesto de auto-asignación (2026-07-25)
 
 Dos huecos que el usuario marcó como graves. En ambos casos la base de datos

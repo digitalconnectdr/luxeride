@@ -3,13 +3,9 @@ import { createAdminClient } from '@/lib/supabase/server'
 import {
   updateCompanyInfoAction,
   updateBookingSettingsAction,
-  updateGratuitySettingsAction,
-  updatePolicySettingsAction,
-  updateExtraFeesAction,
   updateNotificationRemindersAction,
 } from '@/app/actions/settings'
 import { HourChipsField } from '@/components/admin/hour-chips-field'
-import { parsePolicy, parseExtraFees } from '@/lib/policy/engine'
 import { updateDispatchWeightsAction } from '@/app/actions/dispatch-settings'
 import { parseDispatchWeights } from '@/lib/dispatch/scoring'
 import {
@@ -156,15 +152,9 @@ export default async function SettingsPage({
       advance_booking_hours?: number
       max_advance_days?: number
       allow_instant_booking?: boolean
-      require_deposit?: boolean
-      deposit_percentage?: number
       operating_hours_start?: string | null
       operating_hours_end?: string | null
       blackout_dates?: string[]
-    }
-    gratuity?: {
-      enabled?: boolean
-      default_percentage?: number
     }
     notificationReminders?: {
       passengerMinutes?: number[]
@@ -173,20 +163,16 @@ export default async function SettingsPage({
   }) ?? {}
 
   const booking  = settings.booking  ?? {}
-  const gratuity = settings.gratuity ?? {}
   const reminders = settings.notificationReminders ?? {}
 
   // void casts — TypeScript void-callback rule
   const infoAction:     (fd: FormData) => void = updateCompanyInfoAction
   const bookingAction:  (fd: FormData) => void = updateBookingSettingsAction
-  const gratuityAction: (fd: FormData) => void = updateGratuitySettingsAction
   const remindersAction: (fd: FormData) => void = updateNotificationRemindersAction
   const dispatchWeightsAction: (fd: FormData) => void = updateDispatchWeightsAction
   const dispatchWeights = parseDispatchWeights((company.settings as Record<string, unknown> | null)?.dispatch_weights)
   const connectAction:  () => void = createConnectOnboardingAction
   const refreshAction:  () => void = refreshConnectStatusAction
-  const policyAction:   (fd: FormData) => void = updatePolicySettingsAction
-  const extraFeesAction: (fd: FormData) => void = updateExtraFeesAction
   const whopConnectAction: () => void = createWhopConnectOnboardingAction
   const whopRefreshAction: () => void = refreshWhopConnectStatusAction
   const quickbooksConnectAction: () => void = createQuickBooksOnboardingAction
@@ -194,9 +180,6 @@ export default async function SettingsPage({
   const quickbooksSyncNowAction: () => void = syncQuickBooksNowAction
   const enableQuickBooksSyncAction: () => void = setQuickBooksSyncEnabledAction.bind(null, true)
   const disableQuickBooksSyncAction: () => void = setQuickBooksSyncEnabledAction.bind(null, false)
-
-  const policy = parsePolicy(company.settings)
-  const extraFees = parseExtraFees(company.settings)
 
   const stripeReady = isStripeConfigured()
   const hasConnect  = Boolean(company.stripe_connect_account_id)
@@ -458,7 +441,10 @@ export default async function SettingsPage({
 
       {/* ── Booking Settings ── */}
       <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
-        <h2 className="text-sm font-semibold text-sl-on-surface mb-5">{t.bookingSettings}</h2>
+        <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.bookingSettings}</h2>
+        {/* El depósito vivía aquí. Sin este aviso, el operador que lo busca
+            piensa que desapareció. */}
+        <p className="text-xs text-sl-on-surface-muted mb-5 max-w-[75ch]">{t.moneyMovedNote}</p>
         <form action={bookingAction} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -494,35 +480,7 @@ export default async function SettingsPage({
               />
               <span className="text-sm text-sl-on-surface">{t.allowInstant}</span>
             </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                name="require_deposit"
-                type="checkbox"
-                value="true"
-                defaultChecked={booking.require_deposit ?? false}
-                className="w-4 h-4 rounded accent-bronze"
-              />
-              <span className="text-sm text-sl-on-surface">{t.requireDeposit}</span>
-            </label>
-            {booking.require_deposit && (
-              <p className="text-[11px] text-sl-on-surface-muted pl-7 -mt-1">{t.requireDepositGratuityNote}</p>
-            )}
           </div>
-
-          {booking.require_deposit && (
-            <div className="w-48">
-              <label className={labelCls}>{t.depositPct}</label>
-              <input
-                name="deposit_percentage"
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                defaultValue={booking.deposit_percentage ?? 0}
-                className={inputCls}
-              />
-            </div>
-          )}
 
           <div className="pt-2 border-t border-sl-outline-variant space-y-1">
             <p className="text-xs font-semibold text-sl-on-surface">{t.operatingHoursTitle}</p>
@@ -568,110 +526,9 @@ export default async function SettingsPage({
         </form>
       </section>
 
-      {/* ── Cancellation Policy (F1.10) ── */}
-      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
-        <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.policyTitle}</h2>
-        <p className="text-xs text-sl-on-surface-muted mb-5">
-          {t.policyDesc}
-        </p>
-        <form action={policyAction} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>{t.freeCancelHours}</label>
-              <input
-                name="free_cancellation_hours"
-                type="number"
-                min="0"
-                step="1"
-                defaultValue={policy.free_cancellation_hours}
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>{t.lateCancelPct}</label>
-              <input
-                name="late_cancellation_fee_pct"
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                defaultValue={policy.late_cancellation_fee_pct}
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>{t.noShowPct}</label>
-              <input
-                name="no_show_fee_pct"
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                defaultValue={policy.no_show_fee_pct}
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>{t.modificationHours}</label>
-              <input
-                name="modification_min_hours"
-                type="number"
-                min="0"
-                step="1"
-                defaultValue={policy.modification_min_hours}
-                className={inputCls}
-              />
-            </div>
-          </div>
-          <div className="flex justify-end pt-1">
-            <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
-              {t.savePolicy}
-            </button>
-          </div>
-        </form>
-      </section>
-
-      {/* ── Cargos extra en viaje (pasajero/equipaje adicional) ── */}
-      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
-        <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.extraFeesTitle}</h2>
-        <p className="text-xs text-sl-on-surface-muted mb-5">
-          {t.extraFeesDesc}
-        </p>
-        <form action={extraFeesAction} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>{t.extraPassengerFee} ({company.currency ?? 'USD'})</label>
-              <input
-                name="extra_passenger_fee"
-                type="number"
-                min="0"
-                max="9999"
-                step="0.01"
-                defaultValue={extraFees.extra_passenger_fee}
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>{t.extraLuggageFee} ({company.currency ?? 'USD'})</label>
-              <input
-                name="extra_luggage_fee"
-                type="number"
-                min="0"
-                max="9999"
-                step="0.01"
-                defaultValue={extraFees.extra_luggage_fee}
-                className={inputCls}
-              />
-            </div>
-          </div>
-          <p className="text-[11px] text-sl-on-surface-muted">{t.extraFeesHint}</p>
-          <div className="flex justify-end pt-1">
-            <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
-              {t.saveExtraFees}
-            </button>
-          </div>
-        </form>
-      </section>
+      {/* La política de cancelación, los cargos extra en viaje, el depósito y
+          las propinas se mudaron a /admin/pricing: todo lo que la empresa
+          cobra se configura ahora en un solo lugar. */}
 
       {/* ── Payments / Stripe Connect (oculto — ver STRIPE_CONNECT_ENABLED) ── */}
       {STRIPE_CONNECT_ENABLED && (
@@ -937,45 +794,6 @@ export default async function SettingsPage({
             )}
           </div>
         )}
-      </section>
-
-      {/* ── Gratuity Settings ── */}
-      <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
-        <h2 className="text-sm font-semibold text-sl-on-surface mb-5">{t.gratuityTitle}</h2>
-        {booking.require_deposit && (
-          <p className="mb-4 text-xs text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
-            ⚠ {t.gratuityDepositWarning}
-          </p>
-        )}
-        <form action={gratuityAction} className="space-y-4">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              name="enabled"
-              type="checkbox"
-              value="true"
-              defaultChecked={gratuity.enabled ?? true}
-              className="w-4 h-4 rounded accent-bronze"
-            />
-            <span className="text-sm text-sl-on-surface">{t.gratuityEnable}</span>
-          </label>
-          <div className="w-48">
-            <label className={labelCls}>{t.gratuityDefault}</label>
-            <input
-              name="default_percentage"
-              type="number"
-              min="0"
-              max="100"
-              step="1"
-              defaultValue={gratuity.default_percentage ?? 20}
-              className={inputCls}
-            />
-          </div>
-          <div className="flex justify-end pt-1">
-            <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
-              {t.saveGratuity}
-            </button>
-          </div>
-        </form>
       </section>
 
       {/* ── Recordatorios de viaje ── */}
