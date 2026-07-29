@@ -138,6 +138,32 @@ export function TripTrackingScreen({ route, navigation }: Props) {
     }
   }, [bookingId])
 
+  // Estado del viaje en tiempo real: sin esto, el texto (StatusBadge, banner
+  // de espera, etc.) se quedaba en lo que había al montar la pantalla — el
+  // pasajero no se enteraba de que el conductor avanzó el viaje hasta salir
+  // y volver a entrar. Misma política RLS que ya usa el fetch inicial de
+  // arriba (customers_select_own_bookings): no cambia con el UPDATE, así que
+  // Realtime entrega el evento sin necesitar ninguna migración nueva.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`booking-status-${bookingId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `id=eq.${bookingId}` },
+        (payload) => {
+          const row = payload.new as { status: BookingStatus; route_polyline: string | null }
+          setBooking((prev) =>
+            prev ? { ...prev, status: row.status, routePolyline: row.route_polyline ?? prev.routePolyline } : prev,
+          )
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [bookingId])
+
   if (loadError) {
     return (
       <View style={styles.center}>

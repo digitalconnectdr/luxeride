@@ -9,7 +9,10 @@
     "backgroundColor": "#1d1b18",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.jprsdigitalconnect.luxeride.driver"
+      "bundleIdentifier": "com.jprsdigitalconnect.luxeride.driver",
+      "infoPlist": {
+        "UIBackgroundModes": ["location"]
+      }
     },
     "android": {
       "package": "com.jprsdigitalconnect.luxeride.driver",
@@ -29,7 +32,10 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "LuxeRide usa tu ubicación mientras el viaje está activo para que el pasajero vea tu posición en el mapa en vivo."
+          "locationWhenInUsePermission": "LuxeRide usa tu ubicación mientras el viaje está activo para que el pasajero vea tu posición en el mapa en vivo.",
+          "locationAlwaysAndWhenInUsePermission": "LuxeRide necesita ubicación en segundo plano para que el pasajero siga viendo tu posición aunque uses Waze o Google Maps durante el viaje.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
       [

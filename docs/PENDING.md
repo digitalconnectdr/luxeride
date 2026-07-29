@@ -3,6 +3,79 @@
 > Actualizado: 2026-07-29. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Tracking en vivo: conductor en segundo plano + estado reactivo (2026-07-29)
+
+El usuario reportó que, con un viaje en curso, no veía el vehículo avanzar
+por las calles ni en la PWA, ni en la app Android del pasajero, ni en la
+vista del conductor — solo actualizaciones de estado, y esas tampoco se
+reflejaban solas (había que refrescar a mano). Investigación con dos
+agentes (código real, no supuestos) antes de tocar nada:
+
+- **La mayoría de las pantallas YA tenían mapa interactivo real con
+  Realtime/animación** (`/track/[id]` con `InteractiveLiveMap` +
+  `useGlidingPosition`; `TripTrackingScreen.tsx` de passenger-mobile con
+  `react-native-maps` + Realtime instantáneo sobre `trip_locations`). Eso
+  no era lo que había que arreglar.
+- **Causa raíz real**: `apps/driver-mobile/lib/locationReporter.ts` (y su
+  equivalente web) solo reportaban la posición del conductor con la app en
+  PRIMER PLANO. Un conductor real usa Waze/Google Maps para navegar durante
+  el viaje — en cuanto LuxeRide queda en segundo plano, dejaba de enviar
+  posiciones por completo. No importa qué tan bueno sea el mapa del
+  pasajero si no llegan filas nuevas a `trip_locations`.
+- **Segundo problema, más chico**: `TripTrackingScreen.tsx` cargaba
+  `bookings.status` una sola vez al montar — si el conductor avanzaba el
+  viaje con la pantalla abierta, el texto no cambiaba solo.
+
+Se descartó del alcance (no relacionado con el desplazamiento del
+vehículo): reemplazar la imagen estática del propio conductor en
+`driver-mobile` por un mapa interactivo (ya tiene botones a Waze/Google
+Maps, no necesita ver su propio punto moverse), y el auto-refresco de
+`/admin/bookings` (`/dispatcher/dashboard` ya es reactiva).
+
+**Lo construido:**
+- `apps/driver-mobile/lib/backgroundLocationTask.ts` (nuevo): tarea de
+  `expo-task-manager` registrada a nivel de módulo (importada una sola vez
+  desde `index.ts`, antes de `registerRootComponent`), lee `{bookingId,
+  status}` de AsyncStorage (no puede leer `useState`, corre fuera de React)
+  y reporta posición vía `callDriverApi('report-location', ...)`.
+- `useDriverLocationReporter` ahora pide permiso en dos pasos (foreground,
+  luego "Permitir siempre") y usa `Location.startLocationUpdatesAsync` con
+  foreground service cuando se concede; si se deniega, cae exactamente al
+  `watchPositionAsync` de foreground de siempre — no rompe nada para quien
+  no lo conceda. Banner nuevo (`backgroundUnavailable`) sugiere activar
+  "Permitir siempre" desde Configuración, y **reintenta el permiso solo al
+  volver de Settings** (`AppState` + `settingsOpenedRef`), no solo lo
+  oculta.
+- `app.json`: plugin `expo-location` con `isAndroidBackgroundLocationEnabled`
+  + `isAndroidForegroundServiceEnabled`, e `ios.infoPlist.UIBackgroundModes:
+  ["location"]`. **Requiere un nuevo build EAS** para tomar efecto — no
+  disparado, por la regla de solo hacer build con confirmación explícita.
+- **Nota pendiente para cuando se publique en Play Store**: usar
+  `ACCESS_BACKGROUND_LOCATION` exige una "Declaración de uso de ubicación en
+  segundo plano" en Play Console (trámite de revisión de Google, no de
+  código). Hoy la distribución es `internal`, que no pasa por eso.
+- `apps/passenger-mobile/screens/TripTrackingScreen.tsx`: nuevo canal
+  Realtime sobre `UPDATE` de `bookings` (mismo patrón que el canal ya
+  existente de `trip_locations`) — el estado se actualiza solo, sin
+  migración de RLS nueva (verificado: la política
+  `customers_select_own_bookings` no depende de columnas que cambien al
+  avanzar el viaje).
+- Un pase del agente `mobile-ux-reviewer` encontró y se corrigieron dos
+  bugs reales antes de cerrar: (1) una condición de carrera que podía dejar
+  un `watchPositionAsync` filtrado reportando con un `bookingId` obsoleto
+  si `requestBackgroundPermissionsAsync` tardaba (typo Android 11+ manda a
+  Settings) y el efecto ya se había limpiado — se agregó chequeo de
+  `cancelled` después de cada `await`; (2) el banner abría Configuración
+  pero nunca reintentaba el permiso al volver, así que un conductor que
+  seguía la instrucción exacta del banner igual se quedaba en modo
+  foreground-only el resto del viaje — resuelto con el reintento descrito
+  arriba.
+
+**Sin verificar visualmente** (no hay simulador en este entorno): `tsc
+--noEmit` limpio en ambas apps móviles. El flujo real de permisos y el
+foreground service solo se pueden probar en un dispositivo físico, después
+del build EAS que el usuario decida disparar.
+
 ## ✅ Reseñas en Google/TripAdvisor + recompensas automáticas (2026-07-25)
 
 Dos pedidos del usuario que resultaron atados por la MISMA restricción de

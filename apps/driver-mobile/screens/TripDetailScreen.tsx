@@ -111,7 +111,8 @@ export function TripDetailScreen({ route, navigation }: Props) {
   const [mapUrl, setMapUrl] = useState<string | null>(null)
   const [mapFailed, setMapFailed] = useState(false)
 
-  const { pauseNotice, dismissPauseNotice } = useDriverLocationReporter(trip?.id ?? '', trip?.status ?? 'pending')
+  const { pauseNotice, dismissPauseNotice, backgroundUnavailable, openSettingsForBackground } =
+    useDriverLocationReporter(trip?.id ?? '', trip?.status ?? 'pending')
 
   const loadTrip = useCallback(async () => {
     const { data } = await supabase.from('bookings').select(BOOKING_COLUMNS).eq('id', tripId).maybeSingle()
@@ -247,6 +248,16 @@ export function TripDetailScreen({ route, navigation }: Props) {
           <Ionicons name="location-outline" size={16} color={color.warning} />
           <Text style={styles.pauseBannerText}>
             Tu ubicación dejó de compartirse mientras la app estuvo en segundo plano
+          </Text>
+        </PressableScale>
+      )}
+
+      {backgroundUnavailable && (
+        <PressableScale style={styles.pauseBanner} onPress={openSettingsForBackground}>
+          <Ionicons name="location-outline" size={16} color={color.warning} />
+          <Text style={styles.pauseBannerText}>
+            Solo compartes tu ubicación con la app abierta. Activa &quot;Permitir siempre&quot; en Configuración
+            para que no se interrumpa si usas Waze o Google Maps.
           </Text>
         </PressableScale>
       )}
