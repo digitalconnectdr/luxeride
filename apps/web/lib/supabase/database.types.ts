@@ -37,6 +37,15 @@ export type CompanyPlan = 'free' | 'starter' | 'professional' | 'elite' | 'enter
 export type EnterpriseLeadStatus = 'new' | 'contacted' | 'converted' | 'rejected'
 export type DomainRequestStatus = 'pending' | 'purchased' | 'rejected'
 export type CustomDomainStatus = 'pending_verification' | 'verified' | 'failed'
+
+// Disparadores de recompensa automática. NO existe uno por puntuación de
+// reseña a propósito: ver la cabecera de lib/rewards/engine.ts.
+export type RewardTrigger =
+  | 'trips_completed'
+  | 'total_spent'
+  | 'first_trip'
+  | 'inactivity_days'
+  | 'review_submitted'
 export type ExtraChargePaymentStatus = 'pending' | 'succeeded' | 'failed' | 'refunded'
 export type FeatureRequestType = 'feature' | 'bug'
 export type FeatureRequestStatus = 'submitted' | 'pending' | 'in_progress' | 'resolved'
@@ -144,6 +153,8 @@ export type Database = {
           custom_domain: string | null
           custom_domain_status: CustomDomainStatus | null
           custom_domain_added_at: string | null
+          google_place_id: string | null
+          tripadvisor_url: string | null
           whop_billing_member_id: string | null
           whop_billing_card_saved_at: string | null
           created_at: string
@@ -205,6 +216,8 @@ export type Database = {
           custom_domain?: string | null | undefined
           custom_domain_status?: CustomDomainStatus | null | undefined
           custom_domain_added_at?: string | null | undefined
+          google_place_id?: string | null | undefined
+          tripadvisor_url?: string | null | undefined
           whop_billing_member_id?: string | null | undefined
           whop_billing_card_saved_at?: string | null | undefined
           created_at?: string | undefined
@@ -266,6 +279,8 @@ export type Database = {
           custom_domain?: string | null | undefined
           custom_domain_status?: CustomDomainStatus | null | undefined
           custom_domain_added_at?: string | null | undefined
+          google_place_id?: string | null | undefined
+          tripadvisor_url?: string | null | undefined
           whop_billing_member_id?: string | null | undefined
           whop_billing_card_saved_at?: string | null | undefined
           created_at?: string | undefined
@@ -872,6 +887,88 @@ export type Database = {
           resolved_domain?: string | null | undefined
           resolved_by?: string | null | undefined
           resolved_at?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── reward_rules (recompensas automáticas por comportamiento) ────────────
+      reward_rules: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          trigger_type: RewardTrigger
+          threshold: number | null
+          discount_type: 'percentage' | 'fixed'
+          discount_value: number
+          valid_days: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          name: string
+          trigger_type: RewardTrigger
+          threshold?: number | null | undefined
+          discount_type: 'percentage' | 'fixed'
+          discount_value: number
+          valid_days?: number | undefined
+          is_active?: boolean | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          name?: string | undefined
+          trigger_type?: RewardTrigger | undefined
+          threshold?: number | null | undefined
+          discount_type?: 'percentage' | 'fixed' | undefined
+          discount_value?: number | undefined
+          valid_days?: number | undefined
+          is_active?: boolean | undefined
+          created_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
+      // ── reward_grants (qué recompensa recibió quién) ──────────────────────────
+      reward_grants: {
+        Row: {
+          id: string
+          company_id: string
+          rule_id: string
+          customer_key: string
+          customer_email: string | null
+          customer_phone: string | null
+          booking_id: string | null
+          promo_code_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          company_id: string
+          rule_id: string
+          customer_key: string
+          customer_email?: string | null | undefined
+          customer_phone?: string | null | undefined
+          booking_id?: string | null | undefined
+          promo_code_id?: string | null | undefined
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          company_id?: string | undefined
+          rule_id?: string | undefined
+          customer_key?: string | undefined
+          customer_email?: string | null | undefined
+          customer_phone?: string | null | undefined
+          booking_id?: string | null | undefined
+          promo_code_id?: string | null | undefined
           created_at?: string | undefined
         }
         Relationships: []

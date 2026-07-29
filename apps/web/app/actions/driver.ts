@@ -6,8 +6,10 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
 import type { SessionUser } from '@/lib/auth/session'
+import { waitUntil } from '@vercel/functions'
 import { notifyBookingEventInBackground } from '@/lib/notifications'
 import { autoChargeDeferredCardInBackground } from '@/app/actions/payments'
+import { grantRewardsForBooking } from '@/lib/rewards/grant'
 import { getAppUrl } from '@/lib/app-url'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
@@ -75,7 +77,7 @@ export async function advanceDriverTrip(
 
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, status, company_id, driver_id, scheduled_at, total_amount, booking_number, passenger_name, passenger_email, passenger_phone, pickup_location, dropoff_location, currency')
+    .select('id, status, company_id, driver_id, customer_id, scheduled_at, total_amount, booking_number, passenger_name, passenger_email, passenger_phone, pickup_location, dropoff_location, currency')
     .eq('id', bookingId)
     .eq('company_id', user.company_id)
     .eq('driver_id', user.id) // SOLO sus viajes
@@ -118,6 +120,18 @@ export async function advanceDriverTrip(
   // pasajero declaró efectivo al reservar.
   if (next === 'completed') {
     autoChargeDeferredCardInBackground(bookingId)
+    // Recompensas por comportamiento (N viajes, gasto acumulado, reconquista).
+    // En background: el viaje ya terminó y no puede fallar por un descuento.
+    waitUntil(
+      grantRewardsForBooking({
+        companyId: booking.company_id,
+        bookingId,
+        customerEmail: booking.passenger_email,
+        customerPhone: booking.passenger_phone,
+        customerId: booking.customer_id ?? null,
+        justSubmittedReview: false,
+      }),
+    )
   }
 
   // Notificar al pasajero

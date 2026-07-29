@@ -26,7 +26,9 @@ export function PricingRuleActiveToggle({
         'disabled:opacity-60 disabled:cursor-not-allowed',
         isActive
           ? 'text-green-700 border-green-300 bg-green-50 hover:bg-red-50 hover:text-red-600 hover:border-red-300'
-          : 'text-gray-500 border-gray-300 bg-gray-50 hover:bg-green-50 hover:text-green-700 hover:border-green-300',
+          // gray-600 y no gray-500: sobre bg-gray-50 el 500 da 4.36:1, por
+          // debajo del 4.5:1 que pide AA para texto de este tamaño.
+          : 'text-gray-600 border-gray-300 bg-gray-50 hover:bg-green-50 hover:text-green-700 hover:border-green-300',
       ].join(' ')}
     >
       {isPending ? '…' : isActive ? 'Active' : 'Inactive'}

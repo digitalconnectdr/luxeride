@@ -4,6 +4,7 @@ import { getLocale, getDict } from '@/lib/i18n/server'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewForm } from './review-form'
 import { AutoRedirect } from './auto-redirect'
+import { ExternalReviewLinks } from './external-review-links'
 
 export const metadata: Metadata = {
   title: { absolute: 'Review' },
@@ -47,7 +48,7 @@ export default async function ReviewPage({ params }: { params: { id: string } })
 
   const { data: company } = await admin
     .from('companies')
-    .select('name, slug, primary_color, logo_url')
+    .select('name, slug, primary_color, logo_url, google_place_id, tripadvisor_url')
     .eq('id', booking.company_id)
     .single()
 
@@ -78,6 +79,7 @@ export default async function ReviewPage({ params }: { params: { id: string } })
 
   // Ya calificado → agradecimiento con las estrellas dadas.
   if (booking.rated_at) {
+    const hasExternal = Boolean(company?.google_place_id || company?.tripadvisor_url)
     return wrap(
       <div className={`${card} text-center space-y-4`}>
         {brandHeader}
@@ -90,8 +92,30 @@ export default async function ReviewPage({ params }: { params: { id: string } })
         <p className="text-sm text-white/55 leading-relaxed">
           {t.thanksBody}
         </p>
-        <p className="text-[11px] text-white/30 pt-1">{t.returningSoon}</p>
-        <AutoRedirect url={micrositeUrl} seconds={30} />
+
+        {/* Se ofrece a TODOS, sin importar las estrellas: filtrar por nota es
+            "review gating" y Google lo prohíbe. Ver external-review-links.tsx. */}
+        <ExternalReviewLinks
+          googlePlaceId={company?.google_place_id ?? null}
+          tripadvisorUrl={company?.tripadvisor_url ?? null}
+          brandColor={brandColor}
+          labels={{
+            title: t.externalTitle,
+            body: t.externalBody,
+            google: t.externalGoogle,
+            tripadvisor: t.externalTripadvisor,
+          }}
+        />
+
+        {/* El redirect automático solo corre si NO hay enlaces externos: si
+            los hay, arrancarle la página a los 30 segundos mientras decide si
+            reseñar sería justo lo contrario de lo que se busca. */}
+        {!hasExternal && (
+          <>
+            <p className="text-[11px] text-white/30 pt-1">{t.returningSoon}</p>
+            <AutoRedirect url={micrositeUrl} seconds={30} />
+          </>
+        )}
       </div>,
       brandColor,
     )

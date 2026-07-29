@@ -3,6 +3,57 @@
 > Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Reseñas en Google/TripAdvisor + recompensas automáticas (2026-07-25)
+
+Dos pedidos del usuario que resultaron atados por la MISMA restricción de
+política, y conviene no olvidarlo al retomar:
+
+**Ni Google ni TripAdvisor permiten publicar reseñas por API.** Verificado
+contra sus docs actuales: Google Business Profile solo permite LEER y
+RESPONDER; el Content API de TripAdvisor es solo lectura (su Review Express
+API es para hoteles con acuerdo de conectividad, no aplica a transporte).
+Además Google endureció su política en **febrero 2026**: prohíbe incentivar
+reseñas (descuentos, regalos) y hacer *review gating* (mandar solo a los
+contentos). Sanciones civiles hasta $51,744 por violación más eliminación de
+reseñas y penalización del listado.
+
+- Migración 78 (YA CORRIDA): `companies.google_place_id` + `tripadvisor_url`,
+  y tablas `reward_rules` / `reward_grants`.
+- `/review/[id]`: tras calificar se ofrecen botones a Google
+  (`search.google.com/local/writereview?placeid=…`) y al listado de
+  TripAdvisor. **Se muestran a TODOS**, den 5 estrellas o 1, y sin ofrecer
+  nada a cambio. Configurable en Configuración → Marca y micrositio.
+- El auto-redirect de 30s al micrositio se desactiva cuando hay enlaces
+  externos: arrancarle la página mientras decide sería lo contrario de lo
+  que se busca.
+
+**Recompensas automáticas** (`lib/rewards/engine.ts`, puro, 22 tests):
+El usuario pidió "más de 4.5 estrellas → descuento". Se construyó SIN ese
+disparador, por dos razones independientes:
+  1. Es exactamente el embudo que Google sanciona (reseña incentivada +
+     gating), sobre todo combinado con el botón de arriba.
+  2. `drivers.rating` alimenta el score de auto-asignación
+     (`lib/dispatch/scoring.ts`). Si el pasajero aprende que 5 estrellas da
+     descuento, en un mes todos los conductores tienen 5 estrellas y esa
+     señal deja de distinguir a nadie. Se estaría pagando por destruir el
+     dato que reparte los viajes.
+
+Disparadores que SÍ existen: `trips_completed`, `total_spent`, `first_trip`,
+`inactivity_days` (reconquista) y `review_submitted` (por dejar la reseña,
+**sin mirar la nota**, que resuelve la intención sin el daño).
+
+- Se evalúan al completar viaje (driver.ts y bookings.ts) y al reseñar.
+- La identidad del cliente es email/teléfono normalizado, no `customer_id`:
+  la mayoría de reservas son de invitados sin cuenta.
+- `UNIQUE (rule_id, customer_key)` en `reward_grants` es la garantía dura
+  contra otorgar dos veces por carrera. El grant se inserta ANTES de crear el
+  código: si choca, nadie crea un código duplicado.
+- UI en `/admin/promo-codes`, ahora con pestañas Manuales / Automáticas.
+  Mismo add-on de pago que los códigos manuales.
+
+**Sin verificar en navegador**: requiere sesión iniciada. Verificado con
+`tsc`, 236 tests y `npm run build`.
+
 ## ✅ Reorganización de "lo monetario" a /admin/pricing (2026-07-25)
 
 El usuario notó que Reglas de precio y Configuración tenían configuración

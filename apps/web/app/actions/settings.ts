@@ -114,6 +114,48 @@ export async function updateBookingSettingsAction(
   return { success: true }
 }
 
+// ── Presencia en Google / TripAdvisor ─────────────────────────────────────────
+// Ni Google ni TripAdvisor permiten publicar reseñas por API (solo leerlas y
+// responderlas), así que esto NO auto-publica nada: guarda a dónde mandar al
+// pasajero para que la escriba él, que es la única vía permitida.
+
+export async function updateExternalReviewsAction(
+  formData: FormData,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('company_owner')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  // El Place ID de Google es alfanumérico con guiones y guiones bajos. Se
+  // valida el formato para que un operador que pegue la URL completa del mapa
+  // en vez del ID reciba un error, en lugar de un botón roto en silencio.
+  const rawPlaceId = (formData.get('google_place_id') as string ?? '').trim()
+  if (rawPlaceId && !/^[A-Za-z0-9_-]{10,255}$/.test(rawPlaceId)) {
+    return { success: false, error: 'El Place ID de Google no tiene un formato válido' }
+  }
+
+  const rawTripadvisor = (formData.get('tripadvisor_url') as string ?? '').trim()
+  if (rawTripadvisor && !/^https:\/\/(www\.)?tripadvisor\.[a-z.]+\/.+/i.test(rawTripadvisor)) {
+    return { success: false, error: 'La URL de TripAdvisor debe empezar con https://www.tripadvisor.…' }
+  }
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('companies')
+    .update({
+      google_place_id: rawPlaceId || null,
+      tripadvisor_url: rawTripadvisor || null,
+    })
+    .eq('id', user.company_id)
+
+  if (error) {
+    console.error('[updateExternalReviewsAction]', error)
+    return { success: false, error: 'No se pudo guardar' }
+  }
+
+  revalidatePath('/admin/settings')
+  return { success: true }
+}
+
 // ── Depósito por adelantado ───────────────────────────────────────────────────
 // Vive dentro de `settings.booking` (donde siempre estuvo) pero se edita en
 // /admin/pricing junto al resto de lo monetario. Se guarda con merge sobre el

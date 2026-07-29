@@ -4,6 +4,7 @@ import {
   updateCompanyInfoAction,
   updateBookingSettingsAction,
   updateNotificationRemindersAction,
+  updateExternalReviewsAction,
 } from '@/app/actions/settings'
 import { HourChipsField } from '@/components/admin/hour-chips-field'
 import { updateDispatchWeightsAction } from '@/app/actions/dispatch-settings'
@@ -125,7 +126,7 @@ export default async function SettingsPage({
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('name, slug, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, whop_connect_company_id, whop_connect_onboarded, active_payment_provider, logo_url, primary_color, tagline, hero_image_url, about, status, plan, subscription_ends_at, whop_membership_id, whop_billing_member_id, quickbooks_realm_id, quickbooks_connected_at, quickbooks_sync_enabled, quickbooks_last_synced_at')
+    .select('name, slug, phone, email, address, city, country, timezone, currency, settings, stripe_connect_account_id, stripe_connect_onboarded, whop_connect_company_id, whop_connect_onboarded, active_payment_provider, logo_url, primary_color, tagline, hero_image_url, about, status, plan, subscription_ends_at, whop_membership_id, whop_billing_member_id, quickbooks_realm_id, quickbooks_connected_at, quickbooks_sync_enabled, quickbooks_last_synced_at, google_place_id, tripadvisor_url')
     .eq('id', user.company_id)
     .single()
 
@@ -170,6 +171,7 @@ export default async function SettingsPage({
   const infoAction:     (fd: FormData) => void = updateCompanyInfoAction
   const bookingAction:  (fd: FormData) => void = updateBookingSettingsAction
   const remindersAction: (fd: FormData) => void = updateNotificationRemindersAction
+  const externalReviewsAction: (fd: FormData) => void = updateExternalReviewsAction
   const dispatchWeightsAction: (fd: FormData) => void = updateDispatchWeightsAction
   const dispatchWeights = parseDispatchWeights((company.settings as Record<string, unknown> | null)?.dispatch_weights)
   const connectAction:  () => void = createConnectOnboardingAction
@@ -419,6 +421,45 @@ export default async function SettingsPage({
         currentColor={company.primary_color ?? '#e9c176'}
       />
     </div>
+
+    {/* ── Reseñas en Google / TripAdvisor ── */}
+    <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
+      <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.externalReviewsTitle}</h2>
+      <p className="text-xs text-sl-on-surface-muted mb-5 max-w-[75ch]">{t.externalReviewsIntro}</p>
+      <form action={externalReviewsAction} className="space-y-4">
+        <div>
+          <label className={labelCls}>{t.googlePlaceIdLabel}</label>
+          <input
+            name="google_place_id"
+            defaultValue={company.google_place_id ?? ''}
+            placeholder="ChIJN1t_tDeuEmsRUsoyG83frY4"
+            className={`${inputCls} font-mono`}
+          />
+          <p className="text-[11px] text-sl-on-surface-muted mt-1">{t.googlePlaceIdHint}</p>
+        </div>
+        <div>
+          <label className={labelCls}>{t.tripadvisorUrlLabel}</label>
+          <input
+            name="tripadvisor_url"
+            type="url"
+            defaultValue={company.tripadvisor_url ?? ''}
+            placeholder="https://www.tripadvisor.com/..."
+            className={inputCls}
+          />
+          <p className="text-[11px] text-sl-on-surface-muted mt-1">{t.tripadvisorUrlHint}</p>
+        </div>
+        {/* El operador necesita saber por qué NO puede filtrar por nota, o lo
+            pedirá como "mejora" y le costará el listado. */}
+        <p className="text-[11px] text-amber-700 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 max-w-[75ch]">
+          {t.externalReviewsPolicy}
+        </p>
+        <div className="flex justify-end pt-1">
+          <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
+            {t.saveExternalReviews}
+          </button>
+        </div>
+      </form>
+    </section>
 
     {/* ── Portada / Microsite ── */}
     <CoverForm

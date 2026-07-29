@@ -5,7 +5,9 @@
 // permite calificar UNA vez y solo viajes completados.
 
 import { revalidatePath } from 'next/cache'
+import { waitUntil } from '@vercel/functions'
 import { createAdminClient } from '@/lib/supabase/server'
+import { grantRewardsForBooking } from '@/lib/rewards/grant'
 
 export async function submitReviewAction(
   bookingId: string,
@@ -21,7 +23,7 @@ export async function submitReviewAction(
 
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, status, rated_at')
+    .select('id, status, rated_at, company_id, customer_id, passenger_email, passenger_phone')
     .eq('id', bookingId)
     .single()
 
@@ -44,6 +46,20 @@ export async function submitReviewAction(
     console.error('[submitReviewAction]', error)
     return { success: false, error: 'save_failed' }
   }
+
+  // Recompensa por HABER reseñado, sin mirar la puntuación (ver la cabecera de
+  // lib/rewards/engine.ts). En background: la reseña ya se guardó y no puede
+  // fallar porque una regla de descuento falle.
+  waitUntil(
+    grantRewardsForBooking({
+      companyId: booking.company_id,
+      bookingId,
+      customerEmail: booking.passenger_email,
+      customerPhone: booking.passenger_phone,
+      customerId: booking.customer_id,
+      justSubmittedReview: true,
+    }),
+  )
 
   revalidatePath(`/review/${bookingId}`)
   return { success: true }

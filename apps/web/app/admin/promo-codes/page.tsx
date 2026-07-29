@@ -5,13 +5,15 @@ import { isAddonActive, ADDON_MONTHLY_PRICE, getAddonCheckoutUrl } from '@/lib/b
 import { AddonUpsellCard } from '@/components/admin/addon-upsell-card'
 import { PromoCodeForm } from '@/components/admin/promo-codes/promo-code-form'
 import { PromoCodeActiveToggle } from '@/components/admin/promo-codes/promo-code-active-toggle'
+import { RewardRulesPanel, type RewardRuleRow } from '@/components/admin/promo-codes/reward-rules-panel'
+import { SectionTabs } from '@/components/admin/section-tabs'
 
 export default async function PromoCodesPage() {
   const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return <p className="p-8 text-sl-on-surface-muted">Sin empresa asignada.</p>
 
   const admin = createAdminClient()
-  const { data: company } = await admin.from('companies').select('plan, email').eq('id', user.company_id).single()
+  const { data: company } = await admin.from('companies').select('plan, email, currency').eq('id', user.company_id).single()
   if (!company) return <p className="p-8 text-sl-on-surface-muted">Empresa no encontrada.</p>
 
   const { data: addon } = await admin
@@ -40,20 +42,21 @@ export default async function PromoCodesPage() {
     )
   }
 
-  const { data: codes } = await admin
-    .from('promo_codes')
-    .select('*')
-    .eq('company_id', user.company_id)
-    .order('created_at', { ascending: false })
+  const [{ data: codes }, { data: rules }] = await Promise.all([
+    admin
+      .from('promo_codes')
+      .select('*')
+      .eq('company_id', user.company_id)
+      .order('created_at', { ascending: false }),
+    admin
+      .from('reward_rules')
+      .select('id, name, trigger_type, threshold, discount_type, discount_value, valid_days, is_active')
+      .eq('company_id', user.company_id)
+      .order('created_at', { ascending: false }),
+  ])
 
-  return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
-      <div>
-        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
-        <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
-        <p className="text-sm text-sl-on-surface-muted">{t.subtitle}</p>
-      </div>
-
+  const manualPanel = (
+    <>
       <PromoCodeForm t={t} />
 
       <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
@@ -95,6 +98,34 @@ export default async function PromoCodesPage() {
           </div>
         )}
       </div>
+    </>
+  )
+
+  return (
+    <div className="p-8 max-w-[1400px] mx-auto space-y-5">
+      <div>
+        <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
+        <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
+        <p className="text-sm text-sl-on-surface-muted max-w-[75ch]">{t.subtitle}</p>
+      </div>
+
+      <SectionTabs
+        ariaLabel={t.title}
+        tabs={[
+          { key: 'manual', label: t.tabManual },
+          { key: 'rules',  label: t.tabRules },
+        ]}
+        panels={{
+          manual: manualPanel,
+          rules: (
+            <RewardRulesPanel
+              rules={(rules ?? []) as RewardRuleRow[]}
+              t={t}
+              currency={company.currency ?? 'USD'}
+            />
+          ),
+        }}
+      />
     </div>
   )
 }

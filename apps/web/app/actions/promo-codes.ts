@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
 import { isAddonActive } from '@/lib/billing/addons'
 import { validatePromoCode, computeDiscount, type PromoDiscountType } from '@/lib/promo/engine'
+import type { RewardTrigger } from '@/lib/supabase/database.types'
 
 type ActionResult<T = undefined> = { success: boolean; error?: string; data?: T }
 
@@ -163,4 +164,119 @@ export async function validatePromoCodeAction(opts: {
   )
 
   return { success: true, data: { discountAmount, finalAmount: opts.bookingAmount - discountAmount } }
+}
+
+// ─── Reglas de recompensa automática ──────────────────────────────────────────
+// Los códigos de arriba son manuales: el operador los crea y los reparte. Esto
+// los automatiza — cuando un cliente cumple una condición, el sistema le
+// genera un código personal (ver lib/rewards/grant.ts).
+//
+// Va detrás del MISMO add-on que los códigos manuales: es la misma capacidad,
+// solo que disparada sola.
+
+const REWARD_TRIGGERS: RewardTrigger[] = [
+  'trips_completed', 'total_spent', 'first_trip', 'inactivity_days', 'review_submitted',
+]
+// Disparadores que NO llevan umbral. Debe coincidir con el CHECK de la
+// migración 78, o el insert lo rechaza la base.
+const TRIGGERS_WITHOUT_THRESHOLD: RewardTrigger[] = ['first_trip', 'review_submitted']
+
+export async function createRewardRuleAction(fd: FormData): Promise<ActionResult> {
+  const user = await requireRole('company_owner', 'company_admin')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const gate = await requirePromoAddonActive(user.company_id)
+  if (!gate.ok) return { success: false, error: gate.error }
+
+  const name = (fd.get('name') as string ?? '').trim().slice(0, 120)
+  if (!name) return { success: false, error: 'Ponle un nombre a la regla' }
+
+  const triggerType = fd.get('trigger_type') as RewardTrigger
+  if (!REWARD_TRIGGERS.includes(triggerType)) {
+    return { success: false, error: 'Disparador inválido' }
+  }
+
+  const needsThreshold = !TRIGGERS_WITHOUT_THRESHOLD.includes(triggerType)
+  const rawThreshold = parseFloat(fd.get('threshold') as string)
+  if (needsThreshold && (!Number.isFinite(rawThreshold) || rawThreshold <= 0)) {
+    return { success: false, error: 'Este disparador necesita un valor mayor que cero' }
+  }
+
+  const discountType = fd.get('discount_type') as 'percentage' | 'fixed'
+  if (discountType !== 'percentage' && discountType !== 'fixed') {
+    return { success: false, error: 'Tipo de descuento inválido' }
+  }
+
+  const discountValue = parseFloat(fd.get('discount_value') as string)
+  if (!Number.isFinite(discountValue) || discountValue <= 0) {
+    return { success: false, error: 'El descuento debe ser mayor que cero' }
+  }
+  if (discountType === 'percentage' && discountValue > 100) {
+    return { success: false, error: 'Un descuento porcentual no puede pasar de 100%' }
+  }
+
+  const validDaysRaw = parseInt(fd.get('valid_days') as string ?? '90', 10)
+  const validDays = Number.isFinite(validDaysRaw) && validDaysRaw > 0 ? Math.min(validDaysRaw, 730) : 90
+
+  const admin = createAdminClient()
+  const { error } = await admin.from('reward_rules').insert({
+    company_id: user.company_id,
+    name,
+    trigger_type: triggerType,
+    threshold: needsThreshold ? rawThreshold : null,
+    discount_type: discountType,
+    discount_value: discountValue,
+    valid_days: validDays,
+  })
+
+  if (error) {
+    console.error('[createRewardRuleAction]', error)
+    return { success: false, error: 'No se pudo crear la regla' }
+  }
+
+  revalidatePath('/admin/promo-codes')
+  return { success: true }
+}
+
+export async function setRewardRuleActiveAction(ruleId: string, isActive: boolean): Promise<ActionResult> {
+  const user = await requireRole('company_owner', 'company_admin')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('reward_rules')
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq('id', ruleId)
+    .eq('company_id', user.company_id)
+
+  if (error) {
+    console.error('[setRewardRuleActiveAction]', error)
+    return { success: false, error: 'No se pudo actualizar' }
+  }
+
+  revalidatePath('/admin/promo-codes')
+  return { success: true }
+}
+
+export async function deleteRewardRuleAction(ruleId: string): Promise<ActionResult> {
+  const user = await requireRole('company_owner', 'company_admin')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const admin = createAdminClient()
+  // Los reward_grants tienen ON DELETE CASCADE: al borrar la regla se pierde
+  // el registro de quién ya la recibió. Los códigos ya emitidos siguen vivos
+  // (promo_codes es tabla aparte), que es lo correcto: el cliente ya lo tiene.
+  const { error } = await admin
+    .from('reward_rules')
+    .delete()
+    .eq('id', ruleId)
+    .eq('company_id', user.company_id)
+
+  if (error) {
+    console.error('[deleteRewardRuleAction]', error)
+    return { success: false, error: 'No se pudo eliminar' }
+  }
+
+  revalidatePath('/admin/promo-codes')
+  return { success: true }
 }

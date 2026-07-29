@@ -24,6 +24,9 @@ export type PassengerNotificationType =
   | 'booking_reminder'
   | 'reengagement'
   | 'chat_message'
+  // Recompensa automática otorgada (lib/rewards/grant.ts). La columna `type`
+  // es TEXT sin CHECK, así que agregar variantes no requiere migración.
+  | 'reward'
 
 export interface NotifyPassengerParams {
   /** user_profiles.id del pasajero (bookings.customer_id). */

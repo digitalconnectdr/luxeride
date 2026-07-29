@@ -31,6 +31,7 @@ import { getAppUrl } from '@/lib/app-url'
 import { calculateFare, bestRule, getLocalTimeParts, type PricingRuleFields } from '@/lib/pricing/engine'
 import { resolveZoneId, type ServiceZoneForMatch } from '@/lib/pricing/zones'
 import { fetchHolidayDates } from '@/lib/pricing/holidays'
+import { grantRewardsForBooking } from '@/lib/rewards/grant'
 import { tryAutoAssignDriver, tryAutoFarmToAffiliates, windowFor, overlaps } from '@/lib/dispatch/auto-assign'
 import { isAddonActive } from '@/lib/billing/addons'
 import { validatePromoCode, computeDiscount } from '@/lib/promo/engine'
@@ -569,6 +570,18 @@ export async function updateBookingStatusAction(
   // solo en este momento. No-op si ya se cobró o si el método era efectivo.
   if (newStatus === 'completed') {
     autoChargeDeferredCardInBackground(bookingId)
+    // Recompensas por comportamiento. Mismo enganche que en driver.ts: el
+    // viaje puede cerrarse desde el panel o desde la app del conductor.
+    waitUntil(
+      grantRewardsForBooking({
+        companyId: booking.company_id,
+        bookingId,
+        customerEmail: booking.passenger_email,
+        customerPhone: booking.passenger_phone,
+        customerId: booking.customer_id ?? null,
+        justSubmittedReview: false,
+      }),
+    )
   }
 
   // ── F1.10 Policy Engine: fee de cancelación / no-show ────────────────────────
