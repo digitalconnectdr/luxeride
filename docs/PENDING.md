@@ -26,10 +26,24 @@ Pidió agruparlo para que la empresa no tenga que saltar de un sitio a otro.
   no algo que se ajuste cada semana.
 - Sidebar: la entrada pasó de "Reglas de precio" a "Tarifas y cargos" para
   reflejar que ya no son solo reglas.
-- **Pendiente que el usuario pidió explícitamente NO hacer ahora**: agrupar
-  el resto de `/admin/settings` (16 secciones en un solo scroll) en pestañas
-  — Empresa · Marca y micrositio · Reservas · Integraciones · Operación. Lo
-  pidió como tarea futura separada, cuando decida retomarlo.
+
+**Segunda pasada — Configuración también en pestañas:**
+- `/admin/settings` pasó de 14 secciones en un solo scroll de ~1000 líneas a
+  4 pestañas: **Empresa** (datos, suscripción, facturación adicional) ·
+  **Marca y micrositio** (logo/color, portada, servicios, link de reservas,
+  widget) · **Operación** (ventana de reservas, recordatorios, pesos del
+  dispatch) · **Integraciones** (Whop Connect, QuickBooks, Stripe oculto).
+- `components/admin/section-tabs.tsx` reemplaza al `pricing-tabs.tsx` de la
+  primera pasada: es el mismo componente para ambas páginas, así no derivan.
+- **Consciente del hash**: hay enlaces externos a `/admin/settings#subscription`
+  (correos del cron de vencimiento, banner de error, popup de expiración) y a
+  `#payments` / `#branding` (checklist de onboarding). Meter las secciones en
+  pestañas los habría roto, así que cada pestaña declara qué anclas contiene y
+  el componente selecciona la pestaña correcta al leer `location.hash`.
+- De paso: `#payments` y `#branding` **no existían como anclas** — el checklist
+  de onboarding llevaba a la nada desde siempre. Ahora existen.
+- El aviso de "esto se mudó a Precios" que se había puesto en Reservas se
+  quitó a pedido del usuario: no lo consideró necesario.
 
 ## ✅ Tarifa dinámica real + score compuesto de auto-asignación (2026-07-25)
 

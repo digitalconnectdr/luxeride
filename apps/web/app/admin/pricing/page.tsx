@@ -11,7 +11,7 @@ import { PricingRuleRow } from '@/components/admin/pricing-rule-row'
 import { PricingModelField } from '@/components/admin/pricing-model-field'
 import { PricingAdvancedFields } from '@/components/admin/pricing-advanced-fields'
 import { PricingFaq } from '@/components/admin/pricing-faq'
-import { PricingTabs } from '@/components/admin/pricing-tabs'
+import { SectionTabs } from '@/components/admin/section-tabs'
 import { CompanyHolidays } from '@/components/admin/company-holidays'
 import { getLocalTimeParts } from '@/lib/pricing/engine'
 import { parsePolicy, parseExtraFees } from '@/lib/policy/engine'
@@ -438,13 +438,14 @@ export default async function PricingPage() {
         <p className="text-sm text-sl-on-surface-muted max-w-[75ch]">{t.pageSubtitle}</p>
       </div>
 
-      <PricingTabs
-        labels={{
-          rules:      t.tabRules,
-          surcharges: t.tabSurcharges,
-          policy:     t.tabPolicy,
-          holidays:   t.tabHolidays,
-        }}
+      <SectionTabs
+        ariaLabel={t.pageTitle}
+        tabs={[
+          { key: 'rules',      label: t.tabRules },
+          { key: 'surcharges', label: t.tabSurcharges },
+          { key: 'policy',     label: t.tabPolicy },
+          { key: 'holidays',   label: t.tabHolidays },
+        ]}
         panels={{
           rules:      rulesPanel,
           surcharges: surchargesPanel,
