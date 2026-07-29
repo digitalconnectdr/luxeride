@@ -12,6 +12,7 @@ import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
 import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
 import { ShareMenu } from '@/components/share/share-menu'
+import { VerifiedBadge } from '@/components/booking/verified-badge'
 import { resolveServiceFallbackImage } from '@/lib/booking/service-fallback-images'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
@@ -62,8 +63,9 @@ export function MicrositeCorporate(props: {
   reviews: Reviews
   acceptsCardOnline: boolean
   shareUrl: string
+  isVerified: boolean
 }) {
-  const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline, shareUrl } = props
+  const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline, shareUrl, isVerified } = props
 
   const heading = (eyebrow: string, title: string, sub?: string) => (
     <Reveal className="mb-12 max-w-xl">
@@ -144,9 +146,10 @@ export function MicrositeCorporate(props: {
       </section>
 
       {/* BARRA DE CONFIANZA — fila fina, sin bloque de color contundente */}
-      {(t.features.length > 0 || reviews.rating != null) && (
+      {(t.features.length > 0 || reviews.rating != null || isVerified) && (
         <section className="border-y border-black/[0.07] bg-[#fafafb]">
           <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-6 flex flex-wrap items-center gap-x-10 gap-y-4">
+            {isVerified && <VerifiedBadge label={t.verifiedBadgeLabel} tooltip={t.verifiedBadgeTooltip} variant="light" />}
             {t.features.slice(0, reviews.rating != null ? 3 : 4).map((f) => (
               <span key={f.title} className="flex items-center gap-2.5 text-sm text-[#42484f]">
                 <Check color={brandColor} />

@@ -46,7 +46,7 @@ export default async function DispatcherDashboardPage() {
       .eq('role', 'driver')
       .eq('is_active', true)
       .order('first_name'),
-    admin.from('companies').select('auto_assign_enabled').eq('id', user.company_id).single(),
+    admin.from('companies').select('auto_assign_enabled, settings').eq('id', user.company_id).single(),
   ])
 
   // Estado en vivo de cada conductor — disponibilidad + viaje actual + viajes
@@ -134,6 +134,10 @@ export default async function DispatcherDashboardPage() {
       drivers={drivers ?? []}
       driverStatuses={driverStatuses}
       autoAssignEnabled={companyRow?.auto_assign_enabled ?? true}
+      backupProtocolEnabled={
+        (companyRow?.settings as { dispatch?: { backup_protocol_enabled?: boolean } } | null)?.dispatch
+          ?.backup_protocol_enabled === true
+      }
       locale={locale}
       t={dict.dispatch}
       flightT={dict.common.flightStatus}

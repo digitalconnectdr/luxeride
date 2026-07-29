@@ -76,3 +76,44 @@ export async function updateDispatchWeightsAction(
   revalidatePath('/admin/settings')
   return { success: true, weights }
 }
+
+/**
+ * Protocolo de respaldo (Guaranteed Ride) — opt-in, disponible en todos los
+ * planes. Vive en companies.settings.dispatch.backup_protocol_enabled (mismo
+ * motivo que dispatch_weights: no amerita una columna propia). El cron de
+ * pg_cron (cada ~5 min) solo revisa empresas con esto en true.
+ */
+export async function updateBackupProtocolSettingAction(
+  enabled: boolean,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('company_owner', 'company_admin', 'dispatcher')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const admin = createAdminClient()
+  const { data: current } = await admin
+    .from('companies')
+    .select('settings')
+    .eq('id', user.company_id)
+    .single()
+
+  const currentSettings = (current?.settings as Record<string, unknown>) ?? {}
+  const currentDispatch = (currentSettings.dispatch as Record<string, unknown>) ?? {}
+  const settings = {
+    ...currentSettings,
+    dispatch: { ...currentDispatch, backup_protocol_enabled: enabled },
+  }
+
+  const { error } = await admin
+    .from('companies')
+    .update({ settings: settings as Json })
+    .eq('id', user.company_id)
+
+  if (error) {
+    console.error('[updateBackupProtocolSettingAction]', error)
+    return { success: false, error: 'No se pudo actualizar' }
+  }
+
+  revalidatePath('/dispatcher/dashboard')
+  revalidatePath('/admin/settings')
+  return { success: true }
+}

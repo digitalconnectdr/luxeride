@@ -112,6 +112,18 @@ export const pt: Dictionary = {
           'Sincronização com QuickBooks Online (em breve)',
         ],
       },
+      {
+        kicker: 'Para sua marca',
+        title: 'O passageiro é seu, não de um intermediário',
+        desc: 'Cada reserva constrói SUA marca e SEU relacionamento com o cliente — não o de uma plataforma que define o preço, fica com a maior parte da viagem e é dona do histórico do passageiro.',
+        bullets: [
+          'Seus dados de passageiros e o histórico deles, 100% seus',
+          'Preferências do passageiro lembradas | temperatura, música, conversa, ajuda com bagagem',
+          'Avaliações sob seu próprio nome',
+          'Recompensas e indicações que fidelizam SEU cliente, não o de uma plataforma',
+          'Sem comissão de intermediário nas suas reservas diretas',
+        ],
+      },
     ],
     fleet: {
       kicker: 'A frota',
@@ -154,6 +166,7 @@ export const pt: Dictionary = {
         'Papéis de equipe e níveis de permissão',
         'Registro de auditoria de cada ação crítica',
         'Acompanhamento de vencimentos de licenças, alvarás e seguros',
+        'Certificação automática "LuxeRide Verified" visível para seus passageiros',
         'Conciliação de pagamentos e viagens',
         'Páginas de rastreamento para o passageiro',
         'Acesso pelo navegador | sem instalações',
@@ -185,6 +198,12 @@ export const pt: Dictionary = {
     pricingCta: 'Comece grátis',
     pricingContact: 'Falar com vendas',
     pricingFooterNote: 'Hospedagem, atualizações do sistema e manutenção da plataforma estão incluídas em todos os planos, sem custos ocultos de infraestrutura.',
+    foundingOffer: {
+      badge: 'Oferta de fundadores',
+      title: '50% de desconto nos primeiros 3 meses',
+      subtitle: 'Limitado aos primeiros 15 operadores que se juntarem à LuxeRide.',
+      note: 'Mencione ao se cadastrar e aplicamos o desconto na sua conta.',
+    },
     plans: [
       {
         name: 'Starter',
@@ -299,6 +318,10 @@ export const pt: Dictionary = {
       {
         q: 'Preciso instalar algo?',
         a: 'Não. {brand} roda no navegador em qualquer dispositivo. Os motoristas usam o celular | sem downloads de app store.',
+      },
+      {
+        q: 'Quem é dono do relacionamento com meus passageiros?',
+        a: 'Você. Diferente de plataformas como Uber Elite ou Blacklane, onde o passageiro reserva dentro do ecossistema DELAS e você opera como fornecedor de capacidade, na {brand} o passageiro reserva na SUA página, com SUA marca, e o histórico, avaliações e dados de contato dele ficam na sua conta — não na nossa.',
       },
     ],
     directoryTitle: 'Vai viajar? Reserve seu próximo transfer',
@@ -705,6 +728,12 @@ export const pt: Dictionary = {
       cancelReason: 'Motivo do cancelamento:',
       reassignReason: 'Motivo da reatribuição (opcional):',
     },
+    backupProtocol: {
+      label: 'Protocolo de respaldo',
+      on: 'Ativado',
+      off: 'Desativado',
+      infoTip: 'Guaranteed Ride: uma verificação de fundo a cada poucos minutos monitora as viagens já atribuídas perto do horário de embarque. Se o motorista designado não se moveu ou não vai chegar a tempo, outro motorista disponível da sua própria frota é atribuído automaticamente — o passageiro recebe uma mensagem tranquilizadora, não uma surpresa. Nunca cruza para a frota de outra empresa. Disponível em todos os planos; você pode desativar quando quiser.',
+    },
     autoAssign: {
       label: 'Atribuição automática',
       automatic: 'Automático',
@@ -760,6 +789,8 @@ export const pt: Dictionary = {
     rights: 'Todos os direitos reservados.',
     contact: 'Fale conosco',
     whyTitle: 'A diferença',
+    verifiedBadgeLabel: 'LuxeRide Verified',
+    verifiedBadgeTooltip: 'As licenças, o seguro e os alvarás deste operador estão em dia — certificação automática, verificada pela LuxeRide.',
     stepsTitle: 'Reserve em 3 passos',
     reviewsTitle: 'O que dizem nossos clientes',
     paymentMethodsTitle: 'Formas de pagamento',

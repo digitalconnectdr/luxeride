@@ -111,6 +111,18 @@ export const en = {
           'QuickBooks Online sync (coming soon)',
         ],
       },
+      {
+        kicker: 'For your brand',
+        title: 'The passenger is yours, not an intermediary’s',
+        desc: 'Every booking builds YOUR brand and YOUR relationship with the client — not a platform’s that sets the price, keeps the biggest cut of every ride, and owns the passenger’s history.',
+        bullets: [
+          'Your passenger data and history, 100% yours',
+          'Passenger preferences remembered | temperature, music, conversation, luggage help',
+          'Reviews and ratings under your own name',
+          'Rewards and referrals that build loyalty to YOUR client, not a platform’s',
+          'No middleman commission on your direct bookings',
+        ],
+      },
     ],
     fleet: {
       kicker: 'The fleet',
@@ -153,6 +165,7 @@ export const en = {
         'Team roles and permission levels',
         'Audit trail for every critical action',
         'License, permit and insurance expiration tracking',
+        'Automatic "LuxeRide Verified" certification visible to your passengers',
         'Payment and trip reconciliation',
         'Passenger-facing tracking pages',
         'Browser-based access | no installs required',
@@ -184,6 +197,12 @@ export const en = {
     pricingCta: 'Start free',
     pricingContact: 'Talk to sales',
     pricingFooterNote: 'Hosting, system updates and platform maintenance are included in every plan, with no hidden infrastructure costs.',
+    foundingOffer: {
+      badge: 'Founding Operator offer',
+      title: '50% off your first 3 months',
+      subtitle: 'Limited to the first 15 operators who join LuxeRide.',
+      note: 'Mention it when you sign up and we apply the discount to your account.',
+    },
     plans: [
       {
         name: 'Starter',
@@ -298,6 +317,10 @@ export const en = {
       {
         q: 'Do I need to install anything?',
         a: 'No. {brand} runs in the browser on any device. Chauffeurs use their phones | no app store downloads required.',
+      },
+      {
+        q: 'Who owns the relationship with my passengers?',
+        a: 'You do. Unlike platforms such as Uber Elite or Blacklane, where the passenger books inside THEIR ecosystem and you operate as a capacity provider, on {brand} the passenger books on YOUR page, under YOUR brand, and their history, ratings and contact details stay in your account — not ours.',
       },
     ],
     directoryTitle: 'Traveling? Book your next ride',
@@ -710,6 +733,12 @@ export const en = {
       manual: 'Manual',
       infoTip: 'Automatic: every new booking is assigned on its own. Drivers with a schedule conflict, a blocked vehicle, or a vehicle type other than the one the client booked are ruled out first; among the rest, the highest score wins on closeness, fair share, rating and reliability (weights are set in Settings). If nobody qualifies, it just stays pending. Manual: turn this off and every booking stays in Pending for you to pick the driver from this board. You can change this anytime.',
     },
+    backupProtocol: {
+      label: 'Backup protocol',
+      on: 'On',
+      off: 'Off',
+      infoTip: "Guaranteed Ride: a background check every few minutes watches trips already assigned close to pickup time. If the assigned driver hasn't moved or won't make it on time, another available driver from your own fleet is assigned automatically — the passenger gets a reassurance message, not a surprise. Never crosses into another company's fleet. Available on every plan; you can turn it off anytime.",
+    },
     activeDrivers: {
       title: 'Active drivers right now',
       onDuty: '{count} on duty',
@@ -759,6 +788,8 @@ export const en = {
     rights: 'All rights reserved.',
     contact: 'Contact us',
     whyTitle: 'The difference',
+    verifiedBadgeLabel: 'LuxeRide Verified',
+    verifiedBadgeTooltip: 'This operator’s licenses, insurance and permits are current — automatic certification, verified by LuxeRide.',
     stepsTitle: 'Book in 3 steps',
     reviewsTitle: 'What our clients say',
     paymentMethodsTitle: 'Payment methods',

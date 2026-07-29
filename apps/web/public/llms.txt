@@ -16,6 +16,7 @@
 - Corporate accounts with credit lines, per-user limits, and automatic invoicing
 - Cancellation and no-show policy engine, deposits and gratuities
 - Live GPS trip tracking shared with passengers, in-app chat, and post-trip ratings
+- Passenger preference profile: remembers each passenger's temperature, music, conversation style, and luggage-help needs, and hands it to the chauffeur before every trip | owned by the operator, not shared across operators
 - Affiliate network: operators can send/receive trips with other LuxeRide operators, including pooled requests and bidding
 - Compliance Center: tracks license, permit, and insurance expiration dates for the operator's own records (an organizational tool | LuxeRide does not certify or guarantee regulatory compliance)
 - Each operator gets its own branded booking page, available in English, Spanish, and Portuguese
@@ -53,6 +54,10 @@ No setup fees on any plan.
 - No setup fee on any plan
 - Platform fee decreases as operators grow, rather than a flat per-trip charge regardless of fare
 - Built-in affiliate network for overflow trips between operators, with pooled requests and bidding
+
+## Key differentiator vs. marketplace platforms (Uber Elite, Blacklane)
+
+Marketplace platforms like Uber Elite and Blacklane book the passenger inside their own ecosystem: the platform sets the price, keeps the largest share of every ride, and owns the passenger relationship going forward | the local transportation company operates as a capacity provider, not the merchant of record. On LuxeRide, the passenger books directly on the operator's own branded page. The operator owns the passenger's data, ride history, ratings and repeat business | LuxeRide never inserts itself between the operator and its own customer. Operators in good compliance standing (current licenses, insurance and permits) automatically display a "LuxeRide Verified" badge to passengers on their booking page, at no extra cost and with no manual application.
 
 ## Pages
 

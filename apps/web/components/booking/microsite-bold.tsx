@@ -13,6 +13,7 @@ import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
 import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
 import { ShareMenu } from '@/components/share/share-menu'
+import { VerifiedBadge } from '@/components/booking/verified-badge'
 import { resolveServiceFallbackImage } from '@/lib/booking/service-fallback-images'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
@@ -73,8 +74,9 @@ export function MicrositeBold(props: {
   reviews: Reviews
   acceptsCardOnline: boolean
   shareUrl: string
+  isVerified: boolean
 }) {
-  const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline, shareUrl } = props
+  const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline, shareUrl, isVerified } = props
 
   const heading = (eyebrow: string, title: string, sub?: string, dark = false) => (
     <Reveal className="mb-12 lg:mb-14 max-w-2xl">
@@ -146,6 +148,11 @@ export function MicrositeBold(props: {
                 <a href="#flota" className="px-7 py-4 rounded-full text-sm font-medium border border-white/25 text-white/85 hover:border-white/50 hover:text-white transition-colors">{t.viewFleet}</a>
               )}
             </div>
+            {isVerified && (
+              <div className="mt-6">
+                <VerifiedBadge label={t.verifiedBadgeLabel} tooltip={t.verifiedBadgeTooltip} />
+              </div>
+            )}
           </Reveal>
           <Reveal className="relative h-[18rem] sm:h-[24rem] lg:h-[28rem] rounded-[1.5rem] overflow-hidden ring-1 ring-white/10 shadow-2xl shadow-black/40">
             <Image src={heroImg} alt="" fill priority sizes="(max-width:1024px) 100vw, 46vw" className="object-cover animate-kenburns" />

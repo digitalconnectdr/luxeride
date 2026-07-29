@@ -11,8 +11,10 @@
 // plataforma (sin interruptor de configuración).
 
 import { createAdminClient } from '@/lib/supabase/server'
-import { notifyBookingEventInBackground } from '@/lib/notifications'
+import { notify, notifyBookingEventInBackground } from '@/lib/notifications'
 import { notifyDriverPushInBackground } from '@/lib/notifications/push'
+import { notifyPassengerInBackground } from '@/lib/notifications/passenger-feed'
+import { pushAdminNotification } from '@/lib/notifications/admin-feed'
 import { getAppUrl } from '@/lib/app-url'
 import { createAffiliatePoolTrips } from '@/app/actions/affiliates'
 import {
@@ -546,4 +548,283 @@ export async function tryAutoFarmToAffiliates(
 
   if (!result.success) return { sent: false }
   return { sent: true, affiliateCount: wave.length }
+}
+
+// ── Protocolo de respaldo (Guaranteed Ride) ────────────────────────────────────
+// Reasigna DENTRO de la misma flota cuando lib/dispatch/risk.ts detecta que el
+// conductor ya asignado corre riesgo real de no llegar a tiempo. Reusa el
+// mismo criterio de candidatos que tryAutoAssignDriver (misma empresa,
+// disponible, sin choque de horario, tipo de vehículo compatible), EXCLUYENDO
+// al conductor actual — es una reasignación, no una asignación desde cero.
+
+interface RiskReassignBooking {
+  id: string
+  company_id: string
+  booking_number: string
+  scheduled_at: string
+  duration_minutes: number | null
+  driver_id: string // conductor en riesgo, a reemplazar
+  customer_id: string | null
+  vehicle_type_id: string | null
+  pickup_location: unknown
+  dropoff_location: unknown
+  passenger_name: string | null
+  passenger_email: string | null
+  passenger_phone: string | null
+  total_amount: number | null
+  currency: string | null
+}
+
+export interface ReassignForRiskResult {
+  reassigned: boolean
+  newDriverId?: string
+}
+
+export async function reassignForRisk(
+  admin: ReturnType<typeof createAdminClient>,
+  booking: RiskReassignBooking,
+): Promise<ReassignForRiskResult> {
+  const previousDriverId = booking.driver_id
+
+  const { data: company } = await admin
+    .from('companies')
+    .select('settings, name')
+    .eq('id', booking.company_id)
+    .single()
+  const weights = parseDispatchWeights((company?.settings as Record<string, unknown> | null)?.dispatch_weights)
+
+  const pickupPoint = booking.pickup_location as { lat?: number; lng?: number; address?: string } | null
+
+  const { data: availableDrivers } = await admin
+    .from('drivers')
+    .select('id, current_vehicle_id')
+    .eq('company_id', booking.company_id)
+    .eq('is_available', true)
+    .eq('operational_block', false)
+    .neq('id', previousDriverId)
+  const driverIds = (availableDrivers ?? []).map((d) => d.id)
+  if (!driverIds.length) {
+    await pushAdminNotification({
+      companyId: booking.company_id,
+      type: 'risk_reassign_failed',
+      title: `Sin respaldo disponible para ${booking.booking_number}`,
+      detail: 'El protocolo de respaldo detectó riesgo pero no hay ningún otro conductor disponible. Revisa el viaje ya mismo.',
+      href: `/admin/bookings/${booking.id}`,
+      sourceTable: 'bookings',
+      sourceId: booking.id,
+      dedupDays: 1,
+    })
+    return { reassigned: false }
+  }
+  const currentVehicleByDriver = new Map((availableDrivers ?? []).map((d) => [d.id, d.current_vehicle_id]))
+
+  const vehicleIdsInPlay = Array.from(new Set(Array.from(currentVehicleByDriver.values()).filter((v): v is string => !!v)))
+  const { data: vehicleBlockRows } = vehicleIdsInPlay.length
+    ? await admin.from('vehicles').select('id, operational_block, vehicle_type_id').in('id', vehicleIdsInPlay)
+    : { data: [] as { id: string; operational_block: boolean; vehicle_type_id: string | null }[] }
+  const blockedVehicleIds = new Set((vehicleBlockRows ?? []).filter((v) => v.operational_block).map((v) => v.id))
+  const typeByVehicleId = new Map((vehicleBlockRows ?? []).map((v) => [v.id, v.vehicle_type_id]))
+
+  const { data: activeProfiles } = await admin
+    .from('user_profiles')
+    .select('id')
+    .in('id', driverIds)
+    .eq('role', 'driver')
+    .eq('is_active', true)
+  const eligibleIds = new Set((activeProfiles ?? []).map((p) => p.id))
+  if (!eligibleIds.size) {
+    await pushAdminNotification({
+      companyId: booking.company_id,
+      type: 'risk_reassign_failed',
+      title: `Sin respaldo disponible para ${booking.booking_number}`,
+      detail: 'El protocolo de respaldo detectó riesgo pero no hay ningún otro conductor disponible. Revisa el viaje ya mismo.',
+      href: `/admin/bookings/${booking.id}`,
+      sourceTable: 'bookings',
+      sourceId: booking.id,
+      dedupDays: 1,
+    })
+    return { reassigned: false }
+  }
+
+  const { data: activeBookings } = await admin
+    .from('bookings')
+    .select('driver_id, scheduled_at, duration_minutes')
+    .in('driver_id', Array.from(eligibleIds))
+    .in('status', ['assigned', 'en_route', 'arrived', 'in_progress'])
+    .neq('id', booking.id)
+
+  const newWindow = windowFor(booking.scheduled_at, booking.duration_minutes)
+  const conflicted = new Set<string>()
+  for (const b of activeBookings ?? []) {
+    if (!b.driver_id) continue
+    if (overlaps(newWindow, windowFor(b.scheduled_at, b.duration_minutes))) conflicted.add(b.driver_id)
+  }
+
+  const { data: activeVehicleBookings } = vehicleIdsInPlay.length
+    ? await admin
+        .from('bookings')
+        .select('vehicle_id, scheduled_at, duration_minutes')
+        .in('vehicle_id', vehicleIdsInPlay)
+        .in('status', ['assigned', 'en_route', 'arrived', 'in_progress'])
+        .neq('id', booking.id)
+    : { data: [] as { vehicle_id: string | null; scheduled_at: string; duration_minutes: number | null }[] }
+  const vehicleConflicted = new Set<string>()
+  for (const b of activeVehicleBookings ?? []) {
+    if (!b.vehicle_id) continue
+    if (overlaps(newWindow, windowFor(b.scheduled_at, b.duration_minutes))) vehicleConflicted.add(b.vehicle_id)
+  }
+
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+  const { data: completedToday } = await admin
+    .from('bookings')
+    .select('driver_id')
+    .in('driver_id', Array.from(eligibleIds))
+    .eq('status', 'completed')
+    .gte('completed_at', todayStart.toISOString())
+  const todayCount = new Map<string, number>()
+  for (const b of completedToday ?? []) {
+    if (!b.driver_id) continue
+    todayCount.set(b.driver_id, (todayCount.get(b.driver_id) ?? 0) + 1)
+  }
+
+  const candidates = Array.from(eligibleIds).filter((id) => {
+    if (conflicted.has(id)) return false
+    const vehicleId = currentVehicleByDriver.get(id)
+    if (vehicleId && blockedVehicleIds.has(vehicleId)) return false
+    if (vehicleId && vehicleConflicted.has(vehicleId)) return false
+    if (booking.vehicle_type_id && vehicleId) {
+      const driverType = typeByVehicleId.get(vehicleId)
+      if (driverType && driverType !== booking.vehicle_type_id) return false
+    }
+    return true
+  })
+  if (!candidates.length) {
+    await pushAdminNotification({
+      companyId: booking.company_id,
+      type: 'risk_reassign_failed',
+      title: `Sin respaldo disponible para ${booking.booking_number}`,
+      detail: 'El protocolo de respaldo detectó riesgo pero ningún otro conductor calificó (choque de horario o tipo de vehículo). Revisa el viaje ya mismo.',
+      href: `/admin/bookings/${booking.id}`,
+      sourceTable: 'bookings',
+      sourceId: booking.id,
+      dedupDays: 1,
+    })
+    return { reassigned: false }
+  }
+
+  const presenceCutoff = new Date(Date.now() - 90 * 60_000).toISOString()
+  const { data: presenceRows } = await admin
+    .from('driver_presence')
+    .select('driver_id, latitude, longitude, updated_at')
+    .in('driver_id', candidates)
+    .gte('updated_at', presenceCutoff)
+  const distanceByDriver = new Map<string, number>()
+  if (typeof pickupPoint?.lat === 'number' && typeof pickupPoint?.lng === 'number') {
+    for (const p of presenceRows ?? []) {
+      distanceByDriver.set(p.driver_id, haversineMiles({ lat: p.latitude, lng: p.longitude }, { lat: pickupPoint.lat, lng: pickupPoint.lng }))
+    }
+  }
+
+  const { data: ratingRows } = await admin.from('drivers').select('id, rating').in('id', candidates)
+  const ratingByDriver = new Map((ratingRows ?? []).map((d) => [d.id, d.rating]))
+
+  const rejectionCutoff = new Date(Date.now() - 30 * 86_400_000).toISOString()
+  const { data: rejectionRows } = await admin
+    .from('booking_events')
+    .select('actor_id')
+    .eq('company_id', booking.company_id)
+    .eq('type', 'driver_rejected')
+    .gte('created_at', rejectionCutoff)
+    .in('actor_id', candidates)
+  const rejectionsByDriver = new Map<string, number>()
+  for (const r of rejectionRows ?? []) {
+    if (!r.actor_id) continue
+    rejectionsByDriver.set(r.actor_id, (rejectionsByDriver.get(r.actor_id) ?? 0) + 1)
+  }
+
+  const scoreInputs: DriverScoreInput[] = candidates.map((id) => ({
+    driverId: id,
+    tripsToday: todayCount.get(id) ?? 0,
+    rating: ratingByDriver.get(id) ?? null,
+    distanceMiles: distanceByDriver.get(id) ?? null,
+    recentRejections: rejectionsByDriver.get(id) ?? 0,
+  }))
+  const winner = scoreDrivers(scoreInputs, weights)[0]
+  const newDriverId = winner.driverId
+  const newVehicleId = currentVehicleByDriver.get(newDriverId) ?? null
+
+  const now = new Date().toISOString()
+  const { error, data: updated } = await admin
+    .from('bookings')
+    .update({ driver_id: newDriverId, dispatched_at: now, ...(newVehicleId ? { vehicle_id: newVehicleId } : {}) })
+    .eq('id', booking.id)
+    .eq('driver_id', previousDriverId) // guard de carrera: no pisar si ya cambió mientras tanto
+    .select('id')
+
+  if (error || !updated?.length) {
+    if (error) console.error('[reassignForRisk]', error)
+    return { reassigned: false }
+  }
+
+  await admin.from('booking_events').insert({
+    booking_id: booking.id,
+    company_id: booking.company_id,
+    type: 'driver_reassigned',
+    actor: 'system',
+    reason: 'Protocolo de respaldo — riesgo de retraso detectado',
+    metadata: { auto: true, reason: 'risk_detected', previous_driver_id: previousDriverId, new_driver_id: newDriverId },
+  })
+
+  const { data: prevDriver } = await admin.from('user_profiles').select('phone').eq('id', previousDriverId).single()
+  if (prevDriver?.phone) {
+    notify({
+      companyId: booking.company_id,
+      channel: 'sms',
+      type: 'driver_unassigned',
+      recipient: prevDriver.phone,
+      vars: { booking_number: booking.booking_number },
+      bookingId: booking.id,
+    }).catch((err) => console.error('[reassignForRisk] driver_unassigned notify', err))
+  }
+
+  notifyDriverPushInBackground(newDriverId, 'Nuevo viaje asignado', `${booking.booking_number} · ${pickupPoint?.address ?? ''}`, {
+    bookingId: booking.id,
+    type: 'trip_assigned',
+  })
+
+  // Pasajero: copy tranquilizador y distinto del "conductor asignado" genérico
+  // — el punto del Guaranteed Ride es que el pasajero SEPA que hubo un
+  // respaldo automático, no que note un cambio sin explicación.
+  const reassuranceVars = { booking_number: booking.booking_number }
+  if (booking.passenger_email) {
+    notify({
+      companyId: booking.company_id,
+      channel: 'email',
+      type: 'driver_reassigned_reassurance',
+      recipient: booking.passenger_email,
+      vars: reassuranceVars,
+      bookingId: booking.id,
+    }).catch((err) => console.error('[reassignForRisk] passenger email notify', err))
+  }
+  if (booking.passenger_phone) {
+    notify({
+      companyId: booking.company_id,
+      channel: 'sms',
+      type: 'driver_reassigned_reassurance',
+      recipient: booking.passenger_phone,
+      vars: reassuranceVars,
+      bookingId: booking.id,
+    }).catch((err) => console.error('[reassignForRisk] passenger sms notify', err))
+  }
+  if (booking.customer_id) {
+    notifyPassengerInBackground({
+      customerId: booking.customer_id,
+      type: 'driver_assigned',
+      title: 'Ya te asignamos otro conductor',
+      body: `Por tu tranquilidad, un conductor certificado ya va en camino — ${booking.booking_number}`,
+      bookingId: booking.id,
+    })
+  }
+
+  return { reassigned: true, newDriverId }
 }

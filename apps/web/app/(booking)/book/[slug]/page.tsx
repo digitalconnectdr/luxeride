@@ -9,6 +9,8 @@ import { getAppUrl } from '@/lib/app-url'
 import { SEO_EXCLUDED_SLUGS } from '@/lib/seo/excluded-slugs'
 import { brand } from '@/lib/brand'
 import { fetchGoogleReviews } from '@/lib/reviews/google'
+import { isLuxeRideVerified } from '@/lib/compliance/verified'
+import { VerifiedBadge } from '@/components/booking/verified-badge'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { Reveal } from '@/components/landing/reveal'
@@ -90,7 +92,7 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
 
   const { data: company } = await admin
     .from('companies')
-    .select('id, name, slug, status, currency, primary_color, phone, email, city, logo_url, tagline, hero_image_url, about, stripe_connect_onboarded, whop_connect_onboarded, settings, google_place_id')
+    .select('id, name, slug, status, currency, primary_color, phone, email, city, logo_url, tagline, hero_image_url, about, stripe_connect_onboarded, whop_connect_onboarded, settings, google_place_id, compliance_score')
     .eq('slug', params.slug)
     .single()
   if (!company) return notFound()
@@ -137,6 +139,9 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
   const brandColor = (company.primary_color as string | null) || '#c9a24b'
   const heroImg = (company as { hero_image_url?: string | null }).hero_image_url || DEFAULT_HERO
   const logoUrl = (company as { logo_url?: string | null }).logo_url ?? null
+  // Sello "LuxeRide Verified": mismo umbral que el status 'compliant' del
+  // Compliance Center (score >= 90) — ver lib/compliance/verified.ts.
+  const isVerified = isLuxeRideVerified((company as { compliance_score?: number | null }).compliance_score)
   const site = ((company.settings as { site?: { whatsapp?: string; googlePlaceId?: string; template?: string; i18n?: SiteI18n } } | null)?.site) ?? {}
   const tagline = resolveLocalizedField(site.i18n, locale, 'tagline', (company as { tagline?: string | null }).tagline ?? null)
   const about = resolveLocalizedField(site.i18n, locale, 'about', (company as { about?: string | null }).about ?? null)
@@ -182,6 +187,7 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
       company: { name: company.name, slug: company.slug, city: company.city, phone: company.phone, email: company.email },
       logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale,
       reservarUrl, waNumber, qrDataUrl, reviews: googleReviews, acceptsCardOnline, shareUrl: shortUrl,
+      isVerified,
     }
     const Template = template === 'ivory' ? MicrositeIvory : template === 'bold' ? MicrositeBold : MicrositeCorporate
     return (
@@ -300,7 +306,12 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
           </Reveal>
           <Reveal>
             <span className="block h-px w-12 mb-6" style={{ background: `linear-gradient(90deg, ${brandColor}, transparent)` }} />
-            <h2 className="font-playfair text-[2rem] sm:text-4xl font-medium tracking-[-0.01em] mb-10">{t.whyTitle}</h2>
+            <h2 className="font-playfair text-[2rem] sm:text-4xl font-medium tracking-[-0.01em] mb-6">{t.whyTitle}</h2>
+            {isVerified && (
+              <div className="mb-8">
+                <VerifiedBadge label={t.verifiedBadgeLabel} tooltip={t.verifiedBadgeTooltip} />
+              </div>
+            )}
             <div className="space-y-8">
               {t.features.map((f) => (
                 <div key={f.title} className="flex gap-5">

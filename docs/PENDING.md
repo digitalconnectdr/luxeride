@@ -3,6 +3,66 @@
 > Actualizado: 2026-07-29. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fortalecer LuxeRide frente a Uber Elite/Blacklane: 4 iniciativas + oferta de fundadores (2026-07-29)
+
+El usuario compartió dos investigaciones (ChatGPT) comparando LuxeRide contra
+Uber Elite (su nuevo tier premium) y Blacklane (que Uber está adquiriendo).
+Se descartó explícitamente construir un marketplace propio de LuxeRide
+(contradice la decisión de white-label puro del 2026-06-14). En su lugar,
+4 iniciativas defensivas compatibles con el modelo actual, más una revisión
+de precios para primeros clientes:
+
+- **Copy: demanda propia + "dueño de tu pasajero"** — 4ª fila en
+  `landing.showcase[]` ("Para tu marca") con la personalización por
+  preferencia del pasajero (`passenger_preferences`, ya construida, nunca
+  mencionada antes en el copy) como prueba concreta; nueva pregunta de FAQ
+  ("¿Quién es dueño de la relación con mis pasajeros?", se propaga solo al
+  JSON-LD `FAQPage`); `llms.txt` ampliado con comparación explícita contra
+  plataformas tipo marketplace. En `en/es/pt`.
+- **"LuxeRide Verified"** (`lib/compliance/verified.ts`) — sello de
+  confianza en el micrositio que reusa el `compliance_score` YA calculado
+  (mismo umbral ≥90 que ya define `compliant` en `lib/compliance/engine.ts`)
+  en vez de construir un motor nuevo o usar el Operator Score (demasiado
+  volátil para un sello de confianza al pasajero). `VerifiedBadge` (dos
+  variantes, dark/light) cableado en las 4 plantillas de micrositio (noir +
+  Ivory/Bold/Corporate). Antigüedad del vehículo (paridad exacta con Uber
+  Elite) queda fuera de v1 a propósito.
+- **Protocolo de respaldo (Guaranteed Ride)** — el más grande de los 4.
+  `lib/dispatch/risk.ts` (puro, testeado): `isDriverAtRisk()` marca riesgo
+  si el pickup está a ≤45 min Y (sin GPS reciente en 20 min, O la distancia
+  actual implica que no llega ni a velocidad conservadora). Nuevo
+  `reassignForRisk()` en `lib/dispatch/auto-assign.ts` reutiliza
+  `scoreDrivers`/`haversineMiles` y el mismo filtrado de candidatos que la
+  auto-asignación, excluyendo al conductor en riesgo, con guard de carrera
+  (`WHERE driver_id = <original>`). Nueva ruta
+  `app/api/cron/dispatch-risk-check` la dispara. **Decisión de arquitectura
+  clave**: el plan Hobby de Vercel solo permite crons 1 vez al día, así que
+  esta vigilancia (necesita correr cada ~5 min) usa **pg_cron de Supabase**
+  en vez de un cron de Vercel — primera vez que se usa pg_cron en este
+  proyecto. Disponible en TODOS los planes (opt-in, toggle nuevo
+  "Protocolo de respaldo" en el Dispatch Board, `companies.settings.
+  dispatch.backup_protocol_enabled`). Al pasajero le llega un mensaje
+  tranquilizador distinto del genérico "conductor asignado" (nuevo template
+  `driver_reassigned_reassurance`); si no hay candidato, se avisa al
+  dispatcher vía `pushAdminNotification` en vez de fallar en silencio.
+  **Pendiente del usuario**: pegar la migración
+  `20260801000081_dispatch_risk_reassign.sql` en el SQL Editor de Supabase,
+  reemplazando `<APP_URL>` y `<CRON_SECRET>` por los valores reales antes de
+  correrla — sin eso la ruta responde 401 y el protocolo nunca corre.
+- **Oferta de fundadores** — banner en la sección de precios del landing
+  (copy-only, `dict.landing.foundingOffer`): 50% de descuento los primeros 3
+  meses, limitado a los primeros 15 operadores. El descuento en sí NO se
+  construyó en código — se recomienda configurarlo como cupón directo en
+  Whop (mismo patrón que el resto de la config de Whop en este proyecto).
+  Los precios base actuales ($99–549 + 0.5%–3%) se evaluaron y NO se tocaron
+  — ya son competitivos frente a canales tipo Uber Elite; la fricción real
+  de un primer cliente es el riesgo de comprometerse antes de ver
+  resultados, no el precio en sí.
+
+Verificado: `tsc`, `vitest` (249 tests, incluye 7 nuevos de `risk.test.ts`),
+`next build`, y revisión en navegador del landing (4ª fila del showcase,
+FAQ nueva, banner de oferta de fundadores, todo el copy renderizando bien).
+
 ## ✅ Tracking en vivo: conductor en segundo plano + estado reactivo (2026-07-29)
 
 El usuario reportó que, con un viaje en curso, no veía el vehículo avanzar

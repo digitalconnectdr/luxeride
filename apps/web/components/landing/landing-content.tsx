@@ -17,6 +17,10 @@ const SHOWCASE_IMAGES = [
   'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=1100&q=70',
   // Pagos | foto propia (Chevrolet Tahoe)
   '/images/showcase/negocio.jpg',
+  // "Para tu marca" (4ta fila) reusa la foto de clientes.jpg a propósito —
+  // el fallback de abajo (SHOWCASE_IMAGES[i] ?? SHOWCASE_IMAGES[0]) ya
+  // caía en esta misma imagen, y temáticamente encaja: esa fila también
+  // habla del pasajero.
 ]
 
 // Flota por clase de vehículo (Unsplash, licencia libre | endpoint estable por slug).
@@ -415,6 +419,17 @@ export function LandingPageContent({
             <p className="inline-flex items-center gap-2 mt-5 px-4 py-1.5 rounded-full bg-[#e9c176]/10 border border-[#e9c176]/30 text-sm font-semibold text-[#e9c176]">
               {t.pricingNoSetupBadge}
             </p>
+          </Reveal>
+
+          <Reveal className="max-w-3xl mx-auto mb-10 rounded-2xl border-2 border-[#e9c176]/50 bg-gradient-to-br from-[#1a1712] to-[#12100d] px-6 py-6 sm:px-10 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left shadow-[0_0_50px_rgba(233,193,118,0.10)]">
+            <span className="lux-badge-pulse shrink-0 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] text-[#141313] rounded-full">
+              {t.foundingOffer.badge}
+            </span>
+            <div>
+              <p className="font-playfair text-xl font-semibold text-[#e9c176]">{t.foundingOffer.title}</p>
+              <p className="text-sm text-white/60 mt-1">{t.foundingOffer.subtitle}</p>
+              <p className="text-xs text-white/40 mt-1.5">{t.foundingOffer.note}</p>
+            </div>
           </Reveal>
 
           <Reveal className="max-w-4xl mx-auto mb-14 rounded-2xl border border-[#e9c176]/20 bg-gradient-to-b from-[#e9c176]/[0.06] to-transparent px-6 py-8 sm:px-10">

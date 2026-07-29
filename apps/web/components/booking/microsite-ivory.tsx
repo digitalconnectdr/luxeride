@@ -13,6 +13,7 @@ import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
 import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
 import { ShareMenu } from '@/components/share/share-menu'
+import { VerifiedBadge } from '@/components/booking/verified-badge'
 import { resolveServiceFallbackImage } from '@/lib/booking/service-fallback-images'
 import type { Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
@@ -67,8 +68,9 @@ export function MicrositeIvory(props: {
   reviews: Reviews
   acceptsCardOnline: boolean
   shareUrl: string
+  isVerified: boolean
 }) {
-  const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline, shareUrl } = props
+  const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline, shareUrl, isVerified } = props
 
   const heading = (eyebrow: string, title: string, sub?: string) => (
     <Reveal className="mb-12 lg:mb-14 max-w-2xl">
@@ -147,6 +149,11 @@ export function MicrositeIvory(props: {
               )}
               {company.phone && <a href={`tel:${company.phone}`} className="lux-link text-sm font-medium text-white/85 hover:text-white transition-colors">{t.call}</a>}
             </div>
+            {isVerified && (
+              <div className="mt-6">
+                <VerifiedBadge label={t.verifiedBadgeLabel} tooltip={t.verifiedBadgeTooltip} />
+              </div>
+            )}
           </Reveal>
         </div>
         {/* Indicador de scroll */}

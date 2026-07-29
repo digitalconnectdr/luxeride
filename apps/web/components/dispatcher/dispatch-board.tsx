@@ -12,6 +12,7 @@ import { updateBookingStatusAction, assignDriverAction } from '@/app/actions/boo
 import { DispatchLiveMap } from './dispatch-live-map'
 import { ActiveDriversPanel, type DriverStatusRow } from './active-drivers-panel'
 import { AutoAssignToggle } from './auto-assign-toggle'
+import { BackupProtocolToggle } from './backup-protocol-toggle'
 import { playAlertChime } from '@/lib/notifications/chime'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 import type { Dictionary, Locale } from '@/lib/i18n/server'
@@ -58,6 +59,7 @@ interface Props {
   drivers: Driver[]
   driverStatuses: DriverStatusRow[]
   autoAssignEnabled: boolean
+  backupProtocolEnabled: boolean
   locale: Locale
   t: DispatchDict
   flightT: FlightStatusDict
@@ -74,7 +76,7 @@ const COLUMN_DEFS: { key: string; statuses: string[]; accent: string }[] = [
   { key: 'done',     statuses: ['completed', 'cancelled', 'no_show'],  accent: 'border-t-green-400' },
 ]
 
-export function DispatchBoard({ companyId, initialBookings, drivers, driverStatuses, autoAssignEnabled, locale, t, flightT }: Props) {
+export function DispatchBoard({ companyId, initialBookings, drivers, driverStatuses, autoAssignEnabled, backupProtocolEnabled, locale, t, flightT }: Props) {
   const localeTag = LOCALE_TAGS[locale] ?? 'en-US'
   const COLUMNS = COLUMN_DEFS.map((c) => ({ ...c, title: t.columns[c.key as keyof typeof t.columns] }))
 
@@ -201,6 +203,7 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
         </div>
         <div className="flex items-center gap-3">
           <AutoAssignToggle initialEnabled={autoAssignEnabled} labels={t.autoAssign} />
+          <BackupProtocolToggle initialEnabled={backupProtocolEnabled} labels={t.backupProtocol} />
           {isPending && (
             <span className="text-xs text-sl-on-surface-muted animate-pulse">{t.saving}</span>
           )}
