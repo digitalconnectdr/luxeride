@@ -31,6 +31,7 @@ import { BrandingForm } from '@/components/admin/branding-form'
 import { BookingLinkCard } from '@/components/admin/booking-link-card'
 import { BookingWidgetCard } from '@/components/admin/booking-widget-card'
 import { CoverForm } from '@/components/admin/cover-form'
+import { InfoTip } from '@/components/ui/info-tip'
 import { ServicesManager, type Service } from '@/components/admin/services-manager'
 import { EnterpriseLeadModal } from '@/components/admin/enterprise-lead-modal'
 import { ActivePaymentProviderSelect } from '@/components/admin/active-payment-provider-select'
@@ -428,7 +429,7 @@ export default async function SettingsPage({
       <p className="text-xs text-sl-on-surface-muted mb-5 max-w-[75ch]">{t.externalReviewsIntro}</p>
       <form action={externalReviewsAction} className="space-y-4">
         <div>
-          <label className={labelCls}>{t.googlePlaceIdLabel}</label>
+          <label className={labelCls}>{t.googlePlaceIdLabel}<InfoTip text={t.googlePlaceIdInfo} /></label>
           <input
             name="google_place_id"
             defaultValue={company.google_place_id ?? ''}
@@ -469,7 +470,6 @@ export default async function SettingsPage({
       i18nContent={((company.settings as { site?: { i18n?: Record<string, { tagline?: string | null; about?: string | null }> } } | null)?.site)?.i18n ?? null}
       heroImage={company.hero_image_url ?? null}
       whatsapp={((company.settings as { site?: { whatsapp?: string } } | null)?.site)?.whatsapp ?? null}
-      placeId={((company.settings as { site?: { googlePlaceId?: string } } | null)?.site)?.googlePlaceId ?? null}
       template={((company.settings as { site?: { template?: string } } | null)?.site)?.template ?? 'noir'}
     />
 

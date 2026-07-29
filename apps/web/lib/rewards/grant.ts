@@ -14,13 +14,17 @@ import {
   evaluateRules,
   buildRewardCode,
   expiresAt,
+  periodKeyFor,
+  isBirthdayMatch,
   type RewardRule,
+  type RewardTrigger,
   type CustomerStats,
 } from './engine'
 
 interface GrantContext {
   companyId: string
-  bookingId: string
+  /** Null para el cumpleaños: no hay viaje que lo dispare. */
+  bookingId: string | null
   customerEmail: string | null
   customerPhone: string | null
   customerId: string | null
@@ -47,42 +51,11 @@ export async function grantRewardsForBooking(ctx: GrantContext): Promise<Granted
     if (!key) return []
 
     const admin = createAdminClient()
-
-    const { data: rulesRaw } = await admin
-      .from('reward_rules')
-      .select('id, name, trigger_type, threshold, discount_type, discount_value, valid_days')
-      .eq('company_id', ctx.companyId)
-      .eq('is_active', true)
-
-    if (!rulesRaw?.length) return []
-
-    const rules: RewardRule[] = rulesRaw.map((r) => ({
-      id: r.id,
-      name: r.name,
-      triggerType: r.trigger_type,
-      threshold: r.threshold == null ? null : Number(r.threshold),
-      discountType: r.discount_type,
-      discountValue: Number(r.discount_value),
-      validDays: r.valid_days,
-    }))
+    const rules = await loadActiveRules(admin, ctx.companyId)
+    if (!rules.length) return []
 
     const stats = await buildCustomerStats(admin, ctx, key)
-
-    const { data: grantsRaw } = await admin
-      .from('reward_grants')
-      .select('rule_id')
-      .eq('company_id', ctx.companyId)
-      .eq('customer_key', key)
-    const already = new Set((grantsRaw ?? []).map((g) => g.rule_id))
-
-    const winners = evaluateRules(rules, stats, already)
-    if (!winners.length) return []
-
-    const granted: GrantedReward[] = []
-    for (const rule of winners) {
-      const result = await grantOne(admin, ctx, rule, key)
-      if (result) granted.push(result)
-    }
+    const granted = await evaluateAndGrant(admin, ctx, rules, stats, key)
 
     if (granted.length && ctx.customerId) {
       notifyRewards(ctx, granted)
@@ -93,6 +66,143 @@ export async function grantRewardsForBooking(ctx: GrantContext): Promise<Granted
     console.error('[grantRewardsForBooking]', err)
     return []
   }
+}
+
+/**
+ * Cron diario de cumpleaños. A diferencia de grantRewardsForBooking, aquí no
+ * hay un viaje que dispare la evaluación: la dispara el calendario. Por eso
+ * recorre los perfiles de cliente de la empresa buscando a quién le toca hoy,
+ * en vez de partir de una reserva puntual.
+ */
+export async function grantBirthdayRewards(companyId: string): Promise<{ granted: number }> {
+  try {
+    const admin = createAdminClient()
+    const rules = await loadActiveRules(admin, companyId, 'birthday')
+    // Sin reglas de cumpleaños activas no vale la pena ni recorrer perfiles.
+    if (!rules.length) return { granted: 0 }
+
+    const now = new Date()
+    const { data: profiles } = await admin
+      .from('user_profiles')
+      .select('id, phone, date_of_birth')
+      .eq('company_id', companyId)
+      .eq('role', 'customer')
+      .not('date_of_birth', 'is', null)
+
+    const todaysBirthdays = (profiles ?? []).filter((p) => isBirthdayMatch(p.date_of_birth, now))
+    if (!todaysBirthdays.length) return { granted: 0 }
+
+    const stats: CustomerStats = {
+      tripsCompleted: 0,
+      totalSpent: 0,
+      daysSincePreviousTrip: null,
+      justSubmittedReview: false,
+      isBirthdayToday: true,
+    }
+
+    let granted = 0
+    for (const profile of todaysBirthdays) {
+      // El email vive en auth.users, no en user_profiles (mismo patrón que
+      // getSuperAdminEmails en lib/notifications/index.ts).
+      let email: string | null = null
+      try {
+        const { data } = await admin.auth.admin.getUserById(profile.id)
+        email = data.user?.email ?? null
+      } catch {
+        /* usuario sin acceso a auth — se sigue con el teléfono si lo hay */
+      }
+
+      const key = customerKey(email, profile.phone)
+      if (!key) continue
+
+      const ctx: GrantContext = {
+        companyId,
+        bookingId: null,
+        customerEmail: email,
+        customerPhone: profile.phone,
+        customerId: profile.id,
+        justSubmittedReview: false,
+      }
+
+      const result = await evaluateAndGrant(admin, ctx, rules, stats, key)
+      if (result.length) {
+        granted += result.length
+        notifyRewards(ctx, result)
+      }
+    }
+
+    return { granted }
+  } catch (err) {
+    console.error('[grantBirthdayRewards]', err)
+    return { granted: 0 }
+  }
+}
+
+/** Reglas activas de la empresa, opcionalmente filtradas a un solo disparador. */
+async function loadActiveRules(
+  admin: ReturnType<typeof createAdminClient>,
+  companyId: string,
+  triggerType?: RewardTrigger,
+): Promise<RewardRule[]> {
+  let query = admin
+    .from('reward_rules')
+    .select('id, name, trigger_type, threshold, discount_type, discount_value, valid_days')
+    .eq('company_id', companyId)
+    .eq('is_active', true)
+  if (triggerType) query = query.eq('trigger_type', triggerType)
+
+  const { data } = await query
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    triggerType: r.trigger_type,
+    threshold: r.threshold == null ? null : Number(r.threshold),
+    discountType: r.discount_type,
+    discountValue: Number(r.discount_value),
+    validDays: r.valid_days,
+  }))
+}
+
+/**
+ * Pregunta al motor puro qué reglas disparan y otorga cada una.
+ *
+ * El "ya otorgado" es por periodo, no solo por rule_id: un grant cuenta como
+ * bloqueante SOLO si su period_key coincide con el que le tocaría a esa regla
+ * AHORA (periodKeyFor). Para reglas normales eso es 'once' siempre, así que
+ * el comportamiento no cambia. Para cumpleaños es el año en curso, así que un
+ * grant del año pasado no bloquea el de este año.
+ */
+async function evaluateAndGrant(
+  admin: ReturnType<typeof createAdminClient>,
+  ctx: GrantContext,
+  rules: RewardRule[],
+  stats: CustomerStats,
+  key: string,
+): Promise<GrantedReward[]> {
+  const now = new Date()
+
+  const { data: grantsRaw } = await admin
+    .from('reward_grants')
+    .select('rule_id, period_key')
+    .eq('company_id', ctx.companyId)
+    .eq('customer_key', key)
+
+  const periodByRule = new Map(rules.map((r) => [r.id, periodKeyFor(r, now)]))
+  const already = new Set(
+    (grantsRaw ?? [])
+      .filter((g) => g.period_key === (periodByRule.get(g.rule_id) ?? 'once'))
+      .map((g) => g.rule_id),
+  )
+
+  const winners = evaluateRules(rules, stats, already)
+  if (!winners.length) return []
+
+  const granted: GrantedReward[] = []
+  for (const rule of winners) {
+    const result = await grantOne(admin, ctx, rule, key, now)
+    if (result) granted.push(result)
+  }
+  return granted
 }
 
 /**
@@ -142,6 +252,8 @@ async function buildCustomerStats(
     totalSpent,
     daysSincePreviousTrip,
     justSubmittedReview: ctx.justSubmittedReview,
+    // Este flujo parte de un viaje o una reseña, nunca del calendario.
+    isBirthdayToday: false,
   }
 }
 
@@ -159,6 +271,7 @@ async function grantOne(
   ctx: GrantContext,
   rule: RewardRule,
   key: string,
+  now: Date,
 ): Promise<GrantedReward | null> {
   const { data: grant, error: grantError } = await admin
     .from('reward_grants')
@@ -169,17 +282,18 @@ async function grantOne(
       customer_email: ctx.customerEmail,
       customer_phone: ctx.customerPhone,
       booking_id: ctx.bookingId,
+      period_key: periodKeyFor(rule, now),
     })
     .select('id')
     .single()
 
-  // 23505 = unique_violation: este cliente ya tenía esta recompensa.
+  // 23505 = unique_violation: este cliente ya tenía esta recompensa (en este
+  // mismo periodo — para cumpleaños, este mismo año).
   if (grantError) {
     if (grantError.code !== '23505') console.error('[grantOne] grant', grantError)
     return null
   }
 
-  const now = new Date()
   const code = buildRewardCode(rule.name, randomBytes(4))
 
   const { data: promo, error: promoError } = await admin
@@ -228,6 +342,8 @@ function notifyRewards(ctx: GrantContext, granted: GrantedReward[]) {
     type: 'reward',
     title: '¡Tienes una recompensa!',
     body: `${amount} de descuento en tu próximo viaje con el código ${first.code}`,
-    bookingId: ctx.bookingId,
+    // El cumpleaños no tiene reserva asociada (ctx.bookingId es null): el
+    // notificador acepta bookingId opcional para ese caso.
+    bookingId: ctx.bookingId ?? undefined,
   })
 }

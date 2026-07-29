@@ -1,6 +1,6 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-07-23. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-07-29. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
 ## ✅ Reseñas en Google/TripAdvisor + recompensas automáticas (2026-07-25)
@@ -51,8 +51,40 @@ Disparadores que SÍ existen: `trips_completed`, `total_spent`, `first_trip`,
 - UI en `/admin/promo-codes`, ahora con pestañas Manuales / Automáticas.
   Mismo add-on de pago que los códigos manuales.
 
+**Disparador de cumpleaños (2026-07-29, migración 79 YA CORRIDA):**
+El usuario notó que `user_profiles.date_of_birth` ya se captura desde la 69
+y pidió agregarlo como disparador — se había quedado fuera por error. A
+diferencia de los demás, no lo dispara un viaje ni una reseña: lo dispara el
+calendario, así que:
+- `reward_grants.period_key` (nuevo, default `'once'`) deja que el
+  cumpleaños se repita cada año: el `UNIQUE` pasó a ser
+  `(rule_id, customer_key, period_key)`. Para cumpleaños `period_key` es el
+  año en curso; para todo lo demás sigue siendo `'once'` (una vez en la vida,
+  comportamiento sin cambios).
+- Cron nuevo `/api/cron/birthday-rewards` (7am, `vercel.json`): por cada
+  empresa con una regla de cumpleaños activa, recorre `user_profiles` (rol
+  `customer`, con fecha de nacimiento) buscando a quién le toca hoy —
+  comparando solo mes/día, nunca el año.
+- El email del cliente no vive en `user_profiles` sino en `auth.users`
+  (mismo patrón que `getSuperAdminEmails` en `lib/notifications/index.ts`).
+- 6 tests nuevos en `engine.test.ts` (28 en total).
+
+**Campo de Google Place ID duplicado (2026-07-29, migración 80 YA CORRIDA):**
+El usuario detectó que había DOS campos "Google Place ID" en la misma
+pestaña de Configuración: uno preexistente dentro de Portada (alimentaba el
+carrusel de reseñas del micrositio vía `settings.site.googlePlaceId`, un
+JSON) y el nuevo que se agregó para el botón de reseña de más arriba
+(columna dedicada `companies.google_place_id`). Se consolidó en UNO solo:
+- Fuente única = la columna `companies.google_place_id`. Se retiró el input
+  duplicado de `CoverForm`; el único campo que queda vive en la sección
+  "Reseñas en Google y TripAdvisor".
+- Migración 80 hace el backfill: copia `settings.site.googlePlaceId` a la
+  columna para empresas que lo habían configurado por el campo viejo.
+- El micrositio (`book/[slug]/page.tsx`) ahora lee la columna primero, con
+  fallback al valor viejo del JSON solo por si acaso.
+
 **Sin verificar en navegador**: requiere sesión iniciada. Verificado con
-`tsc`, 236 tests y `npm run build`.
+`tsc`, 242 tests y `npm run build`.
 
 ## ✅ Reorganización de "lo monetario" a /admin/pricing (2026-07-25)
 

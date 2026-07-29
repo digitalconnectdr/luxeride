@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { updateSiteAction } from '@/app/actions/microsite'
-import { InfoTip } from '@/components/ui/info-tip'
 import { LOCALES, LOCALE_LABELS, type Locale } from '@/lib/i18n/config'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
 
@@ -41,7 +40,6 @@ export function CoverForm({
   i18nContent,
   heroImage,
   whatsapp,
-  placeId,
   template,
 }: {
   t: SettingsDict
@@ -50,7 +48,6 @@ export function CoverForm({
   i18nContent: Partial<Record<Locale, { tagline?: string | null; about?: string | null }>> | null
   heroImage: string | null
   whatsapp: string | null
-  placeId: string | null
   template: string
 }) {
   const [state, formAction] = useFormState(updateSiteAction, null)
@@ -177,17 +174,10 @@ export function CoverForm({
           )}
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-4 pt-2 border-t border-sl-outline-variant/50">
-          <div>
-            <label className="block text-xs text-sl-on-surface-muted mb-1">{t.whatsappLabel}</label>
-            <input name="whatsapp" defaultValue={whatsapp ?? ''} placeholder="18091234567" className={inputCls} />
-            <p className="text-[11px] text-sl-on-surface-muted mt-1">{t.whatsappHint}</p>
-          </div>
-          <div>
-            <label className="block text-xs text-sl-on-surface-muted mb-1">{t.placeIdLabel}<InfoTip text={t.placeIdInfo} /></label>
-            <input name="google_place_id" defaultValue={placeId ?? ''} placeholder="ChIJ…" className={inputCls} />
-            <p className="text-[11px] text-sl-on-surface-muted mt-1">{t.placeIdHint}</p>
-          </div>
+        <div className="pt-2 border-t border-sl-outline-variant/50">
+          <label className="block text-xs text-sl-on-surface-muted mb-1">{t.whatsappLabel}</label>
+          <input name="whatsapp" defaultValue={whatsapp ?? ''} placeholder="18091234567" className={inputCls} />
+          <p className="text-[11px] text-sl-on-surface-muted mt-1">{t.whatsappHint}</p>
         </div>
 
         <div className="flex justify-end">

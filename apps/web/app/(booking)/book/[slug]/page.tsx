@@ -90,7 +90,7 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
 
   const { data: company } = await admin
     .from('companies')
-    .select('id, name, slug, status, currency, primary_color, phone, email, city, logo_url, tagline, hero_image_url, about, stripe_connect_onboarded, whop_connect_onboarded, settings')
+    .select('id, name, slug, status, currency, primary_color, phone, email, city, logo_url, tagline, hero_image_url, about, stripe_connect_onboarded, whop_connect_onboarded, settings, google_place_id')
     .eq('slug', params.slug)
     .single()
   if (!company) return notFound()
@@ -107,7 +107,13 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
     )
   }
 
-  const placeId = ((company.settings as { site?: { googlePlaceId?: string } } | null)?.site)?.googlePlaceId
+  // Fuente única: companies.google_place_id (Configuración > Reseñas en Google
+  // y TripAdvisor). El fallback a settings.site.googlePlaceId cubre empresas
+  // que lo configuraron por el campo viejo (ya retirado) y aún no reguardan
+  // el nuevo — la migración 80 hace el backfill, esto es solo por si acaso.
+  const placeId =
+    (company as { google_place_id?: string | null }).google_place_id ??
+    ((company.settings as { site?: { googlePlaceId?: string } } | null)?.site)?.googlePlaceId
   const [{ data: vehicleTypes }, { data: servicesRaw }, googleReviews, { data: chatAddons }] = await Promise.all([
     admin.from('vehicle_types').select('id, name, class, capacity, amenities, base_image_url').eq('company_id', company.id).eq('is_active', true).order('sort_order'),
     admin.from('company_services').select('id, title, description, icon, image_url, i18n').eq('company_id', company.id).eq('is_active', true).order('sort_order'),

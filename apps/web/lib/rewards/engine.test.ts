@@ -5,6 +5,8 @@ import {
   evaluateRules,
   buildRewardCode,
   expiresAt,
+  periodKeyFor,
+  isBirthdayMatch,
   type RewardRule,
   type CustomerStats,
 } from './engine'
@@ -23,6 +25,7 @@ const stats = (over: Partial<CustomerStats> = {}): CustomerStats => ({
   totalSpent: 100,
   daysSincePreviousTrip: null,
   justSubmittedReview: false,
+  isBirthdayToday: false,
   ...over,
 })
 
@@ -98,6 +101,43 @@ describe('ruleMatches', () => {
   it('una regla con umbral faltante nunca dispara (no regala por error)', () => {
     const r = rule({ id: 'r', triggerType: 'trips_completed', threshold: null })
     expect(ruleMatches(r, stats({ tripsCompleted: 999 }))).toBe(false)
+  })
+
+  it('birthday dispara solo cuando el cron marca que hoy toca', () => {
+    const r = rule({ id: 'r', triggerType: 'birthday' })
+    expect(ruleMatches(r, stats({ isBirthdayToday: true }))).toBe(true)
+    expect(ruleMatches(r, stats({ isBirthdayToday: false }))).toBe(false)
+  })
+})
+
+describe('periodKeyFor', () => {
+  it("todo lo que no es cumpleaños es 'once' (una vez en la vida)", () => {
+    const now = new Date('2026-07-01T00:00:00Z')
+    expect(periodKeyFor(rule({ id: 'r', triggerType: 'first_trip' }), now)).toBe('once')
+    expect(periodKeyFor(rule({ id: 'r', triggerType: 'trips_completed', threshold: 5 }), now)).toBe('once')
+  })
+
+  it('birthday usa el año en curso, para que se repita cada 12 meses', () => {
+    const r = rule({ id: 'r', triggerType: 'birthday' })
+    expect(periodKeyFor(r, new Date('2026-07-01T00:00:00Z'))).toBe('2026')
+    expect(periodKeyFor(r, new Date('2027-01-15T00:00:00Z'))).toBe('2027')
+  })
+})
+
+describe('isBirthdayMatch', () => {
+  it('coincide en mes y día, sin importar el año de nacimiento', () => {
+    expect(isBirthdayMatch('1990-07-29', new Date('2026-07-29T12:00:00Z'))).toBe(true)
+    expect(isBirthdayMatch('1963-07-29', new Date('2026-07-29T12:00:00Z'))).toBe(true)
+  })
+
+  it('no coincide en otro día', () => {
+    expect(isBirthdayMatch('1990-07-30', new Date('2026-07-29T12:00:00Z'))).toBe(false)
+    expect(isBirthdayMatch('1990-06-29', new Date('2026-07-29T12:00:00Z'))).toBe(false)
+  })
+
+  it('sin fecha de nacimiento nunca coincide', () => {
+    expect(isBirthdayMatch(null, new Date('2026-07-29T12:00:00Z'))).toBe(false)
+    expect(isBirthdayMatch(undefined, new Date('2026-07-29T12:00:00Z'))).toBe(false)
   })
 })
 

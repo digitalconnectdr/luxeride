@@ -175,11 +175,12 @@ export async function validatePromoCodeAction(opts: {
 // solo que disparada sola.
 
 const REWARD_TRIGGERS: RewardTrigger[] = [
-  'trips_completed', 'total_spent', 'first_trip', 'inactivity_days', 'review_submitted',
+  'trips_completed', 'total_spent', 'first_trip', 'inactivity_days', 'review_submitted', 'birthday',
 ]
 // Disparadores que NO llevan umbral. Debe coincidir con el CHECK de la
-// migración 78, o el insert lo rechaza la base.
-const TRIGGERS_WITHOUT_THRESHOLD: RewardTrigger[] = ['first_trip', 'review_submitted']
+// migración 79 (reward_rules_threshold_required), o el insert lo rechaza la
+// base.
+const TRIGGERS_WITHOUT_THRESHOLD: RewardTrigger[] = ['first_trip', 'review_submitted', 'birthday']
 
 export async function createRewardRuleAction(fd: FormData): Promise<ActionResult> {
   const user = await requireRole('company_owner', 'company_admin')

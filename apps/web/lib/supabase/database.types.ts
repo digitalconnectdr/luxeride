@@ -46,6 +46,7 @@ export type RewardTrigger =
   | 'first_trip'
   | 'inactivity_days'
   | 'review_submitted'
+  | 'birthday'
 export type ExtraChargePaymentStatus = 'pending' | 'succeeded' | 'failed' | 'refunded'
 export type FeatureRequestType = 'feature' | 'bug'
 export type FeatureRequestStatus = 'submitted' | 'pending' | 'in_progress' | 'resolved'
@@ -947,6 +948,10 @@ export type Database = {
           customer_phone: string | null
           booking_id: string | null
           promo_code_id: string | null
+          // Periodo del otorgamiento (migración 79). 'once' para todo lo que
+          // no sea cumpleaños; el año en curso ('2026') para cumpleaños, así
+          // se repite cada 12 meses sin chocar con el UNIQUE.
+          period_key: string
           created_at: string
         }
         Insert: {
@@ -958,6 +963,7 @@ export type Database = {
           customer_phone?: string | null | undefined
           booking_id?: string | null | undefined
           promo_code_id?: string | null | undefined
+          period_key?: string | undefined
           created_at?: string | undefined
         }
         Update: {
@@ -969,6 +975,7 @@ export type Database = {
           customer_phone?: string | null | undefined
           booking_id?: string | null | undefined
           promo_code_id?: string | null | undefined
+          period_key?: string | undefined
           created_at?: string | undefined
         }
         Relationships: []

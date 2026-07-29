@@ -32,8 +32,8 @@ export interface RewardRuleRow {
 }
 
 // Debe coincidir con TRIGGERS_WITHOUT_THRESHOLD en app/actions/promo-codes.ts
-// y con el CHECK de la migración 78.
-const NO_THRESHOLD: RewardTrigger[] = ['first_trip', 'review_submitted']
+// y con el CHECK de la migración 79.
+const NO_THRESHOLD: RewardTrigger[] = ['first_trip', 'review_submitted', 'birthday']
 
 const inputCls =
   'w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface ' +
@@ -85,6 +85,7 @@ export function RewardRulesPanel({ rules, t, currency }: { rules: RewardRuleRow[
                 <option value="first_trip">{t.triggerFirstTrip}</option>
                 <option value="inactivity_days">{t.triggerInactivity}</option>
                 <option value="review_submitted">{t.triggerReviewSubmitted}</option>
+                <option value="birthday">{t.triggerBirthday}</option>
               </select>
             </div>
 
@@ -193,6 +194,7 @@ function describeTrigger(r: RewardRuleRow, t: T, currency: string): string {
     case 'trips_completed':  return `${t.triggerTripsCompleted} · ${r.threshold}`
     case 'total_spent':      return `${t.triggerTotalSpent} · ${currency} ${r.threshold}`
     case 'inactivity_days':  return `${t.triggerInactivity} · ${r.threshold}d`
+    case 'birthday':         return t.triggerBirthday
     default:                 return r.trigger_type
   }
 }

@@ -33,7 +33,6 @@ export async function updateSiteAction(
   const taglinePt = ((formData.get('tagline_pt') as string) ?? '').trim().slice(0, 140) || null
   const aboutPt = ((formData.get('about_pt') as string) ?? '').trim().slice(0, 2000) || null
   const whatsapp = ((formData.get('whatsapp') as string) ?? '').trim().slice(0, 30) || null
-  const googlePlaceId = ((formData.get('google_place_id') as string) ?? '').trim().slice(0, 120) || null
   // Plantilla del micrositio (white-label: cada empresa elige su diseño).
   const templateRaw = (formData.get('template') as string) ?? 'noir'
   const template = ['noir', 'ivory', 'bold', 'corporate'].includes(templateRaw) ? templateRaw : 'noir'
@@ -51,7 +50,12 @@ export async function updateSiteAction(
     en: { tagline: taglineEn, about: aboutEn },
     pt: { tagline: taglinePt, about: aboutPt },
   }
-  const mergedSettings = { ...settings, site: { ...site, whatsapp, googlePlaceId, template, i18n } }
+  // El Place ID de Google ya NO se guarda aquí: vive en la columna dedicada
+  // companies.google_place_id (una sola fuente, editable en Configuración >
+  // Reseñas en Google y TripAdvisor). El `...site` de abajo conserva, sin
+  // usarlo, cualquier valor viejo que ya estuviera en site.googlePlaceId de
+  // empresas que lo configuraron antes de este cambio.
+  const mergedSettings = { ...settings, site: { ...site, whatsapp, template, i18n } }
 
   const updates: { tagline: string | null; about: string | null; hero_image_url?: string | null; settings: Json } = {
     tagline,

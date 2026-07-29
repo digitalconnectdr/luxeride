@@ -24,6 +24,7 @@ export type RewardTrigger =
   | 'first_trip'
   | 'inactivity_days'
   | 'review_submitted'
+  | 'birthday'
 
 export interface RewardRule {
   id: string
@@ -49,6 +50,13 @@ export interface CustomerStats {
   daysSincePreviousTrip: number | null
   /** Si el evento que dispara la evaluación fue el envío de una reseña. */
   justSubmittedReview: boolean
+  /**
+   * Si hoy es el cumpleaños del cliente (mismo mes y día que su fecha de
+   * nacimiento). A diferencia de los demás campos, esto no lo calcula un
+   * viaje: lo calcula el cron diario de cumpleaños, así que en cualquier
+   * otro flujo (completar viaje, dejar reseña) siempre va en `false`.
+   */
+  isBirthdayToday: boolean
 }
 
 /**
@@ -86,6 +94,11 @@ export function ruleMatches(rule: RewardRule, stats: CustomerStats): boolean {
     case 'review_submitted':
       // Sin mirar la puntuación: se premia haberse tomado la molestia.
       return stats.justSubmittedReview
+
+    case 'birthday':
+      // La condición es la fecha, no una cantidad: sin threshold (ver CHECK
+      // de la migración 79). Lo calcula el cron, no un viaje.
+      return stats.isBirthdayToday
 
     case 'trips_completed':
       return rule.threshold != null && stats.tripsCompleted >= rule.threshold
@@ -153,4 +166,30 @@ export function buildRewardCode(prefix: string, randomBytes: Uint8Array): string
 /** Fecha de vencimiento del código, a partir de la vigencia de la regla. */
 export function expiresAt(rule: RewardRule, now: Date): string {
   return new Date(now.getTime() + rule.validDays * 86_400_000).toISOString()
+}
+
+/**
+ * Periodo al que pertenece un otorgamiento, para el UNIQUE
+ * (rule_id, customer_key, period_key) de la migración 79.
+ *
+ * Todo lo que no es cumpleaños sigue siendo 'once': una vez en la vida del
+ * cliente, el comportamiento de siempre. El cumpleaños usa el año en curso
+ * como periodo para que la misma regla pueda volver a otorgarse cada 12
+ * meses sin chocar con el otorgamiento del año anterior.
+ */
+export function periodKeyFor(rule: RewardRule, now: Date): string {
+  return rule.triggerType === 'birthday' ? String(now.getUTCFullYear()) : 'once'
+}
+
+/**
+ * ¿Hoy es el cumpleaños de este cliente? Compara mes y día, nunca el año
+ * (si no, nadie cumpliría años dos veces). `dateOfBirth` es la fecha tal
+ * cual sale de user_profiles.date_of_birth (columna DATE, formato
+ * YYYY-MM-DD).
+ */
+export function isBirthdayMatch(dateOfBirth: string | null | undefined, now: Date): boolean {
+  if (!dateOfBirth) return false
+  const dob = new Date(dateOfBirth)
+  if (Number.isNaN(dob.getTime())) return false
+  return dob.getUTCMonth() === now.getUTCMonth() && dob.getUTCDate() === now.getUTCDate()
 }
