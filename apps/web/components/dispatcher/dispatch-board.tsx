@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { AlertTriangle, CheckCircle2, Milestone, Plane, Route, UserRound, X } from 'lucide-react'
+import { AlertTriangle, ArrowRight, CheckCircle2, Inbox, Milestone, Plane, Route, UserRound, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { updateBookingStatusAction, assignDriverAction } from '@/app/actions/bookings'
 import { DispatchLiveMap } from './dispatch-live-map'
@@ -232,23 +232,35 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {COLUMNS.map((col) => {
           const items = initialBookings.filter((b) => col.statuses.includes(b.status))
+          const totalValue = items.reduce((sum, b) => sum + Number(b.total_amount ?? 0), 0)
+          const columnCurrency = items.find((b) => b.total_amount != null)?.currency ?? ''
           return (
             <div
               key={col.key}
               className={`bg-sl-surface-high border border-sl-outline-variant border-t-4 ${col.accent} rounded-2xl flex flex-col max-h-[calc(100vh-180px)]`}
             >
-              <div className="px-4 py-3 border-b border-sl-outline-variant flex items-center justify-between shrink-0">
-                <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-                  {col.title}
-                </p>
-                <span className="text-xs font-bold text-sl-on-surface bg-sl-bg rounded-full w-6 h-6 flex items-center justify-center">
+              <div className="px-4 py-2.5 border-b border-sl-outline-variant flex items-center justify-between shrink-0">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+                    {col.title}
+                  </p>
+                  {totalValue > 0 && (
+                    <p className="text-[11px] font-semibold text-sl-on-surface mt-0.5">
+                      ${totalValue.toFixed(2)} {columnCurrency}
+                    </p>
+                  )}
+                </div>
+                <span className="text-xs font-bold text-sl-on-surface bg-sl-bg rounded-full w-6 h-6 flex items-center justify-center shrink-0">
                   {items.length}
                 </span>
               </div>
 
-              <div className="p-3 space-y-3 overflow-y-auto flex-1">
+              <div className="p-2.5 space-y-2 overflow-y-auto flex-1">
                 {items.length === 0 ? (
-                  <p className="text-xs text-sl-on-surface-muted text-center py-6">—</p>
+                  <div className="flex flex-col items-center gap-1.5 text-sl-on-surface-muted/60 py-8">
+                    <Inbox size={18} strokeWidth={1.75} />
+                    <p className="text-[11px]">—</p>
+                  </div>
                 ) : (
                   items.map((b) => {
                     const flightTone =
@@ -257,78 +269,79 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
                         : (b.flight_delay_minutes ?? 0) >= 15
                           ? 'text-orange-600 bg-orange-50'
                           : 'text-sl-on-surface-muted bg-sl-outline-variant/25'
+                    // El select de abajo ya muestra el conductor asignado (pendientes/
+                    // asignados) — repetir su nombre en una línea aparte sería
+                    // información duplicada, así que esa línea solo aparece cuando
+                    // NO hay select (en curso / finalizados).
+                    const showDriverLine = !['pending', 'assigned'].includes(b.status) && driverName(b.driver_id)
                     return (
                     <div
                       key={b.id}
-                      className="bg-sl-bg border border-sl-outline-variant rounded-xl p-3.5 space-y-3"
+                      className="bg-sl-bg border border-sl-outline-variant rounded-lg p-2.5 space-y-1.5 hover:border-sl-on-surface-muted/40 transition-colors"
                     >
-                      {/* Encabezado: código + badges de estado */}
+                      {/* Encabezado: código + estado ... precio */}
                       <div className="flex items-center justify-between gap-2">
-                        <a
-                          href={`/admin/bookings/${b.id}`}
-                          className="font-mono text-[11px] font-semibold text-bronze hover:underline"
-                        >
-                          {b.booking_number}
-                        </a>
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <a
+                            href={`/admin/bookings/${b.id}`}
+                            className="font-mono text-[11px] font-semibold text-bronze hover:underline shrink-0"
+                          >
+                            {b.booking_number}
+                          </a>
+                          <span className="text-[9px] font-semibold text-sl-on-surface-muted uppercase tracking-wide truncate">
+                            {t.status[b.status as keyof typeof t.status] ?? b.status}
+                          </span>
                           {!!b.events_count && (
                             <a
                               href={`/admin/bookings/${b.id}`}
                               title={t.recentEventsTitle}
-                              className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-700 bg-amber-100 rounded-full px-1.5 py-0.5"
+                              className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-amber-700 bg-amber-100 rounded-full px-1 py-0.5 shrink-0"
                             >
-                              <AlertTriangle size={10} strokeWidth={2.5} />
+                              <AlertTriangle size={9} strokeWidth={2.5} />
                               {b.events_count}
                             </a>
                           )}
-                          <span className="text-[10px] font-semibold text-sl-on-surface-muted uppercase tracking-wide">
-                            {t.status[b.status as keyof typeof t.status] ?? b.status}
+                        </div>
+                        {b.total_amount != null && (
+                          <span className="text-xs font-bold text-sl-on-surface shrink-0">
+                            ${Number(b.total_amount).toFixed(2)}
                           </span>
-                        </div>
+                        )}
                       </div>
 
-                      {/* Línea principal: hora + pasajero */}
-                      <div>
-                        <p className="text-sm font-semibold text-sl-on-surface leading-tight">
+                      {/* Hora + pasajero */}
+                      <p className="text-xs leading-tight">
+                        <span className="font-semibold text-sl-on-surface">
                           {new Date(b.scheduled_at).toLocaleString(localeTag, {
-                            month: 'short', day: 'numeric',
-                            hour: '2-digit', minute: '2-digit',
+                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
                           })}
-                        </p>
-                        <p className="text-xs text-sl-on-surface-muted mt-0.5">
-                          {b.passenger_name ?? t.noName}
-                        </p>
-                      </div>
+                        </span>
+                        <span className="text-sl-on-surface-muted"> · {b.passenger_name ?? t.noName}</span>
+                      </p>
 
-                      {/* Ruta: mini línea de tiempo origen → destino */}
-                      <div className="flex gap-2.5">
-                        <div className="flex flex-col items-center pt-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-bronze shrink-0" />
-                          <span className="w-px flex-1 bg-sl-outline-variant my-0.5 min-h-[10px]" />
-                          <span className="w-1.5 h-1.5 rounded-full border-[1.5px] border-sl-on-surface-muted shrink-0" />
-                        </div>
-                        <div className="flex-1 min-w-0 space-y-2 text-xs">
-                          <p className="truncate text-sl-on-surface" title={b.pickup_address}>
-                            {b.pickup_address || '—'}
-                          </p>
-                          <p className="truncate text-sl-on-surface-muted" title={b.dropoff_address}>
-                            {b.dropoff_address || '—'}
-                          </p>
-                        </div>
+                      {/* Ruta: origen → destino en una sola línea */}
+                      <div
+                        className="flex items-center gap-1.5 text-[11px] text-sl-on-surface-muted"
+                        title={`${b.pickup_address || '—'} → ${b.dropoff_address || '—'}`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-bronze shrink-0" />
+                        <span className="min-w-0 flex-1 truncate">{b.pickup_address || '—'}</span>
+                        <ArrowRight size={9} strokeWidth={2.25} className="shrink-0 opacity-60" />
+                        <span className="min-w-0 flex-1 truncate text-right">{b.dropoff_address || '—'}</span>
                       </div>
 
                       {/* Chips secundarios: paradas, distancia, vuelo */}
                       {((b.stops_count ?? 0) > 0 || b.distance_miles != null || b.flight_number) && (
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-1">
                           {(b.stops_count ?? 0) > 0 && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-sl-on-surface-muted bg-sl-outline-variant/25 rounded-full px-1.5 py-0.5">
-                              <Milestone size={10} strokeWidth={2.25} />
+                            <span className="inline-flex items-center gap-1 text-[9px] font-medium text-sl-on-surface-muted bg-sl-outline-variant/25 rounded-full px-1.5 py-0.5">
+                              <Milestone size={9} strokeWidth={2.25} />
                               {b.stops_count} {b.stops_count === 1 ? t.stop : t.stops}
                             </span>
                           )}
                           {b.distance_miles != null && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-sl-on-surface-muted bg-sl-outline-variant/25 rounded-full px-1.5 py-0.5">
-                              <Route size={10} strokeWidth={2.25} />
+                            <span className="inline-flex items-center gap-1 text-[9px] font-medium text-sl-on-surface-muted bg-sl-outline-variant/25 rounded-full px-1.5 py-0.5">
+                              <Route size={9} strokeWidth={2.25} />
                               {Number(b.distance_miles).toFixed(1)} mi
                             </span>
                           )}
@@ -345,9 +358,9 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
                                         ? flightT.enroute
                                         : undefined
                               }
-                              className={`inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-1.5 py-0.5 ${flightTone}`}
+                              className={`inline-flex items-center gap-1 text-[9px] font-semibold rounded-full px-1.5 py-0.5 ${flightTone}`}
                             >
-                              <Plane size={10} strokeWidth={2.25} />
+                              <Plane size={9} strokeWidth={2.25} />
                               {b.flight_number}
                               {b.flight_status === 'cancelled'
                                 ? ` · ${flightT.cancelled}`
@@ -359,38 +372,28 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
                         </div>
                       )}
 
-                      {/* Conductor asignado */}
-                      {driverName(b.driver_id) && (
-                        <p className="flex items-center gap-1.5 text-xs font-medium text-sl-on-surface">
-                          <UserRound size={13} strokeWidth={2.25} className="text-bronze shrink-0" />
-                          {driverName(b.driver_id)}
-                        </p>
-                      )}
-
-                      {/* Puntualidad de llegada */}
-                      {b.arrived_at && (() => {
-                        const grace = new Date(b.scheduled_at).getTime() + ON_TIME_GRACE_MINUTES * 60_000
-                        const onTime = new Date(b.arrived_at).getTime() <= grace
-                        const time = new Date(b.arrived_at).toLocaleTimeString(localeTag, { hour: '2-digit', minute: '2-digit' })
-                        return (
-                          <p className={`flex items-center gap-1.5 text-xs font-medium ${onTime ? 'text-green-600' : 'text-red-500'}`}>
-                            {onTime
-                              ? <CheckCircle2 size={13} strokeWidth={2.25} className="shrink-0" />
-                              : <AlertTriangle size={13} strokeWidth={2.25} className="shrink-0" />}
-                            {t.arrivedAtPickup.replace('{time}', time)}{!onTime && ` ${t.late}`}
-                          </p>
-                        )
-                      })()}
-
-                      {/* Precio */}
-                      {b.total_amount != null && (
-                        <div className="flex items-center justify-between pt-1.5 border-t border-sl-outline-variant/60">
-                          <span className="text-[10px] uppercase tracking-wide text-sl-on-surface-muted">
-                            {b.currency}
-                          </span>
-                          <span className="text-sm font-bold text-sl-on-surface">
-                            ${Number(b.total_amount).toFixed(2)}
-                          </span>
+                      {/* Conductor (solo cuando no hay select debajo) + puntualidad */}
+                      {(showDriverLine || b.arrived_at) && (
+                        <div className="space-y-1">
+                          {showDriverLine && (
+                            <p className="flex items-center gap-1 text-[11px] font-medium text-sl-on-surface">
+                              <UserRound size={11} strokeWidth={2.25} className="text-bronze shrink-0" />
+                              {driverName(b.driver_id)}
+                            </p>
+                          )}
+                          {b.arrived_at && (() => {
+                            const grace = new Date(b.scheduled_at).getTime() + ON_TIME_GRACE_MINUTES * 60_000
+                            const onTime = new Date(b.arrived_at).getTime() <= grace
+                            const time = new Date(b.arrived_at).toLocaleTimeString(localeTag, { hour: '2-digit', minute: '2-digit' })
+                            return (
+                              <p className={`flex items-center gap-1 text-[11px] font-medium ${onTime ? 'text-green-600' : 'text-red-500'}`}>
+                                {onTime
+                                  ? <CheckCircle2 size={11} strokeWidth={2.25} className="shrink-0" />
+                                  : <AlertTriangle size={11} strokeWidth={2.25} className="shrink-0" />}
+                                {t.arrivedAtPickup.replace('{time}', time)}{!onTime && ` ${t.late}`}
+                              </p>
+                            )
+                          })()}
                         </div>
                       )}
 
@@ -400,7 +403,7 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
                           defaultValue={b.driver_id ?? ''}
                           disabled={isPending}
                           onChange={(e) => assign(b.id, e.target.value, b.driver_id)}
-                          className="w-full text-[11px] bg-white border border-sl-outline-variant rounded-lg px-2 py-1.5 text-sl-on-surface focus:border-bronze focus:outline-none disabled:opacity-50"
+                          className="w-full text-[11px] bg-white border border-sl-outline-variant rounded-lg px-2 py-1 text-sl-on-surface focus:border-bronze focus:outline-none disabled:opacity-50"
                         >
                           <option value="">{b.driver_id ? t.reassignDriver : t.assignDriver}</option>
                           {drivers.map((d) => (
@@ -412,12 +415,12 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
                       )}
 
                       {/* Acciones de avance */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         {NEXT_ACTION[b.status] && (
                           <button
                             disabled={isPending}
                             onClick={() => advance(b.id, NEXT_ACTION[b.status]!.to)}
-                            className="flex-1 text-[11px] font-semibold px-2 py-1.5 bg-gold text-gray-900 rounded-lg hover:bg-gold/90 disabled:opacity-50 transition-colors"
+                            className="flex-1 text-[11px] font-semibold px-2 py-1 bg-gold text-gray-900 rounded-lg hover:bg-gold/90 disabled:opacity-50 transition-colors"
                           >
                             {NEXT_ACTION[b.status]!.label}
                           </button>
@@ -427,9 +430,9 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
                             disabled={isPending}
                             onClick={() => cancel(b.id)}
                             title={t.errors.cancel}
-                            className="shrink-0 p-1.5 text-sl-on-surface-muted hover:text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-50 transition-colors"
+                            className="shrink-0 p-1 text-sl-on-surface-muted hover:text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-50 transition-colors"
                           >
-                            <X size={14} strokeWidth={2.25} />
+                            <X size={13} strokeWidth={2.25} />
                           </button>
                         )}
                       </div>
