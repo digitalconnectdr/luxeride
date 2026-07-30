@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { AlertTriangle, CheckCircle2, Milestone, Plane, Route, UserRound, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { updateBookingStatusAction, assignDriverAction } from '@/app/actions/bookings'
 import { DispatchLiveMap } from './dispatch-live-map'
@@ -249,101 +250,149 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
                 {items.length === 0 ? (
                   <p className="text-xs text-sl-on-surface-muted text-center py-6">—</p>
                 ) : (
-                  items.map((b) => (
+                  items.map((b) => {
+                    const flightTone =
+                      b.flight_status === 'cancelled'
+                        ? 'text-red-600 bg-red-50'
+                        : (b.flight_delay_minutes ?? 0) >= 15
+                          ? 'text-orange-600 bg-orange-50'
+                          : 'text-sl-on-surface-muted bg-sl-outline-variant/25'
+                    return (
                     <div
                       key={b.id}
-                      className="bg-sl-bg border border-sl-outline-variant rounded-xl p-3 space-y-2"
+                      className="bg-sl-bg border border-sl-outline-variant rounded-xl p-3.5 space-y-3"
                     >
-                      <div className="flex items-center justify-between">
+                      {/* Encabezado: código + badges de estado */}
+                      <div className="flex items-center justify-between gap-2">
                         <a
                           href={`/admin/bookings/${b.id}`}
-                          className="font-mono text-[11px] text-bronze hover:underline"
+                          className="font-mono text-[11px] font-semibold text-bronze hover:underline"
                         >
                           {b.booking_number}
                         </a>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           {!!b.events_count && (
                             <a
                               href={`/admin/bookings/${b.id}`}
                               title={t.recentEventsTitle}
-                              className="text-[10px] font-semibold text-amber-700 bg-amber-100 rounded-full px-1.5 py-0.5"
+                              className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-700 bg-amber-100 rounded-full px-1.5 py-0.5"
                             >
-                              ⚠️ {b.events_count}
+                              <AlertTriangle size={10} strokeWidth={2.5} />
+                              {b.events_count}
                             </a>
                           )}
-                          <span className="text-[10px] font-semibold text-sl-on-surface-muted uppercase">
+                          <span className="text-[10px] font-semibold text-sl-on-surface-muted uppercase tracking-wide">
                             {t.status[b.status as keyof typeof t.status] ?? b.status}
                           </span>
                         </div>
                       </div>
 
-                      <div className="text-xs space-y-1">
-                        <p className="font-semibold text-sl-on-surface">
+                      {/* Línea principal: hora + pasajero */}
+                      <div>
+                        <p className="text-sm font-semibold text-sl-on-surface leading-tight">
                           {new Date(b.scheduled_at).toLocaleString(localeTag, {
                             month: 'short', day: 'numeric',
                             hour: '2-digit', minute: '2-digit',
                           })}
-                          <span className="font-normal text-sl-on-surface-muted">
-                            {' '}· {b.passenger_name ?? t.noName}
-                          </span>
                         </p>
-                        <p className="text-sl-on-surface-muted truncate" title={b.pickup_address}>
-                          ▲ {b.pickup_address || '—'}
+                        <p className="text-xs text-sl-on-surface-muted mt-0.5">
+                          {b.passenger_name ?? t.noName}
                         </p>
-                        {(b.stops_count ?? 0) > 0 && (
-                          <p className="text-sl-on-surface-muted">
-                            ◆ {b.stops_count} {b.stops_count === 1 ? t.stop : t.stops}
-                          </p>
-                        )}
-                        <p className="text-sl-on-surface-muted truncate" title={b.dropoff_address}>
-                          ▼ {b.dropoff_address || '—'}
-                        </p>
-                        {b.distance_miles != null && (
-                          <p className="text-sl-on-surface-muted">
-                            ⟷ {Number(b.distance_miles).toFixed(1)} mi
-                          </p>
-                        )}
-                        {b.flight_number && (
-                          <p
-                            className={
-                              b.flight_status === 'cancelled'
-                                ? 'text-red-500 font-semibold'
-                                : (b.flight_delay_minutes ?? 0) >= 15
-                                  ? 'text-orange-500 font-semibold'
-                                  : 'text-sl-on-surface-muted'
-                            }
-                          >
-                            ✈ {b.flight_number}
-                            {b.flight_status === 'cancelled'
-                              ? ` · ${flightT.cancelled}`
-                              : (b.flight_delay_minutes ?? 0) >= 15
-                                ? ` · ${flightT.delay.replace('{minutes}', String(b.flight_delay_minutes))}`
-                                : b.flight_status === 'arrived'
-                                  ? ` · ${flightT.arrived}`
-                                  : b.flight_status === 'enroute'
-                                    ? ` · ${flightT.enroute}`
-                                    : ''}
-                          </p>
-                        )}
-                        {driverName(b.driver_id) && (
-                          <p className="text-bronze">⊙ {driverName(b.driver_id)}</p>
-                        )}
-                        {b.arrived_at && (() => {
-                          const grace = new Date(b.scheduled_at).getTime() + ON_TIME_GRACE_MINUTES * 60_000
-                          const onTime = new Date(b.arrived_at).getTime() <= grace
-                          const time = new Date(b.arrived_at).toLocaleTimeString(localeTag, { hour: '2-digit', minute: '2-digit' })
-                          return (
-                            <p className={onTime ? 'text-green-600' : 'text-red-500 font-semibold'}>
-                              {onTime ? '✓' : '⚠'} {t.arrivedAtPickup.replace('{time}', time)}{!onTime && ` ${t.late}`}
-                            </p>
-                          )
-                        })()}
-                        {b.total_amount != null && (
-                          <p className="font-semibold text-sl-on-surface">
-                            ${Number(b.total_amount).toFixed(2)} {b.currency}
-                          </p>
-                        )}
                       </div>
+
+                      {/* Ruta: mini línea de tiempo origen → destino */}
+                      <div className="flex gap-2.5">
+                        <div className="flex flex-col items-center pt-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-bronze shrink-0" />
+                          <span className="w-px flex-1 bg-sl-outline-variant my-0.5 min-h-[10px]" />
+                          <span className="w-1.5 h-1.5 rounded-full border-[1.5px] border-sl-on-surface-muted shrink-0" />
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-2 text-xs">
+                          <p className="truncate text-sl-on-surface" title={b.pickup_address}>
+                            {b.pickup_address || '—'}
+                          </p>
+                          <p className="truncate text-sl-on-surface-muted" title={b.dropoff_address}>
+                            {b.dropoff_address || '—'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Chips secundarios: paradas, distancia, vuelo */}
+                      {((b.stops_count ?? 0) > 0 || b.distance_miles != null || b.flight_number) && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {(b.stops_count ?? 0) > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-sl-on-surface-muted bg-sl-outline-variant/25 rounded-full px-1.5 py-0.5">
+                              <Milestone size={10} strokeWidth={2.25} />
+                              {b.stops_count} {b.stops_count === 1 ? t.stop : t.stops}
+                            </span>
+                          )}
+                          {b.distance_miles != null && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-sl-on-surface-muted bg-sl-outline-variant/25 rounded-full px-1.5 py-0.5">
+                              <Route size={10} strokeWidth={2.25} />
+                              {Number(b.distance_miles).toFixed(1)} mi
+                            </span>
+                          )}
+                          {b.flight_number && (
+                            <span
+                              title={
+                                b.flight_status === 'cancelled'
+                                  ? flightT.cancelled
+                                  : (b.flight_delay_minutes ?? 0) >= 15
+                                    ? flightT.delay.replace('{minutes}', String(b.flight_delay_minutes))
+                                    : b.flight_status === 'arrived'
+                                      ? flightT.arrived
+                                      : b.flight_status === 'enroute'
+                                        ? flightT.enroute
+                                        : undefined
+                              }
+                              className={`inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-1.5 py-0.5 ${flightTone}`}
+                            >
+                              <Plane size={10} strokeWidth={2.25} />
+                              {b.flight_number}
+                              {b.flight_status === 'cancelled'
+                                ? ` · ${flightT.cancelled}`
+                                : (b.flight_delay_minutes ?? 0) >= 15
+                                  ? ` · +${b.flight_delay_minutes}m`
+                                  : ''}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Conductor asignado */}
+                      {driverName(b.driver_id) && (
+                        <p className="flex items-center gap-1.5 text-xs font-medium text-sl-on-surface">
+                          <UserRound size={13} strokeWidth={2.25} className="text-bronze shrink-0" />
+                          {driverName(b.driver_id)}
+                        </p>
+                      )}
+
+                      {/* Puntualidad de llegada */}
+                      {b.arrived_at && (() => {
+                        const grace = new Date(b.scheduled_at).getTime() + ON_TIME_GRACE_MINUTES * 60_000
+                        const onTime = new Date(b.arrived_at).getTime() <= grace
+                        const time = new Date(b.arrived_at).toLocaleTimeString(localeTag, { hour: '2-digit', minute: '2-digit' })
+                        return (
+                          <p className={`flex items-center gap-1.5 text-xs font-medium ${onTime ? 'text-green-600' : 'text-red-500'}`}>
+                            {onTime
+                              ? <CheckCircle2 size={13} strokeWidth={2.25} className="shrink-0" />
+                              : <AlertTriangle size={13} strokeWidth={2.25} className="shrink-0" />}
+                            {t.arrivedAtPickup.replace('{time}', time)}{!onTime && ` ${t.late}`}
+                          </p>
+                        )
+                      })()}
+
+                      {/* Precio */}
+                      {b.total_amount != null && (
+                        <div className="flex items-center justify-between pt-1.5 border-t border-sl-outline-variant/60">
+                          <span className="text-[10px] uppercase tracking-wide text-sl-on-surface-muted">
+                            {b.currency}
+                          </span>
+                          <span className="text-sm font-bold text-sl-on-surface">
+                            ${Number(b.total_amount).toFixed(2)}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Asignar / reasignar conductor (pendientes y asignados) */}
                       {['pending', 'assigned'].includes(b.status) && drivers.length > 0 && (
@@ -363,12 +412,12 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
                       )}
 
                       {/* Acciones de avance */}
-                      <div className="flex gap-1.5">
+                      <div className="flex items-center gap-2">
                         {NEXT_ACTION[b.status] && (
                           <button
                             disabled={isPending}
                             onClick={() => advance(b.id, NEXT_ACTION[b.status]!.to)}
-                            className="flex-1 text-[11px] font-medium px-2 py-1.5 bg-gold text-gray-900 rounded-lg hover:bg-gold/90 disabled:opacity-50 transition-colors"
+                            className="flex-1 text-[11px] font-semibold px-2 py-1.5 bg-gold text-gray-900 rounded-lg hover:bg-gold/90 disabled:opacity-50 transition-colors"
                           >
                             {NEXT_ACTION[b.status]!.label}
                           </button>
@@ -377,14 +426,16 @@ export function DispatchBoard({ companyId, initialBookings, drivers, driverStatu
                           <button
                             disabled={isPending}
                             onClick={() => cancel(b.id)}
-                            className="text-[11px] px-2 py-1.5 text-red-500 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors"
+                            title={t.errors.cancel}
+                            className="shrink-0 p-1.5 text-sl-on-surface-muted hover:text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-50 transition-colors"
                           >
-                            ✕
+                            <X size={14} strokeWidth={2.25} />
                           </button>
                         )}
                       </div>
                     </div>
-                  ))
+                    )
+                  })
                 )}
               </div>
             </div>
