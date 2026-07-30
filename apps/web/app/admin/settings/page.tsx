@@ -5,6 +5,7 @@ import {
   updateBookingSettingsAction,
   updateNotificationRemindersAction,
   updateExternalReviewsAction,
+  updateTrackingSettingsAction,
 } from '@/app/actions/settings'
 import { HourChipsField } from '@/components/admin/hour-chips-field'
 import { updateDispatchWeightsAction } from '@/app/actions/dispatch-settings'
@@ -163,16 +164,21 @@ export default async function SettingsPage({
       passengerMinutes?: number[]
       driverMinutes?: number[]
     }
+    tracking?: {
+      ga_measurement_id?: string | null
+    }
   }) ?? {}
 
   const booking  = settings.booking  ?? {}
   const reminders = settings.notificationReminders ?? {}
+  const tracking = settings.tracking ?? {}
 
   // void casts — TypeScript void-callback rule
   const infoAction:     (fd: FormData) => void = updateCompanyInfoAction
   const bookingAction:  (fd: FormData) => void = updateBookingSettingsAction
   const remindersAction: (fd: FormData) => void = updateNotificationRemindersAction
   const externalReviewsAction: (fd: FormData) => void = updateExternalReviewsAction
+  const trackingAction: (fd: FormData) => void = updateTrackingSettingsAction
   const dispatchWeightsAction: (fd: FormData) => void = updateDispatchWeightsAction
   const dispatchWeights = parseDispatchWeights((company.settings as Record<string, unknown> | null)?.dispatch_weights)
   const connectAction:  () => void = createConnectOnboardingAction
@@ -917,6 +923,29 @@ export default async function SettingsPage({
       )}
     </section>
     )}
+
+    {/* ── Google Ads: conversion tracking ── */}
+    <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
+      <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.gaTrackingTitle}</h2>
+      <p className="text-xs text-sl-on-surface-muted mb-5 max-w-[75ch]">{t.gaTrackingIntro}</p>
+      <form action={trackingAction} className="space-y-4">
+        <div>
+          <label className={labelCls}>{t.gaMeasurementIdLabel}<InfoTip text={t.gaMeasurementIdInfo} /></label>
+          <input
+            name="ga_measurement_id"
+            defaultValue={tracking.ga_measurement_id ?? ''}
+            placeholder="G-XXXXXXXXXX"
+            className={`${inputCls} font-mono`}
+          />
+          <p className="text-[11px] text-sl-on-surface-muted mt-1">{t.gaMeasurementIdHint}</p>
+        </div>
+        <div className="flex justify-end pt-1">
+          <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
+            {t.saveTracking}
+          </button>
+        </div>
+      </form>
+    </section>
     </>
   )
 

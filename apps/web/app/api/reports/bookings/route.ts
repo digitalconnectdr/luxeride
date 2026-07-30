@@ -67,7 +67,7 @@ export async function GET(request: Request) {
 
   let query = admin
     .from('bookings')
-    .select('booking_number, status, type, passenger_name, passenger_phone, passenger_email, scheduled_at, completed_at, pickup_location, dropoff_location, distance_miles, duration_minutes, base_amount, total_amount, currency, created_at')
+    .select('booking_number, status, type, passenger_name, passenger_phone, passenger_email, scheduled_at, completed_at, pickup_location, dropoff_location, distance_miles, duration_minutes, base_amount, total_amount, currency, created_at, driver_id, vehicle_id')
     .gte('scheduled_at', from.toISOString())
     .lte('scheduled_at', to.toISOString())
     .order('scheduled_at')
@@ -86,6 +86,32 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Query failed' }, { status: 500 })
   }
 
+  const rows0 = bookings ?? []
+
+  // Nombre de conductor y datos de vehículo — joins livianos solo para los
+  // ids presentes en el rango exportado (no todo driver_id/vehicle_id de la
+  // empresa).
+  const driverIds = [...new Set(rows0.map((b) => b.driver_id).filter((v): v is string => !!v))]
+  const vehicleIds = [...new Set(rows0.map((b) => b.vehicle_id).filter((v): v is string => !!v))]
+
+  const driverNames = new Map<string, string>()
+  if (driverIds.length > 0) {
+    const { data: profiles } = await admin
+      .from('user_profiles')
+      .select('id, first_name, last_name')
+      .in('id', driverIds)
+    for (const p of profiles ?? []) driverNames.set(p.id, `${p.first_name} ${p.last_name}`)
+  }
+
+  const vehicleLabels = new Map<string, string>()
+  if (vehicleIds.length > 0) {
+    const { data: vehicles } = await admin
+      .from('vehicles')
+      .select('id, make, model, plate_number')
+      .in('id', vehicleIds)
+    for (const v of vehicles ?? []) vehicleLabels.set(v.id, `${v.make} ${v.model} (${v.plate_number})`)
+  }
+
   // Encabezados y estados según el idioma activo (cookie luxeride_locale)
   const dict = getDict()
   const c = dict.admin.reportsCsv
@@ -95,16 +121,18 @@ export async function GET(request: Request) {
     c.bookingNumber, c.status, c.type, c.passengerName, c.passengerPhone,
     c.passengerEmail, c.scheduledAt, c.completedAt, c.pickupAddress,
     c.dropoffAddress, c.distanceMiles, c.durationMinutes, c.baseAmount,
-    c.totalAmount, c.currency, c.createdAt,
+    c.totalAmount, c.currency, c.createdAt, c.driverName, c.vehicle,
   ]
 
-  const rows = (bookings ?? []).map((b) => [
+  const rows = rows0.map((b) => [
     b.booking_number, statusLabels[b.status] ?? b.status, b.type, b.passenger_name, b.passenger_phone,
     b.passenger_email, b.scheduled_at, b.completed_at,
     (b.pickup_location as { address?: string } | null)?.address ?? '',
     (b.dropoff_location as { address?: string } | null)?.address ?? '',
     b.distance_miles, b.duration_minutes, b.base_amount, b.total_amount,
     b.currency, b.created_at,
+    b.driver_id ? (driverNames.get(b.driver_id) ?? '') : '',
+    b.vehicle_id ? (vehicleLabels.get(b.vehicle_id) ?? '') : '',
   ].map(csvEscape).join(','))
 
   const csv = [header.join(','), ...rows].join('\r\n')

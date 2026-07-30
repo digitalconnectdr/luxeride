@@ -1,7 +1,60 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-07-29. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-07-30. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## ✅ Reportes ampliados + Google Ads conversion tracking (2026-07-30)
+
+El usuario pidió (1) revisar `/admin/reports` para agregar mejoras y (2) evaluar
+cómo integrar Google Ads. Investigación previa confirmó que GA4 ya existía en
+`app/layout.tsx` pero es analítica **propia de LuxeRide** (una sola cuenta,
+toda la plataforma) — no sirve para que cada operador mida sus propias
+campañas. El 2026-07-22 el usuario ya había descartado explícitamente
+construir gestión de campañas de Ads (fuera de alcance); esta iniciativa
+confirma ese alcance: **solo conversion tracking + UTM/gclid**, nada de
+creación/gestión de campañas desde LuxeRide.
+
+**Reportes — todo lo pedido, reusando lo existente (sin motores nuevos):**
+- Ingresos por canal (directo/corporativo/afiliado/partner) — clasificado sin
+  tabla nueva: `corporate_account_id`/`partner_id` ya en `bookings`, afiliado
+  se detecta por presencia en `affiliate_trips.booking_id`.
+- Comparación de ingresos vs. período anterior (cálculo directo, NO reusa
+  `scoreRevenueHealth` de `lib/operator-score/engine.ts` — esa función da un
+  score 0-100 normalizado, no un delta real).
+- Gráfico de tendencia: se reusa `BookingsTrendChart` tal cual (el mismo del
+  dashboard), con sus propios rangos, independiente del filtro Desde/Hasta.
+- Desglose por tipo de reserva (`bookings.type`, reusando las etiquetas ya
+  existentes en `dict.admin.bookingDetail.types`).
+- Puntualidad de flota agregada: reusa `computeAccountSla()` de
+  `lib/corporate/sla.ts` sin ninguna cuenta corporativa de por medio (la
+  función solo pide `status/scheduled_at/arrived_at`).
+- Facturación corporativa pendiente/vencida: nueva query agrupada sobre
+  `invoices` (la tabla ya tenía todo lo necesario).
+- CSV (`/api/reports/bookings`): 2 columnas nuevas, conductor y vehículo.
+
+**Google Ads — conversion tracking + UTM/gclid:**
+- Migración `20260803000083_bookings_attribution.sql`: `bookings.attribution
+  JSONB DEFAULT '{}'`.
+- Cada operador pega su propio GA4 Measurement ID en Configuración →
+  Integraciones (`companies.settings.tracking.ga_measurement_id`, sin
+  migración nueva — reusa el JSONB existente).
+- Captura de "primer toque": `booking-wizard.tsx` lee `utm_source/medium/
+  campaign/term/content/gclid` de la URL al montar y los guarda en
+  `sessionStorage` (nunca se sobreescribe si ya hay uno guardado en la
+  sesión) — verificado en navegador que persiste incluso al recargar sin
+  parámetros.
+- `createPublicBookingAction` persiste la atribución (whitelist estricta de
+  campos, nunca JSON arbitrario del cliente).
+- `components/booking/conversion-tracker.tsx`: inyecta el gtag.js del
+  operador (NO el de LuxeRide) y dispara un evento `purchase` (value+currency,
+  reconocido automáticamente por GA4 para ROAS) — en dos puntos: la
+  confirmación in-page (reservas sin pago online) y el nuevo
+  `payment/success/page.tsx` (ahora server component dinámico que resuelve la
+  reserva por `booking_number`, antes era 100% estático sin acceso a datos).
+
+Verificado: `tsc --noEmit` limpio, `vitest run` 256/256, `npm run build`
+exitoso, y en navegador con datos reales — captura de UTM/gclid confirmada en
+`sessionStorage` con first-touch correcto tras recarga sin parámetros.
 
 ## ✅ Blindar cuentas corporativas frente a Uber for Business/Elite (2026-07-30)
 

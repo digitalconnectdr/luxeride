@@ -66,6 +66,9 @@ export default async function EmbedBookingPage({ params }: { params: { slug: str
     return { enabled: (g?.enabled ?? true) && !requiresDeposit, options: g?.options ?? [15, 18, 20, 25], defaultPct: g?.default_percentage ?? 20 }
   })()
 
+  const gaMeasurementId =
+    (company.settings as { tracking?: { ga_measurement_id?: string | null } } | null)?.tracking?.ga_measurement_id ?? undefined
+
   return (
     <div className="min-h-screen w-full flex flex-col items-center px-3 py-4 antialiased" style={{ ['--brand' as string]: brandColor }}>
       <div className="w-full max-w-[480px]">
@@ -80,6 +83,7 @@ export default async function EmbedBookingPage({ params }: { params: { slug: str
             dict={dict.wizard}
             localeTag={LOCALE_TAGS[locale] ?? 'en-US'}
             gratuity={gratuity}
+            gaMeasurementId={gaMeasurementId}
           />
         </div>
       </div>

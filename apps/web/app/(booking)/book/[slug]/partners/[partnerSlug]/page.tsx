@@ -83,6 +83,9 @@ export default async function PartnerPortalPage({ params }: { params: { slug: st
     return { enabled: (g?.enabled ?? true) && !requiresDeposit, options: g?.options ?? [15, 18, 20, 25], defaultPct: g?.default_percentage ?? 20 }
   })()
 
+  const gaMeasurementId =
+    (company.settings as { tracking?: { ga_measurement_id?: string | null } } | null)?.tracking?.ga_measurement_id ?? undefined
+
   return (
     <div className="min-h-screen bg-[#08080a] text-white antialiased selection:bg-[var(--brand)]/30" style={{ ['--brand' as string]: brandColor }}>
       <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent, ${brandColor}55, transparent)` }} />
@@ -140,6 +143,7 @@ export default async function PartnerPortalPage({ params }: { params: { slug: st
                 localeTag={LOCALE_TAGS[locale] ?? 'en-US'}
                 gratuity={gratuity}
                 partnerSlug={partner.slug}
+                gaMeasurementId={gaMeasurementId}
               />
             </div>
             {company.phone && (

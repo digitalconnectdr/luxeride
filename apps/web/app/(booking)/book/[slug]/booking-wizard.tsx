@@ -24,6 +24,7 @@ import {
 } from '@/app/actions/payments'
 import type { BookingType } from '@/lib/supabase/database.types'
 import type { Dictionary } from '@/lib/i18n/dictionaries/en'
+import { ConversionTracker } from '@/components/booking/conversion-tracker'
 
 type WizardDict = Dictionary['wizard']
 
@@ -63,6 +64,8 @@ interface Props {
   localeTag: string
   /** Partner Portals — cuando la reserva viene del link privado de un partner. */
   partnerSlug?: string
+  /** Google Ads: GA4 Measurement ID propio del operador (companies.settings.tracking). */
+  gaMeasurementId?: string
 }
 
 // ─── Progreso ────────────────────────────────────────────────────────────────
@@ -119,7 +122,7 @@ const CLASS_ICONS: Record<string, string> = {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = false, gratuity, dict, localeTag, partnerSlug }: Props) {
+export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = false, gratuity, dict, localeTag, partnerSlug, gaMeasurementId }: Props) {
   const [step, setStep] = useState(0)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
@@ -183,6 +186,15 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
   // cuenta, sin backend). Capa 2: reconocer por teléfono en otro dispositivo,
   // ofreciendo sus datos con un clic explícito (nunca automático).
   const prefillKey = `luxeride:passenger:${company.slug}`
+  const attributionKey = `luxeride:attribution:${company.slug}`
+  function getStoredAttribution(): Record<string, string> | undefined {
+    try {
+      const raw = sessionStorage.getItem(attributionKey)
+      return raw ? (JSON.parse(raw) as Record<string, string>) : undefined
+    } catch {
+      return undefined
+    }
+  }
   const [returningMatch, setReturningMatch] = useState<{ name: string; email?: string } | null>(null)
   const [returningDismissed, setReturningDismissed] = useState(false)
   const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -202,6 +214,29 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
         phone: saved.phone ?? p.phone,
         email: saved.email ?? p.email,
       }))
+      // eslint-disable-next-line no-empty
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Atribución de marketing (UTM/gclid) — "primer toque": se guarda solo la
+  // primera vez que se ve un parámetro en esta sesión, nunca se sobreescribe
+  // en visitas posteriores sin params (ej. el pasajero vuelve directo a
+  // terminar su reserva). Se lee de vuelta al confirmar — ver
+  // getStoredAttribution() y su uso en handleConfirm.
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(attributionKey)) return
+      const params = new URLSearchParams(window.location.search)
+      const fields = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid']
+      const attribution: Record<string, string> = {}
+      for (const f of fields) {
+        const v = params.get(f)
+        if (v) attribution[f] = v
+      }
+      if (Object.keys(attribution).length === 0) return
+      attribution.landing_path = window.location.pathname
+      sessionStorage.setItem(attributionKey, JSON.stringify(attribution))
       // eslint-disable-next-line no-empty
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -408,6 +443,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
         stops:               routeData.stops,
         promoCode:           promoState?.code,
         partnerSlug,
+        attribution:         getStoredAttribution(),
       })
 
       if (!result.success || !result.data) {
@@ -490,6 +526,15 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
   if (confirmation) {
     return (
       <div className="text-center py-12 space-y-4">
+        {/* Reserva confirmada sin pago online — la conversión se dispara acá.
+            El flujo con pago online nunca llega a este punto (redirige a
+            Stripe/Whop antes); ese caso lo cubre payment/success/page.tsx. */}
+        <ConversionTracker
+          gaMeasurementId={gaMeasurementId}
+          transactionId={confirmation.bookingNumber}
+          value={selectedQuote ? selectedQuote.totalAmount - (promoState?.discountAmount ?? 0) : 0}
+          currency={selectedQuote?.currency ?? company.currency}
+        />
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto text-3xl">
           ✓
         </div>

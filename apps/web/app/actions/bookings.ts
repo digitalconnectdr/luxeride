@@ -61,6 +61,22 @@ function sanitizeStops(stops: StopInput[] | undefined): StopInput[] {
     .map((s) => ({ address: s.address.trim().slice(0, 500), lat: s.lat, lng: s.lng }))
 }
 
+// Google Ads conversion tracking — whitelist estricta de campos de atribución
+// (nunca se confía en JSON arbitrario del cliente para una columna JSONB).
+const ATTRIBUTION_FIELDS = [
+  'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'landing_path',
+] as const
+
+function sanitizeAttribution(attribution: Record<string, string> | undefined): Record<string, string> {
+  if (!attribution) return {}
+  const clean: Record<string, string> = {}
+  for (const field of ATTRIBUTION_FIELDS) {
+    const v = attribution[field]
+    if (typeof v === 'string' && v.trim()) clean[field] = v.trim().slice(0, 255)
+  }
+  return clean
+}
+
 /** Extrae paradas de un FormData (stop_0, stop_0_lat, stop_0_lng, …) */
 function stopsFromFormData(formData: FormData): StopInput[] {
   const stops: StopInput[] = []
@@ -1134,6 +1150,10 @@ export async function createPublicBookingAction(data: {
   // autoChargeDeferredCardInBackground en payments.ts). El guest checkout de
   // la web nunca lo manda (queda NULL, se concilia manual igual que siempre).
   paymentMethodIntent?: 'card' | 'cash'
+  // Atribución de marketing (UTM/gclid) — captura de "primer toque" hecha
+  // en el cliente (booking-wizard.tsx) desde sessionStorage. Usada para medir
+  // conversiones de Google Ads por operador (ver conversion-tracker.tsx).
+  attribution?: Record<string, string>
 }): Promise<{ success: boolean; error?: string; data?: BookingResult }> {
   // F1.17 — rate limit por IP
   if (!(await checkRateLimit('public_booking', 5))) {
@@ -1340,6 +1360,7 @@ export async function createPublicBookingAction(data: {
       promo_code_id:        promoCodeId,
       promo_discount_amount: promoCodeId ? discountAmount : null,
       payment_method_intent: data.paymentMethodIntent ?? null,
+      attribution:          sanitizeAttribution(data.attribution) as unknown as Json,
     })
     .select('id, booking_number')
     .single()

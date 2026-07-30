@@ -2236,6 +2236,7 @@ export type Database = {
           payment_method_intent: string | null
           passenger_preferences: Json | null
           partner_id: string | null
+          attribution: Json | null
           created_by: string | null
           dispatched_by: string | null
           created_at: string
@@ -2311,6 +2312,7 @@ export type Database = {
           payment_method_intent?: string | null | undefined
           passenger_preferences?: Json | null | undefined
           partner_id?: string | null | undefined
+          attribution?: Json | null | undefined
           created_by?: string | null | undefined
           dispatched_by?: string | null | undefined
           created_at?: string | undefined
@@ -2386,6 +2388,7 @@ export type Database = {
           payment_method_intent?: string | null | undefined
           passenger_preferences?: Json | null | undefined
           partner_id?: string | null | undefined
+          attribution?: Json | null | undefined
           created_by?: string | null | undefined
           dispatched_by?: string | null | undefined
           created_at?: string | undefined

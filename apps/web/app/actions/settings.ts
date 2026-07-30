@@ -485,3 +485,51 @@ export async function updateNotificationRemindersAction(
   revalidatePath('/admin/settings')
   return { success: true }
 }
+
+// ── Tracking de conversión (Google Ads) por operador ──────────────────────
+// Cada operador mide sus propias campañas con su propio GA4 Measurement ID
+// (formato G-XXXXXXXXXX) — ver components/booking/conversion-tracker.tsx,
+// que dispara un evento 'purchase' con este id al confirmar una reserva.
+// Vive en settings.tracking, mismo patrón merge-only que notificationReminders.
+
+export async function updateTrackingSettingsAction(
+  formData: FormData,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('company_owner')
+  if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+
+  const rawId = (formData.get('ga_measurement_id') as string ?? '').trim()
+  if (rawId && !/^G-[A-Z0-9]{6,15}$/i.test(rawId)) {
+    return { success: false, error: 'El Measurement ID debe tener el formato G-XXXXXXXXXX' }
+  }
+
+  const admin = createAdminClient()
+
+  const { data: company } = await admin
+    .from('companies')
+    .select('settings')
+    .eq('id', user.company_id)
+    .single()
+
+  if (!company) return { success: false, error: 'Empresa no encontrada' }
+
+  const currentSettings = (company.settings as Record<string, unknown>) ?? {}
+  const currentTracking = (currentSettings.tracking as Record<string, unknown>) ?? {}
+  const updatedSettings = {
+    ...currentSettings,
+    tracking: { ...currentTracking, ga_measurement_id: rawId || null },
+  }
+
+  const { error } = await admin
+    .from('companies')
+    .update({ settings: updatedSettings })
+    .eq('id', user.company_id)
+
+  if (error) {
+    console.error('[updateTrackingSettingsAction]', error)
+    return { success: false, error: 'No se pudo guardar' }
+  }
+
+  revalidatePath('/admin/settings')
+  return { success: true }
+}
