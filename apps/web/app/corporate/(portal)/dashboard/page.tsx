@@ -4,20 +4,22 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { BookingStatusBadge } from '@/components/bookings/booking-status-badge'
 import { TeamLimitsForm } from '@/components/corporate/team-limits-form'
+import { InviteMemberByLinkForm } from '@/components/corporate/invite-member-form'
+import { computeAccountSla } from '@/lib/corporate/sla'
+import { getLocale, getDict } from '@/lib/i18n/server'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
-const INVOICE_STATUS_LABEL: Record<string, string> = {
-  draft: 'Borrador', sent: 'Enviada', paid: 'Pagada', overdue: 'Vencida', cancelled: 'Cancelada',
-}
-const INVOICE_STATUS_CLS: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-600', sent: 'bg-blue-100 text-blue-700', paid: 'bg-green-100 text-green-700',
-  overdue: 'bg-red-100 text-red-600', cancelled: 'bg-gray-100 text-gray-500',
-}
+const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
 
-export const metadata: Metadata = { title: 'Dashboard Corporativo' }
+export function generateMetadata(): Metadata {
+  return { title: getDict().corporate.dashboard.defaultAccountName }
+}
 
 export default async function CorporateDashboardPage() {
   const user = await requireRole('corporate_manager', 'corporate_user')
+  const locale = getLocale()
+  const localeTag = LOCALE_TAGS[locale] ?? 'en-US'
+  const t = getDict(locale).corporate.dashboard
 
   const admin = createAdminClient()
 
@@ -33,10 +35,7 @@ export default async function CorporateDashboardPage() {
   if (!membership) {
     return (
       <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-10 text-center">
-        <p className="text-sm text-sl-on-surface-muted">
-          Tu usuario no está asociado a ninguna cuenta corporativa.
-          Contacta al administrador de tu empresa de transporte.
-        </p>
+        <p className="text-sm text-sl-on-surface-muted">{t.noMembership}</p>
       </div>
     )
   }
@@ -61,7 +60,17 @@ export default async function CorporateDashboardPage() {
     bookingsQuery = bookingsQuery.eq('customer_id', user.id)
   }
 
-  const { data: bookings } = await bookingsQuery
+  // SLA de la cuenta: siempre la cuenta completa (nivel de servicio, no
+  // información financiera) — se calcula por separado sin el límite de 15
+  // filas de la lista de arriba, para que el % refleje el historial real.
+  const slaQuery = admin
+    .from('bookings')
+    .select('status, scheduled_at, arrived_at')
+    .eq('corporate_account_id', membership.corporate_account_id)
+    .in('status', ['completed', 'cancelled', 'no_show'])
+
+  const [{ data: bookings }, { data: slaBookings }] = await Promise.all([bookingsQuery, slaQuery])
+  const sla = computeAccountSla(slaBookings ?? [])
 
   // Facturas + equipo — solo el manager los ve/gestiona
   let invoices: { id: string; invoice_number: string; status: string; subtotal: number; total_amount: number; currency: string | null; due_date: string | null; created_at: string }[] = []
@@ -123,15 +132,25 @@ export default async function CorporateDashboardPage() {
     .filter((b) => b.status === 'completed' && new Date(b.scheduled_at) >= monthStart)
     .reduce((sum, b) => sum + Number(b.total_amount ?? 0), 0)
 
+  const invoiceStatusLabel: Record<string, string> = t.invoices.status
+  const invoiceStatusCls: Record<string, string> = {
+    draft: 'bg-gray-100 text-gray-600', sent: 'bg-blue-100 text-blue-700', paid: 'bg-green-100 text-green-700',
+    overdue: 'bg-red-100 text-red-600', cancelled: 'bg-gray-100 text-gray-500',
+  }
+
+  const today = new Date()
+  const monthStartStr = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10)
+  const todayStr = today.toISOString().slice(0, 10)
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-playfair text-3xl font-semibold text-sl-on-surface">
-          {account?.name ?? 'Cuenta corporativa'}
+          {account?.name ?? t.defaultAccountName}
         </h1>
         <p className="text-sm text-sl-on-surface-muted mt-1">
-          Bienvenido, {user.profile.first_name} |{' '}
-          <span className="text-bronze">{isManager ? 'Manager' : 'Usuario'}</span>
+          {t.greeting.replace('{name}', user.profile.first_name)} |{' '}
+          <span className="text-bronze">{isManager ? t.roleManager : t.roleUser}</span>
           {membership.cost_center && ` · ${membership.cost_center}`}
         </p>
       </div>
@@ -139,7 +158,7 @@ export default async function CorporateDashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-            Gasto del mes (visible)
+            {t.kpi.monthSpend}
           </p>
           <p className="text-3xl font-playfair font-semibold text-sl-on-surface mt-2">
             ${monthSpend.toFixed(2)}
@@ -147,20 +166,44 @@ export default async function CorporateDashboardPage() {
         </div>
         <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-            Límite por viaje
+            {t.kpi.perTripLimit}
           </p>
           <p className="text-3xl font-playfair font-semibold text-sl-on-surface mt-2">
-            {membership.spending_limit != null ? `$${Number(membership.spending_limit).toFixed(0)}` : '—'}
+            {membership.spending_limit != null ? `$${Number(membership.spending_limit).toFixed(0)}` : t.kpi.noLimit}
           </p>
         </div>
         <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-            Límite mensual
+            {t.kpi.monthlyLimit}
           </p>
           <p className="text-3xl font-playfair font-semibold text-sl-on-surface mt-2">
-            {membership.monthly_limit != null ? `$${Number(membership.monthly_limit).toFixed(0)}` : '—'}
+            {membership.monthly_limit != null ? `$${Number(membership.monthly_limit).toFixed(0)}` : t.kpi.noLimit}
           </p>
         </div>
+      </div>
+
+      <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-3">
+          {t.sla.title}
+        </p>
+        {sla.completedCount === 0 ? (
+          <p className="text-sm text-sl-on-surface-muted">{t.sla.noData}</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <p className="text-2xl font-playfair font-semibold text-sl-on-surface">
+                {sla.punctualityPct ?? '—'}%
+              </p>
+              <p className="text-xs text-sl-on-surface-muted mt-0.5">{t.sla.punctuality}</p>
+            </div>
+            <div>
+              <p className="text-2xl font-playfair font-semibold text-sl-on-surface">
+                {sla.cancellationPct ?? 0}%
+              </p>
+              <p className="text-xs text-sl-on-surface-muted mt-0.5">{t.sla.cancellation}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end">
@@ -168,18 +211,18 @@ export default async function CorporateDashboardPage() {
           href="/corporate/book"
           className="px-5 py-2.5 text-sm font-medium bg-gold text-gray-900 rounded-xl hover:bg-gold/90 transition-colors"
         >
-          + Nueva reservación
+          {t.newBooking}
         </Link>
       </div>
 
       <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-sl-outline-variant">
           <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
-            {isManager ? 'Viajes de la cuenta' : 'Mis viajes'}
+            {isManager ? t.trips.accountTitle : t.trips.mineTitle}
           </p>
         </div>
         {!bookings?.length ? (
-          <p className="p-6 text-sm text-sl-on-surface-muted text-center">Sin viajes todavía.</p>
+          <p className="p-6 text-sm text-sl-on-surface-muted text-center">{t.trips.empty}</p>
         ) : (
           <div className="divide-y divide-sl-outline-variant">
             {bookings.map((b) => (
@@ -190,7 +233,7 @@ export default async function CorporateDashboardPage() {
                 </div>
                 <div className="flex items-center gap-4 text-sm">
                   <span className="text-sl-on-surface-muted">
-                    {new Date(b.scheduled_at).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' })}
+                    {new Date(b.scheduled_at).toLocaleString(localeTag, { dateStyle: 'medium', timeStyle: 'short' })}
                   </span>
                   <span className="font-semibold text-sl-on-surface">
                     {b.total_amount != null ? `$${Number(b.total_amount).toFixed(2)}` : '—'}
@@ -205,10 +248,10 @@ export default async function CorporateDashboardPage() {
       {isManager && (
         <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl overflow-hidden">
           <div className="px-6 py-4 border-b border-sl-outline-variant">
-            <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">Facturas</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.invoices.title}</p>
           </div>
           {!invoices.length ? (
-            <p className="p-6 text-sm text-sl-on-surface-muted text-center">Sin facturas todavía.</p>
+            <p className="p-6 text-sm text-sl-on-surface-muted text-center">{t.invoices.empty}</p>
           ) : (
             <div className="divide-y divide-sl-outline-variant">
               {invoices.map((inv) => (
@@ -216,13 +259,13 @@ export default async function CorporateDashboardPage() {
                   <summary className="flex items-center justify-between cursor-pointer list-none">
                     <div className="flex items-center gap-3">
                       <span className="font-mono text-xs text-bronze">{inv.invoice_number}</span>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${INVOICE_STATUS_CLS[inv.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                        {INVOICE_STATUS_LABEL[inv.status] ?? inv.status}
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${invoiceStatusCls[inv.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {invoiceStatusLabel[inv.status] ?? inv.status}
                       </span>
                     </div>
                     <div className="flex items-center gap-4 text-sm">
                       <span className="text-sl-on-surface-muted">
-                        {inv.due_date ? `Vence ${new Date(inv.due_date).toLocaleDateString('es-DO', { dateStyle: 'medium' })}` : '—'}
+                        {inv.due_date ? t.invoices.due.replace('{date}', new Date(inv.due_date).toLocaleDateString(localeTag, { dateStyle: 'medium' })) : '—'}
                       </span>
                       <span className="font-semibold text-sl-on-surface">
                         ${Number(inv.total_amount).toFixed(2)} {inv.currency ?? 'USD'}
@@ -245,12 +288,58 @@ export default async function CorporateDashboardPage() {
         </div>
       )}
 
+      {isManager && (
+        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">{t.report.title}</p>
+          <form action="/api/reports/bookings" method="get" className="flex flex-wrap items-end gap-3">
+            <input type="hidden" name="corporate_account_id" value={membership.corporate_account_id} />
+            <div>
+              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.report.from}</label>
+              <input type="date" name="from" defaultValue={monthStartStr} className="text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze" />
+            </div>
+            <div>
+              <label className="block text-xs text-sl-on-surface-muted mb-1">{t.report.to}</label>
+              <input type="date" name="to" defaultValue={todayStr} className="text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze" />
+            </div>
+            <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
+              {t.report.download}
+            </button>
+          </form>
+        </div>
+      )}
+
       {isManager && teamMembers.length > 0 && (
         <TeamLimitsForm
           members={teamMembers}
           creditLimit={Number(account?.credit_limit ?? 0)}
           assignedTotal={assignedTotal}
+          t={t.team}
         />
+      )}
+
+      {isManager && (
+        <div className="bg-sl-surface-high border border-sl-outline-variant rounded-2xl p-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-4">{t.invite.title}</p>
+          <InviteMemberByLinkForm
+            accountId={membership.corporate_account_id}
+            labels={{
+              emailLabel: t.invite.emailLabel,
+              roleLabel: t.invite.roleLabel,
+              roleUser: t.invite.roleUser,
+              roleManager: t.invite.roleManager,
+              costCenterLabel: t.invite.costCenterLabel,
+              spendingLimitLabel: t.invite.spendingLimitLabel,
+              monthlyLimitLabel: t.invite.monthlyLimitLabel,
+              submit: t.invite.submit,
+              submitting: t.invite.submitting,
+              linkGeneratedTitle: t.invite.linkGeneratedTitle,
+              linkHint: t.invite.linkHint,
+              copy: t.invite.copy,
+              copied: t.invite.copied,
+              error: t.invite.error,
+            }}
+          />
+        </div>
       )}
     </div>
   )

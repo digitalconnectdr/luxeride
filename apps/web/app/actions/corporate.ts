@@ -3,8 +3,10 @@
 // SECURITY: company_id siempre del servidor. Solo owner/admin gestionan cuentas.
 
 import { revalidatePath } from 'next/cache'
-import { createAdminClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
+import { getDefaultRoute } from '@/lib/auth/permissions'
 
 type ActionResult<T = undefined> = { success: boolean; error?: string; data?: T }
 
@@ -170,7 +172,10 @@ export async function addCorporateMemberAction(
 
   const authUser = authUsers.users.find((u) => u.email?.toLowerCase() === email)
   if (!authUser) {
-    return { success: false, error: 'No existe un usuario con ese email. El usuario debe registrarse primero.' }
+    return {
+      success: false,
+      error: 'No existe un usuario con ese email todavía. Usa "Invitar por link" para que la persona cree su propio acceso.',
+    }
   }
 
   // El perfil debe ser de la misma empresa
@@ -339,4 +344,251 @@ export async function updateCorporateMemberLimitsAction(
 
   revalidatePath('/corporate/dashboard')
   return { success: true }
+}
+
+// ── Onboarding por link (alternativa a addCorporateMemberAction) ──────────────
+// addCorporateMemberAction exige que el invitado YA tenga cuenta LuxeRide. Esta
+// alternativa clona el patrón capability-URL ya establecido para afiliados
+// externos (affiliate_invite_tokens, app/actions/affiliates.ts): un token de
+// un solo uso, sin políticas RLS propias (solo se toca vía service-role).
+// Puede generarla tanto el operador como el propio manager corporativo — el
+// verdadero salto de "onboarding más fácil" es que el cliente arme su equipo
+// sin esperar a soporte.
+
+const CORPORATE_INVITE_EXPIRY_DAYS = 7
+
+export async function createCorporateMemberInviteAction(
+  accountId: string,
+  formData: FormData,
+): Promise<ActionResult<{ token: string }>> {
+  const user = await requireRole('company_owner', 'company_admin', 'corporate_manager')
+
+  const admin = createAdminClient()
+
+  if (user.role === 'corporate_manager') {
+    // El manager solo puede invitar a SU PROPIA cuenta — mismo guardrail de
+    // auto-scoping que updateCorporateMemberLimitsAction.
+    const { data: membership } = await admin
+      .from('corporate_members')
+      .select('corporate_account_id')
+      .eq('user_id', user.id)
+      .eq('role', 'manager')
+      .eq('is_active', true)
+      .single()
+    if (!membership || membership.corporate_account_id !== accountId) {
+      return { success: false, error: 'No eres manager de esta cuenta corporativa' }
+    }
+  } else {
+    if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
+    const { data: account } = await admin
+      .from('corporate_accounts')
+      .select('id')
+      .eq('id', accountId)
+      .eq('company_id', user.company_id)
+      .single()
+    if (!account) return { success: false, error: 'Cuenta corporativa no encontrada' }
+  }
+
+  const email = (formData.get('email') as string ?? '').trim().toLowerCase()
+  if (!email) return { success: false, error: 'Email requerido' }
+
+  const role = (formData.get('role') as string) === 'manager' ? 'manager' : 'user'
+  const spendingLimit = parseFloat(formData.get('spending_limit') as string ?? '') || null
+  const monthlyLimit  = parseFloat(formData.get('monthly_limit') as string ?? '') || null
+  const costCenter    = (formData.get('cost_center') as string ?? '').trim() || null
+
+  const token = crypto.randomUUID()
+  const expiresAt = new Date(Date.now() + CORPORATE_INVITE_EXPIRY_DAYS * 86_400_000)
+
+  const { error } = await admin.from('corporate_invite_tokens').insert({
+    corporate_account_id: accountId,
+    token,
+    email,
+    role,
+    spending_limit: spendingLimit,
+    monthly_limit: monthlyLimit,
+    cost_center: costCenter,
+    created_by: user.id,
+    expires_at: expiresAt.toISOString(),
+  })
+  if (error) {
+    console.error('[createCorporateMemberInviteAction]', error)
+    return { success: false, error: 'Error al crear la invitación' }
+  }
+
+  revalidatePath(`/admin/corporate/${accountId}`)
+  revalidatePath('/corporate/dashboard')
+  return { success: true, data: { token } }
+}
+
+export interface CorporateInvitePreview {
+  accountName: string
+  companyName: string
+  role: 'manager' | 'user'
+  email: string
+  valid: boolean
+  /** true si ese email ya tiene cuenta LuxeRide — la página de alta salta el formulario de contraseña. */
+  accountExists: boolean
+}
+
+/** Lectura pública (sin sesión) para que la página de alta muestre el contexto de la invitación. */
+export async function getCorporateInvitePreviewAction(token: string): Promise<CorporateInvitePreview | null> {
+  if (!token) return null
+  const admin = createAdminClient()
+  const { data: invite } = await admin
+    .from('corporate_invite_tokens')
+    .select('corporate_account_id, email, role, used_at, expires_at')
+    .eq('token', token)
+    .maybeSingle()
+  if (!invite) return null
+
+  const { data: account } = await admin
+    .from('corporate_accounts')
+    .select('name, company_id')
+    .eq('id', invite.corporate_account_id)
+    .maybeSingle()
+  const { data: company } = account?.company_id
+    ? await admin.from('companies').select('name').eq('id', account.company_id).maybeSingle()
+    : { data: null }
+
+  const { data: authUsers } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
+  const accountExists = !!authUsers?.users.some((u) => u.email?.toLowerCase() === invite.email.toLowerCase())
+
+  return {
+    accountName: account?.name ?? '—',
+    companyName: company?.name ?? '—',
+    role: invite.role,
+    email: invite.email,
+    valid: !invite.used_at && new Date(invite.expires_at).getTime() > Date.now(),
+    accountExists,
+  }
+}
+
+/**
+ * Acepta la invitación — el token es la única autorización, mismo patrón que
+ * joinAsExternalAffiliateAction. Si el email ya tiene cuenta LuxeRide, NO se
+ * crea una cuenta duplicada ni se pide password nueva (riesgo de seguridad):
+ * se agrega la membresía directo y se redirige a login. Si no existe, se crea
+ * de una vez y se inicia sesión automáticamente.
+ */
+export async function acceptCorporateInviteAction(
+  token: string,
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  if (!token) return { success: false, error: 'Enlace inválido' }
+
+  const admin = createAdminClient()
+  const { data: invite } = await admin
+    .from('corporate_invite_tokens')
+    .select('id, corporate_account_id, email, role, spending_limit, monthly_limit, cost_center, used_at, expires_at')
+    .eq('token', token)
+    .maybeSingle()
+  if (!invite) return { success: false, error: 'Enlace inválido' }
+  if (invite.used_at) return { success: false, error: 'Este enlace de invitación ya fue usado' }
+  if (new Date(invite.expires_at).getTime() < Date.now()) return { success: false, error: 'Este enlace de invitación expiró' }
+
+  const { data: account } = await admin
+    .from('corporate_accounts')
+    .select('company_id')
+    .eq('id', invite.corporate_account_id)
+    .single()
+  if (!account) return { success: false, error: 'Cuenta corporativa no encontrada' }
+
+  const { data: authUsers, error: listErr } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
+  if (listErr) {
+    console.error('[acceptCorporateInviteAction] listUsers', listErr)
+    return { success: false, error: 'Error al procesar la invitación' }
+  }
+  const existingUser = authUsers.users.find((u) => u.email?.toLowerCase() === invite.email.toLowerCase())
+
+  let userId: string
+
+  if (existingUser) {
+    // Cuenta ya existente — el token autoriza el acceso, no se pide password.
+    const { data: profile } = await admin
+      .from('user_profiles')
+      .select('id, company_id, role')
+      .eq('id', existingUser.id)
+      .single()
+    if (!profile || profile.company_id !== account.company_id) {
+      return { success: false, error: 'Esta invitación no aplica a tu cuenta' }
+    }
+    userId = existingUser.id
+    if (profile.role === 'customer') {
+      await admin
+        .from('user_profiles')
+        .update({ role: invite.role === 'manager' ? 'corporate_manager' : 'corporate_user' })
+        .eq('id', userId)
+    }
+  } else {
+    // Cuenta nueva — mismo patrón que joinAsExternalAffiliateAction.
+    const firstName = (formData.get('first_name') as string ?? '').trim()
+    const lastName  = (formData.get('last_name') as string ?? '').trim()
+    const phone     = (formData.get('phone') as string ?? '').trim() || null
+    const password  = (formData.get('password') as string ?? '')
+
+    if (!firstName || !lastName) return { success: false, error: 'Nombre y apellido requeridos' }
+    if (!password || password.length < 8) return { success: false, error: 'La contraseña debe tener al menos 8 caracteres' }
+
+    const { data: newUser, error: authError } = await admin.auth.admin.createUser({
+      email: invite.email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        company_id: account.company_id,
+        role: invite.role === 'manager' ? 'corporate_manager' : 'corporate_user',
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+      },
+    })
+    if (authError || !newUser.user) {
+      if (authError?.message?.toLowerCase().includes('already')) return { success: false, error: 'Ya existe una cuenta con este email' }
+      return { success: false, error: 'No se pudo crear la cuenta' }
+    }
+    userId = newUser.user.id
+
+    await admin.from('user_profiles').upsert({
+      id: userId,
+      company_id: account.company_id,
+      role: invite.role === 'manager' ? 'corporate_manager' : 'corporate_user',
+      first_name: firstName,
+      last_name: lastName,
+      phone,
+    })
+  }
+
+  const { error: memberError } = await admin.from('corporate_members').insert({
+    company_id: account.company_id,
+    corporate_account_id: invite.corporate_account_id,
+    user_id: userId,
+    role: invite.role,
+    spending_limit: invite.spending_limit,
+    monthly_limit: invite.monthly_limit,
+    cost_center: invite.cost_center,
+  })
+  if (memberError && memberError.code !== '23505') {
+    console.error('[acceptCorporateInviteAction] corporate_members insert', memberError)
+    return { success: false, error: 'Error al unirte a la cuenta corporativa' }
+  }
+
+  await admin
+    .from('corporate_invite_tokens')
+    .update({ used_at: new Date().toISOString(), used_by_user_id: userId })
+    .eq('id', invite.id)
+
+  revalidatePath('/', 'layout')
+
+  if (existingUser) {
+    redirect('/auth/login')
+  }
+
+  // Cuenta nueva: iniciar sesión directo (mismo patrón que joinAsExternalAffiliateAction).
+  const password = (formData.get('password') as string ?? '')
+  const supabase = await createClient()
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email: invite.email, password })
+  if (signInError) redirect('/auth/login')
+
+  redirect(getDefaultRoute(invite.role === 'manager' ? 'corporate_manager' : 'corporate_user'))
 }

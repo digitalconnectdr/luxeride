@@ -3,6 +3,9 @@
 
 import { useState, useTransition } from 'react'
 import { updateCorporateMemberLimitsAction } from '@/app/actions/corporate'
+import type { Dictionary } from '@/lib/i18n/server'
+
+type T = Dictionary['corporate']['dashboard']['team']
 
 interface Member {
   id: string
@@ -17,7 +20,7 @@ const inputCls =
   'w-24 text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-2 py-1.5 ' +
   'text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-1 focus:ring-bronze'
 
-function MemberRow({ member }: { member: Member }) {
+function MemberRow({ member, t }: { member: Member; t: T }) {
   const [spendingLimit, setSpendingLimit] = useState(member.spendingLimit?.toString() ?? '')
   const [monthlyLimit, setMonthlyLimit] = useState(member.monthlyLimit?.toString() ?? '')
   const [error, setError] = useState('')
@@ -33,7 +36,7 @@ function MemberRow({ member }: { member: Member }) {
     startTransition(async () => {
       const result = await updateCorporateMemberLimitsAction(member.id, fd)
       if (!result.success) {
-        setError(result.error ?? 'Error al guardar')
+        setError(result.error ?? t.error)
         return
       }
       setSaved(true)
@@ -45,13 +48,13 @@ function MemberRow({ member }: { member: Member }) {
     return (
       <div className="flex items-center justify-between px-4 py-3">
         <div>
-          <p className="text-sm font-medium text-sl-on-surface">{member.name} <span className="text-xs text-sl-on-surface-muted font-normal">(tú)</span></p>
-          <p className="text-xs text-sl-on-surface-muted">Manager</p>
+          <p className="text-sm font-medium text-sl-on-surface">{member.name} <span className="text-xs text-sl-on-surface-muted font-normal">{t.you}</span></p>
+          <p className="text-xs text-sl-on-surface-muted">{t.roleManager}</p>
         </div>
         <p className="text-xs text-sl-on-surface-muted">
-          {member.spendingLimit != null ? `$${member.spendingLimit}/viaje` : 'Sin límite/viaje'}
+          {member.spendingLimit != null ? `$${member.spendingLimit}` : t.noLimit}
           {' · '}
-          {member.monthlyLimit != null ? `$${member.monthlyLimit}/mes` : 'Sin límite/mes'}
+          {member.monthlyLimit != null ? `$${member.monthlyLimit}` : t.noLimit}
         </p>
       </div>
     )
@@ -62,21 +65,21 @@ function MemberRow({ member }: { member: Member }) {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <p className="text-sm font-medium text-sl-on-surface">{member.name}</p>
-          <p className="text-xs text-sl-on-surface-muted capitalize">{member.role === 'manager' ? 'Manager' : 'Usuario'}</p>
+          <p className="text-xs text-sl-on-surface-muted">{member.role === 'manager' ? t.roleManager : t.roleUser}</p>
         </div>
         <div className="flex items-end gap-3">
           <div>
-            <label className="block text-[10px] text-sl-on-surface-muted mb-1">Límite / viaje</label>
+            <label className="block text-[10px] text-sl-on-surface-muted mb-1">{t.perTrip}</label>
             <input
-              type="number" step="0.01" min="0" placeholder="Sin límite"
+              type="number" step="0.01" min="0" placeholder={t.noLimit}
               value={spendingLimit} onChange={(e) => setSpendingLimit(e.target.value)}
               className={inputCls}
             />
           </div>
           <div>
-            <label className="block text-[10px] text-sl-on-surface-muted mb-1">Límite / mes</label>
+            <label className="block text-[10px] text-sl-on-surface-muted mb-1">{t.perMonth}</label>
             <input
-              type="number" step="0.01" min="0" placeholder="Sin límite"
+              type="number" step="0.01" min="0" placeholder={t.noLimit}
               value={monthlyLimit} onChange={(e) => setMonthlyLimit(e.target.value)}
               className={inputCls}
             />
@@ -86,7 +89,7 @@ function MemberRow({ member }: { member: Member }) {
             disabled={isPending}
             className="px-3 py-1.5 text-xs font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 disabled:opacity-50 transition-colors"
           >
-            {isPending ? 'Guardando…' : saved ? '✓ Guardado' : 'Guardar'}
+            {isPending ? t.saving : saved ? t.saved : t.save}
           </button>
         </div>
       </div>
@@ -96,32 +99,31 @@ function MemberRow({ member }: { member: Member }) {
 }
 
 export function TeamLimitsForm({
-  members, creditLimit, assignedTotal,
+  members, creditLimit, assignedTotal, t,
 }: {
   members: Member[]
   creditLimit: number
   assignedTotal: number
+  t: T
 }) {
   const available = Math.max(0, creditLimit - assignedTotal)
 
   return (
     <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
       <div className="px-4 py-4 border-b border-sl-outline-variant">
-        <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-1">Mi equipo</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-1">{t.title}</p>
         {creditLimit > 0 ? (
           <p className="text-xs text-sl-on-surface-muted">
-            Crédito de la cuenta: <span className="font-medium text-sl-on-surface">${creditLimit.toFixed(2)}</span>
-            {' · '}Asignado: <span className="font-medium text-sl-on-surface">${assignedTotal.toFixed(2)}</span>
-            {' · '}Disponible: <span className="font-medium text-bronze">${available.toFixed(2)}</span>
+            {t.creditLabel}: <span className="font-medium text-sl-on-surface">${creditLimit.toFixed(2)}</span>
+            {' · '}{t.assignedLabel}: <span className="font-medium text-sl-on-surface">${assignedTotal.toFixed(2)}</span>
+            {' · '}{t.availableLabel}: <span className="font-medium text-bronze">${available.toFixed(2)}</span>
           </p>
         ) : (
-          <p className="text-xs text-sl-on-surface-muted">
-            Tu empresa de transporte aún no configuró un crédito para esta cuenta.
-          </p>
+          <p className="text-xs text-sl-on-surface-muted">{t.noCredit}</p>
         )}
       </div>
       <div className="divide-y divide-sl-outline-variant">
-        {members.map((m) => <MemberRow key={m.id} member={m} />)}
+        {members.map((m) => <MemberRow key={m.id} member={m} t={t} />)}
       </div>
     </div>
   )

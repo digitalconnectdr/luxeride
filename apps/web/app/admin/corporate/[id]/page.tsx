@@ -8,8 +8,10 @@ import {
   CorporateAccountToggle,
   AddCorporateMemberForm,
   RemoveMemberButton,
+  InviteMemberByLinkSection,
 } from '@/components/admin/corporate-controls'
 import { BookingStatusBadge } from '@/components/bookings/booking-status-badge'
+import { computeAccountSla } from '@/lib/corporate/sla'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 import { getDict, getLocale } from '@/lib/i18n/server'
 
@@ -43,7 +45,7 @@ export default async function CorporateAccountDetailPage({
 
   if (!account) return notFound()
 
-  const [{ data: members }, { data: bookings }] = await Promise.all([
+  const [{ data: members }, { data: bookings }, { data: slaBookings }] = await Promise.all([
     admin
       .from('corporate_members')
       .select('id, user_id, role, spending_limit, monthly_limit, cost_center, is_active, created_at')
@@ -55,7 +57,13 @@ export default async function CorporateAccountDetailPage({
       .eq('corporate_account_id', account.id)
       .order('scheduled_at', { ascending: false })
       .limit(10),
+    admin
+      .from('bookings')
+      .select('status, scheduled_at, arrived_at')
+      .eq('corporate_account_id', account.id)
+      .in('status', ['completed', 'cancelled', 'no_show']),
   ])
+  const sla = computeAccountSla(slaBookings ?? [])
 
   // Nombres de los miembros
   const memberIds = (members ?? []).map((m) => m.user_id)
@@ -110,6 +118,27 @@ export default async function CorporateAccountDetailPage({
             <p className="text-2xl font-playfair font-semibold text-sl-on-surface mt-1">{c.value}</p>
           </div>
         ))}
+      </div>
+
+      {/* SLA de la cuenta */}
+      <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-3">
+          {t.slaTitle}
+        </p>
+        {sla.completedCount === 0 ? (
+          <p className="text-sm text-sl-on-surface-muted">{t.slaNoData}</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <p className="text-2xl font-playfair font-semibold text-sl-on-surface">{sla.punctualityPct ?? '—'}%</p>
+              <p className="text-xs text-sl-on-surface-muted mt-0.5">{t.slaPunctuality}</p>
+            </div>
+            <div>
+              <p className="text-2xl font-playfair font-semibold text-sl-on-surface">{sla.cancellationPct ?? 0}%</p>
+              <p className="text-xs text-sl-on-surface-muted mt-0.5">{t.slaCancellation}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Editar cuenta */}
@@ -215,6 +244,7 @@ export default async function CorporateAccountDetailPage({
               {t.addMember}
             </p>
             <AddCorporateMemberForm accountId={account.id} labels={dict.corporateMember} />
+            <InviteMemberByLinkSection accountId={account.id} labels={dict.corporateMember} />
           </div>
         )}
       </section>

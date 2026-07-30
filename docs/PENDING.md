@@ -3,6 +3,57 @@
 > Actualizado: 2026-07-29. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Blindar cuentas corporativas frente a Uber for Business/Elite (2026-07-30)
+
+5ª y última recomendación del paquete anti-consolidación (las otras 4 son la
+entrada de arriba). El usuario identificó las cuentas corporativas como
+exactamente el segmento que Uber for Business/Elite está cazando, y pidió
+reforzar lo que ya existía (crédito, cost centers, portal) con **SLAs
+visibles, reportes, onboarding más fácil**. Investigación previa (Explore)
+confirmó: `require_approval`/`approval_threshold`/`allow_personal_trips` en
+`corporate_accounts` son columnas sin ninguna lógica que las lea (placeholders
+muertos, sin tocar); `addCorporateMemberAction` exigía que el invitado YA
+tuviera cuenta LuxeRide, sin alternativa; el portal (`/corporate/*`) estaba
+100% hardcodeado en español, sin pasar por `getDict()`.
+
+- **SLA visible**: `lib/corporate/sla.ts` (`computeAccountSla`, puro,
+  testeado) — mismo criterio de gracia de 10 min ya usado en
+  `admin/drivers/[id]`, pero agregado por cuenta corporativa en vez de por
+  conductor. Visible tanto en `/corporate/dashboard` (cliente) como en
+  `/admin/corporate/[id]` (operador, para verlo antes de que el cliente se
+  queje). Sin migración — se calcula al vuelo desde `bookings`.
+- **Reportes self-service**: `/api/reports/bookings` ahora acepta
+  `corporate_account_id` y permite que el propio manager corporativo
+  descargue el CSV de SU cuenta directamente desde el portal — con guardrail
+  de auto-scoping (nunca confía en el query param sin verificar pertenencia
+  en `corporate_members`, mismo patrón que `updateCorporateMemberLimitsAction`).
+- **Onboarding por link**: nueva tabla `corporate_invite_tokens` (clon del
+  patrón ya establecido en `affiliate_invite_tokens` — capability-URL de un
+  solo uso, RLS sin políticas, solo service-role). Tanto el operador como el
+  propio manager corporativo pueden generar el link
+  (`createCorporateMemberInviteAction`); la página pública
+  `/corporate/join/[token]` crea la cuenta nueva o, si el email ya tiene
+  cuenta LuxeRide, la vincula directo sin pedir password de nuevo. El flujo
+  "agregar por email de usuario ya registrado" se mantiene sin cambios como
+  alternativa rápida.
+- **i18n completo del portal**: `dict.corporate` nuevo en en/es/pt —
+  `/corporate/dashboard`, `/corporate/layout`, `/corporate/book` y
+  `TeamLimitsForm` migrados de texto hardcodeado a `getDict()`.
+- **Bug real encontrado y corregido durante la verificación en navegador**:
+  el middleware bloqueaba `/corporate/*` en bloque (requiere sesión), y
+  además `app/corporate/layout.tsx` (que llama `requireRole`) envolvía TODAS
+  las rutas anidadas — incluida la nueva página pública
+  `/corporate/join/[token]`, redirigiéndola a login antes de renderizar. Se
+  resolvió moviendo `layout.tsx`, `dashboard/` y `book/` a un route group
+  `app/corporate/(portal)/` (no cambia las URLs) para que la página de
+  invitación quede fuera del layout autenticado, más una excepción explícita
+  en el middleware para `/corporate/join`.
+
+Verificado: `tsc`, `vitest` (256 tests, incluye 7 nuevos de `sla.test.ts`),
+`next build`, y en navegador: `/corporate/join/[token]` con token inválido
+renderiza correctamente en público (antes redirigía a login), `/corporate/dashboard`
+sigue protegido.
+
 ## ✅ Fortalecer LuxeRide frente a Uber Elite/Blacklane: 4 iniciativas + oferta de fundadores (2026-07-29)
 
 El usuario compartió dos investigaciones (ChatGPT) comparando LuxeRide contra

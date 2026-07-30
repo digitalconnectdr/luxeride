@@ -290,6 +290,56 @@ export type Database = {
         Relationships: []
       }
 
+      // ── corporate_invite_tokens ──────────────────────────────────────────────
+      corporate_invite_tokens: {
+        Row: {
+          id: string
+          corporate_account_id: string
+          token: string
+          email: string
+          role: 'manager' | 'user'
+          spending_limit: number | null
+          monthly_limit: number | null
+          cost_center: string | null
+          created_by: string | null
+          used_at: string | null
+          used_by_user_id: string | null
+          expires_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string | undefined
+          corporate_account_id: string
+          token: string
+          email: string
+          role?: 'manager' | 'user' | undefined
+          spending_limit?: number | null | undefined
+          monthly_limit?: number | null | undefined
+          cost_center?: string | null | undefined
+          created_by?: string | null | undefined
+          used_at?: string | null | undefined
+          used_by_user_id?: string | null | undefined
+          expires_at: string
+          created_at?: string | undefined
+        }
+        Update: {
+          id?: string | undefined
+          corporate_account_id?: string | undefined
+          token?: string | undefined
+          email?: string | undefined
+          role?: 'manager' | 'user' | undefined
+          spending_limit?: number | null | undefined
+          monthly_limit?: number | null | undefined
+          cost_center?: string | null | undefined
+          created_by?: string | null | undefined
+          used_at?: string | null | undefined
+          used_by_user_id?: string | null | undefined
+          expires_at?: string | undefined
+          created_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       // ── affiliate_invite_tokens ─────────────────────────────────────────────
       affiliate_invite_tokens: {
         Row: {

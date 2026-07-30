@@ -2,6 +2,7 @@ import { requireRole } from '@/lib/auth/session'
 import { logoutAction } from '@/app/actions/auth'
 import Link from 'next/link'
 import { brandLegal } from '@/lib/brand'
+import { getLocale, getDict } from '@/lib/i18n/server'
 
 export default async function CorporateLayout({
   children,
@@ -9,6 +10,7 @@ export default async function CorporateLayout({
   children: React.ReactNode
 }) {
   const user = await requireRole('corporate_manager', 'corporate_user')
+  const t = getDict(getLocale()).corporate.layout
 
   return (
     <div className="min-h-screen bg-sl-bg">
@@ -20,15 +22,15 @@ export default async function CorporateLayout({
                 <span className="text-gray-900 font-bold text-[10px] leading-none">L</span>
               </div>
               <span className="font-playfair text-sm font-semibold text-sl-on-surface">
-                Portal Corporativo
+                {t.portalTitle}
               </span>
             </div>
             <nav className="flex items-center gap-4">
               <Link href="/corporate/dashboard" prefetch={false} className="text-sm text-sl-on-surface-muted hover:text-bronze transition-colors">
-                Dashboard
+                {t.navDashboard}
               </Link>
               <Link href="/corporate/book" prefetch={false} className="text-sm text-sl-on-surface-muted hover:text-bronze transition-colors">
-                Reservar
+                {t.navBook}
               </Link>
             </nav>
           </div>
@@ -38,7 +40,7 @@ export default async function CorporateLayout({
             </span>
             <form action={logoutAction}>
               <button type="submit" className="text-xs text-sl-on-surface-muted hover:text-red-400 transition-colors">
-                Sign out →
+                {t.signOut}
               </button>
             </form>
           </div>

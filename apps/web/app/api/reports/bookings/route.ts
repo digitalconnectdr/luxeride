@@ -1,5 +1,7 @@
 // ── F1.15 — Export CSV de reservaciones ───────────────────────────────────────
-// Auth: roles financieros. company_id SIEMPRE de la sesión del servidor.
+// Auth: roles financieros del operador, o un manager corporativo exportando
+// SU PROPIA cuenta (self-service — ver corporate_account_id abajo).
+// company_id SIEMPRE de la sesión del servidor.
 
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/session'
@@ -17,14 +19,42 @@ function csvEscape(value: unknown): string {
 
 export async function GET(request: Request) {
   const user = await getCurrentUser()
-  if (!user || !['company_owner', 'company_admin', 'accounting'].includes(user.role)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  if (!user.company_id) {
-    return NextResponse.json({ error: 'No company' }, { status: 400 })
-  }
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const url = new URL(request.url)
+  const isOperatorRole = ['company_owner', 'company_admin', 'accounting'].includes(user.role)
+
+  const admin = createAdminClient()
+  let corporateAccountId: string | null = null
+
+  if (isOperatorRole) {
+    if (!user.company_id) return NextResponse.json({ error: 'No company' }, { status: 400 })
+    // Filtro opcional: el operador también puede segmentar el export por una
+    // cuenta corporativa puntual (ej. para reenviárselo a ese cliente).
+    corporateAccountId = url.searchParams.get('corporate_account_id')
+  } else if (user.role === 'corporate_manager') {
+    // Self-service: el manager corporativo SOLO puede exportar SU PROPIA
+    // cuenta — nunca se confía en el query param sin verificar pertenencia
+    // (mismo guardrail que updateCorporateMemberLimitsAction en corporate.ts).
+    const requestedAccountId = url.searchParams.get('corporate_account_id')
+    if (!requestedAccountId) {
+      return NextResponse.json({ error: 'corporate_account_id required' }, { status: 400 })
+    }
+    const { data: membership } = await admin
+      .from('corporate_members')
+      .select('corporate_account_id')
+      .eq('user_id', user.id)
+      .eq('role', 'manager')
+      .eq('is_active', true)
+      .single()
+    if (!membership || membership.corporate_account_id !== requestedAccountId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    corporateAccountId = requestedAccountId
+  } else {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const fromStr = url.searchParams.get('from')
   const toStr = url.searchParams.get('to')
 
@@ -35,15 +65,21 @@ export async function GET(request: Request) {
   }
   to.setHours(23, 59, 59, 999)
 
-  const admin = createAdminClient()
-  const { data: bookings, error } = await admin
+  let query = admin
     .from('bookings')
     .select('booking_number, status, type, passenger_name, passenger_phone, passenger_email, scheduled_at, completed_at, pickup_location, dropoff_location, distance_miles, duration_minutes, base_amount, total_amount, currency, created_at')
-    .eq('company_id', user.company_id)
     .gte('scheduled_at', from.toISOString())
     .lte('scheduled_at', to.toISOString())
     .order('scheduled_at')
     .limit(5000)
+
+  // Staff del operador: siempre acotado a su company_id. Manager corporativo:
+  // ya quedó acotado arriba por corporate_account_id (verificado contra su
+  // propia membresía), no hace falta repetir el filtro por company_id.
+  query = isOperatorRole ? query.eq('company_id', user.company_id as string) : query
+  if (corporateAccountId) query = query.eq('corporate_account_id', corporateAccountId)
+
+  const { data: bookings, error } = await query
 
   if (error) {
     console.error('[reports/bookings.csv]', error)

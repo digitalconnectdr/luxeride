@@ -2,8 +2,11 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
+import { getDict } from '@/lib/i18n/server'
 
-export const metadata: Metadata = { title: 'Reservar' }
+export function generateMetadata(): Metadata {
+  return { title: getDict().corporate.book.pageTitle }
+}
 
 // Redirige al booking flow público de la empresa del usuario corporativo.
 // Las reservaciones corporativas con cargo a cuenta se gestionan vía dispatcher;

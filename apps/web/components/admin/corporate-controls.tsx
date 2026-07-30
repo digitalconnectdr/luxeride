@@ -9,6 +9,7 @@ import {
   addCorporateMemberAction,
   removeCorporateMemberAction,
 } from '@/app/actions/corporate'
+import { InviteMemberByLinkForm } from '@/components/corporate/invite-member-form'
 import type { Dictionary } from '@/lib/i18n/server'
 
 type FormLabels = Dictionary['admin']['corporateForm']
@@ -239,6 +240,37 @@ export function AddCorporateMemberForm({ accountId, labels: t }: { accountId: st
         </button>
       </div>
     </form>
+  )
+}
+
+// ─── Invitar por link (usuario aún no registrado) ─────────────────────────────
+
+export function InviteMemberByLinkSection({ accountId, labels: t }: { accountId: string; labels: MemberLabels }) {
+  return (
+    <div className="pt-4 mt-4 border-t border-dashed border-sl-outline-variant space-y-2">
+      <p className="text-xs text-sl-on-surface-muted">{t.inviteHint}</p>
+      <InviteMemberByLinkForm
+        accountId={accountId}
+        labels={{
+          emailLabel: t.emailLabel,
+          emailPlaceholder: t.emailPlaceholder,
+          roleLabel: t.role,
+          roleUser: t.roleUser,
+          roleManager: t.roleManager,
+          costCenterLabel: t.costCenter,
+          costCenterPlaceholder: t.costCenterPlaceholder,
+          spendingLimitLabel: t.perTripLimitUsd,
+          monthlyLimitLabel: t.monthlyLimitUsd,
+          submit: t.inviteSubmit,
+          submitting: t.inviteSubmitting,
+          linkGeneratedTitle: t.inviteLinkTitle,
+          linkHint: t.inviteLinkHint,
+          copy: t.inviteCopy,
+          copied: t.inviteCopied,
+          error: t.inviteError,
+        }}
+      />
+    </div>
   )
 }
 

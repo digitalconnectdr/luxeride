@@ -134,8 +134,13 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Protected routes: require authentication ──────────────────────────────────
+  // /corporate/join/[token] es pública a propósito (capability-URL, mismo
+  // patrón que /affiliate/join/[token] y /track/[id]) — el token de la URL es
+  // la única autorización, así que se excluye del bloqueo de /corporate.
   const protectedPrefixes = ['/admin', '/dispatcher', '/driver', '/corporate', '/account', '/super-admin']
-  const isProtected = protectedPrefixes.some((prefix) => pathname.startsWith(prefix))
+  const isProtected =
+    !pathname.startsWith('/corporate/join') &&
+    protectedPrefixes.some((prefix) => pathname.startsWith(prefix))
 
   if (isProtected && !user) {
     const loginUrl = new URL('/auth/login', request.url)
