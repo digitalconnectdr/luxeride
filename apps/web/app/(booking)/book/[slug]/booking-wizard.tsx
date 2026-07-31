@@ -837,14 +837,19 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
+                    {/* Caja horizontal (no cuadrada): las fotos subidas en
+                        /admin/fleet son landscape (~1.45:1, misma proporción
+                        que la miniatura h-11 w-16 de esa página) — un
+                        cuadrado con object-cover recortaba el vehículo casi
+                        por completo. */}
                     {q.vehicleType.imageUrl ? (
                       <img
                         src={q.vehicleType.imageUrl}
                         alt={q.vehicleType.name}
-                        className="w-14 h-14 rounded-xl object-cover shrink-0 bg-gray-100"
+                        className="w-16 h-11 rounded-lg object-cover shrink-0 bg-gray-100"
                       />
                     ) : (
-                      <span className="text-3xl w-14 h-14 flex items-center justify-center shrink-0">
+                      <span className="text-3xl w-16 h-11 flex items-center justify-center shrink-0">
                         {CLASS_ICONS[q.vehicleType.class] ?? '🚗'}
                       </span>
                     )}
@@ -894,10 +899,10 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
                   <img
                     src={selectedQuote.vehicleType.imageUrl}
                     alt={selectedQuote.vehicleType.name}
-                    className="w-10 h-10 rounded-lg object-cover shrink-0 bg-gray-100"
+                    className="w-12 h-8 rounded-md object-cover shrink-0 bg-gray-100"
                   />
                 ) : (
-                  <span className="text-2xl w-10 h-10 flex items-center justify-center shrink-0">
+                  <span className="text-2xl w-12 h-8 flex items-center justify-center shrink-0">
                     {CLASS_ICONS[selectedQuote.vehicleType.class] ?? '🚗'}
                   </span>
                 )}
