@@ -74,6 +74,9 @@ export async function POST(request: Request) {
       body?.paymentMethodIntent === 'card' || body?.paymentMethodIntent === 'cash'
         ? body.paymentMethodIntent
         : undefined,
+    luggageCarryOn: typeof body?.luggageCarryOn === 'number' ? body.luggageCarryOn : undefined,
+    luggageChecked: typeof body?.luggageChecked === 'number' ? body.luggageChecked : undefined,
+    luggageExtraLarge: typeof body?.luggageExtraLarge === 'number' ? body.luggageExtraLarge : undefined,
   })
 
   return NextResponse.json(result, { status: result.success ? 200 : 400 })

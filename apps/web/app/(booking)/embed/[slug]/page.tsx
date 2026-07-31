@@ -44,7 +44,7 @@ export default async function EmbedBookingPage({ params }: { params: { slug: str
 
   const { data: vehicleTypes } = await admin
     .from('vehicle_types')
-    .select('id, name, class, capacity, amenities, base_image_url')
+    .select('id, name, class, capacity, amenities, base_image_url, luggage_carry_on_capacity, luggage_checked_capacity, luggage_extra_large_capacity')
     .eq('company_id', company.id)
     .eq('is_active', true)
     .order('sort_order')
@@ -78,7 +78,7 @@ export default async function EmbedBookingPage({ params }: { params: { slug: str
         <div className="rounded-2xl bg-[#f1ece3] p-5 sm:p-6 shadow-2xl shadow-black/20 ring-1 ring-black/5">
           <BookingWizard
             company={{ id: company.id, name: company.name, slug: company.slug, currency: (company.currency as string | null) ?? 'USD', primaryColor: brandColor, phone: (company.phone as string | null) ?? null, email: (company.email as string | null) ?? null }}
-            vehicleTypes={fleet.map((vt) => ({ id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null }))}
+            vehicleTypes={fleet.map((vt) => ({ id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null, luggageCarryOnCapacity: vt.luggage_carry_on_capacity, luggageCheckedCapacity: vt.luggage_checked_capacity, luggageExtraLargeCapacity: vt.luggage_extra_large_capacity }))}
             onlinePaymentsEnabled={onlinePaymentsEnabled}
             dict={dict.wizard}
             localeTag={LOCALE_TAGS[locale] ?? 'en-US'}

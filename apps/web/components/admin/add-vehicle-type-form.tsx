@@ -60,6 +60,18 @@ export function AddVehicleTypeForm({
           <input name="capacity" type="number" min="1" max="60" required placeholder="4" className={inputCls} />
         </div>
         <div className="space-y-1">
+          <label className="text-xs text-sl-on-surface-muted">{labels.luggageCarryOn}</label>
+          <input name="luggage_carry_on_capacity" type="number" min="0" max="20" defaultValue={2} className={inputCls} />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-sl-on-surface-muted">{labels.luggageChecked}</label>
+          <input name="luggage_checked_capacity" type="number" min="0" max="20" defaultValue={2} className={inputCls} />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-sl-on-surface-muted">{labels.luggageExtraLarge}</label>
+          <input name="luggage_extra_large_capacity" type="number" min="0" max="20" defaultValue={0} className={inputCls} />
+        </div>
+        <div className="space-y-1">
           <label className="text-xs text-sl-on-surface-muted">{labels.amenities}</label>
           <input name="amenities" type="text" placeholder={labels.amenitiesPlaceholder} className={inputCls} />
         </div>

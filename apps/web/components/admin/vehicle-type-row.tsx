@@ -22,6 +22,9 @@ interface VehicleType {
   name: string
   class: string
   capacity: number
+  luggage_carry_on_capacity: number
+  luggage_checked_capacity: number
+  luggage_extra_large_capacity: number
   amenities: string[]
   is_active: boolean
   base_image_url?: string | null
@@ -81,6 +84,18 @@ export function VehicleTypeRow({
             <div className="space-y-1 w-24">
               <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{fleet.typeForm.capacity}</label>
               <input name="capacity" type="number" min="1" max="60" defaultValue={vt.capacity} required className={`${inputCls} w-full`} />
+            </div>
+            <div className="space-y-1 w-24">
+              <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{fleet.typeForm.luggageCarryOn}</label>
+              <input name="luggage_carry_on_capacity" type="number" min="0" max="20" defaultValue={vt.luggage_carry_on_capacity} className={`${inputCls} w-full`} />
+            </div>
+            <div className="space-y-1 w-24">
+              <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{fleet.typeForm.luggageChecked}</label>
+              <input name="luggage_checked_capacity" type="number" min="0" max="20" defaultValue={vt.luggage_checked_capacity} className={`${inputCls} w-full`} />
+            </div>
+            <div className="space-y-1 w-24">
+              <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{fleet.typeForm.luggageExtraLarge}</label>
+              <input name="luggage_extra_large_capacity" type="number" min="0" max="20" defaultValue={vt.luggage_extra_large_capacity} className={`${inputCls} w-full`} />
             </div>
             <div className="space-y-1 flex-1 min-w-[180px]">
               <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted">{fleet.typeForm.amenities}</label>
@@ -143,7 +158,9 @@ export function VehicleTypeRow({
         </span>
       </td>
       <td className="px-5 py-4">
-        <span className="text-xs text-sl-on-surface-muted">{vt.capacity} pax</span>
+        <span className="text-xs text-sl-on-surface-muted">
+          {vt.capacity} pax · {vt.luggage_carry_on_capacity}/{vt.luggage_checked_capacity}/{vt.luggage_extra_large_capacity} {fleet.typeForm.luggageAbbrev}
+        </span>
       </td>
       <td className="px-5 py-4">
         <span className="text-xs text-sl-on-surface-muted">

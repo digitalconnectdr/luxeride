@@ -87,6 +87,9 @@ export function NewBookingScreen({ navigation, route }: Props) {
   const [customDateTime, setCustomDateTime] = useState<Date | null>(null)
   const [pickerStep, setPickerStep] = useState<'date' | 'time' | null>(null)
   const [passengerCount, setPassengerCount] = useState(prefill?.passengerCount ?? 1)
+  const [luggageCarryOn, setLuggageCarryOn] = useState(0)
+  const [luggageChecked, setLuggageChecked] = useState(0)
+  const [luggageExtraLarge, setLuggageExtraLarge] = useState(0)
 
   // Si la pantalla ya estaba montada (el pasajero ya había visitado esta
   // pestaña antes), el useState de arriba no vuelve a leer el prefill al
@@ -227,6 +230,9 @@ export function NewBookingScreen({ navigation, route }: Props) {
         dropoffPostalCode: dropoff.postalCode ?? undefined,
         scheduledAt: scheduledAtValue().toISOString(),
         passengerCount,
+        luggageCarryOn,
+        luggageChecked,
+        luggageExtraLarge,
       },
     })
   }
@@ -391,6 +397,46 @@ export function NewBookingScreen({ navigation, route }: Props) {
               </Text>
               <Text style={styles.stepperValue}>{passengerCount}</Text>
               <Text style={styles.stepperBtn} onPress={() => setPassengerCount((n) => Math.min(10, n + 1))}>
+                +
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <SectionLabel>Equipaje</SectionLabel>
+          <View style={styles.stepperRow}>
+            <Text style={styles.stepperLabel}>Equipaje de mano</Text>
+            <View style={styles.stepper}>
+              <Text style={styles.stepperBtn} onPress={() => setLuggageCarryOn((n) => Math.max(0, n - 1))}>
+                −
+              </Text>
+              <Text style={styles.stepperValue}>{luggageCarryOn}</Text>
+              <Text style={styles.stepperBtn} onPress={() => setLuggageCarryOn((n) => Math.min(20, n + 1))}>
+                +
+              </Text>
+            </View>
+          </View>
+          <View style={styles.stepperRow}>
+            <Text style={styles.stepperLabel}>Maletas facturadas</Text>
+            <View style={styles.stepper}>
+              <Text style={styles.stepperBtn} onPress={() => setLuggageChecked((n) => Math.max(0, n - 1))}>
+                −
+              </Text>
+              <Text style={styles.stepperValue}>{luggageChecked}</Text>
+              <Text style={styles.stepperBtn} onPress={() => setLuggageChecked((n) => Math.min(20, n + 1))}>
+                +
+              </Text>
+            </View>
+          </View>
+          <View style={styles.stepperRow}>
+            <Text style={styles.stepperLabel}>Maleta extragrande</Text>
+            <View style={styles.stepper}>
+              <Text style={styles.stepperBtn} onPress={() => setLuggageExtraLarge((n) => Math.max(0, n - 1))}>
+                −
+              </Text>
+              <Text style={styles.stepperValue}>{luggageExtraLarge}</Text>
+              <Text style={styles.stepperBtn} onPress={() => setLuggageExtraLarge((n) => Math.min(20, n + 1))}>
                 +
               </Text>
             </View>

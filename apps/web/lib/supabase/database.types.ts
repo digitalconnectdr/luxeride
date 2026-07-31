@@ -471,6 +471,9 @@ export type Database = {
           name: string
           class: VehicleClass
           capacity: number
+          luggage_carry_on_capacity: number
+          luggage_checked_capacity: number
+          luggage_extra_large_capacity: number
           amenities: string[]
           base_image_url: string | null
           sort_order: number
@@ -484,6 +487,9 @@ export type Database = {
           name: string
           class: VehicleClass
           capacity?: number | undefined
+          luggage_carry_on_capacity?: number | undefined
+          luggage_checked_capacity?: number | undefined
+          luggage_extra_large_capacity?: number | undefined
           amenities?: string[] | undefined
           base_image_url?: string | null | undefined
           sort_order?: number | undefined
@@ -497,6 +503,9 @@ export type Database = {
           name?: string | undefined
           class?: VehicleClass | undefined
           capacity?: number | undefined
+          luggage_carry_on_capacity?: number | undefined
+          luggage_checked_capacity?: number | undefined
+          luggage_extra_large_capacity?: number | undefined
           amenities?: string[] | undefined
           base_image_url?: string | null | undefined
           sort_order?: number | undefined
@@ -2178,6 +2187,9 @@ export type Database = {
           vehicle_type_id: string | null
           corporate_account_id: string | null
           passenger_count: number
+          luggage_carry_on: number | null
+          luggage_checked: number | null
+          luggage_extra_large: number | null
           passenger_name: string | null
           passenger_phone: string | null
           passenger_email: string | null
@@ -2254,6 +2266,9 @@ export type Database = {
           vehicle_type_id?: string | null | undefined
           corporate_account_id?: string | null | undefined
           passenger_count?: number | undefined
+          luggage_carry_on?: number | null | undefined
+          luggage_checked?: number | null | undefined
+          luggage_extra_large?: number | null | undefined
           passenger_name?: string | null | undefined
           passenger_phone?: string | null | undefined
           passenger_email?: string | null | undefined
@@ -2330,6 +2345,9 @@ export type Database = {
           vehicle_type_id?: string | null | undefined
           corporate_account_id?: string | null | undefined
           passenger_count?: number | undefined
+          luggage_carry_on?: number | null | undefined
+          luggage_checked?: number | null | undefined
+          luggage_extra_large?: number | null | undefined
           passenger_name?: string | null | undefined
           passenger_phone?: string | null | undefined
           passenger_email?: string | null | undefined

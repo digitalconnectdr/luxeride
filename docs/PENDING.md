@@ -3,6 +3,44 @@
 > Actualizado: 2026-07-31. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Capacidad de equipaje por tipo de vehículo + cargo automático por exceso (2026-07-31)
+
+El pasajero podía declarar cuántas personas viajaban pero nunca cuánto
+equipaje llevaba — un tipo de vehículo con capacidad de 4 pasajeros podía
+recibir una reserva con 6 maletas facturadas sin que el sistema lo supiera ni
+lo comunicara. Inspirado en cómo Blacklane lo resuelve (ícono de maletas +
+cantidad junto al de pasajeros al elegir vehículo).
+
+- **Migración** `supabase/migrations/20260804000084_vehicle_luggage_capacity.sql`
+  (pendiente de aplicar — pegar en el SQL Editor de Supabase): agrega 3
+  columnas de capacidad a `vehicle_types` (equipaje de mano / maleta
+  facturada / maleta facturada extragrande, defaults 2/2/0) y 3 columnas de
+  declaración a `bookings` (nullable).
+- **Admin → Flota**: los 3 campos de capacidad en crear/editar tipo de
+  vehículo, y se muestran en la lista (`X pax · Y/Z/W maletas`).
+- **Cargo automático por exceso**: reutiliza el fee plano `extra_luggage_fee`
+  que YA existe (el mismo que usa el conductor manualmente vía "Agregar
+  cargo" en `driverAddExtraChargeAction`) — si lo declarado excede la
+  capacidad del vehículo elegido, se agrega automáticamente una fila a
+  `booking_fees` (`type: 'luggage_overage_fee'`) y se suma al `total_amount`,
+  tanto en el guest checkout web como en reservas creadas por staff y desde
+  la app nativa. Nunca bloquea la reserva — solo informa el cargo antes de
+  confirmar.
+- **Web** (`booking-wizard.tsx`): 3 inputs de equipaje en el paso de
+  pasajero, capacidad de equipaje visible en la tarjeta de cada vehículo, y
+  aviso de cargo por exceso antes de confirmar (preview cliente; el monto
+  real y autoritativo lo calcula el server).
+- **App nativa del pasajero**: mismos 3 campos en `NewBookingScreen`
+  (steppers), capacidad visible en `VehicleSelectScreen` (chip con ícono de
+  maleta), y resumen + aviso de cargo en `BookingConfirmScreen`.
+- **i18n**: claves nuevas en `dict.admin.fleet.typeForm` y `dict.wizard`
+  (en/es/pt). La app nativa no tiene sistema de i18n — textos hardcodeados en
+  español, igual que el resto de esa app.
+
+Verificado: `tsc --noEmit` limpio en `apps/web` y `apps/passenger-mobile`,
+`vitest run` 256/256, `npm run build` exitoso en `apps/web`. El flujo manual
+del conductor (`driverAddExtraChargeAction`) queda intacto, sin cambios.
+
 ## ✅ Fix: foto real del vehículo en el paso "Vehículo" del wizard web (2026-07-31)
 
 `apps/web/app/(booking)/book/[slug]/booking-wizard.tsx` mostraba siempre un

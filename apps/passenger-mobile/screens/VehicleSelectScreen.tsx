@@ -120,6 +120,10 @@ export function VehicleSelectScreen({ route, navigation }: Props) {
 
               <View style={styles.metaRow}>
                 <MetaChip icon="people-outline" label={`${item.vehicleType.capacity} pasajeros`} />
+                <MetaChip
+                  icon="briefcase-outline"
+                  label={`${item.vehicleType.luggageCarryOnCapacity}/${item.vehicleType.luggageCheckedCapacity}/${item.vehicleType.luggageExtraLargeCapacity} maletas`}
+                />
                 {item.durationMinutes ? <MetaChip icon="time-outline" label={`${item.durationMinutes} min`} /> : null}
                 {item.distanceMiles ? (
                   <MetaChip icon="navigate-outline" label={`${item.distanceMiles.toFixed(1)} mi`} />

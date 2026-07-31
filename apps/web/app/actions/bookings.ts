@@ -15,6 +15,7 @@ import {
   computeCancellationFee,
   validateBookingTime,
   validateOperatingHours,
+  parseExtraFees,
 } from '@/lib/policy/engine'
 import { waitUntil, geolocation } from '@vercel/functions'
 import { notifyBookingEventInBackground, notify } from '@/lib/notifications'
@@ -151,6 +152,9 @@ export interface VehicleQuote {
     capacity: number
     amenities: string[]
     imageUrl: string | null
+    luggageCarryOnCapacity: number
+    luggageCheckedCapacity: number
+    luggageExtraLargeCapacity: number
   }
   quoteId: string
   baseAmount: number
@@ -160,6 +164,10 @@ export interface VehicleQuote {
   distanceMiles: number | null
   durationMinutes: number | null
   noPrice: boolean
+  // Fee plano por pieza de equipaje que exceda la capacidad del vehículo
+  // (companies.settings.fees.extra_luggage_fee) — 0 si el operador no lo
+  // configuró. Permite mostrar el aviso de cargo ANTES de confirmar.
+  extraLuggageFee: number
 }
 
 // ─── Máquina de estados — transiciones válidas ────────────────────────────────
@@ -352,6 +360,9 @@ export async function createBookingAction(
   const passengerPhone = (formData.get('passenger_phone') as string)?.trim()
   const passengerEmail = (formData.get('passenger_email') as string)?.trim()
   const passengerCount = parseInt(formData.get('passenger_count') as string) || 1
+  const luggageCarryOn    = Math.min(20, Math.max(0, parseInt(formData.get('luggage_carry_on') as string) || 0))
+  const luggageChecked    = Math.min(20, Math.max(0, parseInt(formData.get('luggage_checked') as string) || 0))
+  const luggageExtraLarge = Math.min(20, Math.max(0, parseInt(formData.get('luggage_extra_large') as string) || 0))
   const specialInstructions = (formData.get('special_instructions') as string)?.trim()
   const internalNotes = (formData.get('internal_notes') as string)?.trim()
   const flightNumber  = (formData.get('flight_number') as string)?.trim()
@@ -386,6 +397,32 @@ export async function createBookingAction(
     }
   }
 
+  // Exceso de equipaje — mismo cálculo que en createPublicBookingAction.
+  let luggageOverageQty = 0
+  let luggageOverageFee = 0
+  if (quote.vehicle_type_id && (luggageCarryOn > 0 || luggageChecked > 0 || luggageExtraLarge > 0)) {
+    const { data: vt } = await admin
+      .from('vehicle_types')
+      .select('luggage_carry_on_capacity, luggage_checked_capacity, luggage_extra_large_capacity')
+      .eq('id', quote.vehicle_type_id)
+      .single()
+    if (vt) {
+      luggageOverageQty =
+        Math.max(0, luggageCarryOn - vt.luggage_carry_on_capacity) +
+        Math.max(0, luggageChecked - vt.luggage_checked_capacity) +
+        Math.max(0, luggageExtraLarge - vt.luggage_extra_large_capacity)
+      if (luggageOverageQty > 0) {
+        const { data: companyRow } = await admin
+          .from('companies')
+          .select('settings')
+          .eq('id', user.company_id)
+          .single()
+        const unit = parseExtraFees(companyRow?.settings).extra_luggage_fee
+        if (unit > 0) luggageOverageFee = Math.round(unit * luggageOverageQty * 100) / 100
+      }
+    }
+  }
+
   const { data: booking, error } = await admin
     .from('bookings')
     .insert({
@@ -396,6 +433,9 @@ export async function createBookingAction(
       vehicle_type_id:  quote.vehicle_type_id,
       corporate_account_id: corporateAccountId,
       passenger_count:  passengerCount,
+      luggage_carry_on:    luggageCarryOn,
+      luggage_checked:     luggageChecked,
+      luggage_extra_large: luggageExtraLarge,
       passenger_name:   passengerName,
       passenger_phone:  passengerPhone || null,
       passenger_email:  passengerEmail || null,
@@ -410,7 +450,7 @@ export async function createBookingAction(
       price_quote_id:   quoteId,
       // Montos SIEMPRE del quote (server-calculated) — nunca del form
       base_amount:      quote.base_amount,
-      total_amount:     quote.total_amount,
+      total_amount:     quote.total_amount + luggageOverageFee,
       currency:         quote.currency ?? 'USD',
       distance_miles:   quote.distance_miles,
       duration_minutes: quote.duration_minutes,
@@ -447,6 +487,15 @@ export async function createBookingAction(
   }
   if (quote.surcharge_amount && quote.surcharge_amount > 0) {
     fees.push({ booking_id: booking.id, company_id: user.company_id, type: 'surcharge', description: 'Recargo', amount: quote.surcharge_amount })
+  }
+  if (luggageOverageFee > 0) {
+    fees.push({
+      booking_id: booking.id,
+      company_id: user.company_id,
+      type: 'luggage_overage_fee',
+      description: `Equipaje excedido × ${luggageOverageQty}`,
+      amount: luggageOverageFee,
+    })
   }
   if (fees.length > 0) await admin.from('booking_fees').insert(fees)
 
@@ -948,7 +997,7 @@ export async function getPublicVehicleQuotesAction(
   // Tipos de vehículo activos
   const { data: vehicleTypes } = await admin
     .from('vehicle_types')
-    .select('id, name, class, capacity, amenities, base_image_url')
+    .select('id, name, class, capacity, amenities, base_image_url, luggage_carry_on_capacity, luggage_checked_capacity, luggage_extra_large_capacity')
     .eq('company_id', companyId)
     .eq('is_active', true)
     .order('sort_order')
@@ -956,6 +1005,11 @@ export async function getPublicVehicleQuotesAction(
   if (!vehicleTypes?.length) {
     return { success: false, error: 'No hay tipos de vehículo disponibles' }
   }
+
+  // Fee plano por pieza de equipaje excedida — se muestra en el preview del
+  // wizard ANTES de reservar; el cargo real y autoritativo se calcula en
+  // createPublicBookingAction.
+  const extraLuggageFee = parseExtraFees(company.settings).extra_luggage_fee
 
   // Reglas de precio + zonas activas (para precio "Por zona")
   const [{ data: rulesRaw }, { data: zonesRaw }] = await Promise.all([
@@ -1004,13 +1058,19 @@ export async function getPublicVehicleQuotesAction(
 
     if (!rule) {
       quotes.push({
-        vehicleType: { id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null },
+        vehicleType: {
+          id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null,
+          luggageCarryOnCapacity: vt.luggage_carry_on_capacity,
+          luggageCheckedCapacity: vt.luggage_checked_capacity,
+          luggageExtraLargeCapacity: vt.luggage_extra_large_capacity,
+        },
         quoteId: '',
         baseAmount: 0, surchargeAmount: 0, totalAmount: 0,
         currency,
         distanceMiles: distanceMiles || null,
         durationMinutes: durationMinutes || null,
         noPrice: true,
+        extraLuggageFee,
       })
       continue
     }
@@ -1051,7 +1111,12 @@ export async function getPublicVehicleQuotesAction(
       .single()
 
     quotes.push({
-      vehicleType: { id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null },
+      vehicleType: {
+        id: vt.id, name: vt.name, class: vt.class, capacity: vt.capacity, amenities: vt.amenities ?? [], imageUrl: vt.base_image_url ?? null,
+        luggageCarryOnCapacity: vt.luggage_carry_on_capacity,
+        luggageCheckedCapacity: vt.luggage_checked_capacity,
+        luggageExtraLargeCapacity: vt.luggage_extra_large_capacity,
+      },
       quoteId:     quote?.id ?? '',
       baseAmount:  fare.baseAmount,
       surchargeAmount: fare.surchargeAmount,
@@ -1060,6 +1125,7 @@ export async function getPublicVehicleQuotesAction(
       distanceMiles:   distanceMiles || null,
       durationMinutes: durationMinutes || null,
       noPrice: false,
+      extraLuggageFee,
     })
   }
 
@@ -1154,6 +1220,13 @@ export async function createPublicBookingAction(data: {
   // en el cliente (booking-wizard.tsx) desde sessionStorage. Usada para medir
   // conversiones de Google Ads por operador (ver conversion-tracker.tsx).
   attribution?: Record<string, string>
+  // Equipaje declarado por el pasajero — si excede la capacidad del tipo de
+  // vehículo elegido, se cobra automáticamente reusando el fee ya existente
+  // companies.settings.fees.extra_luggage_fee (mismo monto que el cargo
+  // manual del conductor en driverAddExtraChargeAction).
+  luggageCarryOn?: number
+  luggageChecked?: number
+  luggageExtraLarge?: number
 }): Promise<{ success: boolean; error?: string; data?: BookingResult }> {
   // F1.17 — rate limit por IP
   if (!(await checkRateLimit('public_booking', 5))) {
@@ -1216,6 +1289,9 @@ export async function createPublicBookingAction(data: {
     return { success: false, error: 'Email inválido' }
   }
   const passengerCount = Math.min(50, Math.max(1, Math.floor(data.passengerCount) || 1))
+  const luggageCarryOn    = Math.min(20, Math.max(0, Math.floor(data.luggageCarryOn ?? 0) || 0))
+  const luggageChecked    = Math.min(20, Math.max(0, Math.floor(data.luggageChecked ?? 0) || 0))
+  const luggageExtraLarge = Math.min(20, Math.max(0, Math.floor(data.luggageExtraLarge ?? 0) || 0))
 
   // Código promocional — SIEMPRE revalidado server-side (nunca se confía en
   // el descuento que haya mostrado el wizard). Si el código dejó de ser
@@ -1325,6 +1401,30 @@ export async function createPublicBookingAction(data: {
       ? `${standingNotes}\n${tripInstructions}`.slice(0, 1000)
       : standingNotes || tripInstructions
 
+  // Exceso de equipaje — igual que el cargo manual del conductor
+  // (driverAddExtraChargeAction), pero calculado automáticamente aquí con lo
+  // declarado por el pasajero vs. la capacidad configurada del vehículo
+  // elegido. Nunca bloquea la reserva, solo agrega un cargo si corresponde.
+  let luggageOverageQty = 0
+  let luggageOverageFee = 0
+  if (quote.vehicle_type_id && (luggageCarryOn > 0 || luggageChecked > 0 || luggageExtraLarge > 0)) {
+    const { data: vt } = await admin
+      .from('vehicle_types')
+      .select('luggage_carry_on_capacity, luggage_checked_capacity, luggage_extra_large_capacity')
+      .eq('id', quote.vehicle_type_id)
+      .single()
+    if (vt) {
+      luggageOverageQty =
+        Math.max(0, luggageCarryOn - vt.luggage_carry_on_capacity) +
+        Math.max(0, luggageChecked - vt.luggage_checked_capacity) +
+        Math.max(0, luggageExtraLarge - vt.luggage_extra_large_capacity)
+      if (luggageOverageQty > 0) {
+        const unit = parseExtraFees(company.settings).extra_luggage_fee
+        if (unit > 0) luggageOverageFee = Math.round(unit * luggageOverageQty * 100) / 100
+      }
+    }
+  }
+
   const { data: booking, error } = await admin
     .from('bookings')
     .insert({
@@ -1336,6 +1436,9 @@ export async function createPublicBookingAction(data: {
       partner_id:       partnerId,
       customer_id:      data.customerId ?? null,
       passenger_count:  passengerCount,
+      luggage_carry_on:    luggageCarryOn,
+      luggage_checked:     luggageChecked,
+      luggage_extra_large: luggageExtraLarge,
       passenger_name:   name,
       passenger_phone:  phone,
       passenger_email:  email || null,
@@ -1351,7 +1454,7 @@ export async function createPublicBookingAction(data: {
       meet_and_greet:   Boolean(data.meetAndGreet),
       price_quote_id:   data.quoteId,
       base_amount:      quote.base_amount,
-      total_amount:     quote.total_amount - discountAmount,
+      total_amount:     quote.total_amount - discountAmount + luggageOverageFee,
       currency:         quote.currency ?? 'USD',
       distance_miles:   quote.distance_miles,
       duration_minutes: quote.duration_minutes,
@@ -1393,6 +1496,15 @@ export async function createPublicBookingAction(data: {
   }
   if (quote.surcharge_amount && quote.surcharge_amount > 0) {
     fees.push({ booking_id: booking.id, company_id: company.id, type: 'surcharge', description: 'Recargo', amount: quote.surcharge_amount })
+  }
+  if (luggageOverageFee > 0) {
+    fees.push({
+      booking_id: booking.id,
+      company_id: company.id,
+      type: 'luggage_overage_fee',
+      description: `Equipaje excedido × ${luggageOverageQty}`,
+      amount: luggageOverageFee,
+    })
   }
   if (fees.length > 0) await admin.from('booking_fees').insert(fees)
 

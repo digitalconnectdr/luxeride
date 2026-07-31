@@ -52,6 +52,15 @@ async function uploadVehicleImage(
 
 // ── Vehicle Types ─────────────────────────────────────────────────────────────
 
+// Capacidad de equipaje por categoría — parseo tolerante (vacío/NaN cae al
+// default, clamp [0,20]). Mismos defaults que la migración para que un campo
+// vacío en el form no deje el vehículo en 0/0/0 y dispare cargos falsos.
+function parseLuggageCapacity(formData: FormData, field: string, fallback: number): number {
+  const n = parseInt(formData.get(field) as string, 10)
+  if (isNaN(n) || n < 0) return fallback
+  return Math.min(20, n)
+}
+
 export async function createVehicleTypeAction(
   _prev: FleetActionResult | null,
   formData: FormData
@@ -64,6 +73,9 @@ export async function createVehicleTypeAction(
   const capacity = parseInt(formData.get('capacity') as string, 10)
   const raw     = (formData.get('amenities') as string ?? '').trim()
   const amenities = raw ? raw.split(',').map((a) => a.trim()).filter(Boolean) : []
+  const luggageCarryOnCapacity = parseLuggageCapacity(formData, 'luggage_carry_on_capacity', 2)
+  const luggageCheckedCapacity = parseLuggageCapacity(formData, 'luggage_checked_capacity', 2)
+  const luggageExtraLargeCapacity = parseLuggageCapacity(formData, 'luggage_extra_large_capacity', 0)
 
   if (!name || !cls || isNaN(capacity) || capacity < 1) {
     return { success: false, error: 'Name, class and capacity are required' }
@@ -72,7 +84,12 @@ export async function createVehicleTypeAction(
   const admin = createAdminClient()
   const { data, error } = await admin
     .from('vehicle_types')
-    .insert({ company_id: user.company_id, name, class: cls, capacity, amenities, is_active: true })
+    .insert({
+      company_id: user.company_id, name, class: cls, capacity, amenities, is_active: true,
+      luggage_carry_on_capacity: luggageCarryOnCapacity,
+      luggage_checked_capacity: luggageCheckedCapacity,
+      luggage_extra_large_capacity: luggageExtraLargeCapacity,
+    })
     .select('id')
     .single()
 
@@ -103,6 +120,9 @@ export async function updateVehicleTypeAction(
   const capacity = parseInt(formData.get('capacity') as string, 10)
   const raw      = (formData.get('amenities') as string ?? '').trim()
   const amenities = raw ? raw.split(',').map((a) => a.trim()).filter(Boolean) : []
+  const luggageCarryOnCapacity = parseLuggageCapacity(formData, 'luggage_carry_on_capacity', 2)
+  const luggageCheckedCapacity = parseLuggageCapacity(formData, 'luggage_checked_capacity', 2)
+  const luggageExtraLargeCapacity = parseLuggageCapacity(formData, 'luggage_extra_large_capacity', 0)
 
   if (!name || !cls || isNaN(capacity) || capacity < 1) {
     return { success: false, error: 'Name, class and capacity are required' }
@@ -117,8 +137,14 @@ export async function updateVehicleTypeAction(
     .single()
   if (type?.company_id !== user.company_id) return { success: false, error: 'Not found' }
 
-  const updates: { name: string; class: VehicleClass; capacity: number; amenities: string[]; base_image_url?: string | null } = {
+  const updates: {
+    name: string; class: VehicleClass; capacity: number; amenities: string[]; base_image_url?: string | null
+    luggage_carry_on_capacity: number; luggage_checked_capacity: number; luggage_extra_large_capacity: number
+  } = {
     name, class: cls, capacity, amenities,
+    luggage_carry_on_capacity: luggageCarryOnCapacity,
+    luggage_checked_capacity: luggageCheckedCapacity,
+    luggage_extra_large_capacity: luggageExtraLargeCapacity,
   }
   const image = formData.get('image') as File | null
   if (formData.get('remove_image') === 'true') {

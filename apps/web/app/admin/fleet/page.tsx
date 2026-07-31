@@ -49,7 +49,7 @@ export default async function FleetPage({ searchParams }: PageProps) {
       .order('created_at', { ascending: false }),
     admin
       .from('vehicle_types')
-      .select('id, name, class, capacity, amenities, is_active, base_image_url')
+      .select('id, name, class, capacity, luggage_carry_on_capacity, luggage_checked_capacity, luggage_extra_large_capacity, amenities, is_active, base_image_url')
       .eq('company_id', companyId)
       .order('sort_order', { ascending: true }),
     admin

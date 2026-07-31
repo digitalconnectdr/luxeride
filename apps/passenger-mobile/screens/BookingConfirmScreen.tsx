@@ -163,6 +163,14 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
     setSettingUpCard(false)
   }
 
+  // Exceso de equipaje — mismo cálculo que el wizard web (preview antes de
+  // confirmar; el cargo real y autoritativo lo calcula createPublicBookingAction).
+  const luggageOverageQty =
+    Math.max(0, draft.luggageCarryOn - quote.vehicleType.luggageCarryOnCapacity) +
+    Math.max(0, draft.luggageChecked - quote.vehicleType.luggageCheckedCapacity) +
+    Math.max(0, draft.luggageExtraLarge - quote.vehicleType.luggageExtraLargeCapacity)
+  const luggageOverageFee = luggageOverageQty > 0 ? Math.round(quote.extraLuggageFee * luggageOverageQty * 100) / 100 : 0
+
   const cardLaterBlocked = paymentChoice === 'card_later' && !hasSavedCard
 
   async function confirm() {
@@ -182,6 +190,9 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
       passengerName: passengerName.trim(),
       passengerPhone: passengerPhone.trim(),
       passengerCount: draft.passengerCount,
+      luggageCarryOn: draft.luggageCarryOn,
+      luggageChecked: draft.luggageChecked,
+      luggageExtraLarge: draft.luggageExtraLarge,
       specialInstructions: specialInstructions.trim() || undefined,
       scheduledAt: draft.scheduledAt,
       pickupAddress: draft.pickupAddress,
@@ -232,6 +243,9 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
         {row('Destino', draft.dropoffAddress)}
         {row('Fecha y hora', new Date(draft.scheduledAt).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' }))}
         {row('Pasajeros', `${draft.passengerCount} pasajero${draft.passengerCount === 1 ? '' : 's'}`)}
+        {(draft.luggageCarryOn + draft.luggageChecked + draft.luggageExtraLarge) > 0
+          ? row('Equipaje', `${draft.luggageCarryOn}/${draft.luggageChecked}/${draft.luggageExtraLarge}`)
+          : null}
         {quote.durationMinutes || quote.distanceMiles
           ? row(
               'Tiempo estimado',
@@ -243,9 +257,17 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
                 .join(' · '),
             )
           : null}
+        {luggageOverageFee > 0 ? (
+          <View style={styles.luggageWarning}>
+            <Ionicons name="briefcase-outline" size={14} color={c.danger} />
+            <Text style={styles.luggageWarningText}>
+              Tu equipaje excede la capacidad del vehículo — se agregará un cargo de ${luggageOverageFee.toFixed(2)} {quote.currency} por el exceso.
+            </Text>
+          </View>
+        ) : null}
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Total estimado</Text>
-          <Text style={styles.totalValue}>${quote.totalAmount.toFixed(2)} {quote.currency}</Text>
+          <Text style={styles.totalValue}>${(quote.totalAmount + luggageOverageFee).toFixed(2)} {quote.currency}</Text>
         </View>
       </Card>
 
@@ -437,6 +459,16 @@ const makeStyles = (c: Palette) =>
   },
   totalLabel: { color: c.ink, fontFamily: font.bodySemi, fontSize: 14 },
   totalValue: { color: c.gold, fontFamily: font.bodyBold, fontSize: 22 },
+  luggageWarning: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space.xs,
+    marginTop: space.sm,
+    padding: space.sm,
+    borderRadius: radius.md,
+    backgroundColor: `${c.danger}14`,
+  },
+  luggageWarningText: { color: c.danger, fontFamily: font.body, fontSize: 12, flexShrink: 1, lineHeight: 16 },
   section: { gap: space.md },
   // "Pagar ahora" — el método principal, visualmente por encima de los otros
   // dos (más grande, fondo dorado cuando seleccionado, pill "Recomendado").

@@ -30,6 +30,9 @@ export interface VehicleQuote {
     capacity: number
     amenities: string[]
     imageUrl: string | null
+    luggageCarryOnCapacity: number
+    luggageCheckedCapacity: number
+    luggageExtraLargeCapacity: number
   }
   quoteId: string
   baseAmount: number
@@ -39,6 +42,9 @@ export interface VehicleQuote {
   distanceMiles: number | null
   durationMinutes: number | null
   noPrice: boolean
+  // Fee plano por pieza de equipaje excedida (companies.settings.fees.extra_luggage_fee)
+  // — 0 si el operador no lo configuró. Permite mostrar el aviso de cargo antes de confirmar.
+  extraLuggageFee: number
 }
 
 export interface BookingDraft {
@@ -54,6 +60,9 @@ export interface BookingDraft {
   dropoffPostalCode?: string
   scheduledAt: string
   passengerCount: number
+  luggageCarryOn: number
+  luggageChecked: number
+  luggageExtraLarge: number
 }
 
 export interface BookingResult {
