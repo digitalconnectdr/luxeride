@@ -90,6 +90,10 @@ export function NewBookingScreen({ navigation, route }: Props) {
   const [luggageCarryOn, setLuggageCarryOn] = useState(0)
   const [luggageChecked, setLuggageChecked] = useState(0)
   const [luggageExtraLarge, setLuggageExtraLarge] = useState(0)
+  // Colapsado por defecto (como el dropdown de Blacklane) — evita 3 steppers
+  // siempre visibles cuando la mayoría de los viajes no declaran equipaje.
+  const [luggageOpen, setLuggageOpen] = useState(false)
+  const luggageTotal = luggageCarryOn + luggageChecked + luggageExtraLarge
 
   // Si la pantalla ya estaba montada (el pasajero ya había visitado esta
   // pestaña antes), el useState de arriba no vuelve a leer el prefill al
@@ -405,42 +409,58 @@ export function NewBookingScreen({ navigation, route }: Props) {
 
         <View style={styles.section}>
           <SectionLabel>Equipaje</SectionLabel>
-          <View style={styles.stepperRow}>
-            <Text style={styles.stepperLabel}>Equipaje de mano</Text>
-            <View style={styles.stepper}>
-              <Text style={styles.stepperBtn} onPress={() => setLuggageCarryOn((n) => Math.max(0, n - 1))}>
-                −
-              </Text>
-              <Text style={styles.stepperValue}>{luggageCarryOn}</Text>
-              <Text style={styles.stepperBtn} onPress={() => setLuggageCarryOn((n) => Math.min(20, n + 1))}>
-                +
-              </Text>
+          {!luggageOpen ? (
+            <PressableScale onPress={() => setLuggageOpen(true)} haptic="light">
+              <View style={styles.luggageButton}>
+                <Text style={[styles.luggageButtonText, luggageTotal > 0 && styles.luggageButtonTextActive]}>
+                  {luggageTotal > 0 ? `${luggageCarryOn}/${luggageChecked}/${luggageExtraLarge} maletas` : '+ Agregar equipaje'}
+                </Text>
+                {luggageTotal > 0 && <Text style={styles.luggageEditText}>Editar</Text>}
+              </View>
+            </PressableScale>
+          ) : (
+            <View style={styles.luggagePanel}>
+              <View style={styles.stepperRow}>
+                <Text style={styles.stepperLabel}>Equipaje de mano</Text>
+                <View style={styles.stepper}>
+                  <Text style={styles.stepperBtn} onPress={() => setLuggageCarryOn((n) => Math.max(0, n - 1))}>
+                    −
+                  </Text>
+                  <Text style={styles.stepperValue}>{luggageCarryOn}</Text>
+                  <Text style={styles.stepperBtn} onPress={() => setLuggageCarryOn((n) => Math.min(20, n + 1))}>
+                    +
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.stepperRow}>
+                <Text style={styles.stepperLabel}>Maletas facturadas</Text>
+                <View style={styles.stepper}>
+                  <Text style={styles.stepperBtn} onPress={() => setLuggageChecked((n) => Math.max(0, n - 1))}>
+                    −
+                  </Text>
+                  <Text style={styles.stepperValue}>{luggageChecked}</Text>
+                  <Text style={styles.stepperBtn} onPress={() => setLuggageChecked((n) => Math.min(20, n + 1))}>
+                    +
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.stepperRow}>
+                <Text style={styles.stepperLabel}>Maleta extragrande</Text>
+                <View style={styles.stepper}>
+                  <Text style={styles.stepperBtn} onPress={() => setLuggageExtraLarge((n) => Math.max(0, n - 1))}>
+                    −
+                  </Text>
+                  <Text style={styles.stepperValue}>{luggageExtraLarge}</Text>
+                  <Text style={styles.stepperBtn} onPress={() => setLuggageExtraLarge((n) => Math.min(20, n + 1))}>
+                    +
+                  </Text>
+                </View>
+              </View>
+              <PressableScale onPress={() => setLuggageOpen(false)} haptic="light">
+                <Text style={styles.luggageDoneText}>Listo</Text>
+              </PressableScale>
             </View>
-          </View>
-          <View style={styles.stepperRow}>
-            <Text style={styles.stepperLabel}>Maletas facturadas</Text>
-            <View style={styles.stepper}>
-              <Text style={styles.stepperBtn} onPress={() => setLuggageChecked((n) => Math.max(0, n - 1))}>
-                −
-              </Text>
-              <Text style={styles.stepperValue}>{luggageChecked}</Text>
-              <Text style={styles.stepperBtn} onPress={() => setLuggageChecked((n) => Math.min(20, n + 1))}>
-                +
-              </Text>
-            </View>
-          </View>
-          <View style={styles.stepperRow}>
-            <Text style={styles.stepperLabel}>Maleta extragrande</Text>
-            <View style={styles.stepper}>
-              <Text style={styles.stepperBtn} onPress={() => setLuggageExtraLarge((n) => Math.max(0, n - 1))}>
-                −
-              </Text>
-              <Text style={styles.stepperValue}>{luggageExtraLarge}</Text>
-              <Text style={styles.stepperBtn} onPress={() => setLuggageExtraLarge((n) => Math.min(20, n + 1))}>
-                +
-              </Text>
-            </View>
-          </View>
+          )}
         </View>
 
         {error ? (
@@ -549,6 +569,22 @@ const makeStyles = (c: Palette) =>
       overflow: 'hidden',
     },
     stepperValue: { fontFamily: font.bodyBold, fontSize: 20, color: c.ink, minWidth: 24, textAlign: 'center' },
+    luggagePanel: { gap: space.sm },
+    luggageButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      paddingHorizontal: space.lg,
+      paddingVertical: space.md,
+    },
+    luggageButtonText: { color: c.inkFaint, fontFamily: font.bodyMedium, fontSize: 14 },
+    luggageButtonTextActive: { color: c.ink },
+    luggageEditText: { color: c.gold, fontFamily: font.bodySemi, fontSize: 12 },
+    luggageDoneText: { color: c.gold, fontFamily: font.bodySemi, fontSize: 14, textAlign: 'center', paddingVertical: space.xs },
     errorRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
     error: { color: c.danger, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1 },
     submit: { marginTop: space.md },

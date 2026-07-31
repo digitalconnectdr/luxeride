@@ -153,10 +153,17 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
   })
   const [confirmation, setConfirmation] = useState<BookingResult | null>(null)
 
+  // Panel de equipaje colapsado por defecto (como el dropdown de Blacklane)
+  // — solo se expande cuando el pasajero toca "Agregar equipaje".
+  const [luggageOpen, setLuggageOpen] = useState(false)
+  const luggageTotal = passengerData.luggageCarryOn + passengerData.luggageChecked + passengerData.luggageExtraLarge
+
   // ─── Exceso de equipaje — preview antes de confirmar ──────────────────────
   // Solo un estimado en el cliente para informar al pasajero; el cargo real
   // y autoritativo se calcula server-side en createPublicBookingAction, con
-  // el MISMO cálculo (capacidad del vehicle_type vs. lo declarado).
+  // el MISMO cálculo (capacidad del vehicle_type vs. lo declarado). Vive aquí
+  // (no solo en el paso de confirmación) porque también se usa en vivo dentro
+  // del panel de equipaje del paso "Pasajero".
   const luggageOverageQty = selectedQuote
     ? Math.max(0, passengerData.luggageCarryOn - selectedQuote.vehicleType.luggageCarryOnCapacity) +
       Math.max(0, passengerData.luggageChecked - selectedQuote.vehicleType.luggageCheckedCapacity) +
@@ -427,9 +434,9 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
       phone,
       email:        (fd.get('email') as string)?.trim() ?? '',
       count:        parseInt(fd.get('count') as string) || 1,
-      luggageCarryOn:    Math.max(0, parseInt(fd.get('luggage_carry_on') as string) || 0),
-      luggageChecked:    Math.max(0, parseInt(fd.get('luggage_checked') as string) || 0),
-      luggageExtraLarge: Math.max(0, parseInt(fd.get('luggage_extra_large') as string) || 0),
+      // El equipaje ya vive en vivo en passengerData (steppers del panel
+      // "Agregar equipaje" lo actualizan directamente) — no hay inputs de
+      // formulario que releer aquí.
       instructions: (fd.get('instructions') as string)?.trim() ?? '',
       flightNumber: (fd.get('flight_number') as string)?.trim() ?? '',
     }))
@@ -1026,41 +1033,75 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
             <label className="block text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">
               🧳 {dict.luggageLabel}
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <input
-                  type="number"
-                  name="luggage_carry_on"
-                  defaultValue={0}
-                  min={0}
-                  max={20}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
-                />
-                <p className="mt-1 text-[10px] text-gray-400 text-center">{dict.luggageCarryOnShort}</p>
+
+            {!luggageOpen ? (
+              <button
+                type="button"
+                onClick={() => setLuggageOpen(true)}
+                className="w-full flex items-center justify-between rounded-xl border border-dashed border-gray-300 bg-white px-4 py-2.5 text-sm hover:border-[var(--brand)] transition-colors"
+              >
+                {luggageTotal > 0 ? (
+                  <>
+                    <span className="text-[#1d1d1f]">
+                      {passengerData.luggageCarryOn}/{passengerData.luggageChecked}/{passengerData.luggageExtraLarge} {dict.luggageAbbrev}
+                    </span>
+                    <span className="text-xs font-medium text-[var(--brand)]">{dict.luggageEdit}</span>
+                  </>
+                ) : (
+                  <span className="text-gray-500">+ {dict.luggageAddButton}</span>
+                )}
+              </button>
+            ) : (
+              <div className="rounded-xl border border-gray-200 bg-white p-3 space-y-3">
+                {(
+                  [
+                    ['luggageCarryOn', dict.luggageCarryOnShort, selectedQuote?.vehicleType.luggageCarryOnCapacity] as const,
+                    ['luggageChecked', dict.luggageCheckedShort, selectedQuote?.vehicleType.luggageCheckedCapacity] as const,
+                    ['luggageExtraLarge', dict.luggageExtraLargeShort, selectedQuote?.vehicleType.luggageExtraLargeCapacity] as const,
+                  ] as const
+                ).map(([field, label, included]) => (
+                  <div key={field} className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#1d1d1f]">{label}</p>
+                      {included != null && (
+                        <p className="text-[11px] text-gray-400">{dict.luggageIncluded.replace('{n}', String(included))}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPassengerData((p) => ({ ...p, [field]: Math.max(0, p[field] - 1) }))}
+                        className="w-8 h-8 rounded-full border border-gray-200 text-gray-500 hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors"
+                      >
+                        −
+                      </button>
+                      <span className="w-5 text-center text-sm font-semibold text-[#1d1d1f]">{passengerData[field]}</span>
+                      <button
+                        type="button"
+                        onClick={() => setPassengerData((p) => ({ ...p, [field]: Math.min(20, p[field] + 1) }))}
+                        className="w-8 h-8 rounded-full border border-gray-200 text-gray-500 hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {luggageOverageFee > 0 && (
+                  <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                    🧳 {dict.luggageOverageWarning.replace('{amount}', `$${luggageOverageFee.toFixed(2)} ${selectedQuote?.currency ?? ''}`)}
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setLuggageOpen(false)}
+                  className="text-xs font-medium text-[var(--brand)] hover:underline"
+                >
+                  {dict.luggageDone}
+                </button>
               </div>
-              <div>
-                <input
-                  type="number"
-                  name="luggage_checked"
-                  defaultValue={0}
-                  min={0}
-                  max={20}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
-                />
-                <p className="mt-1 text-[10px] text-gray-400 text-center">{dict.luggageCheckedShort}</p>
-              </div>
-              <div>
-                <input
-                  type="number"
-                  name="luggage_extra_large"
-                  defaultValue={0}
-                  min={0}
-                  max={20}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
-                />
-                <p className="mt-1 text-[10px] text-gray-400 text-center">{dict.luggageExtraLargeShort}</p>
-              </div>
-            </div>
+            )}
           </div>
 
           {(routeData.bookingType === 'airport_pickup' || routeData.bookingType === 'airport_dropoff') && (
