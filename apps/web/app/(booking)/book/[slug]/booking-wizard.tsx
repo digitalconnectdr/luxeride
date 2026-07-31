@@ -931,12 +931,17 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
                     )}
                     <div>
                       <p className="font-semibold text-[#1d1d1f]">{q.vehicleType.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {dict.upTo} {q.vehicleType.capacity} {dict.passengers}
-                        {' · 🧳 '}
-                        {q.vehicleType.luggageCarryOnCapacity}/{q.vehicleType.luggageCheckedCapacity}/{q.vehicleType.luggageExtraLargeCapacity}
+                      <p className="text-xs text-gray-500 flex flex-wrap items-center gap-x-1.5">
+                        <span>👤 {q.vehicleType.capacity}</span>
+                        <span aria-hidden>·</span>
+                        <span>
+                          🧳 {q.vehicleType.luggageCarryOnCapacity} {dict.luggageCarryOnAbbrev} · {q.vehicleType.luggageCheckedCapacity} {dict.luggageCheckedAbbrev} · {q.vehicleType.luggageExtraLargeCapacity} {dict.luggageExtraLargeAbbrev}
+                        </span>
                         {q.vehicleType.amenities.length > 0 && (
-                          <> · {q.vehicleType.amenities.slice(0, 2).join(', ')}</>
+                          <>
+                            <span aria-hidden>·</span>
+                            <span>{q.vehicleType.amenities.slice(0, 2).join(', ')}</span>
+                          </>
                         )}
                       </p>
                     </div>
