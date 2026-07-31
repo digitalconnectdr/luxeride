@@ -93,7 +93,25 @@ export function NewBookingScreen({ navigation, route }: Props) {
   // Colapsado por defecto (como el dropdown de Blacklane) — evita 3 steppers
   // siempre visibles cuando la mayoría de los viajes no declaran equipaje.
   const [luggageOpen, setLuggageOpen] = useState(false)
+  // Los 3 tipos (mano/facturada/extragrande) son formas ALTERNAS de medir el
+  // mismo espacio del baúl, no capacidades que se suman — el pasajero solo
+  // puede declarar UNA categoría a la vez, nunca las 3 simultáneamente.
+  const [luggageCategory, setLuggageCategory] = useState<'carryOn' | 'checked' | 'extraLarge' | null>(null)
   const luggageTotal = luggageCarryOn + luggageChecked + luggageExtraLarge
+
+  function selectLuggageCategory(category: 'carryOn' | 'checked' | 'extraLarge') {
+    if (luggageCategory === category) {
+      setLuggageCategory(null)
+      setLuggageCarryOn(0)
+      setLuggageChecked(0)
+      setLuggageExtraLarge(0)
+      return
+    }
+    setLuggageCategory(category)
+    setLuggageCarryOn(category === 'carryOn' ? 1 : 0)
+    setLuggageChecked(category === 'checked' ? 1 : 0)
+    setLuggageExtraLarge(category === 'extraLarge' ? 1 : 0)
+  }
 
   // Si la pantalla ya estaba montada (el pasajero ya había visitado esta
   // pestaña antes), el useState de arriba no vuelve a leer el prefill al
@@ -413,49 +431,83 @@ export function NewBookingScreen({ navigation, route }: Props) {
             <PressableScale onPress={() => setLuggageOpen(true)} haptic="light">
               <View style={styles.luggageButton}>
                 <Text style={[styles.luggageButtonText, luggageTotal > 0 && styles.luggageButtonTextActive]}>
-                  {luggageTotal > 0 ? `${luggageCarryOn}/${luggageChecked}/${luggageExtraLarge} maletas` : '+ Agregar equipaje'}
+                  {luggageCategory === 'carryOn' ? `${luggageCarryOn} × Equipaje de mano`
+                    : luggageCategory === 'checked' ? `${luggageChecked} × Maleta facturada`
+                    : luggageCategory === 'extraLarge' ? `${luggageExtraLarge} × Maleta extragrande`
+                    : '+ Agregar equipaje'}
                 </Text>
                 {luggageTotal > 0 && <Text style={styles.luggageEditText}>Editar</Text>}
               </View>
             </PressableScale>
           ) : (
             <View style={styles.luggagePanel}>
-              <View style={styles.stepperRow}>
-                <Text style={styles.stepperLabel}>Equipaje de mano</Text>
-                <View style={styles.stepper}>
-                  <Text style={styles.stepperBtn} onPress={() => setLuggageCarryOn((n) => Math.max(0, n - 1))}>
-                    −
-                  </Text>
-                  <Text style={styles.stepperValue}>{luggageCarryOn}</Text>
-                  <Text style={styles.stepperBtn} onPress={() => setLuggageCarryOn((n) => Math.min(20, n + 1))}>
-                    +
-                  </Text>
-                </View>
+              <View style={styles.luggageCategoryRow}>
+                <PressableScale style={styles.luggageCategoryItem} onPress={() => selectLuggageCategory('carryOn')} haptic="light">
+                  <View style={[styles.luggageCategoryChip, luggageCategory === 'carryOn' && styles.luggageCategoryChipActive]}>
+                    <Text style={[styles.luggageCategoryText, luggageCategory === 'carryOn' && styles.luggageCategoryTextActive]}>
+                      Equipaje de mano
+                    </Text>
+                  </View>
+                </PressableScale>
+                <PressableScale style={styles.luggageCategoryItem} onPress={() => selectLuggageCategory('checked')} haptic="light">
+                  <View style={[styles.luggageCategoryChip, luggageCategory === 'checked' && styles.luggageCategoryChipActive]}>
+                    <Text style={[styles.luggageCategoryText, luggageCategory === 'checked' && styles.luggageCategoryTextActive]}>
+                      Maleta facturada
+                    </Text>
+                  </View>
+                </PressableScale>
+                <PressableScale style={styles.luggageCategoryItem} onPress={() => selectLuggageCategory('extraLarge')} haptic="light">
+                  <View style={[styles.luggageCategoryChip, luggageCategory === 'extraLarge' && styles.luggageCategoryChipActive]}>
+                    <Text style={[styles.luggageCategoryText, luggageCategory === 'extraLarge' && styles.luggageCategoryTextActive]}>
+                      Maleta extragrande
+                    </Text>
+                  </View>
+                </PressableScale>
               </View>
-              <View style={styles.stepperRow}>
-                <Text style={styles.stepperLabel}>Maletas facturadas</Text>
-                <View style={styles.stepper}>
-                  <Text style={styles.stepperBtn} onPress={() => setLuggageChecked((n) => Math.max(0, n - 1))}>
-                    −
-                  </Text>
-                  <Text style={styles.stepperValue}>{luggageChecked}</Text>
-                  <Text style={styles.stepperBtn} onPress={() => setLuggageChecked((n) => Math.min(20, n + 1))}>
-                    +
-                  </Text>
+
+              {luggageCategory === 'carryOn' && (
+                <View style={styles.stepperRow}>
+                  <Text style={styles.stepperLabel}>Equipaje de mano</Text>
+                  <View style={styles.stepper}>
+                    <Text style={styles.stepperBtn} onPress={() => setLuggageCarryOn((n) => Math.max(1, n - 1))}>
+                      −
+                    </Text>
+                    <Text style={styles.stepperValue}>{luggageCarryOn}</Text>
+                    <Text style={styles.stepperBtn} onPress={() => setLuggageCarryOn((n) => Math.min(20, n + 1))}>
+                      +
+                    </Text>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.stepperRow}>
-                <Text style={styles.stepperLabel}>Maleta extragrande</Text>
-                <View style={styles.stepper}>
-                  <Text style={styles.stepperBtn} onPress={() => setLuggageExtraLarge((n) => Math.max(0, n - 1))}>
-                    −
-                  </Text>
-                  <Text style={styles.stepperValue}>{luggageExtraLarge}</Text>
-                  <Text style={styles.stepperBtn} onPress={() => setLuggageExtraLarge((n) => Math.min(20, n + 1))}>
-                    +
-                  </Text>
+              )}
+              {luggageCategory === 'checked' && (
+                <View style={styles.stepperRow}>
+                  <Text style={styles.stepperLabel}>Maletas facturadas</Text>
+                  <View style={styles.stepper}>
+                    <Text style={styles.stepperBtn} onPress={() => setLuggageChecked((n) => Math.max(1, n - 1))}>
+                      −
+                    </Text>
+                    <Text style={styles.stepperValue}>{luggageChecked}</Text>
+                    <Text style={styles.stepperBtn} onPress={() => setLuggageChecked((n) => Math.min(20, n + 1))}>
+                      +
+                    </Text>
+                  </View>
                 </View>
-              </View>
+              )}
+              {luggageCategory === 'extraLarge' && (
+                <View style={styles.stepperRow}>
+                  <Text style={styles.stepperLabel}>Maletas extragrandes</Text>
+                  <View style={styles.stepper}>
+                    <Text style={styles.stepperBtn} onPress={() => setLuggageExtraLarge((n) => Math.max(1, n - 1))}>
+                      −
+                    </Text>
+                    <Text style={styles.stepperValue}>{luggageExtraLarge}</Text>
+                    <Text style={styles.stepperBtn} onPress={() => setLuggageExtraLarge((n) => Math.min(20, n + 1))}>
+                      +
+                    </Text>
+                  </View>
+                </View>
+              )}
+
               <PressableScale onPress={() => setLuggageOpen(false)} haptic="light">
                 <Text style={styles.luggageDoneText}>Listo</Text>
               </PressableScale>
@@ -585,6 +637,19 @@ const makeStyles = (c: Palette) =>
     luggageButtonTextActive: { color: c.ink },
     luggageEditText: { color: c.gold, fontFamily: font.bodySemi, fontSize: 12 },
     luggageDoneText: { color: c.gold, fontFamily: font.bodySemi, fontSize: 14, textAlign: 'center', paddingVertical: space.xs },
+    luggageCategoryRow: { flexDirection: 'row', gap: space.xs },
+    luggageCategoryItem: { flex: 1 },
+    luggageCategoryChip: {
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      paddingVertical: space.sm,
+      paddingHorizontal: space.xs,
+      alignItems: 'center',
+    },
+    luggageCategoryChipActive: { borderColor: c.gold, backgroundColor: c.goldWash },
+    luggageCategoryText: { color: c.inkFaint, fontFamily: font.bodyMedium, fontSize: 11.5, textAlign: 'center' },
+    luggageCategoryTextActive: { color: c.ink, fontFamily: font.bodySemi },
     errorRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
     error: { color: c.danger, fontFamily: font.bodyMedium, fontSize: 13, flexShrink: 1 },
     submit: { marginTop: space.md },

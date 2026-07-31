@@ -163,6 +163,26 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
   // Panel de equipaje colapsado por defecto (como el dropdown de Blacklane)
   // — solo se expande cuando el pasajero toca "Agregar equipaje".
   const [luggageOpen, setLuggageOpen] = useState(false)
+  // Los 3 números de capacidad del vehículo (mano/facturada/extragrande) son
+  // formas ALTERNAS de medir el mismo espacio del baúl, no capacidades que se
+  // suman — el pasajero solo puede declarar UNA categoría a la vez (igual
+  // que Blacklane), nunca las 3 simultáneamente.
+  const [luggageCategory, setLuggageCategory] = useState<'luggageCarryOn' | 'luggageChecked' | 'luggageExtraLarge' | null>(null)
+  const LUGGAGE_CATEGORIES = [
+    ['luggageCarryOn', dict.luggageCarryOnShort, selectedQuote?.vehicleType.luggageCarryOnCapacity] as const,
+    ['luggageChecked', dict.luggageCheckedShort, selectedQuote?.vehicleType.luggageCheckedCapacity] as const,
+    ['luggageExtraLarge', dict.luggageExtraLargeShort, selectedQuote?.vehicleType.luggageExtraLargeCapacity] as const,
+  ] as const
+  function selectLuggageCategory(field: 'luggageCarryOn' | 'luggageChecked' | 'luggageExtraLarge') {
+    if (luggageCategory === field) {
+      // Tocar la misma categoría otra vez la quita.
+      setLuggageCategory(null)
+      setPassengerData((p) => ({ ...p, luggageCarryOn: 0, luggageChecked: 0, luggageExtraLarge: 0 }))
+      return
+    }
+    setLuggageCategory(field)
+    setPassengerData((p) => ({ ...p, luggageCarryOn: 0, luggageChecked: 0, luggageExtraLarge: 0, [field]: 1 }))
+  }
   const luggageTotal = passengerData.luggageCarryOn + passengerData.luggageChecked + passengerData.luggageExtraLarge
   // "3 × Equipaje de mano, 1 × Maleta facturada" — legible en el resumen de
   // confirmación, en vez del formato crudo "3/1/0" que no dice a qué
@@ -1067,9 +1087,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               >
                 {luggageTotal > 0 ? (
                   <>
-                    <span className="text-[#1d1d1f]">
-                      {passengerData.luggageCarryOn}/{passengerData.luggageChecked}/{passengerData.luggageExtraLarge} {dict.luggageAbbrev}
-                    </span>
+                    <span className="text-[#1d1d1f]">{luggageSummaryText}</span>
                     <span className="text-xs font-medium text-[var(--brand)]">{dict.luggageEdit}</span>
                   </>
                 ) : (
@@ -1078,36 +1096,56 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               </button>
             ) : (
               <div className="rounded-xl border border-gray-200 bg-white p-3 space-y-3">
-                {(
-                  [
-                    ['luggageCarryOn', dict.luggageCarryOnShort, selectedQuote?.vehicleType.luggageCarryOnCapacity] as const,
-                    ['luggageChecked', dict.luggageCheckedShort, selectedQuote?.vehicleType.luggageCheckedCapacity] as const,
-                    ['luggageExtraLarge', dict.luggageExtraLargeShort, selectedQuote?.vehicleType.luggageExtraLargeCapacity] as const,
-                  ] as const
-                ).map(([field, label, included]) => {
-                  const max = (included ?? 20) + MAX_LUGGAGE_EXTRA_PER_CATEGORY
-                  const atMax = passengerData[field] >= max
-                  return (
-                    <div key={field} className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-[#1d1d1f]">{label}</p>
-                        {included != null && (
-                          <p className="text-[11px] text-gray-400">{dict.luggageIncluded.replace('{n}', String(included))}</p>
+                {/* Una sola categoría a la vez — los 3 números del vehículo
+                    (mano/facturada/extragrande) son formas ALTERNAS de medir
+                    el mismo espacio del baúl, no capacidades que se suman.
+                    Elegir una categoría reemplaza cualquier otra ya elegida. */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {LUGGAGE_CATEGORIES.map(([field, label, included]) => {
+                    const selected = luggageCategory === field
+                    return (
+                      <button
+                        key={field}
+                        type="button"
+                        onClick={() => selectLuggageCategory(field)}
+                        className={`rounded-xl border px-3 py-2 text-left transition-colors ${
+                          selected ? 'border-[var(--brand)] bg-[var(--brand)]/5' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <p className={`text-sm ${selected ? 'font-semibold' : ''} text-[#1d1d1f]`}>{label}</p>
+                        {selectedQuote && (
+                          <p className="text-[11px] text-gray-400">
+                            {dict.luggageIncluded.replace('{n}', String(included ?? 0))}
+                          </p>
                         )}
-                      </div>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {luggageCategory && (() => {
+                  const included = LUGGAGE_CATEGORIES.find(([f]) => f === luggageCategory)?.[2]
+                  const max = (included ?? 20) + MAX_LUGGAGE_EXTRA_PER_CATEGORY
+                  const value = passengerData[luggageCategory]
+                  const atMax = value >= max
+                  return (
+                    <div className="flex items-center justify-between border-t border-gray-100 pt-3">
+                      <p className="text-sm text-[#1d1d1f]">
+                        {LUGGAGE_CATEGORIES.find(([f]) => f === luggageCategory)?.[1]}
+                      </p>
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
-                          onClick={() => setPassengerData((p) => ({ ...p, [field]: Math.max(0, p[field] - 1) }))}
+                          onClick={() => setPassengerData((p) => ({ ...p, [luggageCategory]: Math.max(1, p[luggageCategory] - 1) }))}
                           className="w-8 h-8 rounded-full border border-gray-200 text-gray-500 hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors"
                         >
                           −
                         </button>
-                        <span className="w-5 text-center text-sm font-semibold text-[#1d1d1f]">{passengerData[field]}</span>
+                        <span className="w-5 text-center text-sm font-semibold text-[#1d1d1f]">{value}</span>
                         <button
                           type="button"
                           disabled={atMax}
-                          onClick={() => setPassengerData((p) => ({ ...p, [field]: Math.min(max, p[field] + 1) }))}
+                          onClick={() => setPassengerData((p) => ({ ...p, [luggageCategory]: Math.min(max, p[luggageCategory] + 1) }))}
                           className="w-8 h-8 rounded-full border border-gray-200 text-gray-500 hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors disabled:opacity-30 disabled:hover:border-gray-200 disabled:hover:text-gray-500"
                         >
                           +
@@ -1115,7 +1153,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
                       </div>
                     </div>
                   )
-                })}
+                })()}
 
                 {luggageOverageFee > 0 && (
                   <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
