@@ -837,7 +837,17 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl">{CLASS_ICONS[q.vehicleType.class] ?? '🚗'}</span>
+                    {q.vehicleType.imageUrl ? (
+                      <img
+                        src={q.vehicleType.imageUrl}
+                        alt={q.vehicleType.name}
+                        className="w-14 h-14 rounded-xl object-cover shrink-0 bg-gray-100"
+                      />
+                    ) : (
+                      <span className="text-3xl w-14 h-14 flex items-center justify-center shrink-0">
+                        {CLASS_ICONS[q.vehicleType.class] ?? '🚗'}
+                      </span>
+                    )}
                     <div>
                       <p className="font-semibold text-[#1d1d1f]">{q.vehicleType.name}</p>
                       <p className="text-xs text-gray-500">
@@ -880,7 +890,17 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
           {selectedQuote && (
             <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{CLASS_ICONS[selectedQuote.vehicleType.class] ?? '🚗'}</span>
+                {selectedQuote.vehicleType.imageUrl ? (
+                  <img
+                    src={selectedQuote.vehicleType.imageUrl}
+                    alt={selectedQuote.vehicleType.name}
+                    className="w-10 h-10 rounded-lg object-cover shrink-0 bg-gray-100"
+                  />
+                ) : (
+                  <span className="text-2xl w-10 h-10 flex items-center justify-center shrink-0">
+                    {CLASS_ICONS[selectedQuote.vehicleType.class] ?? '🚗'}
+                  </span>
+                )}
                 <p className="font-semibold text-[#1d1d1f] text-sm">{selectedQuote.vehicleType.name}</p>
               </div>
               <p className="font-bold text-lg text-[#1d1d1f]">

@@ -1,7 +1,25 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-07-30. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-07-31. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## ✅ Fix: foto real del vehículo en el paso "Vehículo" del wizard web (2026-07-31)
+
+`apps/web/app/(booking)/book/[slug]/booking-wizard.tsx` mostraba siempre un
+icono por clase de vehículo (`CLASS_ICONS`) en el paso 2 (lista de vehículos)
+y en el resumen del paso 3, **ignorando** `vehicleType.imageUrl` — el campo
+ya llegaba correcto desde `getPublicVehicleQuotesAction` (mapea
+`vehicle_types.base_image_url`), solo faltaba usarlo en el render. Se agregó
+`<img>` con fallback al icono cuando no hay foto, mismo patrón ya usado y
+funcionando en `apps/passenger-mobile/screens/VehicleSelectScreen.tsx`.
+
+Cubre también la PWA instalable (`/book/[slug]` es el `start_url` del
+manifest, mismo componente) — un solo fix arregla web + PWA. La app nativa de
+Android (passenger-mobile) YA mostraba la foto correctamente, no tenía el bug.
+
+Verificado: `tsc --noEmit` limpio, `vitest run` 256/256, `npm run build`
+exitoso, y confirmado en navegador que la URL real de Supabase Storage del
+vehículo carga sin problemas de CORS.
 
 ## ✅ Reportes ampliados + Google Ads conversion tracking (2026-07-30)
 
