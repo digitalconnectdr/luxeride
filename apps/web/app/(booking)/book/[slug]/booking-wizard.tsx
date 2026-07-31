@@ -935,7 +935,10 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
                         <span>👤 {q.vehicleType.capacity}</span>
                         <span aria-hidden>·</span>
                         <span>
-                          🧳 {q.vehicleType.luggageCarryOnCapacity} {dict.luggageCarryOnAbbrev} · {q.vehicleType.luggageCheckedCapacity} {dict.luggageCheckedAbbrev} · {q.vehicleType.luggageExtraLargeCapacity} {dict.luggageExtraLargeAbbrev}
+                          {/* "o"/"or"/"ou" (no "·") — estos 3 números son formas
+                              ALTERNAS de medir la misma capacidad del baúl, nunca
+                              se suman entre sí (igual que el picker de equipaje). */}
+                          🧳 {q.vehicleType.luggageCarryOnCapacity} {dict.luggageCarryOnAbbrev} {dict.luggageOrWord} {q.vehicleType.luggageCheckedCapacity} {dict.luggageCheckedAbbrev} {dict.luggageOrWord} {q.vehicleType.luggageExtraLargeCapacity} {dict.luggageExtraLargeAbbrev}
                         </span>
                         {q.vehicleType.amenities.length > 0 && (
                           <>

@@ -398,6 +398,7 @@ export const es: Dictionary = {
     luggageCarryOnAbbrev: 'mano',
     luggageCheckedAbbrev: 'facturada',
     luggageExtraLargeAbbrev: 'XL',
+    luggageOrWord: 'o',
     luggageOverageWarning: 'Tu equipaje excede la capacidad del vehículo elegido, se agregará un cargo de {amount} por el exceso.',
     flightNumber: 'Número de vuelo',
     meetAndGreet: 'Meet & Greet | el chofer te espera en llegadas con un letrero con tu nombre',

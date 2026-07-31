@@ -397,6 +397,7 @@ export const en = {
     luggageCarryOnAbbrev: 'carry-on',
     luggageCheckedAbbrev: 'checked',
     luggageExtraLargeAbbrev: 'XL',
+    luggageOrWord: 'or',
     luggageOverageWarning: 'Your luggage exceeds the capacity of the selected vehicle, a {amount} overage fee will be added.',
     flightNumber: 'Flight number',
     meetAndGreet: 'Meet & Greet | your chauffeur waits at arrivals with a sign bearing your name',
