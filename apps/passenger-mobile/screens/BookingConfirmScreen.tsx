@@ -170,6 +170,14 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
     Math.max(0, draft.luggageChecked - quote.vehicleType.luggageCheckedCapacity) +
     Math.max(0, draft.luggageExtraLarge - quote.vehicleType.luggageExtraLargeCapacity)
   const luggageOverageFee = luggageOverageQty > 0 ? Math.round(quote.extraLuggageFee * luggageOverageQty * 100) / 100 : 0
+  // "3 × Equipaje de mano, 1 × Maleta facturada" — más legible en el resumen
+  // que el formato crudo "3/1/0", que no dice a qué categoría corresponde
+  // cada número.
+  const luggageSummaryText = [
+    draft.luggageCarryOn > 0    ? `${draft.luggageCarryOn} × Equipaje de mano` : null,
+    draft.luggageChecked > 0    ? `${draft.luggageChecked} × Maleta facturada` : null,
+    draft.luggageExtraLarge > 0 ? `${draft.luggageExtraLarge} × Maleta extragrande` : null,
+  ].filter(Boolean).join(', ')
 
   const cardLaterBlocked = paymentChoice === 'card_later' && !hasSavedCard
 
@@ -243,9 +251,7 @@ export function BookingConfirmScreen({ route, navigation }: Props) {
         {row('Destino', draft.dropoffAddress)}
         {row('Fecha y hora', new Date(draft.scheduledAt).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' }))}
         {row('Pasajeros', `${draft.passengerCount} pasajero${draft.passengerCount === 1 ? '' : 's'}`)}
-        {(draft.luggageCarryOn + draft.luggageChecked + draft.luggageExtraLarge) > 0
-          ? row('Equipaje', `${draft.luggageCarryOn}/${draft.luggageChecked}/${draft.luggageExtraLarge}`)
-          : null}
+        {luggageSummaryText ? row('Equipaje', luggageSummaryText) : null}
         {quote.durationMinutes || quote.distanceMiles
           ? row(
               'Tiempo estimado',

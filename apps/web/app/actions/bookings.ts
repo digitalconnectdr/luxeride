@@ -49,6 +49,13 @@ export interface StopInput {
 
 const MAX_STOPS = 3
 
+// Tope fijo de equipaje "extra" cobrable por categoría más allá de la
+// capacidad incluida del vehículo (ej. vehículo incluye 2 equipajes de mano,
+// se permite declarar hasta 3 — la 3ra se cobra aparte). Si el pasajero
+// necesita más que eso, la solución es elegir un vehículo con más capacidad,
+// no seguir apilando cargos extra sobre uno que no lo soporta físicamente.
+const MAX_LUGGAGE_EXTRA_PER_CATEGORY = 1
+
 function sanitizeStops(stops: StopInput[] | undefined): StopInput[] {
   if (!stops?.length) return []
   return stops
@@ -360,9 +367,9 @@ export async function createBookingAction(
   const passengerPhone = (formData.get('passenger_phone') as string)?.trim()
   const passengerEmail = (formData.get('passenger_email') as string)?.trim()
   const passengerCount = parseInt(formData.get('passenger_count') as string) || 1
-  const luggageCarryOn    = Math.min(20, Math.max(0, parseInt(formData.get('luggage_carry_on') as string) || 0))
-  const luggageChecked    = Math.min(20, Math.max(0, parseInt(formData.get('luggage_checked') as string) || 0))
-  const luggageExtraLarge = Math.min(20, Math.max(0, parseInt(formData.get('luggage_extra_large') as string) || 0))
+  let luggageCarryOn    = Math.min(20, Math.max(0, parseInt(formData.get('luggage_carry_on') as string) || 0))
+  let luggageChecked    = Math.min(20, Math.max(0, parseInt(formData.get('luggage_checked') as string) || 0))
+  let luggageExtraLarge = Math.min(20, Math.max(0, parseInt(formData.get('luggage_extra_large') as string) || 0))
   const specialInstructions = (formData.get('special_instructions') as string)?.trim()
   const internalNotes = (formData.get('internal_notes') as string)?.trim()
   const flightNumber  = (formData.get('flight_number') as string)?.trim()
@@ -407,6 +414,12 @@ export async function createBookingAction(
       .eq('id', quote.vehicle_type_id)
       .single()
     if (vt) {
+      // Tope de exceso — un vehículo que no soporta la cantidad declarada no
+      // se debe forzar a cargarla toda extra; se recorta a capacidad+tope y
+      // el pasajero/staff debe elegir un vehículo más grande para el resto.
+      luggageCarryOn    = Math.min(luggageCarryOn,    vt.luggage_carry_on_capacity    + MAX_LUGGAGE_EXTRA_PER_CATEGORY)
+      luggageChecked    = Math.min(luggageChecked,    vt.luggage_checked_capacity     + MAX_LUGGAGE_EXTRA_PER_CATEGORY)
+      luggageExtraLarge = Math.min(luggageExtraLarge, vt.luggage_extra_large_capacity + MAX_LUGGAGE_EXTRA_PER_CATEGORY)
       luggageOverageQty =
         Math.max(0, luggageCarryOn - vt.luggage_carry_on_capacity) +
         Math.max(0, luggageChecked - vt.luggage_checked_capacity) +
@@ -1289,9 +1302,9 @@ export async function createPublicBookingAction(data: {
     return { success: false, error: 'Email inválido' }
   }
   const passengerCount = Math.min(50, Math.max(1, Math.floor(data.passengerCount) || 1))
-  const luggageCarryOn    = Math.min(20, Math.max(0, Math.floor(data.luggageCarryOn ?? 0) || 0))
-  const luggageChecked    = Math.min(20, Math.max(0, Math.floor(data.luggageChecked ?? 0) || 0))
-  const luggageExtraLarge = Math.min(20, Math.max(0, Math.floor(data.luggageExtraLarge ?? 0) || 0))
+  let luggageCarryOn    = Math.min(20, Math.max(0, Math.floor(data.luggageCarryOn ?? 0) || 0))
+  let luggageChecked    = Math.min(20, Math.max(0, Math.floor(data.luggageChecked ?? 0) || 0))
+  let luggageExtraLarge = Math.min(20, Math.max(0, Math.floor(data.luggageExtraLarge ?? 0) || 0))
 
   // Código promocional — SIEMPRE revalidado server-side (nunca se confía en
   // el descuento que haya mostrado el wizard). Si el código dejó de ser
@@ -1414,6 +1427,12 @@ export async function createPublicBookingAction(data: {
       .eq('id', quote.vehicle_type_id)
       .single()
     if (vt) {
+      // Tope de exceso — un vehículo que no soporta la cantidad declarada no
+      // se debe forzar a cargarla toda extra; se recorta a capacidad+tope y
+      // el pasajero debe elegir un vehículo más grande para el resto.
+      luggageCarryOn    = Math.min(luggageCarryOn,    vt.luggage_carry_on_capacity    + MAX_LUGGAGE_EXTRA_PER_CATEGORY)
+      luggageChecked    = Math.min(luggageChecked,    vt.luggage_checked_capacity     + MAX_LUGGAGE_EXTRA_PER_CATEGORY)
+      luggageExtraLarge = Math.min(luggageExtraLarge, vt.luggage_extra_large_capacity + MAX_LUGGAGE_EXTRA_PER_CATEGORY)
       luggageOverageQty =
         Math.max(0, luggageCarryOn - vt.luggage_carry_on_capacity) +
         Math.max(0, luggageChecked - vt.luggage_checked_capacity) +

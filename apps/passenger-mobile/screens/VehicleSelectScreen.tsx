@@ -22,6 +22,14 @@ const CLASS_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
   luxury: 'diamond-outline',
 }
 
+// Tope fijo de equipaje "extra" cobrable por categoría más allá de la
+// capacidad incluida (debe coincidir con MAX_LUGGAGE_EXTRA_PER_CATEGORY en
+// apps/web/app/actions/bookings.ts, que es quien realmente lo hace cumplir).
+// Aquí, como el equipaje se declara ANTES de elegir vehículo, un vehículo que
+// no alcance ni con el tope se marca como insuficiente en vez de dejar que
+// el pasajero lo elija y se lleve una sorpresa en la confirmación.
+const MAX_LUGGAGE_EXTRA_PER_CATEGORY = 1
+
 export function VehicleSelectScreen({ route, navigation }: Props) {
   const { draft } = route.params
   const styles = useThemedStyles(makeStyles)
@@ -88,10 +96,17 @@ export function VehicleSelectScreen({ route, navigation }: Props) {
       }
       renderItem={({ item }) => {
         const isCheapest = item.vehicleType.id === cheapestId
+        const insufficientCapacity =
+          draft.luggageCarryOn    > item.vehicleType.luggageCarryOnCapacity    + MAX_LUGGAGE_EXTRA_PER_CATEGORY ||
+          draft.luggageChecked    > item.vehicleType.luggageCheckedCapacity    + MAX_LUGGAGE_EXTRA_PER_CATEGORY ||
+          draft.luggageExtraLarge > item.vehicleType.luggageExtraLargeCapacity + MAX_LUGGAGE_EXTRA_PER_CATEGORY
         return (
-          <PressableScale onPress={() => navigation.navigate('BookingConfirm', { draft, quote: item })}>
-            <Card style={[styles.card, isCheapest && styles.cardHighlight]}>
-              {isCheapest && (
+          <PressableScale
+            disabled={insufficientCapacity}
+            onPress={() => navigation.navigate('BookingConfirm', { draft, quote: item })}
+          >
+            <Card style={[styles.card, isCheapest && styles.cardHighlight, insufficientCapacity && styles.cardDisabled]}>
+              {isCheapest && !insufficientCapacity && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>Mejor precio</Text>
                 </View>
@@ -129,6 +144,12 @@ export function VehicleSelectScreen({ route, navigation }: Props) {
                   <MetaChip icon="navigate-outline" label={`${item.distanceMiles.toFixed(1)} mi`} />
                 ) : null}
               </View>
+
+              {insufficientCapacity && (
+                <Text style={styles.insufficientText}>
+                  Capacidad de equipaje insuficiente para lo que declaraste — elige otro vehículo.
+                </Text>
+              )}
             </Card>
           </PressableScale>
         )
@@ -143,6 +164,8 @@ const makeStyles = (c: Palette, shadow: ShadowSet) =>
     list: { padding: space.lg, gap: space.md },
     card: { gap: space.md, padding: space.lg, overflow: 'visible' },
     cardHighlight: { borderColor: c.borderGold, borderWidth: 1.5 },
+    cardDisabled: { opacity: 0.5 },
+    insufficientText: { color: c.danger, fontFamily: font.bodyMedium, fontSize: 11.5, lineHeight: 15 },
     badge: {
       position: 'absolute',
       top: -9,
