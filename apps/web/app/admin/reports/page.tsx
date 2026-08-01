@@ -6,15 +6,12 @@ import { getDict, getLocale } from '@/lib/i18n/server'
 import { computeAccountSla } from '@/lib/corporate/sla'
 import { BookingsTrendChart } from '@/components/admin/dashboard/bookings-trend-chart'
 import { getBookingsTrendAction } from '@/app/actions/dashboard'
+import { addIsoDays, getZonedIsoDate, isoDateStartOfMonth, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 
 export const metadata: Metadata = { title: 'Reportes' }
 export const dynamic = 'force-dynamic'
 
-function parseDate(s: string | undefined, fallback: Date): Date {
-  if (!s) return fallback
-  const d = new Date(s)
-  return Number.isNaN(d.getTime()) ? fallback : d
-}
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 const inputCls =
   'text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 ' +
@@ -37,23 +34,27 @@ export default async function ReportsPage({
   const t = dict.admin.reports
   const typeLabels = dict.admin.bookingDetail.types as Record<string, string>
 
-  // Rango: por defecto el mes actual
-  const monthStart = new Date()
-  monthStart.setDate(1)
-  monthStart.setHours(0, 0, 0, 0)
-  const from = parseDate(searchParams.from, monthStart)
-  const toRaw = parseDate(searchParams.to, new Date())
-  // Incluir el día "to" completo
-  const to = new Date(toRaw)
-  to.setHours(23, 59, 59, 999)
-
   const admin = createAdminClient()
+  const { data: companyRow } = await admin.from('companies').select('timezone').eq('id', user.company_id).single()
+  const timezone = companyRow?.timezone
+
+  // Rango: por defecto el mes actual — límites en la zona horaria de la
+  // EMPRESA, no en UTC del servidor (mismo criterio que el dashboard: ver
+  // lib/time/zoned-bounds.ts). `to` se guarda como el INICIO del día
+  // siguiente (límite exclusivo) para cubrir el día completo sin adivinar
+  // "23:59:59.999" en la zona equivocada.
+  const todayIso = getZonedIsoDate(new Date(), timezone)
+  const fromIso = searchParams.from && ISO_DATE_RE.test(searchParams.from) ? searchParams.from : isoDateStartOfMonth(todayIso)
+  const toIso = searchParams.to && ISO_DATE_RE.test(searchParams.to) ? searchParams.to : todayIso
+  const from = zonedMidnightUtc(fromIso, timezone)
+  const to = zonedMidnightUtc(addIsoDays(toIso, 1), timezone)
+
   const { data: bookings } = await admin
     .from('bookings')
     .select('id, booking_number, status, scheduled_at, arrived_at, completed_at, total_amount, currency, driver_id, type, created_at, corporate_account_id, partner_id')
     .eq('company_id', user.company_id)
     .gte('scheduled_at', from.toISOString())
-    .lte('scheduled_at', to.toISOString())
+    .lt('scheduled_at', to.toISOString())
     .order('scheduled_at')
 
   const all = bookings ?? []
@@ -124,14 +125,14 @@ export default async function ReportsPage({
 
   // ── Comparación vs. período anterior (mismo largo de rango) ─────────────
   const rangeMs = to.getTime() - from.getTime()
-  const prevTo = new Date(from.getTime() - 1)
-  const prevFrom = new Date(prevTo.getTime() - rangeMs)
+  const prevTo = from
+  const prevFrom = new Date(from.getTime() - rangeMs)
   const { data: prevBookings } = await admin
     .from('bookings')
     .select('total_amount, status')
     .eq('company_id', user.company_id)
     .gte('scheduled_at', prevFrom.toISOString())
-    .lte('scheduled_at', prevTo.toISOString())
+    .lt('scheduled_at', prevTo.toISOString())
   const prevRevenue = (prevBookings ?? [])
     .filter((b) => b.status === 'completed')
     .reduce((s, b) => s + Number(b.total_amount ?? 0), 0)
@@ -180,8 +181,7 @@ export default async function ReportsPage({
     }
   }
 
-  const fmtDate = (d: Date) => d.toISOString().slice(0, 10)
-  const csvUrl = `/api/reports/bookings?from=${fmtDate(from)}&to=${fmtDate(to)}`
+  const csvUrl = `/api/reports/bookings?from=${fromIso}&to=${toIso}`
 
   const STATUS_LABELS: Record<string, string> = {
     quote: 'Cotización', pending: 'Pendiente', assigned: 'Asignado', en_route: 'En ruta',
@@ -196,7 +196,7 @@ export default async function ReportsPage({
           <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">Reportes</h1>
           <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
           <p className="text-sm text-sl-on-surface-muted">
-            Ingresos y operación del {from.toLocaleDateString('es-DO')} al {to.toLocaleDateString('es-DO')}.
+            Ingresos y operación del {new Date(`${fromIso}T00:00:00`).toLocaleDateString('es-DO')} al {new Date(`${toIso}T00:00:00`).toLocaleDateString('es-DO')}.
           </p>
         </div>
         <div className="flex items-center gap-2.5">
@@ -219,11 +219,11 @@ export default async function ReportsPage({
       <form method="get" className="flex items-end gap-3 bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-4">
         <div>
           <label className="block text-xs text-sl-on-surface-muted mb-1">Desde</label>
-          <input type="date" name="from" defaultValue={fmtDate(from)} className={inputCls} />
+          <input type="date" name="from" defaultValue={fromIso} className={inputCls} />
         </div>
         <div>
           <label className="block text-xs text-sl-on-surface-muted mb-1">Hasta</label>
-          <input type="date" name="to" defaultValue={fmtDate(to)} className={inputCls} />
+          <input type="date" name="to" defaultValue={toIso} className={inputCls} />
         </div>
         <button
           type="submit"

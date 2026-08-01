@@ -6,21 +6,16 @@ import { AddonUpsellCard } from '@/components/admin/addon-upsell-card'
 import { DriverPayrollSettingsForm } from '@/components/admin/payroll/driver-payroll-settings-form'
 import { MarkPayrollPaidButton } from '@/components/admin/payroll/mark-payroll-paid-button'
 import { computeDriverEarnings, type PayrollType } from '@/lib/payroll/engine'
+import { addIsoDays, getZonedIsoDate, isoDateStartOfMonth, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 
-function firstDayOfMonth(): string {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
-}
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10)
-}
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 export default async function PayrollPage({ searchParams }: { searchParams: { from?: string; to?: string } }) {
   const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return <p className="p-8 text-sl-on-surface-muted">Sin empresa asignada.</p>
 
   const admin = createAdminClient()
-  const { data: company } = await admin.from('companies').select('plan, email').eq('id', user.company_id).single()
+  const { data: company } = await admin.from('companies').select('plan, email, timezone').eq('id', user.company_id).single()
   if (!company) return <p className="p-8 text-sl-on-surface-muted">Empresa no encontrada.</p>
 
   const { data: addon } = await admin
@@ -49,8 +44,14 @@ export default async function PayrollPage({ searchParams }: { searchParams: { fr
     )
   }
 
-  const periodStart = searchParams.from || firstDayOfMonth()
-  const periodEnd = searchParams.to || todayStr()
+  // Límites en la zona horaria de la EMPRESA, no en UTC del servidor — esto
+  // afecta cuánto se le paga a un conductor, así que el desalineamiento
+  // importa más aquí que en cualquier otro reporte (ver lib/time/zoned-bounds.ts).
+  const todayIso = getZonedIsoDate(new Date(), company.timezone)
+  const periodStart = searchParams.from && ISO_DATE_RE.test(searchParams.from) ? searchParams.from : isoDateStartOfMonth(todayIso)
+  const periodEnd = searchParams.to && ISO_DATE_RE.test(searchParams.to) ? searchParams.to : todayIso
+  const periodStartInstant = zonedMidnightUtc(periodStart, company.timezone)
+  const periodEndExclusive = zonedMidnightUtc(addIsoDays(periodEnd, 1), company.timezone)
 
   const [{ data: profiles }, { data: driverRows }, { data: alreadyPaid }] = await Promise.all([
     admin
@@ -79,8 +80,8 @@ export default async function PayrollPage({ searchParams }: { searchParams: { fr
         .eq('company_id', user.company_id)
         .eq('status', 'completed')
         .in('driver_id', driverIds)
-        .gte('completed_at', periodStart)
-        .lte('completed_at', `${periodEnd}T23:59:59`)
+        .gte('completed_at', periodStartInstant.toISOString())
+        .lt('completed_at', periodEndExclusive.toISOString())
     : { data: [] as { driver_id: string | null; total_amount: number | null }[] }
 
   const tripsByDriver = new Map<string, { totalAmount: number }[]>()

@@ -3,6 +3,44 @@
 > Actualizado: 2026-08-01. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fix: auditoría de Reportes, Nómina, Corporativo y Cumplimiento (2026-08-01)
+
+Corporativo: código limpio, muy bien blindado contra IDOR (revisado a fondo,
+sin cambios). El resto de esta ronda fue, otra vez, el mismo patrón de zona
+horaria UTC-vs-empresa que ya venía apareciendo — pero esta vez en 3 lugares
+con consecuencias reales (dinero y bloqueo operativo, no solo un filtro):
+
+1. **`/admin/reports`** — el rango "este mes" y el filtro Desde/Hasta se
+   calculaban en UTC del servidor. Además el CSV export
+   (`/api/reports/bookings`) tenía el mismo bug de forma independiente.
+   Ambos ahora usan `zonedMidnightUtc`/`addIsoDays` con límite superior
+   exclusivo.
+2. **`/admin/payroll` — el más grave**: el período de nómina que se le
+   muestra al operador para calcular ganancias usaba un límite mal armado
+   (`completed_at <= 'YYYY-MM-DD'`, sin hora, tratado como medianoche) que
+   directamente EXCLUÍA cualquier viaje completado después de medianoche del
+   último día del período. Peor: `markPayrollPeriodPaidAction` (el botón
+   "Marcar pagado", que congela el monto) usaba ESE MISMO cálculo roto de
+   forma independiente al de la página — un viaje que sí aparecía en pantalla
+   podía quedar fuera del monto congelado, o viceversa. Ambos ahora comparten
+   el mismo cálculo timezone-aware.
+3. **Cumplimiento — el de mayor consecuencia operativa**: `isPast()` en
+   `lib/compliance/engine.ts` (vencimiento de licencia, permiso, seguro,
+   inspección) interpretaba una fecha `DATE` como medianoche UTC. Para una
+   empresa en Santo Domingo (UTC-4), un conductor o vehículo con un
+   documento "vence el 15" quedaba BLOQUEADO operativamente (no podía
+   recibir viajes) desde las 8pm del día 14 — 4 horas antes de lo que
+   realmente marca el documento, y por el resto de ese día completo. Fix:
+   `isPast` distingue columnas `DATE` (limite exclusivo del día siguiente,
+   zona de la empresa) de la única columna `TIMESTAMPTZ` heredada
+   (`vehicles.insurance_expires_at`, que ya es un instante sin ambigüedad).
+   `lib/compliance/recompute.ts` ahora pasa `companies.timezone` a las 3
+   funciones puras. 2 tests nuevos fijan el comportamiento de frontera.
+
+Ver también `luxeride-messages-promo-timezone-2026-08-01.md` y
+`luxeride-pricing-tab-audit-2026-08-01.md` en la memoria — mismo patrón,
+encontrado por tercera vez esta sesión en tabs distintas.
+
 ## ✅ Fix: auditoría de Cotizaciones, Mensajes, Reportes de conductor y Códigos promocionales (2026-08-01)
 
 Cotizaciones y Reportes de conductor: código limpio, sin cambios.

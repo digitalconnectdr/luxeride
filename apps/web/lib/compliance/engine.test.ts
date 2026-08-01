@@ -48,6 +48,21 @@ describe('computeDriverCompliance', () => {
     expect(r.status).toBe('non_compliant')
   })
 
+  it('licencia que vence HOY sigue vigente en zona horaria negativa aunque ya sea después de medianoche UTC', () => {
+    // 2026-07-09 01:00 UTC = 2026-07-08 21:00 en Santo Domingo (UTC-4) — para
+    // la empresa todavía es "8 de julio", así que una licencia que vence el
+    // 8 de julio sigue vigente todo ese día local.
+    const now = new Date('2026-07-09T01:00:00Z')
+    const r = computeDriverCompliance({ ...complete, licenseExpiry: '2026-07-08' }, now, 'America/Santo_Domingo')
+    expect(r.blocked).toBe(false)
+  })
+
+  it('la misma fecha sin zona horaria (fallback UTC) sí queda vencida', () => {
+    const now = new Date('2026-07-09T01:00:00Z')
+    const r = computeDriverCompliance({ ...complete, licenseExpiry: '2026-07-08' }, now, null)
+    expect(r.blocked).toBe(true)
+  })
+
   it('permiso chauffeur vencido bloquea', () => {
     const r = computeDriverCompliance({ ...complete, chauffeurPermitExpiresAt: daysFromNow(-5) }, NOW)
     expect(r.blocked).toBe(true)

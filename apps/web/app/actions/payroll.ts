@@ -9,12 +9,15 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
 import { isAddonActive } from '@/lib/billing/addons'
 import { computeDriverEarnings, type PayrollType } from '@/lib/payroll/engine'
+import { addIsoDays, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 
 type ActionResult<T = undefined> = { success: boolean; error?: string; data?: T }
 
-async function requirePayrollAddonActive(companyId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+async function requirePayrollAddonActive(
+  companyId: string,
+): Promise<{ ok: true; timezone: string | null } | { ok: false; error: string }> {
   const admin = createAdminClient()
-  const { data: company } = await admin.from('companies').select('plan').eq('id', companyId).single()
+  const { data: company } = await admin.from('companies').select('plan, timezone').eq('id', companyId).single()
   if (!company) return { ok: false, error: 'Empresa no encontrada' }
 
   const { data: addon } = await admin
@@ -27,7 +30,7 @@ async function requirePayrollAddonActive(companyId: string): Promise<{ ok: true 
   if (!isAddonActive(company.plan, addon?.enabled ?? false)) {
     return { ok: false, error: 'El add-on de nómina de conductores no está activo para tu empresa' }
   }
-  return { ok: true }
+  return { ok: true, timezone: company.timezone }
 }
 
 export async function updateDriverPayrollSettingsAction(
@@ -87,14 +90,21 @@ export async function markPayrollPeriodPaidAction(opts: {
     return { success: false, error: 'Este conductor no tiene un modelo de pago configurado' }
   }
 
+  // Mismos límites de fecha (zona horaria de la empresa, día de fin incluido
+  // por completo) que usa /admin/payroll para mostrar las ganancias — si no
+  // coinciden, "Marcar pagado" congelaría un monto distinto al que el
+  // operador vio en pantalla justo antes de confirmar.
+  const periodStartInstant = zonedMidnightUtc(opts.periodStart, gate.timezone)
+  const periodEndExclusive = zonedMidnightUtc(addIsoDays(opts.periodEnd, 1), gate.timezone)
+
   const { data: trips } = await admin
     .from('bookings')
     .select('total_amount')
     .eq('company_id', user.company_id)
     .eq('driver_id', opts.driverId)
     .eq('status', 'completed')
-    .gte('completed_at', opts.periodStart)
-    .lte('completed_at', opts.periodEnd)
+    .gte('completed_at', periodStartInstant.toISOString())
+    .lt('completed_at', periodEndExclusive.toISOString())
 
   const tripRows = (trips ?? []).map((t) => ({ totalAmount: Number(t.total_amount ?? 0) }))
   const totalAmount = computeDriverEarnings(tripRows, driver.payroll_type as PayrollType, Number(driver.payroll_rate))

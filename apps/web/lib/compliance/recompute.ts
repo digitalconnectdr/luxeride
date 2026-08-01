@@ -27,6 +27,8 @@ export async function recomputeDriverCompliance(admin: Admin, driverId: string):
     .single()
   if (!driver) return
 
+  const { data: companyTz } = await admin.from('companies').select('timezone').eq('id', driver.company_id).single()
+
   const compliance = (driver.compliance as { chauffeur_permit_number?: string; chauffeur_permit_jurisdiction?: string } | null) ?? {}
   const result = computeDriverCompliance({
     licenseNumber: driver.license_number,
@@ -36,7 +38,7 @@ export async function recomputeDriverCompliance(admin: Admin, driverId: string):
     chauffeurPermitJurisdiction: compliance.chauffeur_permit_jurisdiction ?? null,
     chauffeurPermitExpiresAt: driver.chauffeur_permit_expires_at,
     manualReviewRequired: driver.compliance_last_reviewed_at === null,
-  })
+  }, new Date(), companyTz?.timezone)
 
   await admin
     .from('drivers')
@@ -59,6 +61,8 @@ export async function recomputeVehicleCompliance(admin: Admin, vehicleId: string
     .single()
   if (!vehicle) return
 
+  const { data: companyTz } = await admin.from('companies').select('timezone').eq('id', vehicle.company_id).single()
+
   const compliance = (vehicle.compliance as { forhire_permit_number?: string; forhire_permit_jurisdiction?: string; inspection_status?: 'passed' | 'failed' } | null) ?? {}
   const result = computeVehicleCompliance({
     insuranceExpiresAt: vehicle.insurance_expires_at,
@@ -68,7 +72,7 @@ export async function recomputeVehicleCompliance(admin: Admin, vehicleId: string
     inspectionDate: vehicle.inspection_date,
     inspectionStatus: compliance.inspection_status ?? null,
     manualReviewRequired: vehicle.compliance_last_reviewed_at === null,
-  })
+  }, new Date(), companyTz?.timezone)
 
   await admin
     .from('vehicles')
@@ -87,7 +91,7 @@ export async function recomputeCompanyCompliance(admin: Admin, companyId: string
   const [{ data: company }, { data: drivers }, { data: vehicles }] = await Promise.all([
     admin
       .from('companies')
-      .select('compliance, operating_license_expires_at, commercial_insurance_expires_at, compliance_last_reviewed_at')
+      .select('compliance, operating_license_expires_at, commercial_insurance_expires_at, compliance_last_reviewed_at, timezone')
       .eq('id', companyId)
       .single(),
     admin.from('drivers').select('operational_block').eq('company_id', companyId),
@@ -119,7 +123,7 @@ export async function recomputeCompanyCompliance(admin: Admin, companyId: string
     commercialInsuranceExpiresAt: company.commercial_insurance_expires_at,
     fleetBlockedPct,
     manualReviewRequired: company.compliance_last_reviewed_at === null,
-  })
+  }, new Date(), company.timezone)
 
   await admin
     .from('companies')
