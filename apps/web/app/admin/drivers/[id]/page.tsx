@@ -157,9 +157,9 @@ export default async function DriverDetailPage({ params }: PageProps) {
             photoUrl={dr?.photo_url ?? null}
             initials={`${profile.first_name?.[0] ?? ''}${profile.last_name?.[0] ?? ''}`}
             labels={{
-              change: 'Cambiar foto',
-              remove: 'Quitar foto',
-              hint: 'Agrega una foto — el pasajero la ve al seguir su viaje.',
+              change: t.photoChange,
+              remove: t.photoRemove,
+              hint: t.photoHint,
             }}
           />
           <div>

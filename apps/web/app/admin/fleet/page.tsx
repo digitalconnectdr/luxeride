@@ -130,9 +130,9 @@ export default async function FleetPage({ searchParams }: PageProps) {
         <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
           {allVehicles.length === 0 ? (
             <div className="px-6 py-16 text-center space-y-3">
-              <p className="text-sm text-sl-on-surface-muted">No hay vehículos registrados.</p>
+              <p className="text-sm text-sl-on-surface-muted">{t.noVehicles}</p>
               <Link href="/admin/fleet/new" className="text-xs text-bronze hover:text-bronze/80 transition-colors">
-                Agregar primer vehículo →
+                {t.addFirstVehicle}
               </Link>
             </div>
           ) : (
@@ -140,7 +140,7 @@ export default async function FleetPage({ searchParams }: PageProps) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gold/20">
-                  {['Vehículo', 'Tipo', 'Estado', 'Conductor', ''].map((h) => (
+                  {[t.columns.vehicle, t.columns.type, t.columns.status, t.columns.driver, ''].map((h) => (
                     <th key={h} className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
                       {h}
                     </th>
@@ -204,7 +204,7 @@ export default async function FleetPage({ searchParams }: PageProps) {
                           href={`/admin/fleet/${v.id}`}
                           className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-bronze border border-bronze/30 rounded-lg hover:bg-bronze/5 hover:border-bronze transition-colors"
                         >
-                          Detalles →
+                          {t.viewDetails}
                         </Link>
                       </td>
                     </tr>
@@ -222,7 +222,7 @@ export default async function FleetPage({ searchParams }: PageProps) {
         <div className="space-y-4">
           {allTypes.length === 0 && (
             <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm px-6 py-12 text-center text-sm text-sl-on-surface-muted">
-              Aún no hay tipos de vehículo. Agrega uno a continuación.
+              {t.noTypes}
             </div>
           )}
 
@@ -232,7 +232,7 @@ export default async function FleetPage({ searchParams }: PageProps) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gold/20">
-                    {['Tipo', 'Clase', 'Capacidad', 'Amenidades', 'Estado'].map((h) => (
+                    {[t.columns.type, t.columns.class, t.columns.capacity, t.columns.amenities, t.columns.status].map((h) => (
                       <th key={h} className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
                         {h}
                       </th>

@@ -3,15 +3,23 @@ import Link from 'next/link'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { DriverAvailabilityToggle } from '@/components/admin/fleet-controls'
-import { getDict } from '@/lib/i18n/server'
+import { getDict, getLocale } from '@/lib/i18n/server'
 
-export const metadata: Metadata = { title: 'Conductores' }
+const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-MX', pt: 'pt-BR' }
+
+export function generateMetadata(): Metadata {
+  return { title: getDict().admin.driversList.title }
+}
 
 export default async function DriversPage() {
   const user = await requireRole('company_owner', 'company_admin', 'dispatcher', 'accounting')
   const companyId = user.company_id!
   const admin = createAdminClient()
-  const tf = getDict().admin.fleet
+  const dict = getDict().admin
+  const t = dict.driversList
+  const tf = dict.fleet
+  const dd = dict.driverDetail
+  const localeTag = LOCALE_TAGS[getLocale()] ?? 'en-US'
 
   // ── Queries separadas con manejo individual de errores ─────────────────────
   // Usamos bloques try/catch independientes en lugar de Promise.all para:
@@ -116,12 +124,12 @@ export default async function DriversPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">Conductores</h1>
+          <h1 className="font-playfair text-4xl font-semibold text-sl-on-surface tracking-tight">{t.title}</h1>
           <div className="w-10 h-[3px] bg-gold mt-2 mb-2.5 rounded-full" />
           <p className="text-sm text-sl-on-surface-muted">
-            {allProfiles.length} conductor{allProfiles.length !== 1 ? 'es' : ''}
+            {(allProfiles.length === 1 ? t.countOne : t.countMany).replace('{n}', String(allProfiles.length))}
             {' · '}
-            {(driversData ?? []).filter((d) => d.is_available).length} disponibles
+            {(driversData ?? []).filter((d) => d.is_available).length} {t.available}
           </p>
         </div>
         {/* Invitar conductor — disponible en F1.6 (Auth flows) */}
@@ -131,7 +139,7 @@ export default async function DriversPage() {
       <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
         {allProfiles.length === 0 ? (
           <div className="px-6 py-16 text-center space-y-2">
-            <p className="text-sm text-sl-on-surface-muted">No hay conductores registrados.</p>
+            <p className="text-sm text-sl-on-surface-muted">{t.noDrivers}</p>
             {/* Invitación disponible en F1.6 */}
           </div>
         ) : (
@@ -139,7 +147,7 @@ export default async function DriversPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gold/20">
-                {['Conductor', 'Licencia', 'Vehículo asignado', 'Viajes', 'Rating', 'Disponibilidad', ''].map((h) => (
+                {[t.columns.driver, t.columns.license, t.columns.vehicle, t.columns.trips, t.columns.rating, t.columns.availability, ''].map((h) => (
                   <th key={h} className="text-left px-6 py-4 text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
                     {h}
                   </th>
@@ -195,13 +203,13 @@ export default async function DriversPage() {
                           </p>
                           {licenseExpiry && (
                             <p className={`text-[10px] mt-0.5 ${licenseExpired ? 'text-red-400' : licenseExpiring ? 'text-amber-400' : 'text-sl-on-surface-muted'}`}>
-                              {licenseExpired ? '⚠ Vencida' : licenseExpiring ? '⚠ Vence pronto' : ''}
-                              {' '}{licenseExpiry.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              {licenseExpired ? dd.licenseExpired : licenseExpiring ? dd.licenseExpiring : ''}
+                              {' '}{licenseExpiry.toLocaleDateString(localeTag, { day: '2-digit', month: 'short', year: 'numeric' })}
                             </p>
                           )}
                         </div>
                       ) : (
-                        <span className="text-xs text-sl-on-surface-muted">Sin registro</span>
+                        <span className="text-xs text-sl-on-surface-muted">{t.noLicenseRecord}</span>
                       )}
                     </td>
 
@@ -210,7 +218,7 @@ export default async function DriversPage() {
                     <td className="px-6 py-4">
                       {(() => {
                         const v = dr?.current_vehicle_id ? vehicleById[dr.current_vehicle_id] : null
-                        if (!v) return <span className="text-xs text-sl-on-surface-muted">Sin asignar</span>
+                        if (!v) return <span className="text-xs text-sl-on-surface-muted">{t.noVehicleAssigned}</span>
                         return (
                           <div>
                             <p className="text-xs text-sl-on-surface">{(v.vehicle_type_id && vehicleTypeNameById[v.vehicle_type_id]) ?? '—'}</p>
@@ -249,7 +257,7 @@ export default async function DriversPage() {
                         />
                       ) : (
                         <span className={`text-xs ${dr?.is_available ? 'text-green-400' : 'text-sl-on-surface-muted'}`}>
-                          {dr?.is_available ? 'Disponible' : 'No disponible'}
+                          {dr?.is_available ? t.isAvailable : t.isUnavailable}
                         </span>
                       )}
                     </td>
@@ -260,7 +268,7 @@ export default async function DriversPage() {
                         href={`/admin/drivers/${p.id}`}
                         className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-bronze border border-bronze/30 rounded-lg hover:bg-bronze/5 hover:border-bronze transition-colors"
                       >
-                        Perfil →
+                        {t.viewProfile}
                       </Link>
                     </td>
                   </tr>

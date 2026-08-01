@@ -514,6 +514,18 @@ export async function assignDriverToVehicle(
       .eq('id', vehicle.current_driver_id)
   }
 
+  // Si el conductor que se asigna ya manejaba OTRO vehículo, hay que soltarlo
+  // ahí también — si no, ese otro vehículo se queda mostrando "Conductor: X"
+  // en la Flota aunque X ya esté asignado a este vehículo (un conductor no
+  // puede figurar como el chofer actual de dos vehículos a la vez).
+  if (driverId) {
+    await admin
+      .from('vehicles')
+      .update({ current_driver_id: null })
+      .eq('current_driver_id', driverId)
+      .neq('id', vehicleId)
+  }
+
   // Update vehicle
   await admin
     .from('vehicles')
