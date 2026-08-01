@@ -14,7 +14,8 @@ export async function gatherOnboardingCounts(
     { count: vehiclesCount },
     { count: serviceZonesCount },
     { count: pricingRulesCount },
-    { count: teamOrDriversCount },
+    { count: driversCount },
+    { count: staffCount },
     { count: companyServicesCount },
     { data: company },
   ] = await Promise.all([
@@ -23,6 +24,17 @@ export async function gatherOnboardingCounts(
     admin.from('service_zones').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
     admin.from('pricing_rules').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
     admin.from('drivers').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+    // El item "Agrega un miembro de equipo o conductor" se cumple con
+    // CUALQUIERA de las dos cosas — un miembro de equipo agregado en
+    // /admin/team (company_admin/dispatcher/accounting) vive en
+    // user_profiles, no en `drivers`, así que contarlo aparte evita que el
+    // checklist quede marcado incompleto cuando el operador sí agregó
+    // personal pero aún no un conductor.
+    admin
+      .from('user_profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', companyId)
+      .in('role', ['company_admin', 'dispatcher', 'accounting']),
     admin.from('company_services').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
     admin
       .from('companies')
@@ -40,7 +52,7 @@ export async function gatherOnboardingCounts(
     // stripe_connect_onboarded solo puede ser true con una key real de
     // Stripe configurada, que hoy es un placeholder no funcional.
     paymentProviderConnected: Boolean(company?.whop_connect_onboarded),
-    teamOrDriversCount: teamOrDriversCount ?? 0,
+    teamOrDriversCount: (driversCount ?? 0) + (staffCount ?? 0),
     hasLogo: Boolean(company?.logo_url),
     hasBrandColor: Boolean(company?.primary_color),
     companyServicesCount: companyServicesCount ?? 0,

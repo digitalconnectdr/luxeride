@@ -21,6 +21,7 @@ import { gatherOnboardingCounts } from '@/lib/onboarding/gather'
 import { computeOnboardingChecklist, getOnboardingProgress, type OnboardingItem } from '@/lib/onboarding/checklist'
 import { BookingsTrendChart } from '@/components/admin/dashboard/bookings-trend-chart'
 import type { TrendPoint } from '@/app/actions/dashboard'
+import { addIsoDays, getZonedIsoDate, getZonedWeekday, isoDateStartOfMonth, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 
 export const metadata: Metadata = { title: `Dashboard | ${brand.name}` }
 
@@ -54,15 +55,27 @@ export default async function AdminDashboardPage() {
 
   if (companyId) {
     const admin = createAdminClient()
-    const todayStart = new Date()
-    todayStart.setHours(0, 0, 0, 0)
-    const monthStart = new Date()
-    monthStart.setDate(1)
-    monthStart.setHours(0, 0, 0, 0)
-    const next24h = new Date(Date.now() + 24 * 3_600_000)
-    // Semana actual con inicio en DOMINGO (getDay(): 0=Dom … 6=Sáb)
-    const weekStart = new Date(todayStart)
-    weekStart.setDate(todayStart.getDate() - todayStart.getDay())
+    const now = new Date()
+
+    // Los límites de "hoy"/"esta semana"/"este mes" deben calcularse en la
+    // zona horaria DE LA EMPRESA (companies.timezone), no en la del servidor
+    // (Vercel corre en UTC) — de lo contrario una reserva de las 9pm en Santo
+    // Domingo (UTC-4) ya cuenta como "de mañana" y desplaza el corte del
+    // gráfico semanal. Mismo criterio que ya usa el motor de precios
+    // (lib/pricing/engine.ts, getLocalTimeParts) para recargos nocturnos.
+    const { data: companyTzRow } = await admin
+      .from('companies')
+      .select('timezone')
+      .eq('id', companyId)
+      .single()
+    const companyTimezone = companyTzRow?.timezone ?? null
+
+    const todayIso = getZonedIsoDate(now, companyTimezone)
+    const todayStart = zonedMidnightUtc(todayIso, companyTimezone)
+    const monthStart = zonedMidnightUtc(isoDateStartOfMonth(todayIso), companyTimezone)
+    const next24h = new Date(now.getTime() + 24 * 3_600_000)
+    // Semana actual con inicio en DOMINGO (0=Dom … 6=Sáb), en hora local.
+    const weekStart = zonedMidnightUtc(addIsoDays(todayIso, -getZonedWeekday(now, companyTimezone)), companyTimezone)
 
     const activeStatuses = ['pending', 'assigned', 'en_route', 'arrived', 'in_progress'] as const
 
@@ -115,7 +128,7 @@ export default async function AdminDashboardPage() {
         .select('id, booking_number, status, passenger_name, scheduled_at')
         .eq('company_id', companyId)
         .in('status', ['pending', 'assigned', 'en_route', 'arrived'])
-        .gte('scheduled_at', new Date().toISOString())
+        .gte('scheduled_at', now.toISOString())
         .lte('scheduled_at', next24h.toISOString())
         .order('scheduled_at')
         .limit(6),

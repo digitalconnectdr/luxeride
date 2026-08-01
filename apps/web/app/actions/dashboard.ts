@@ -9,6 +9,7 @@ import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { LOCALE_BCP47 } from '@/lib/i18n/config'
+import { addIsoDays, getZonedIsoDate, getZonedWeekday, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 
 export type TrendRange = 'this_week' | 'last_week' | 'last_30' | 'last_90'
 
@@ -28,24 +29,32 @@ export async function getBookingsTrendAction(range: TrendRange): Promise<ActionR
   const dayLabels = getDict(locale).adminDashboard.dayLabels
   const localeTag = LOCALE_BCP47[locale]
 
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
+  // Límites en la zona horaria DE LA EMPRESA, no la del servidor — mismo
+  // criterio que app/admin/dashboard/page.tsx (ver comentario ahí).
+  const { data: companyTzRow } = await admin
+    .from('companies')
+    .select('timezone')
+    .eq('id', user.company_id)
+    .single()
+  const companyTimezone = companyTzRow?.timezone ?? null
+
+  const now = new Date()
+  const todayIso = getZonedIsoDate(now, companyTimezone)
+  const todayStart = zonedMidnightUtc(todayIso, companyTimezone)
 
   let rangeStart: Date
   let bucketDays: number
   const isWeekly = range === 'this_week' || range === 'last_week'
 
   if (isWeekly) {
-    // Semana con inicio en DOMINGO (getDay(): 0=Dom … 6=Sáb), mismo criterio
-    // que el resto del panel (facturación, reportes).
-    const weekStart = new Date(todayStart)
-    weekStart.setDate(todayStart.getDate() - todayStart.getDay())
-    if (range === 'last_week') weekStart.setDate(weekStart.getDate() - 7)
-    rangeStart = weekStart
+    // Semana con inicio en DOMINGO (0=Dom … 6=Sáb), en hora local.
+    let weekStartIso = addIsoDays(todayIso, -getZonedWeekday(now, companyTimezone))
+    if (range === 'last_week') weekStartIso = addIsoDays(weekStartIso, -7)
+    rangeStart = zonedMidnightUtc(weekStartIso, companyTimezone)
     bucketDays = 7
   } else {
     bucketDays = range === 'last_30' ? 30 : 90
-    rangeStart = new Date(todayStart.getTime() - (bucketDays - 1) * 86_400_000)
+    rangeStart = zonedMidnightUtc(addIsoDays(todayIso, -(bucketDays - 1)), companyTimezone)
   }
   const rangeEnd = new Date(rangeStart.getTime() + bucketDays * 86_400_000)
 
