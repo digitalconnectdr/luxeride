@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import QRCode from 'qrcode'
 import { createAdminClient } from '@/lib/supabase/server'
+import { isStripeConfigured } from '@/lib/stripe/server'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { resolveLocalizedField, type SiteI18n, type ServiceI18n } from '@/lib/i18n/site-content'
 import { getAppUrl } from '@/lib/app-url'
@@ -26,8 +27,10 @@ import { MicrositePending } from '@/components/booking/microsite-pending'
 import { BookingWizard } from './booking-wizard'
 
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
-const U = (slug: string) => `https://unsplash.com/photos/${slug}/download?force=true&w=1600`
-const DEFAULT_HERO = U('9XVJ-Jq7Ke8')
+// Auto-hospedada (antes apuntaba al endpoint de DESCARGA de Unsplash —
+// unsplash.com/photos/.../download?force=true — un redirect de terceros fuera
+// de nuestro control que puede devolver 502; ver auditoría 2026-08-01).
+const DEFAULT_HERO = '/microsite/default-hero.jpg'
 
 // Glifo de WhatsApp (para los enlaces "contáctanos por WhatsApp" del micrositio).
 function WhatsAppIcon({ size = 16, className }: { size?: number; className?: string }) {
@@ -92,7 +95,7 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
 
   const { data: company } = await admin
     .from('companies')
-    .select('id, name, slug, status, currency, primary_color, phone, email, city, logo_url, tagline, hero_image_url, about, stripe_connect_onboarded, whop_connect_onboarded, settings, google_place_id, compliance_score')
+    .select('id, name, slug, status, currency, primary_color, phone, email, city, logo_url, tagline, hero_image_url, about, stripe_connect_onboarded, active_payment_provider, whop_connect_company_id, whop_connect_onboarded, settings, google_place_id, compliance_score')
     .eq('slug', params.slug)
     .single()
   if (!company) return notFound()
@@ -132,10 +135,19 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
     description: resolveLocalizedField(s.i18n, locale, 'description', s.description),
   }))
   const fleet = vehicleTypes ?? []
-  // Tarjeta online solo si la empresa completó el onboarding de Whop Connect
-  // (Stripe Connect queda fuera de foco por ahora — ver STRIPE_CONNECT_ENABLED
-  // en admin/settings). Efectivo/Zelle/transferencia siempre están disponibles.
-  const acceptsCardOnline = Boolean((company as { whop_connect_onboarded?: boolean }).whop_connect_onboarded)
+  // Mismo criterio que /reservar (onlinePaymentsEnabled): Stripe Connect O Whop
+  // Connect onboardeados habilitan el pago con tarjeta en el wizard, así que la
+  // cinta de métodos de pago del micrositio debe reflejar eso, no solo Whop —
+  // si no, una empresa con solo Stripe Connect nunca mostraba el badge de
+  // tarjeta aunque sí pudiera cobrarla. Efectivo/Zelle/transferencia siempre
+  // están disponibles.
+  const acceptsCardOnline =
+    (isStripeConfigured() && Boolean(company.stripe_connect_onboarded)) ||
+    Boolean(
+      company.active_payment_provider === 'whop' &&
+        company.whop_connect_company_id &&
+        company.whop_connect_onboarded,
+    )
   const brandColor = (company.primary_color as string | null) || '#c9a24b'
   const heroImg = (company as { hero_image_url?: string | null }).hero_image_url || DEFAULT_HERO
   const logoUrl = (company as { logo_url?: string | null }).logo_url ?? null

@@ -15,7 +15,9 @@ export const metadata: Metadata = {
 }
 
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
-const DEFAULT_HERO = 'https://unsplash.com/photos/9XVJ-Jq7Ke8/download?force=true&w=1400'
+// Auto-hospedada — antes usaba el endpoint de descarga de Unsplash (frágil,
+// ver page.tsx del micrositio para el detalle).
+const DEFAULT_HERO = '/microsite/default-hero.jpg'
 
 export default async function ReservarPage({ params }: { params: { slug: string } }) {
   const locale = getLocale()
@@ -52,6 +54,7 @@ export default async function ReservarPage({ params }: { params: { slug: string 
   const fleet = vehicleTypes ?? []
   const brandColor = (company.primary_color as string | null) || '#c9a24b'
   const heroImg = (company as { hero_image_url?: string | null }).hero_image_url || DEFAULT_HERO
+  const logoUrl = (company as { logo_url?: string | null }).logo_url ?? null
   const site = ((company.settings as { site?: { i18n?: SiteI18n } } | null)?.site) ?? {}
   const tagline = resolveLocalizedField(site.i18n, locale, 'tagline', (company as { tagline?: string | null }).tagline ?? null)
 
@@ -74,12 +77,22 @@ export default async function ReservarPage({ params }: { params: { slug: string 
 
   return (
     <div className="min-h-screen bg-[#08080a] text-white antialiased selection:bg-[var(--brand)]/30" style={{ ['--brand' as string]: brandColor }}>
+      {/* Único <h1> real de la página (siempre en el DOM, sin depender del
+          breakpoint) — antes había 2 encabezados <h1> duplicados (aside
+          desktop + bloque móvil), visibles solo uno a la vez por CSS pero
+          ambos en el árbol de accesibilidad. */}
+      <h1 className="sr-only">{tagline || company.name}</h1>
       <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent, ${brandColor}55, transparent)` }} />
 
       {/* Header slim */}
       <header className="sticky top-0 z-40 bg-[#08080a]/85 backdrop-blur-md border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href={`/book/${company.slug}`} className="lux-link text-sm text-white/70 hover:text-white transition-colors">← {company.name}</a>
+          <a href={`/book/${company.slug}`} className="lux-link text-sm text-white/70 hover:text-white transition-colors flex items-center gap-2.5">
+            {logoUrl && (
+              <Image src={logoUrl} alt={company.name} width={26} height={26} className="rounded-full object-cover shrink-0" />
+            )}
+            ← {company.name}
+          </a>
           <LanguageSwitcher current={locale} variant="dark" />
         </div>
       </header>
@@ -92,9 +105,9 @@ export default async function ReservarPage({ params }: { params: { slug: string 
           <div className="p-12 xl:p-16">
             <p className="text-xs uppercase tracking-[0.32em] text-white/75 mb-5">{company.name}</p>
             <span className="block h-px w-12 mb-6" style={{ background: `linear-gradient(90deg, ${brandColor}, transparent)` }} />
-            <h1 className="font-playfair text-4xl xl:text-[2.75rem] font-medium leading-[1.08] tracking-[-0.015em] text-balance">
+            <p className="font-playfair text-4xl xl:text-[2.75rem] font-medium leading-[1.08] tracking-[-0.015em] text-balance">
               {tagline || company.name}
-            </h1>
+            </p>
             <ul className="mt-9 space-y-3 text-sm text-white/65">
               {t.features.slice(0, 3).map((f) => (
                 <li key={f.title} className="flex items-center gap-3">
@@ -111,7 +124,7 @@ export default async function ReservarPage({ params }: { params: { slug: string 
           <div className="w-full max-w-lg">
             <div className="lg:hidden mb-6">
               <span className="block h-px w-12 mb-5" style={{ background: `linear-gradient(90deg, ${brandColor}, transparent)` }} />
-              <h1 className="font-playfair text-3xl font-medium tracking-[-0.01em]">{tagline || company.name}</h1>
+              <p className="font-playfair text-3xl font-medium tracking-[-0.01em]">{tagline || company.name}</p>
             </div>
             <div className="rounded-2xl bg-[#f1ece3] p-5 sm:p-6 shadow-2xl shadow-black/50 ring-1 ring-white/5">
               <BookingWizard

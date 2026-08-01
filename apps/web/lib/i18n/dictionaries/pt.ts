@@ -826,7 +826,7 @@ export const pt: Dictionary = {
     categories: [
       { label: 'Sedãs', sub: 'Conforto sofisticado' },
       { label: 'SUVs', sub: 'Potência com prestígio' },
-      { label: 'Coupés', sub: 'Desempenho, redefinido' },
+      { label: 'Carros exóticos', sub: 'Desempenho, redefinido' },
       { label: 'Vans', sub: 'Espaço para todo plano' },
       { label: 'Limusines', sub: 'Chegue com grande estilo' },
       { label: 'Serviço com motorista', sub: 'Conduzido por profissionais' },

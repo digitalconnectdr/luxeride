@@ -10,6 +10,7 @@ import { Reveal, RevealStagger, RevealItem } from '@/components/landing/reveal'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
+import { visibleCategoryIndices } from '@/lib/booking/vehicle-categories'
 import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
 import { ShareMenu } from '@/components/share/share-menu'
 import { VerifiedBadge } from '@/components/booking/verified-badge'
@@ -66,6 +67,7 @@ export function MicrositeCorporate(props: {
   isVerified: boolean
 }) {
   const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline, shareUrl, isVerified } = props
+  const visibleCategories = visibleCategoryIndices(fleet.map((v) => v.class))
 
   const heading = (eyebrow: string, title: string, sub?: string) => (
     <Reveal className="mb-12 max-w-xl">
@@ -166,13 +168,16 @@ export function MicrositeCorporate(props: {
         </section>
       )}
 
-      {/* EXPLORA POR CATEGORÍA — fila compacta de etiquetas, no círculos grandes */}
-      {fleet.length > 0 && (
+      {/* EXPLORA POR CATEGORÍA — fila compacta de etiquetas, filtrada contra
+          las clases reales de la flota (ver lib/booking/vehicle-categories.ts) */}
+      {visibleCategories.length > 0 && (
         <section id="categorias" className="py-20">
           <div className="max-w-[1280px] mx-auto px-6 lg:px-10">
             {heading(t.browseCategory, t.categoryTitle)}
             <RevealStagger className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {t.categories.map((c, i) => (
+              {visibleCategories.map((i) => {
+                const c = t.categories[i]
+                return (
                 <RevealItem key={c.label}>
                   <div className="flex flex-col items-start gap-3 rounded-xl border border-black/[0.08] p-4 h-full hover:border-black/20 hover:shadow-sm transition-all">
                     <span
@@ -189,7 +194,8 @@ export function MicrositeCorporate(props: {
                     </div>
                   </div>
                 </RevealItem>
-              ))}
+                )
+              })}
             </RevealStagger>
           </div>
         </section>

@@ -11,6 +11,7 @@ import { Reveal, RevealStagger, RevealItem } from '@/components/landing/reveal'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
+import { visibleCategoryIndices } from '@/lib/booking/vehicle-categories'
 import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
 import { ShareMenu } from '@/components/share/share-menu'
 import { VerifiedBadge } from '@/components/booking/verified-badge'
@@ -77,6 +78,7 @@ export function MicrositeBold(props: {
   isVerified: boolean
 }) {
   const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline, shareUrl, isVerified } = props
+  const visibleCategories = visibleCategoryIndices(fleet.map((v) => v.class))
 
   const heading = (eyebrow: string, title: string, sub?: string, dark = false) => (
     <Reveal className="mb-12 lg:mb-14 max-w-2xl">
@@ -183,13 +185,16 @@ export function MicrositeBold(props: {
         </div>
       </section>
 
-      {/* EXPLORA POR CATEGORÍA */}
-      {fleet.length > 0 && (
+      {/* EXPLORA POR CATEGORÍA — filtrada contra las clases reales de la flota
+          (ver lib/booking/vehicle-categories.ts). */}
+      {visibleCategories.length > 0 && (
         <section id="categorias" className="pt-24 lg:pt-28 pb-20">
           <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
             {heading(t.browseCategory, t.categoryTitle)}
             <RevealStagger className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-12">
-              {t.categories.map((c, i) => (
+              {visibleCategories.map((i) => {
+                const c = t.categories[i]
+                return (
                 <RevealItem key={c.label} className="flex flex-col items-center text-center gap-4">
                   <span
                     className="lux-breathe relative h-20 w-20 rounded-full flex items-center justify-center transition-transform duration-500 hover:scale-110"
@@ -204,7 +209,8 @@ export function MicrositeBold(props: {
                     <p className="text-xs text-[#9c9587] mt-1">{c.sub}</p>
                   </div>
                 </RevealItem>
-              ))}
+                )
+              })}
             </RevealStagger>
           </div>
         </section>

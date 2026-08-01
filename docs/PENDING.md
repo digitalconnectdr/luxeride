@@ -3,6 +3,60 @@
 > Actualizado: 2026-08-01. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fix: auditoría externa del micrositio (ChatGPT) — 5 bugs reales en las 4 plantillas (2026-08-01)
+
+El usuario pidió revisar una auditoría hecha por ChatGPT sobre el micrositio
+público (`/book/[slug]`) que se le entrega a cada empresa. Se verificó cada
+afirmación contra el código real antes de tocar nada — varias eran ciertas,
+varias estaban mal diagnosticadas (analizaron el HTML renderizado sin ver la
+lógica), y una (páginas programáticas por ciudad/ruta/aeropuerto tipo
+`/airport-car-service/mia`) es una iniciativa nueva de meses, no un fix, así
+que queda fuera de esta ronda.
+
+**Refutado / ya resuelto** (no se tocó nada): mezcla de idiomas (el chrome/UI
+respeta el locale en las 4 plantillas; solo el copy editorial del operador
+puede caer a ES si no lo tradujo, por diseño), "métodos de pago duplicados"
+(es un carrusel infinito a propósito), amenidades inconsistentes (texto libre
+del operador, no un bug), email genérico de LuxeRide (usa `company.email`
+real), "LuxeRide Platform domina la marca" (no existe ese fallback, es el
+slug de una cuenta demo interna ya excluida de SEO), dominio propio (ya existe
+vía BYOD/"consíganme uno").
+
+**5 bugs reales confirmados y corregidos, en los 4 templates (noir/ivory/
+bold/corporate) donde aplica**:
+
+1. **"Coupes" aparecía aunque la empresa no tuviera cupés** — la sección
+   "Explora por categoría" es una lista fija de marketing sin filtrar contra
+   la flota real. Peor aún: "Coupes" ni siquiera es un `vehicle_class` válido
+   en el schema (`sedan/suv/van/limousine/sprinter/bus/exotic`), nunca podía
+   ser cierto. Fix: `lib/booking/vehicle-categories.ts` filtra las categorías
+   contra las clases reales de la flota activa; "Coupes" se reemplazó por
+   "Exotic" (que sí es una clase real) en los 3 diccionarios.
+2. **El micrositio no mostraba tarjeta como método de pago si la empresa solo
+   tenía Stripe Connect (sin Whop)** — `acceptsCardOnline` en `page.tsx` solo
+   miraba Whop, mientras que `/reservar` sí acepta Stripe O Whop. Ahora ambos
+   sitios usan el mismo criterio.
+3. **3 `<h1>` simultáneos en `/reservar` y `/partners/[partnerSlug]`** (aside
+   desktop + bloque móvil + uno más dentro del wizard) — visualmente solo se
+   veía uno por breakpoint, pero los 3 estaban en el árbol de accesibilidad.
+   Fix: un único `<h1 className="sr-only">` fijo, los otros 2 bajados a `<p>`,
+   y el `<h1>` interno del wizard bajado a `<h2>`.
+4. **El logo del operador nunca se pintaba en `/reservar` ni en
+   `/partners/[partnerSlug]`** aunque la página ya lo traía de la base de
+   datos — agregado junto al link "← {empresa}" del header.
+5. **La imagen de portada por defecto** (cuando el operador no sube la suya)
+   apuntaba al endpoint de *descarga* de Unsplash
+   (`unsplash.com/photos/.../download?force=true`), un redirect de terceros
+   fuera de control que puede devolver 502 (coincide con el reporte de la
+   auditoría). Fix: se descargó una vez y se auto-hospeda en
+   `public/microsite/default-hero.jpg`, usado en las 3 páginas del
+   micrositio (`page.tsx`, `/reservar`, `/partners/[partnerSlug]`).
+
+**Decisión pendiente del usuario** (no bug, decisión de producto): el link
+"Sign in" del nav público (lleva al login administrativo, confunde a
+pasajeros que no tienen cuenta web) — el usuario prefirió dejarlo como está
+por ahora.
+
 ## ✅ Fix: auditoría de Configuración (2026-08-01)
 
 Revisadas las 4 sub-pestañas (Empresa, Marca, Operación, Integraciones) y sus

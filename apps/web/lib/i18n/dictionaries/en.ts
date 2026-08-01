@@ -825,7 +825,7 @@ export const en = {
     categories: [
       { label: 'Sedans', sub: 'Sophisticated comfort' },
       { label: 'SUVs', sub: 'Power meets prestige' },
-      { label: 'Coupes', sub: 'Performance, redefined' },
+      { label: 'Exotic cars', sub: 'Performance, redefined' },
       { label: 'Vans', sub: 'Space for every plan' },
       { label: 'Limousines', sub: 'Arrive in grand style' },
       { label: 'Chauffeur service', sub: 'Driven by professionals' },

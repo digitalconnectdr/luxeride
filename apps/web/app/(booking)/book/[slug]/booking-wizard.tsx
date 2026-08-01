@@ -715,9 +715,11 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
   return (
     <div>
       <div className="mb-4">
-        <h1 className="text-lg sm:text-xl font-semibold text-[#1d1d1f] leading-snug">
+        {/* h2: el <h1> real de la página vive en reservar/page.tsx (o el host,
+            si este wizard se embebe en /embed o /partners/[partnerSlug]). */}
+        <h2 className="text-lg sm:text-xl font-semibold text-[#1d1d1f] leading-snug">
           {dict.bookWith} {company.name}
-        </h1>
+        </h2>
         <p className="text-xs text-gray-500 mt-0.5">{dict.premiumService}</p>
       </div>
 

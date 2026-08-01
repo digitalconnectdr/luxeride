@@ -11,6 +11,7 @@ import { Reveal, RevealStagger, RevealItem } from '@/components/landing/reveal'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { ReviewsCarousel } from '@/components/booking/reviews-carousel'
 import { CategoryIcon } from '@/components/booking/vehicle-category-icons'
+import { visibleCategoryIndices } from '@/lib/booking/vehicle-categories'
 import { PaymentMethodsMarquee } from '@/components/booking/payment-methods-marquee'
 import { ShareMenu } from '@/components/share/share-menu'
 import { VerifiedBadge } from '@/components/booking/verified-badge'
@@ -71,6 +72,7 @@ export function MicrositeIvory(props: {
   isVerified: boolean
 }) {
   const { company, logoUrl, tagline, about, heroImg, brandColor, services, fleet, t, locale, reservarUrl, waNumber, qrDataUrl, reviews, acceptsCardOnline, shareUrl, isVerified } = props
+  const visibleCategories = visibleCategoryIndices(fleet.map((v) => v.class))
 
   const heading = (eyebrow: string, title: string, sub?: string) => (
     <Reveal className="mb-12 lg:mb-14 max-w-2xl">
@@ -162,15 +164,18 @@ export function MicrositeIvory(props: {
         </div>
       </section>
 
-      {/* EXPLORA POR CATEGORÍA — categorías FIJAS de servicio (marketing, no la
-          flota real del operador). Las fotos reales de vehículos van más abajo,
-          en "Vehículos más solicitados". */}
-      {fleet.length > 0 && (
+      {/* EXPLORA POR CATEGORÍA — categorías de marketing, filtradas contra las
+          clases reales de la flota activa (ver lib/booking/vehicle-categories.ts)
+          para no anunciar, ej., autos exóticos que la empresa no tiene. Las
+          fotos reales de vehículos van más abajo, en "Vehículos más solicitados". */}
+      {visibleCategories.length > 0 && (
         <section id="categorias" className="py-20 lg:py-24 bg-white border-y border-black/[0.05]">
           <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
             {heading(t.browseCategory, t.categoryTitle)}
             <RevealStagger className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-12">
-              {t.categories.map((c, i) => (
+              {visibleCategories.map((i) => {
+                const c = t.categories[i]
+                return (
                 <RevealItem key={c.label} className="flex flex-col items-center text-center gap-4">
                   <span
                     className="lux-breathe relative h-20 w-20 rounded-full flex items-center justify-center transition-transform duration-500 hover:scale-110"
@@ -185,7 +190,8 @@ export function MicrositeIvory(props: {
                     <p className="text-xs text-[#9a948a] mt-1">{c.sub}</p>
                   </div>
                 </RevealItem>
-              ))}
+                )
+              })}
             </RevealStagger>
           </div>
         </section>
