@@ -3,6 +3,28 @@
 > Actualizado: 2026-08-01. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fix: auditoría de Configuración (2026-08-01)
+
+Revisadas las 4 sub-pestañas (Empresa, Marca, Operación, Integraciones) y sus
+server actions (`app/actions/settings.ts`, `dispatch-settings.ts`,
+`payments.ts`, `whop-connect.ts`, `quickbooks.ts`, `microsite.ts`). Horario de
+operación / fechas bloqueadas ya estaba bien hecho desde antes
+(`lib/policy/engine.ts` usa `Intl.DateTimeFormat` con la zona horaria de la
+empresa) — no es el bug de siempre.
+
+Un bug real encontrado, de la misma familia pero en un lugar nuevo:
+**sincronización con QuickBooks** (`lib/quickbooks/sync.ts`,
+`syncCompletedBookingsForCompany`) construía el `TxnDate` del Sales Receipt
+con `booking.completed_at.slice(0, 10)` — la fecha UTC del timestamp, no la
+fecha local de la empresa. Un viaje completado a las 11pm en Santo Domingo
+(UTC-4) ya es medianoche+ en UTC, así que quedaba registrado en QuickBooks
+un día después de como el operador lo ve en su propio panel. Fix: usa
+`getZonedIsoDate` con `companies.timezone`.
+
+Resto de la página (branding, portada del micrositio, servicios, Stripe
+Connect, Whop Connect, pesos de dispatch) sin cambios — bien scopeado por
+`company_id` en todas las acciones revisadas.
+
 ## ✅ Fix: auditoría de Equipo, Servicios adicionales, Firma electrónica, Asistente IA, AI Growth Assistant, Dominio personalizado, Partner Portals y Programa de referidos (2026-08-01)
 
 Servicios adicionales (marketplace), Dominio personalizado y Programa de

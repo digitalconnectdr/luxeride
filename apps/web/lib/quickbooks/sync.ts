@@ -1,5 +1,6 @@
 import type { createAdminClient } from '@/lib/supabase/server'
 import { escapeQboQueryValue, getValidConnection, qboFetch, type QuickBooksConnection } from './server'
+import { getZonedIsoDate } from '@/lib/time/zoned-bounds'
 
 // ── Sincronizacion con QuickBooks Online ───────────────────────────────────────
 // Dos flujos: (1) un Sales Receipt por reserva completada, (2) una Invoice de
@@ -146,6 +147,9 @@ export async function syncCompletedBookingsForCompany(
   const connection = await getValidConnection(admin, companyId)
   if (!connection) return { synced: 0, failed: 0 }
 
+  const { data: companyRow } = await admin.from('companies').select('timezone').eq('id', companyId).single()
+  const timezone = companyRow?.timezone ?? null
+
   const { data: bookings } = await admin
     .from('bookings')
     .select('id, booking_number, passenger_name, passenger_email, total_amount, currency, completed_at, scheduled_at')
@@ -173,7 +177,11 @@ export async function syncCompletedBookingsForCompany(
         method: 'POST',
         body: JSON.stringify({
           CustomerRef: { value: customerId },
-          TxnDate: (booking.completed_at ?? booking.scheduled_at).slice(0, 10),
+          // Fecha LOCAL de la empresa, no la fecha UTC del timestamp — un viaje
+          // completado a las 11pm en Santo Domingo (UTC-4) ya cayó en el día
+          // siguiente en UTC, y registrarlo así en QuickBooks desalinea la
+          // contabilidad del operador con lo que él ve en pantalla.
+          TxnDate: getZonedIsoDate(new Date(booking.completed_at ?? booking.scheduled_at), timezone),
           Line: [
             {
               DetailType: 'SalesItemLineDetail',
