@@ -79,7 +79,7 @@ export async function GET(request: Request) {
 
   let query = admin
     .from('bookings')
-    .select('booking_number, status, type, passenger_name, passenger_phone, passenger_email, scheduled_at, completed_at, pickup_location, dropoff_location, distance_miles, duration_minutes, base_amount, total_amount, currency, created_at, driver_id, vehicle_id')
+    .select('booking_number, status, type, passenger_name, passenger_phone, passenger_email, scheduled_at, completed_at, pickup_location, dropoff_location, distance_miles, duration_minutes, base_amount, total_amount, currency, created_at, driver_id, vehicle_id, attribution')
     .gte('scheduled_at', from.toISOString())
     .lt('scheduled_at', to.toISOString())
     .order('scheduled_at')
@@ -134,18 +134,23 @@ export async function GET(request: Request) {
     c.passengerEmail, c.scheduledAt, c.completedAt, c.pickupAddress,
     c.dropoffAddress, c.distanceMiles, c.durationMinutes, c.baseAmount,
     c.totalAmount, c.currency, c.createdAt, c.driverName, c.vehicle,
+    c.utmSource, c.utmMedium, c.utmCampaign, c.gclid,
   ]
 
-  const rows = rows0.map((b) => [
-    b.booking_number, statusLabels[b.status] ?? b.status, b.type, b.passenger_name, b.passenger_phone,
-    b.passenger_email, b.scheduled_at, b.completed_at,
-    (b.pickup_location as { address?: string } | null)?.address ?? '',
-    (b.dropoff_location as { address?: string } | null)?.address ?? '',
-    b.distance_miles, b.duration_minutes, b.base_amount, b.total_amount,
-    b.currency, b.created_at,
-    b.driver_id ? (driverNames.get(b.driver_id) ?? '') : '',
-    b.vehicle_id ? (vehicleLabels.get(b.vehicle_id) ?? '') : '',
-  ].map(csvEscape).join(','))
+  const rows = rows0.map((b) => {
+    const attr = (b.attribution as { utm_source?: string; utm_medium?: string; utm_campaign?: string; gclid?: string } | null) ?? {}
+    return [
+      b.booking_number, statusLabels[b.status] ?? b.status, b.type, b.passenger_name, b.passenger_phone,
+      b.passenger_email, b.scheduled_at, b.completed_at,
+      (b.pickup_location as { address?: string } | null)?.address ?? '',
+      (b.dropoff_location as { address?: string } | null)?.address ?? '',
+      b.distance_miles, b.duration_minutes, b.base_amount, b.total_amount,
+      b.currency, b.created_at,
+      b.driver_id ? (driverNames.get(b.driver_id) ?? '') : '',
+      b.vehicle_id ? (vehicleLabels.get(b.vehicle_id) ?? '') : '',
+      attr.utm_source ?? '', attr.utm_medium ?? '', attr.utm_campaign ?? '', attr.gclid ?? '',
+    ].map(csvEscape).join(',')
+  })
 
   const csv = [header.join(','), ...rows].join('\r\n')
   const filename = `bookings_${fromIso}_${toIso}.csv`

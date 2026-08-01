@@ -3,6 +3,34 @@
 > Actualizado: 2026-08-01. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Reportes: conectar la atribución de marketing (UTM/gclid) ya capturada (2026-08-01)
+
+Primer paso del "Growth Engine" que propuso una auditoría externa (ver
+sección de arriba). Investigado el estado real: `bookings.attribution`
+(UTM/gclid) se captura desde hace tiempo en `booking-wizard.tsx` y se
+persiste en cada reserva, pero **ningún reporte lo leía** — era un dato
+huérfano, guardado y nunca mostrado. El "canal" que sí existía en
+`/admin/reports` (Directo/Corporativo/Afiliado/Partner) es un concepto
+interno distinto (viene de relaciones de la reserva), no de parámetros de
+marketing.
+
+- Nueva sección "Atribución de marketing" en `/admin/reports`: ingresos y
+  reservas agrupados por `utm_source` (con "Directo / sin UTM" como bucket
+  por defecto), badge de cuántas vinieron de un clic real de Google Ads
+  (`gclid` presente), y tabla de top 10 campañas (`utm_campaign`) con
+  fuente/medio.
+- CSV de reservas (`/api/reports/bookings`) ahora incluye columnas
+  `utm_source`, `utm_medium`, `utm_campaign`, `gclid` por reserva.
+- i18n completo (en/es/pt).
+
+Con esto un operador puede ver por primera vez si su inversión en Google Ads
+o campañas de redes está generando reservas reales, no solo intuirlo. El
+resto del "Growth Engine" (páginas por ciudad/ruta/aeropuerto, llms.txt por
+empresa, Google Ads Conversion API server-side, gestión de Google Business
+Profile) sigue pendiente como iniciativa aparte, de mayor alcance — ver
+auditoría del micrositio arriba para el inventario completo de qué existe y
+qué no.
+
 ## ✅ Fix: auditoría externa del micrositio (ChatGPT) — 5 bugs reales en las 4 plantillas (2026-08-01)
 
 El usuario pidió revisar una auditoría hecha por ChatGPT sobre el micrositio

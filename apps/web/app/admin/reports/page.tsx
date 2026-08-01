@@ -51,7 +51,7 @@ export default async function ReportsPage({
 
   const { data: bookings } = await admin
     .from('bookings')
-    .select('id, booking_number, status, scheduled_at, arrived_at, completed_at, total_amount, currency, driver_id, type, created_at, corporate_account_id, partner_id')
+    .select('id, booking_number, status, scheduled_at, arrived_at, completed_at, total_amount, currency, driver_id, type, created_at, corporate_account_id, partner_id, attribution')
     .eq('company_id', user.company_id)
     .gte('scheduled_at', from.toISOString())
     .lt('scheduled_at', to.toISOString())
@@ -122,6 +122,35 @@ export default async function ReportsPage({
     byChannel.set(ch, e)
   }
   const channelOrder: ChannelKey[] = ['direct', 'corporate', 'affiliate', 'partner']
+
+  // ── Atribución de marketing (UTM/gclid) ──────────────────────────────────
+  // bookings.attribution se captura hace tiempo (booking-wizard.tsx →
+  // sanitizeAttribution en actions/bookings.ts) pero hasta ahora no lo leía
+  // ningún reporte — era un dato huérfano. "Canal" aquí es utm_source (o
+  // "Directo" si no hay UTM), distinto del "canal" interno de arriba
+  // (corporate/partner/affiliate/direct, que viene de las relaciones de la
+  // reserva, no de parámetros de marketing).
+  type Attribution = { utm_source?: string; utm_medium?: string; utm_campaign?: string; gclid?: string }
+  const bySource = new Map<string, { count: number; amount: number; gclidCount: number }>()
+  const byCampaign = new Map<string, { source: string; medium: string; count: number; amount: number }>()
+  for (const b of completed) {
+    const attr = (b.attribution as Attribution | null) ?? {}
+    const source = attr.utm_source?.trim() || t.attribution.direct
+    const e = bySource.get(source) ?? { count: 0, amount: 0, gclidCount: 0 }
+    e.count += 1
+    e.amount += Number(b.total_amount ?? 0)
+    if (attr.gclid) e.gclidCount += 1
+    bySource.set(source, e)
+
+    if (attr.utm_campaign) {
+      const ce = byCampaign.get(attr.utm_campaign) ?? { source: attr.utm_source ?? '—', medium: attr.utm_medium ?? '—', count: 0, amount: 0 }
+      ce.count += 1
+      ce.amount += Number(b.total_amount ?? 0)
+      byCampaign.set(attr.utm_campaign, ce)
+    }
+  }
+  const bySourceRows = [...bySource.entries()].sort((a, b) => b[1].amount - a[1].amount)
+  const topCampaigns = [...byCampaign.entries()].sort((a, b) => b[1].amount - a[1].amount).slice(0, 10)
 
   // ── Comparación vs. período anterior (mismo largo de rango) ─────────────
   const rangeMs = to.getTime() - from.getTime()
@@ -331,6 +360,68 @@ export default async function ReportsPage({
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
+        {/* Atribución de marketing (UTM/gclid) */}
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gold/20">
+            <p className="text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+              {t.attribution.title}
+            </p>
+            <p className="text-[11px] text-sl-on-surface-muted mt-1">{t.attribution.subtitle}</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <tbody className="divide-y divide-sl-outline-variant/50">
+                {bySourceRows.map(([source, e]) => (
+                  <tr key={source}>
+                    <td className="px-6 py-3 text-sl-on-surface">
+                      {source}
+                      {e.gclidCount > 0 && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 text-[10px] font-semibold">
+                          {t.attribution.googleAdsBadge.replace('{n}', String(e.gclidCount))}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-3 text-right text-sl-on-surface-muted">{e.count}</td>
+                    <td className="px-6 py-3 text-right font-medium text-sl-on-surface">${e.amount.toFixed(2)}</td>
+                  </tr>
+                ))}
+                {bySourceRows.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-6 text-center text-sl-on-surface-muted">
+                      {t.attribution.noData}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {topCampaigns.length > 0 && (
+            <div className="border-t border-gold/20">
+              <p className="px-6 pt-4 text-[11px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+                {t.attribution.topCampaigns}
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <tbody className="divide-y divide-sl-outline-variant/50">
+                    {topCampaigns.map(([campaign, c]) => (
+                      <tr key={campaign}>
+                        <td className="px-6 py-3 text-sl-on-surface">
+                          {campaign}
+                          <span className="block text-[11px] text-sl-on-surface-muted">{c.source} · {c.medium}</span>
+                        </td>
+                        <td className="px-6 py-3 text-right text-sl-on-surface-muted align-top">{c.count}</td>
+                        <td className="px-6 py-3 text-right font-medium text-sl-on-surface align-top">${c.amount.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

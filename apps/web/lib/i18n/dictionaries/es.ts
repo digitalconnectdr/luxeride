@@ -1069,6 +1069,10 @@ export const es: Dictionary = {
       createdAt: 'Creado',
       driverName: 'Conductor',
       vehicle: 'Vehículo',
+      utmSource: 'Fuente UTM',
+      utmMedium: 'Medio UTM',
+      utmCampaign: 'Campaña UTM',
+      gclid: 'Clic de Google Ads',
     },
     reports: {
       noPreviousData: 'Sin datos del período anterior',
@@ -1082,6 +1086,14 @@ export const es: Dictionary = {
         partner: 'Partner',
       },
       byType: { title: 'Desglose por tipo de reserva' },
+      attribution: {
+        title: 'Atribución de marketing',
+        subtitle: 'De etiquetas UTM y clics de Google Ads capturados al reservar.',
+        direct: 'Directo / sin UTM',
+        googleAdsBadge: '{n} vía clic de Google Ads',
+        noData: 'Sin datos de atribución en el rango seleccionado.',
+        topCampaigns: 'Campañas principales',
+      },
       fleetSla: {
         title: 'Puntualidad de flota',
         punctuality: 'Puntualidad',

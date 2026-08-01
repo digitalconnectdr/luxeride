@@ -1068,6 +1068,10 @@ export const en = {
       createdAt: 'Created',
       driverName: 'Driver',
       vehicle: 'Vehicle',
+      utmSource: 'UTM Source',
+      utmMedium: 'UTM Medium',
+      utmCampaign: 'UTM Campaign',
+      gclid: 'Google Ads Click',
     },
     reports: {
       noPreviousData: 'No data for the previous period',
@@ -1081,6 +1085,14 @@ export const en = {
         partner: 'Partner',
       },
       byType: { title: 'Breakdown by booking type' },
+      attribution: {
+        title: 'Marketing attribution',
+        subtitle: 'From UTM tags and Google Ads clicks captured at booking time.',
+        direct: 'Direct / no UTM',
+        googleAdsBadge: '{n} via Google Ads click',
+        noData: 'No attribution data in the selected range.',
+        topCampaigns: 'Top campaigns',
+      },
       fleetSla: {
         title: 'Fleet punctuality',
         punctuality: 'Punctuality',
