@@ -1,7 +1,31 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-07-31. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-08-01. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## ✅ Fix: cargo por aeropuerto configurado en /admin/airports nunca se cobraba (2026-08-01)
+
+Auditoría de las pestañas Zonas de servicio, Reservaciones y Aeropuertos.
+Zonas de servicio y Reservaciones: código limpio, sin bugs. Aeropuertos: se
+encontró que `company_airports.pickup_fee`/`dropoff_fee` (configurado por
+aeropuerto específico en `/admin/airports`) nunca se leía en ningún flujo de
+cotización/reserva — solo existía el mecanismo distinto y ya funcional de
+`pricing_rules.airport_pickup_fee`/`airport_dropoff_fee` (fee plano por regla,
+disparado por `booking_type` manual). Un operador podía configurar $25 de
+recogida en JFK y esa reserva jamás cobraba el cargo.
+
+Fix (decisión del usuario: detección automática por cercanía, sin fricción
+para el pasajero): nuevo `lib/pricing/airports.ts` (puro, testeado en
+`airports.test.ts`) que compara pickup/dropoff contra la lat/lng de cada
+aeropuerto configurado y activo de la empresa; si cae dentro de 2 millas,
+aplica el fee de ESE aeropuerto (pickup y dropoff se evalúan independiente,
+pueden ser aeropuertos distintos). Cableado en `createBookingAction` y
+`createPublicBookingAction` (`app/actions/bookings.ts`) siguiendo el mismo
+patrón que `luggageOverageFee`: se suma a `total_amount` y se agrega como
+fila(s) `booking_fees` (`airport_pickup_fee`/`airport_dropoff_fee`) para
+desglose en el detalle de la reserva. No se tocó `calculateQuoteAction` ni
+`getPublicVehicleQuotesAction` (el aviso de cargo en el preview de cotización
+queda fuera de este alcance, igual que se hizo con equipaje).
 
 ## ✅ Capacidad de equipaje por tipo de vehículo + cargo automático por exceso (2026-07-31)
 

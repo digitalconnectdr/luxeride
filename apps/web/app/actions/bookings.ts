@@ -31,6 +31,7 @@ import { checkMonthlyBookingLimit } from '@/lib/plans/limits'
 import { getAppUrl } from '@/lib/app-url'
 import { calculateFare, bestRule, getLocalTimeParts, type PricingRuleFields } from '@/lib/pricing/engine'
 import { resolveZoneId, type ServiceZoneForMatch } from '@/lib/pricing/zones'
+import { resolveAirportFees, type CompanyAirportForMatch } from '@/lib/pricing/airports'
 import { fetchHolidayDates } from '@/lib/pricing/holidays'
 import { grantRewardsForBooking } from '@/lib/rewards/grant'
 import { tryAutoAssignDriver, tryAutoFarmToAffiliates, windowFor, overlaps } from '@/lib/dispatch/auto-assign'
@@ -55,6 +56,49 @@ const MAX_STOPS = 3
 // necesita más que eso, la solución es elegir un vehículo con más capacidad,
 // no seguir apilando cargos extra sobre uno que no lo soporta físicamente.
 const MAX_LUGGAGE_EXTRA_PER_CATEGORY = 1
+
+// Aeropuertos configurados por la empresa (/admin/airports), con la lat/lng
+// del catálogo global — para detectar automáticamente por cercanía si un
+// pickup/dropoff es en uno de ellos y cobrar el cargo que el operador
+// configuró específicamente para ese aeropuerto (distinto del cargo plano
+// por tipo de viaje que ya vive en pricing_rules.airport_pickup_fee/
+// airport_dropoff_fee — company_airports.pickup_fee/dropoff_fee no se leía
+// en ningún lado fuera de la propia pestaña antes de este fix).
+async function fetchCompanyAirportsForMatch(
+  admin: ReturnType<typeof createAdminClient>,
+  companyId: string,
+): Promise<CompanyAirportForMatch[]> {
+  // Dos consultas separadas (no un select anidado) — mismo criterio que
+  // app/admin/airports/page.tsx: evita problemas de resolución de tipos con
+  // relaciones FK del cliente de Supabase.
+  const { data: companyAirports } = await admin
+    .from('company_airports')
+    .select('airport_id, pickup_fee, dropoff_fee')
+    .eq('company_id', companyId)
+    .eq('is_active', true)
+  if (!companyAirports?.length) return []
+
+  const { data: airports } = await admin
+    .from('airports')
+    .select('id, lat, lng')
+    .in('id', companyAirports.map((ca) => ca.airport_id))
+    .eq('is_active', true)
+  const airportById = new Map((airports ?? []).map((a) => [a.id, a]))
+
+  return companyAirports
+    .map((ca) => {
+      const airport = airportById.get(ca.airport_id)
+      if (!airport || airport.lat == null || airport.lng == null) return null
+      return {
+        airportId: ca.airport_id,
+        lat: airport.lat,
+        lng: airport.lng,
+        pickupFee: Number(ca.pickup_fee ?? 0),
+        dropoffFee: Number(ca.dropoff_fee ?? 0),
+      }
+    })
+    .filter((v): v is CompanyAirportForMatch => v != null)
+}
 
 function sanitizeStops(stops: StopInput[] | undefined): StopInput[] {
   if (!stops?.length) return []
@@ -436,6 +480,18 @@ export async function createBookingAction(
     }
   }
 
+  // Cargo por aeropuerto — automático por cercanía a un aeropuerto configurado
+  // en /admin/airports (ver fetchCompanyAirportsForMatch más arriba).
+  const companyAirportsForMatch = await fetchCompanyAirportsForMatch(admin, user.company_id)
+  const airportFees = companyAirportsForMatch.length
+    ? resolveAirportFees(
+        companyAirportsForMatch,
+        { lat: pickupLat, lng: pickupLng },
+        { lat: dropoffLat, lng: dropoffLng },
+      )
+    : { pickupFee: 0, dropoffFee: 0, pickupAirportId: null, dropoffAirportId: null }
+  const airportFeeTotal = Math.round((airportFees.pickupFee + airportFees.dropoffFee) * 100) / 100
+
   const { data: booking, error } = await admin
     .from('bookings')
     .insert({
@@ -463,7 +519,7 @@ export async function createBookingAction(
       price_quote_id:   quoteId,
       // Montos SIEMPRE del quote (server-calculated) — nunca del form
       base_amount:      quote.base_amount,
-      total_amount:     quote.total_amount + luggageOverageFee,
+      total_amount:     quote.total_amount + luggageOverageFee + airportFeeTotal,
       currency:         quote.currency ?? 'USD',
       distance_miles:   quote.distance_miles,
       duration_minutes: quote.duration_minutes,
@@ -509,6 +565,12 @@ export async function createBookingAction(
       description: `Equipaje excedido × ${luggageOverageQty}`,
       amount: luggageOverageFee,
     })
+  }
+  if (airportFees.pickupFee > 0) {
+    fees.push({ booking_id: booking.id, company_id: user.company_id, type: 'airport_pickup_fee', description: 'Cargo por recogida en aeropuerto', amount: airportFees.pickupFee })
+  }
+  if (airportFees.dropoffFee > 0) {
+    fees.push({ booking_id: booking.id, company_id: user.company_id, type: 'airport_dropoff_fee', description: 'Cargo por entrega en aeropuerto', amount: airportFees.dropoffFee })
   }
   if (fees.length > 0) await admin.from('booking_fees').insert(fees)
 
@@ -1444,6 +1506,18 @@ export async function createPublicBookingAction(data: {
     }
   }
 
+  // Cargo por aeropuerto — automático por cercanía a un aeropuerto configurado
+  // en /admin/airports (ver fetchCompanyAirportsForMatch más arriba).
+  const companyAirportsForMatch = await fetchCompanyAirportsForMatch(admin, company.id)
+  const airportFees = companyAirportsForMatch.length
+    ? resolveAirportFees(
+        companyAirportsForMatch,
+        { lat: data.pickupLat, lng: data.pickupLng },
+        { lat: data.dropoffLat, lng: data.dropoffLng },
+      )
+    : { pickupFee: 0, dropoffFee: 0, pickupAirportId: null, dropoffAirportId: null }
+  const airportFeeTotal = Math.round((airportFees.pickupFee + airportFees.dropoffFee) * 100) / 100
+
   const { data: booking, error } = await admin
     .from('bookings')
     .insert({
@@ -1473,7 +1547,7 @@ export async function createPublicBookingAction(data: {
       meet_and_greet:   Boolean(data.meetAndGreet),
       price_quote_id:   data.quoteId,
       base_amount:      quote.base_amount,
-      total_amount:     quote.total_amount - discountAmount + luggageOverageFee,
+      total_amount:     quote.total_amount - discountAmount + luggageOverageFee + airportFeeTotal,
       currency:         quote.currency ?? 'USD',
       distance_miles:   quote.distance_miles,
       duration_minutes: quote.duration_minutes,
@@ -1524,6 +1598,12 @@ export async function createPublicBookingAction(data: {
       description: `Equipaje excedido × ${luggageOverageQty}`,
       amount: luggageOverageFee,
     })
+  }
+  if (airportFees.pickupFee > 0) {
+    fees.push({ booking_id: booking.id, company_id: company.id, type: 'airport_pickup_fee', description: 'Cargo por recogida en aeropuerto', amount: airportFees.pickupFee })
+  }
+  if (airportFees.dropoffFee > 0) {
+    fees.push({ booking_id: booking.id, company_id: company.id, type: 'airport_dropoff_fee', description: 'Cargo por entrega en aeropuerto', amount: airportFees.dropoffFee })
   }
   if (fees.length > 0) await admin.from('booking_fees').insert(fees)
 
