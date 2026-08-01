@@ -7,9 +7,11 @@ import { togglePricingRuleActiveAction, deletePricingRuleAction } from '@/app/ac
 export function PricingRuleActiveToggle({
   ruleId,
   isActive,
+  labels,
 }: {
   ruleId: string
   isActive: boolean
+  labels: { active: string; inactive: string }
 }) {
   const [isPending, startTransition] = useTransition()
 
@@ -31,25 +33,31 @@ export function PricingRuleActiveToggle({
           : 'text-gray-600 border-gray-300 bg-gray-50 hover:bg-green-50 hover:text-green-700 hover:border-green-300',
       ].join(' ')}
     >
-      {isPending ? '…' : isActive ? 'Active' : 'Inactive'}
+      {isPending ? '…' : isActive ? labels.active : labels.inactive}
     </button>
   )
 }
 
-export function PricingRuleDeleteButton({ ruleId }: { ruleId: string }) {
+export function PricingRuleDeleteButton({
+  ruleId,
+  labels,
+}: {
+  ruleId: string
+  labels: { delete: string; confirmDelete: string }
+}) {
   const [isPending, startTransition] = useTransition()
 
   return (
     <button
       disabled={isPending}
       onClick={() => {
-        if (!confirm('¿Eliminar esta regla de precio? Esta acción no se puede deshacer.')) return
+        if (!confirm(labels.confirmDelete)) return
         startTransition(async () => {
           await deletePricingRuleAction(ruleId)
         })
       }}
-      title="Eliminar"
-      aria-label="Eliminar"
+      title={labels.delete}
+      aria-label={labels.delete}
       className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
     >
       {isPending ? <span className="text-xs">…</span> : <Trash2 size={14} strokeWidth={2} />}

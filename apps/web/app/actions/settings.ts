@@ -165,7 +165,7 @@ export async function updateExternalReviewsAction(
 export async function updateDepositSettingsAction(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
-  const user = await requireRole('company_owner')
+  const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
   const requireDeposit = formData.get('require_deposit') === 'true'
@@ -213,7 +213,7 @@ export async function updateDepositSettingsAction(
 export async function updatePolicySettingsAction(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
-  const user = await requireRole('company_owner')
+  const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
   const clampPct = (v: number) => Math.min(100, Math.max(0, v))
@@ -267,7 +267,7 @@ export async function updatePolicySettingsAction(
 export async function updateExtraFeesAction(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
-  const user = await requireRole('company_owner')
+  const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
   const clampAmount = (v: number) =>
@@ -387,7 +387,7 @@ export async function updateBrandingAction(
 export async function updateGratuitySettingsAction(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
-  const user = await requireRole('company_owner')
+  const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
   const enabled           = formData.get('enabled') === 'true'

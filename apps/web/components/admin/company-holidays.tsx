@@ -119,7 +119,7 @@ export function CompanyHolidays({
                     {t.pastLabel}
                   </span>
                 )}
-                <DeleteHolidayButton holidayId={h.id} name={h.name} />
+                <DeleteHolidayButton holidayId={h.id} name={h.name} confirmTemplate={t.confirmDelete} />
               </li>
             )
           })}
@@ -129,7 +129,15 @@ export function CompanyHolidays({
   )
 }
 
-function DeleteHolidayButton({ holidayId, name }: { holidayId: string; name: string }) {
+function DeleteHolidayButton({
+  holidayId,
+  name,
+  confirmTemplate,
+}: {
+  holidayId: string
+  name: string
+  confirmTemplate: string
+}) {
   const [isPending, startTransition] = useTransition()
 
   return (
@@ -137,7 +145,7 @@ function DeleteHolidayButton({ holidayId, name }: { holidayId: string; name: str
       type="button"
       disabled={isPending}
       onClick={() => {
-        if (!confirm(`¿Eliminar "${name}" de los feriados?`)) return
+        if (!confirm(confirmTemplate.replace('{name}', name))) return
         startTransition(async () => {
           await deleteCompanyHolidayAction(holidayId)
         })

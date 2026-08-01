@@ -28,6 +28,8 @@ export function PricingAdvancedFields({
   t: PricingDict
   defaults?: {
     holidaySurchargePct?: number
+    airportPickupFee?: number
+    airportDropoffFee?: number
     surgeEnabled?: boolean
     surgeMultiplier?: number
     validFrom?: string | null
@@ -57,6 +59,36 @@ export function PricingAdvancedFields({
               step="0.01"
               min="0"
               defaultValue={defaults?.holidaySurchargePct ?? 0}
+              className={inputCls}
+            />
+          </div>
+
+          <div>
+            <label className={labelCls}>
+              {t.airportPickupFee}
+              <InfoTip text={t.help.airportPickupFee} />
+            </label>
+            <input
+              name="airport_pickup_fee"
+              type="number"
+              step="0.01"
+              min="0"
+              defaultValue={defaults?.airportPickupFee ?? 0}
+              className={inputCls}
+            />
+          </div>
+
+          <div>
+            <label className={labelCls}>
+              {t.airportDropoffFee}
+              <InfoTip text={t.help.airportDropoffFee} />
+            </label>
+            <input
+              name="airport_dropoff_fee"
+              type="number"
+              step="0.01"
+              min="0"
+              defaultValue={defaults?.airportDropoffFee ?? 0}
               className={inputCls}
             />
           </div>

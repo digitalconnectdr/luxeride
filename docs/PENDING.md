@@ -3,6 +3,38 @@
 > Actualizado: 2026-08-01. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fix: auditoría de Tarifas y cargos (/admin/pricing) (2026-08-01)
+
+Tres hallazgos reales:
+
+1. **`pricing_rules.airport_pickup_fee`/`airport_dropoff_fee` (fee plano por
+   regla, activado por `booking_type` manual) nunca eran configurables desde
+   la UI** — ni el formulario de "Agregar regla" ni la fila en edición tenían
+   un input para esos campos (la edición solo los preservaba con inputs
+   ocultos en 0). El motor de precios sí los aplicaba correctamente, pero
+   como nunca se podían fijar a un valor > 0, el mecanismo estaba muerto en
+   la práctica para toda regla creada desde que existe la UI. Fix: 2 inputs
+   nuevos en `PricingAdvancedFields` (compartido entre alta y edición) +
+   badge de aviso en la fila cuando el fee es distinto de cero, igual que ya
+   se hacía con tarifa dinámica/vigencia.
+2. **`company_admin` puede ver pero no guardar "Propinas y cargos" ni
+   "Depósito y cancelación"** — las 4 server actions detrás de esos
+   formularios exigían `requireRole('company_owner')` mientras la página
+   permite entrar con `company_owner` O `company_admin`; al enviar el
+   formulario, `company_admin` era expulsado sin aviso (redirect silencioso)
+   perdiendo lo escrito. Decisión del usuario: relajar el permiso — las 4
+   acciones (`updateGratuitySettingsAction`, `updateExtraFeesAction`,
+   `updatePolicySettingsAction`, `updateDepositSettingsAction`) ahora
+   aceptan también `company_admin`, igual que ya aceptaban las reglas de
+   precio.
+3. Textos de confirmación/estado hardcodeados en español dentro de
+   componentes que ya reciben `t`/`actions` i18n (`PricingRuleActiveToggle`,
+   `PricingRuleDeleteButton`, confirm de eliminar feriado) — corregidos para
+   usar el diccionario existente en los 3 idiomas.
+
+Zonas de servicio y Reservaciones (rondas previas) y el resto de Tarifas y
+cargos (motor de precios, feriados, FAQ) quedaron limpios sin cambios.
+
 ## ✅ Fix: cargo por aeropuerto configurado en /admin/airports nunca se cobraba (2026-08-01)
 
 Auditoría de las pestañas Zonas de servicio, Reservaciones y Aeropuertos.

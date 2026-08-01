@@ -89,10 +89,6 @@ export function PricingRuleRow({
       <tr className="bg-sl-bg/40">
         <td colSpan={7} className="px-5 py-4">
           <form onSubmit={handleSubmit}>
-            {/* Campos no editables aquí — se preservan tal cual */}
-            <input type="hidden" name="airport_pickup_fee" defaultValue={num(rule.airport_pickup_fee)} />
-            <input type="hidden" name="airport_dropoff_fee" defaultValue={num(rule.airport_dropoff_fee)} />
-
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
                 <label className="block text-[10px] uppercase tracking-wider text-sl-on-surface-muted mb-1">{t.ruleName}</label>
@@ -175,6 +171,8 @@ export function PricingRuleRow({
                 t={t}
                 defaults={{
                   holidaySurchargePct: num(rule.holiday_surcharge_pct),
+                  airportPickupFee: num(rule.airport_pickup_fee),
+                  airportDropoffFee: num(rule.airport_dropoff_fee),
                   surgeEnabled: rule.surge_enabled ?? false,
                   surgeMultiplier: num(rule.surge_multiplier),
                   validFrom: rule.valid_from,
@@ -206,11 +204,18 @@ export function PricingRuleRow({
         <p className="text-xs text-sl-on-surface-muted mt-0.5">{vtName ?? t.allVehicleTypes}</p>
         {/* Surge encendida y vigencia limitada cambian el precio sin que se vea
             en la columna "Base" — se avisan aquí para que no pasen inadvertidas. */}
-        {(rule.surge_enabled || rule.valid_from || rule.valid_until || rule.days_of_week?.length) && (
+        {(rule.surge_enabled || rule.valid_from || rule.valid_until || rule.days_of_week?.length || num(rule.airport_pickup_fee) > 0 || num(rule.airport_dropoff_fee) > 0) && (
           <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
             {rule.surge_enabled && (
               <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800">
                 {num(rule.surge_multiplier) > 1 ? `${num(rule.surge_multiplier)}×` : '1×'}
+              </span>
+            )}
+            {(num(rule.airport_pickup_fee) > 0 || num(rule.airport_dropoff_fee) > 0) && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded border border-sl-outline-variant text-sl-on-surface-muted tabular-nums">
+                ✈ {num(rule.airport_pickup_fee) > 0 ? `+$${num(rule.airport_pickup_fee).toFixed(2)}` : ''}
+                {num(rule.airport_pickup_fee) > 0 && num(rule.airport_dropoff_fee) > 0 ? ' / ' : ''}
+                {num(rule.airport_dropoff_fee) > 0 ? `+$${num(rule.airport_dropoff_fee).toFixed(2)}` : ''}
               </span>
             )}
             {(rule.valid_from || rule.valid_until) && (
@@ -241,7 +246,11 @@ export function PricingRuleRow({
         <span className="text-xs font-mono text-sl-on-surface-muted">{rule.priority ?? 0}</span>
       </td>
       <td className="px-5 py-3.5">
-        <PricingRuleActiveToggle ruleId={rule.id} isActive={rule.is_active} />
+        <PricingRuleActiveToggle
+          ruleId={rule.id}
+          isActive={rule.is_active}
+          labels={{ active: t.ruleActive, inactive: t.ruleInactive }}
+        />
       </td>
       <td className="px-5 py-3.5 text-right">
         <div className="flex items-center justify-end gap-3">
@@ -253,7 +262,10 @@ export function PricingRuleRow({
           >
             <Pencil size={14} strokeWidth={2} />
           </button>
-          <PricingRuleDeleteButton ruleId={rule.id} />
+          <PricingRuleDeleteButton
+            ruleId={rule.id}
+            labels={{ delete: actions.delete, confirmDelete: t.confirmDeleteRule }}
+          />
         </div>
       </td>
     </tr>
