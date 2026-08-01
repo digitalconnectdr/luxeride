@@ -3,6 +3,42 @@
 > Actualizado: 2026-08-01. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fix: auditoría de Equipo, Servicios adicionales, Firma electrónica, Asistente IA, AI Growth Assistant, Dominio personalizado, Partner Portals y Programa de referidos (2026-08-01)
+
+Servicios adicionales (marketplace), Dominio personalizado y Programa de
+referidos: código limpio, bien blindado (`company_referrals.expires_at` es
+TIMESTAMPTZ real, no el bug de fecha-vs-zona-horaria), sin cambios.
+
+Cuarta vez en el mismo día que aparece el patrón de zona horaria UTC del
+servidor vs `companies.timezone` (ver `luxeride-reportes-payroll-compliance-timezone-2026-08-01.md`
+y `luxeride-messages-promo-timezone-2026-08-01.md`), esta vez en las cuotas
+mensuales de los add-ons de IA y en el reporte de comisión de partners:
+
+1. **`/admin/team`** (pestaña Clientes) — el filtro de fecha de alta
+   ("Desde"/"Hasta") comparaba en UTC del servidor. Ahora usa
+   `zonedMidnightUtc`/`addIsoDays` con la zona horaria de la empresa.
+2. **Asistente IA / AI Growth Assistant** — las 3 lecturas de "usado este
+   mes" (`app/admin/assistant/page.tsx`, `app/admin/growth-assistant/page.tsx`
+   y `app/actions/ai-growth.ts` `getAiGrowthUsageAction`) calculaban "primer
+   día del mes" con `new Date().getFullYear()/.getMonth()` — el reseteo
+   mensual de la cuota de conversaciones/generaciones ocurría a la
+   medianoche UTC, no a la medianoche real del operador. Relevante porque
+   esa cuota determina cuándo empieza a cobrarse el overage.
+3. **Partner Portals — el más grave de esta ronda**: el reporte de comisión
+   en `/admin/partners/[id]` usaba `completed_at <= 'YYYY-MM-DD'` (sin hora)
+   como límite superior. Peor: `markPartnerPeriodPaidAction` (botón
+   "Marcar pagado", congela el monto) tenía su PROPIO cálculo, aún más roto
+   — comparaba `completed_at <= periodEnd` sin ningún sufijo de hora, lo que
+   en la práctica excluía casi todo el último día del período. El monto que
+   el operador veía en pantalla podía no coincidir con el que se congelaba.
+   Ambos ahora comparten el mismo cálculo timezone-aware con límite superior
+   exclusivo.
+4. **Firma electrónica** — `signDriverAgreementAction`/`signCorporateAgreementAction`
+   no verificaban que el `driverId`/`corporateAccountId` recibido perteneciera
+   a la empresa del operador antes de insertar la firma (IDOR menor: no
+   filtraba datos, pero permitía registrar una firma con `subject_id` de otra
+   empresa). Ahora ambas verifican pertenencia antes de firmar.
+
 ## ✅ Fix: auditoría de Reportes, Nómina, Corporativo y Cumplimiento (2026-08-01)
 
 Corporativo: código limpio, muy bien blindado contra IDOR (revisado a fondo,

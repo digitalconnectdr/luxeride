@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { TeamInviteForm } from '@/components/admin/team-invite-form'
 import { TeamMemberActiveToggle, TeamMemberRoleSelect, TeamMemberResetPasswordButton } from '@/components/admin/team-controls'
 import { getDict } from '@/lib/i18n/server'
+import { addIsoDays, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 import type { UserRole } from '@/lib/auth/permissions'
 
 const ROLE_BADGE: Record<string, string> = {
@@ -343,8 +344,13 @@ async function CustomersTab({
     const pattern = escapeIlikePattern(q)
     query = query.or(`first_name.ilike.${pattern},last_name.ilike.${pattern},phone.ilike.${pattern}`)
   }
-  if (from) query = query.gte('created_at', `${from}T00:00:00`)
-  if (to) query = query.lte('created_at', `${to}T23:59:59`)
+  // Límites en la zona horaria de la EMPRESA, no en UTC del servidor (mismo
+  // criterio que /admin/messages, /admin/reports, /admin/payroll).
+  if (from || to) {
+    const { data: companyTz } = await admin.from('companies').select('timezone').eq('id', companyId).single()
+    if (from) query = query.gte('created_at', zonedMidnightUtc(from, companyTz?.timezone).toISOString())
+    if (to) query = query.lt('created_at', zonedMidnightUtc(addIsoDays(to, 1), companyTz?.timezone).toISOString())
+  }
 
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1)
   const offset = (page - 1) * CUSTOMERS_PAGE_SIZE

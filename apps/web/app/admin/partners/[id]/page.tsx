@@ -8,14 +8,7 @@ import { computePartnerCommission, type PartnerCommissionType } from '@/lib/part
 import { PartnerForm, type ExistingPartner } from '@/components/admin/partners/partner-form'
 import { MarkPartnerPaidButton } from '@/components/admin/partners/mark-partner-paid-button'
 import { CopyButton } from '@/components/trip/copy-button'
-
-function firstDayOfMonth(): string {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
-}
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10)
-}
+import { addIsoDays, getZonedIsoDate, isoDateStartOfMonth, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 
 export default async function PartnerDetailPage({
   params,
@@ -29,14 +22,17 @@ export default async function PartnerDetailPage({
 
   const admin = createAdminClient()
   const [{ data: company }, { data: partner }] = await Promise.all([
-    admin.from('companies').select('slug').eq('id', user.company_id).single(),
+    admin.from('companies').select('slug, timezone').eq('id', user.company_id).single(),
     admin.from('partners').select('*').eq('id', params.id).eq('company_id', user.company_id).single(),
   ])
   if (!company || !partner) return notFound()
 
   const t = getDict().admin.partners
-  const periodStart = searchParams.from || firstDayOfMonth()
-  const periodEnd = searchParams.to || todayStr()
+  // Límites en la zona horaria de la EMPRESA, no en UTC del servidor (mismo
+  // criterio que /admin/reports y /admin/payroll).
+  const todayIso = getZonedIsoDate(new Date(), company.timezone)
+  const periodStart = searchParams.from || isoDateStartOfMonth(todayIso)
+  const periodEnd = searchParams.to || todayIso
 
   const [{ data: trips }, { data: alreadyPaid }] = await Promise.all([
     admin
@@ -45,8 +41,8 @@ export default async function PartnerDetailPage({
       .eq('company_id', user.company_id)
       .eq('partner_id', partner.id)
       .eq('status', 'completed')
-      .gte('completed_at', periodStart)
-      .lte('completed_at', `${periodEnd}T23:59:59`),
+      .gte('completed_at', zonedMidnightUtc(periodStart, company.timezone).toISOString())
+      .lt('completed_at', zonedMidnightUtc(addIsoDays(periodEnd, 1), company.timezone).toISOString()),
     admin
       .from('partner_payments')
       .select('id')

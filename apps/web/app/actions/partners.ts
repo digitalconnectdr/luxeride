@@ -12,6 +12,7 @@ import {
   PARTNER_RATE_ADJUSTMENT_MIN,
   type PartnerCommissionType,
 } from '@/lib/partners/engine'
+import { addIsoDays, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 
 type ActionResult<T = undefined> = { success: boolean; error?: string; data?: T }
 
@@ -142,23 +143,29 @@ export async function markPartnerPeriodPaidAction(opts: {
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
   const admin = createAdminClient()
-  const { data: partner } = await admin
-    .from('partners')
-    .select('commission_type, commission_value')
-    .eq('id', opts.partnerId)
-    .eq('company_id', user.company_id)
-    .single()
+  const [{ data: partner }, { data: company }] = await Promise.all([
+    admin
+      .from('partners')
+      .select('commission_type, commission_value')
+      .eq('id', opts.partnerId)
+      .eq('company_id', user.company_id)
+      .single(),
+    admin.from('companies').select('timezone').eq('id', user.company_id).single(),
+  ])
 
   if (!partner) return { success: false, error: 'Partner no encontrado' }
 
+  // Mismos límites en zona horaria de la EMPRESA que usa la página de detalle
+  // del partner — si no coinciden, el monto que se congela aquí no es el que
+  // el operador vio en pantalla antes de confirmar.
   const { data: trips } = await admin
     .from('bookings')
     .select('total_amount')
     .eq('company_id', user.company_id)
     .eq('partner_id', opts.partnerId)
     .eq('status', 'completed')
-    .gte('completed_at', opts.periodStart)
-    .lte('completed_at', opts.periodEnd)
+    .gte('completed_at', zonedMidnightUtc(opts.periodStart, company?.timezone).toISOString())
+    .lt('completed_at', zonedMidnightUtc(addIsoDays(opts.periodEnd, 1), company?.timezone).toISOString())
 
   const tripRows = trips ?? []
   const totalAmount = tripRows.reduce(

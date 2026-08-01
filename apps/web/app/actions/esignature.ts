@@ -72,6 +72,15 @@ export async function signDriverAgreementAction(
   if (!signedByName.trim()) return { success: false, error: 'El nombre es obligatorio' }
 
   const admin = createAdminClient()
+  const { data: driver } = await admin
+    .from('user_profiles')
+    .select('id')
+    .eq('id', driverId)
+    .eq('company_id', user.company_id)
+    .eq('role', 'driver')
+    .maybeSingle()
+  if (!driver) return { success: false, error: 'Conductor no encontrado' }
+
   const upload = await uploadSignatureImage(admin, user.company_id, 'driver', driverId, signatureDataUrl)
   if (upload.error || !upload.path) return { success: false, error: upload.error ?? 'Error al subir la firma' }
 
@@ -104,6 +113,14 @@ export async function signCorporateAgreementAction(
   if (!signedByName.trim()) return { success: false, error: 'El nombre es obligatorio' }
 
   const admin = createAdminClient()
+  const { data: corporateAccount } = await admin
+    .from('corporate_accounts')
+    .select('id')
+    .eq('id', corporateAccountId)
+    .eq('company_id', user.company_id)
+    .maybeSingle()
+  if (!corporateAccount) return { success: false, error: 'Cuenta corporativa no encontrada' }
+
   const upload = await uploadSignatureImage(admin, user.company_id, 'corporate_account', corporateAccountId, signatureDataUrl)
   if (upload.error || !upload.path) return { success: false, error: upload.error ?? 'Error al subir la firma' }
 

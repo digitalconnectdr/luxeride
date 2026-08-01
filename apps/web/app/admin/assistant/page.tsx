@@ -9,18 +9,14 @@ import {
   tierFromAddonKey,
 } from '@/lib/billing/ai-chat-addon'
 import { AddonUpsellCard } from '@/components/admin/addon-upsell-card'
-
-function firstDayOfMonthIso(): string {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString()
-}
+import { getZonedIsoDate, isoDateStartOfMonth, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 
 export default async function AssistantPage() {
   const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return <p className="p-8 text-sl-on-surface-muted">Sin empresa asignada.</p>
 
   const admin = createAdminClient()
-  const { data: company } = await admin.from('companies').select('email').eq('id', user.company_id).single()
+  const { data: company } = await admin.from('companies').select('email, timezone').eq('id', user.company_id).single()
   if (!company) return <p className="p-8 text-sl-on-surface-muted">Empresa no encontrada.</p>
 
   const t = getDict().admin.assistant
@@ -62,11 +58,15 @@ export default async function AssistantPage() {
     )
   }
 
+  // Límite en la zona horaria de la EMPRESA, no en UTC del servidor (mismo
+  // criterio que /admin/reports) — si no, el reseteo mensual de cuota queda
+  // desalineado con el "1ro del mes" real del operador.
+  const monthStartIso = isoDateStartOfMonth(getZonedIsoDate(new Date(), company.timezone))
   const { count: usedThisMonth } = await admin
     .from('ai_chat_conversations')
     .select('id', { count: 'exact', head: true })
     .eq('company_id', user.company_id)
-    .gte('started_at', firstDayOfMonthIso())
+    .gte('started_at', zonedMidnightUtc(monthStartIso, company.timezone).toISOString())
 
   const used = usedThisMonth ?? 0
   const quota = AI_CHAT_TIER_QUOTA[tier]

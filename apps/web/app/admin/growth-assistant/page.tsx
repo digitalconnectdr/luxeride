@@ -10,18 +10,14 @@ import {
 } from '@/lib/billing/ai-growth-addon'
 import { AddonUpsellCard } from '@/components/admin/addon-upsell-card'
 import { GrowthAssistantTabs } from '@/components/admin/growth-assistant/growth-assistant-tabs'
-
-function firstDayOfMonthIso(): string {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString()
-}
+import { getZonedIsoDate, isoDateStartOfMonth, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 
 export default async function GrowthAssistantPage() {
   const user = await requireRole('company_owner', 'company_admin')
   if (!user.company_id) return <p className="p-8 text-sl-on-surface-muted">Sin empresa asignada.</p>
 
   const admin = createAdminClient()
-  const { data: company } = await admin.from('companies').select('email').eq('id', user.company_id).single()
+  const { data: company } = await admin.from('companies').select('email, timezone').eq('id', user.company_id).single()
   if (!company) return <p className="p-8 text-sl-on-surface-muted">Empresa no encontrada.</p>
 
   const t = getDict().admin.growthAssistant
@@ -63,11 +59,12 @@ export default async function GrowthAssistantPage() {
     )
   }
 
+  const monthStartIso = isoDateStartOfMonth(getZonedIsoDate(new Date(), company.timezone))
   const { count: usedThisMonth } = await admin
     .from('ai_growth_generations')
     .select('id', { count: 'exact', head: true })
     .eq('company_id', user.company_id)
-    .gte('created_at', firstDayOfMonthIso())
+    .gte('created_at', zonedMidnightUtc(monthStartIso, company.timezone).toISOString())
 
   const used = usedThisMonth ?? 0
   const quota = AI_GROWTH_TIER_QUOTA[tier]

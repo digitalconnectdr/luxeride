@@ -13,15 +13,11 @@ import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
 import { buildGrowthContentSystemPrompt } from '@/lib/ai-growth/context'
 import { getChatCompletion, isOpenAiConfigured } from '@/lib/ai-chat/openai'
 import { tierFromAiGrowthAddonKey, AI_GROWTH_TIER_QUOTA } from '@/lib/billing/ai-growth-addon'
+import { getZonedIsoDate, isoDateStartOfMonth, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 
 type ActionResult<T = undefined> = { success: boolean; error?: string; data?: T }
 
 const MAX_PROMPT_LENGTH = 500
-
-function firstDayOfMonthIso(): string {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString()
-}
 
 async function requireAiGrowthTier(admin: ReturnType<typeof createAdminClient>, companyId: string) {
   const { data: addons } = await admin
@@ -73,11 +69,15 @@ export async function getAiGrowthUsageAction(): Promise<ActionResult<{ tier: str
   const tier = await requireAiGrowthTier(admin, user.company_id)
   if (!tier) return { success: false, error: 'not_active' }
 
+  // Límite en la zona horaria de la EMPRESA, no en UTC del servidor (mismo
+  // criterio que /admin/assistant y /admin/growth-assistant).
+  const { data: company } = await admin.from('companies').select('timezone').eq('id', user.company_id).single()
+  const monthStartIso = isoDateStartOfMonth(getZonedIsoDate(new Date(), company?.timezone))
   const { count } = await admin
     .from('ai_growth_generations')
     .select('id', { count: 'exact', head: true })
     .eq('company_id', user.company_id)
-    .gte('created_at', firstDayOfMonthIso())
+    .gte('created_at', zonedMidnightUtc(monthStartIso, company?.timezone).toISOString())
 
   return { success: true, data: { tier, used: count ?? 0, quota: AI_GROWTH_TIER_QUOTA[tier] } }
 }
