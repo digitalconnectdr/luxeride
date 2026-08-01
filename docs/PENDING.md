@@ -17,7 +17,7 @@ recogida en JFK y esa reserva jamás cobraba el cargo.
 Fix (decisión del usuario: detección automática por cercanía, sin fricción
 para el pasajero): nuevo `lib/pricing/airports.ts` (puro, testeado en
 `airports.test.ts`) que compara pickup/dropoff contra la lat/lng de cada
-aeropuerto configurado y activo de la empresa; si cae dentro de 2 millas,
+aeropuerto configurado y activo de la empresa; si cae dentro de 1 milla,
 aplica el fee de ESE aeropuerto (pickup y dropoff se evalúan independiente,
 pueden ser aeropuertos distintos). Cableado en `createBookingAction` y
 `createPublicBookingAction` (`app/actions/bookings.ts`) siguiendo el mismo

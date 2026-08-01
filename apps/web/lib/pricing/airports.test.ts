@@ -50,7 +50,7 @@ describe('resolveAirportFees', () => {
     expect(result.pickupFee).toBe(15)
   })
 
-  it('el radio de coincidencia es de 2 millas', () => {
-    expect(AIRPORT_MATCH_RADIUS_MILES).toBe(2)
+  it('el radio de coincidencia es de 1 milla', () => {
+    expect(AIRPORT_MATCH_RADIUS_MILES).toBe(1)
   })
 })

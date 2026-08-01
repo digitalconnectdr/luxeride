@@ -14,7 +14,7 @@ import { haversineMiles } from '@/lib/dispatch/scoring'
 // Un pickup/dropoff dentro de esta distancia del aeropuerto cuenta como "en
 // el aeropuerto" — suficiente para cubrir las distintas terminales de un
 // aeropuerto real sin capturar direcciones cercanas que no son el aeropuerto.
-export const AIRPORT_MATCH_RADIUS_MILES = 2
+export const AIRPORT_MATCH_RADIUS_MILES = 1
 
 export interface CompanyAirportForMatch {
   airportId: string
