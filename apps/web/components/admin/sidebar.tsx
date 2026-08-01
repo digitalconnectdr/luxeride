@@ -137,7 +137,12 @@ export function AdminSidebar({
       show: true,
       items: [
         { href: '/admin/dashboard', label: nav.dashboard, icon: LayoutDashboard },
-        ...(ext ? [] : [{ href: '/admin/operator-score', label: nav.operatorScore, icon: Gauge }]),
+        // La página exige requireRole('company_owner', 'company_admin') — sin
+        // este gate, un dispatcher/accounting veía el link y lo rebotaba de
+        // vuelta a su dashboard por defecto al hacer clic (page.tsx redirige
+        // en vez de mostrar acceso denegado, así que se sentía como un click
+        // que "no hace nada").
+        ...(ext || !flags.isOwnerOrAdmin ? [] : [{ href: '/admin/operator-score', label: nav.operatorScore, icon: Gauge }]),
       ],
     },
     {

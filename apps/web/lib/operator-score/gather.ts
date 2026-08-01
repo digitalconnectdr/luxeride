@@ -36,7 +36,6 @@ export async function gatherOperatorScoreInputs(admin: Admin, companyId: string)
     { data: company },
     { data: affiliateTrips },
     { data: driverStatsBookings },
-    { data: driverRows },
     { data: dispatchBookings },
     { data: currentRevenueBookings },
     { data: priorRevenueBookings },
@@ -52,11 +51,10 @@ export async function gatherOperatorScoreInputs(admin: Admin, companyId: string)
       .gte('created_at', periodStart),
     admin
       .from('bookings')
-      .select('status, scheduled_at, arrived_at')
+      .select('status, scheduled_at, arrived_at, rating')
       .eq('company_id', companyId)
       .in('status', ['completed', 'cancelled', 'no_show'])
       .gte('created_at', periodStart),
-    admin.from('drivers').select('rating').eq('company_id', companyId).not('rating', 'is', null),
     admin
       .from('bookings')
       .select('created_at, dispatched_at')
@@ -106,8 +104,14 @@ export async function gatherOperatorScoreInputs(admin: Admin, companyId: string)
   const punctualityPct = completedForPunctuality.length ? (onTime.length / completedForPunctuality.length) * 100 : null
   const problems = (driverStatsBookings ?? []).filter((b) => b.status === 'cancelled' || b.status === 'no_show')
   const cancellationPct = driverStatsBookings?.length ? (problems.length / driverStatsBookings.length) * 100 : null
-  const ratings = (driverRows ?? []).map((d) => Number(d.rating)).filter((r) => Number.isFinite(r))
-  const avgDriverRating = ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null
+  // Promedio real de calificaciones del PERIODO, tomado directo de bookings.rating
+  // — NO de drivers.rating (esa columna nunca es NULL: el trigger que la
+  // recalcula usa COALESCE(..., 5.00), así que un conductor sin ninguna
+  // calificación real contaba como un 5/5 perfecto e inflaba este score).
+  const driverRatings = (driverStatsBookings ?? [])
+    .filter((b) => b.rating != null)
+    .map((b) => Number(b.rating))
+  const avgDriverRating = driverRatings.length ? driverRatings.reduce((a, b) => a + b, 0) / driverRatings.length : null
 
   // Eficiencia de dispatch: % despachado dentro de la ventana rápida
   const dispatched = dispatchBookings ?? []
