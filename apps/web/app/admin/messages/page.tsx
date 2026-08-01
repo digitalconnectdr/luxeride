@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getDict, getLocale } from '@/lib/i18n/server'
+import { addIsoDays, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
 const PAGE_SIZE = 20
@@ -37,6 +38,14 @@ export default async function AdminMessagesPage({ searchParams }: PageProps) {
   }
 
   const admin = createAdminClient()
+
+  // Zona horaria de la empresa — los filtros de fecha "from"/"to" son
+  // calendario de la empresa, no UTC (mismo criterio que lib/pricing/engine.ts).
+  const { data: companyRow } = await admin
+    .from('companies')
+    .select('timezone')
+    .eq('id', user.company_id)
+    .single()
 
   // Ventana de los últimos mensajes de la empresa — suficiente para armar un
   // resumen por reserva (último mensaje + total) sin necesitar una vista SQL.
@@ -85,8 +94,13 @@ export default async function AdminMessagesPage({ searchParams }: PageProps) {
     .sort((a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime())
 
   const driverQuery = (searchParams.driver ?? '').trim().toLowerCase()
-  const fromDate = searchParams.from ? new Date(`${searchParams.from}T00:00:00`) : null
-  const toDate = searchParams.to ? new Date(`${searchParams.to}T23:59:59`) : null
+  // Límites en la zona horaria de la EMPRESA, no en UTC del servidor — mismo
+  // criterio que lib/pricing/engine.ts (getLocalTimeParts). Con un `new Date`
+  // ingenuo, un operador en Santo Domingo (UTC-4) filtrando "hoy" perdía los
+  // mensajes de las 8pm-12am (ya contados como el día siguiente en UTC).
+  const timezone = companyRow?.timezone
+  const fromDate = searchParams.from ? zonedMidnightUtc(searchParams.from, timezone) : null
+  const toDate = searchParams.to ? zonedMidnightUtc(addIsoDays(searchParams.to, 1), timezone) : null
 
   if (driverQuery) {
     rows = rows.filter((th) => {
@@ -96,7 +110,7 @@ export default async function AdminMessagesPage({ searchParams }: PageProps) {
     })
   }
   if (fromDate) rows = rows.filter((th) => new Date(th.lastAt) >= fromDate)
-  if (toDate) rows = rows.filter((th) => new Date(th.lastAt) <= toDate)
+  if (toDate) rows = rows.filter((th) => new Date(th.lastAt) < toDate)
 
   const hasFilters = !!(driverQuery || searchParams.from || searchParams.to)
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))

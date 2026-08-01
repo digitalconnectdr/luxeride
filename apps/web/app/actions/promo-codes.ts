@@ -9,13 +9,16 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
 import { isAddonActive } from '@/lib/billing/addons'
 import { validatePromoCode, computeDiscount, type PromoDiscountType } from '@/lib/promo/engine'
+import { addIsoDays, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 import type { RewardTrigger } from '@/lib/supabase/database.types'
 
 type ActionResult<T = undefined> = { success: boolean; error?: string; data?: T }
 
-async function requirePromoAddonActive(companyId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+async function requirePromoAddonActive(
+  companyId: string,
+): Promise<{ ok: true; timezone: string | null } | { ok: false; error: string }> {
   const admin = createAdminClient()
-  const { data: company } = await admin.from('companies').select('plan').eq('id', companyId).single()
+  const { data: company } = await admin.from('companies').select('plan, timezone').eq('id', companyId).single()
   if (!company) return { ok: false, error: 'Empresa no encontrada' }
 
   const { data: addon } = await admin
@@ -28,7 +31,7 @@ async function requirePromoAddonActive(companyId: string): Promise<{ ok: true } 
   if (!isAddonActive(company.plan, addon?.enabled ?? false)) {
     return { ok: false, error: 'El add-on de códigos promocionales no está activo para tu empresa' }
   }
-  return { ok: true }
+  return { ok: true, timezone: company.timezone }
 }
 
 // ─── CRUD (operador) ───────────────────────────────────────────────────────────
@@ -45,14 +48,23 @@ export async function createPromoCodeAction(fd: FormData): Promise<ActionResult>
   const discountValue = Number(fd.get('discount_value'))
   const maxUses = fd.get('max_uses') ? Number(fd.get('max_uses')) : null
   const maxUsesPerCustomer = fd.get('max_uses_per_customer') ? Number(fd.get('max_uses_per_customer')) : null
-  const validFrom = (fd.get('valid_from') as string) || null
-  const validUntil = (fd.get('valid_until') as string) || null
+  const validFromDate = (fd.get('valid_from') as string) || null
+  const validUntilDate = (fd.get('valid_until') as string) || null
   const minBookingAmount = fd.get('min_booking_amount') ? Number(fd.get('min_booking_amount')) : null
 
   if (!code) return { success: false, error: 'El código es obligatorio' }
   if (discountType !== 'percentage' && discountType !== 'fixed') return { success: false, error: 'Tipo de descuento inválido' }
   if (!Number.isFinite(discountValue) || discountValue <= 0) return { success: false, error: 'Valor de descuento inválido' }
   if (discountType === 'percentage' && discountValue > 100) return { success: false, error: 'El porcentaje no puede superar 100%' }
+
+  // `<input type="date">` solo manda 'YYYY-MM-DD' — sin esto, Postgres lo
+  // interpreta como medianoche UTC en vez de medianoche de la zona horaria
+  // de la empresa, y un código "vigente hasta el 15" expira 4h antes de lo
+  // esperado en países al oeste de UTC (mismo bug que ya se corrigió en
+  // lib/pricing/engine.ts para recargos). valid_until se guarda como el
+  // inicio del día SIGUIENTE (límite exclusivo) para cubrir el día completo.
+  const validFrom = validFromDate ? zonedMidnightUtc(validFromDate, gate.timezone).toISOString() : null
+  const validUntil = validUntilDate ? zonedMidnightUtc(addIsoDays(validUntilDate, 1), gate.timezone).toISOString() : null
 
   const admin = createAdminClient()
   const { error } = await admin.from('promo_codes').insert({

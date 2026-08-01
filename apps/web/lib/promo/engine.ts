@@ -38,7 +38,9 @@ export function validatePromoCode(
 
   if (!promo.isActive) return { valid: false, error: 'inactive' }
   if (promo.validFrom && now < new Date(promo.validFrom)) return { valid: false, error: 'not_yet_valid' }
-  if (promo.validUntil && now > new Date(promo.validUntil)) return { valid: false, error: 'expired' }
+  // validUntil se guarda como el INICIO del día siguiente al último día
+  // vigente (límite exclusivo) — ver createPromoCodeAction — por eso >=.
+  if (promo.validUntil && now >= new Date(promo.validUntil)) return { valid: false, error: 'expired' }
   if (promo.maxUses != null && promo.usesCount >= promo.maxUses) return { valid: false, error: 'max_uses_reached' }
   if (promo.maxUsesPerCustomer != null && opts.customerRedemptionsCount >= promo.maxUsesPerCustomer) {
     return { valid: false, error: 'customer_limit_reached' }

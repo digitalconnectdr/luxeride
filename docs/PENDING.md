@@ -3,6 +3,33 @@
 > Actualizado: 2026-08-01. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fix: auditoría de Cotizaciones, Mensajes, Reportes de conductor y Códigos promocionales (2026-08-01)
+
+Cotizaciones y Reportes de conductor: código limpio, sin cambios.
+
+Dos bugs reales de límite de fecha en zona horaria (mismo patrón ya corregido
+antes para dashboard/precios/feriados — `new Date('YYYY-MM-DD...')` se
+interpreta en UTC, no en la zona horaria de la empresa):
+
+1. **`/admin/messages`** — el filtro de fecha "Desde"/"Hasta" comparaba contra
+   límites en UTC del servidor. Un operador en Santo Domingo (UTC-4) perdía
+   los mensajes de las 8pm-12am al filtrar "hoy". Ahora usa
+   `zonedMidnightUtc`/`addIsoDays` (`lib/time/zoned-bounds.ts`) con la zona
+   horaria de la empresa.
+2. **Códigos promocionales — "Válido desde"/"Válido hasta"** — mismo bug pero
+   en la base de datos: los inputs `<input type="date">` se guardaban tal
+   cual en columnas `TIMESTAMPTZ`, por lo que un código "vigente hasta el 15"
+   expiraba a las 8pm del 14 en Santo Domingo (4h antes de lo esperado), y
+   uno "vigente desde el 15" se activaba 4h antes de lo esperado. Fix en
+   `createPromoCodeAction`: `valid_from` se guarda como medianoche del día en
+   la zona de la empresa, `valid_until` como el INICIO del día siguiente
+   (límite exclusivo, cubre el día completo). `lib/promo/engine.ts` ajustado
+   a `>=` para ese límite exclusivo + 2 tests nuevos de frontera.
+
+Extra: confirm de eliminar una regla de recompensa automática estaba
+hardcodeado en español pese a que el componente ya recibe el diccionario
+i18n — corregido para usar el diccionario en los 3 idiomas.
+
 ## ✅ Fix: auditoría de Tarifas y cargos (/admin/pricing) (2026-08-01)
 
 Tres hallazgos reales:

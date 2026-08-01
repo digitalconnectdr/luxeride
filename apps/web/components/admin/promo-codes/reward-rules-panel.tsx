@@ -173,7 +173,7 @@ export function RewardRulesPanel({ rules, t, currency }: { rules: RewardRuleRow[
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-3">
                         <ActiveToggle rule={r} t={t} />
-                        <DeleteButton ruleId={r.id} name={r.name} />
+                        <DeleteButton ruleId={r.id} name={r.name} confirmTemplate={t.confirmDeleteRule} />
                       </div>
                     </td>
                   </tr>
@@ -223,14 +223,22 @@ function ActiveToggle({ rule, t }: { rule: RewardRuleRow; t: T }) {
   )
 }
 
-function DeleteButton({ ruleId, name }: { ruleId: string; name: string }) {
+function DeleteButton({
+  ruleId,
+  name,
+  confirmTemplate,
+}: {
+  ruleId: string
+  name: string
+  confirmTemplate: string
+}) {
   const [isPending, startTransition] = useTransition()
   return (
     <button
       type="button"
       disabled={isPending}
       onClick={() => {
-        if (!confirm(`¿Eliminar la regla "${name}"? Los códigos ya entregados siguen siendo válidos.`)) return
+        if (!confirm(confirmTemplate.replace('{name}', name))) return
         startTransition(async () => {
           await deleteRewardRuleAction(ruleId)
         })

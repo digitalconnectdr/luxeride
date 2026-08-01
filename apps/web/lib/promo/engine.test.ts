@@ -31,6 +31,25 @@ describe('validatePromoCode', () => {
     expect(r).toEqual({ valid: false, error: 'expired' })
   })
 
+  it('invalido justo en el instante de validUntil (limite exclusivo)', () => {
+    // validUntil se guarda como el INICIO del día siguiente al último día
+    // vigente (ver createPromoCodeAction) — por eso el instante exacto ya
+    // cuenta como expirado, no el "último momento válido".
+    const r = validatePromoCode(
+      { ...BASE, validUntil: '2026-06-01T00:00:00Z' },
+      { bookingAmount: 100, customerRedemptionsCount: 0, now: new Date('2026-06-01T00:00:00Z') },
+    )
+    expect(r).toEqual({ valid: false, error: 'expired' })
+  })
+
+  it('valido un instante antes de validUntil', () => {
+    const r = validatePromoCode(
+      { ...BASE, validUntil: '2026-06-01T00:00:00.000Z' },
+      { bookingAmount: 100, customerRedemptionsCount: 0, now: new Date('2026-05-31T23:59:59.999Z') },
+    )
+    expect(r.valid).toBe(true)
+  })
+
   it('invalido si todavia no empieza su vigencia', () => {
     const r = validatePromoCode(
       { ...BASE, validFrom: '2026-12-01T00:00:00Z' },

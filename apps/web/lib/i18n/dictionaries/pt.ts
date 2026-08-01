@@ -1186,6 +1186,7 @@ export const pt: Dictionary = {
       ruleValidDays: 'Vence em (dias)',
       rulesOncePerCustomer: 'Cada regra premia uma única vez por cliente. O código é pessoal e de uso único.',
       noRules: 'Ainda não há regras automáticas.',
+      confirmDeleteRule: 'Excluir a regra "{name}"? Os códigos já entregues continuam válidos.',
       triggerTripsCompleted: 'Ao chegar a N viagens',
       triggerTotalSpent: 'Ao acumular um gasto',
       triggerFirstTrip: 'Ao concluir a primeira viagem',

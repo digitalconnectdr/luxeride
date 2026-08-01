@@ -1185,6 +1185,7 @@ export const en = {
       ruleValidDays: 'Expires in (days)',
       rulesOncePerCustomer: 'Each rule rewards a customer once. The code is personal and single-use.',
       noRules: 'No automatic rules yet.',
+      confirmDeleteRule: 'Delete rule "{name}"? Codes already issued stay valid.',
       triggerTripsCompleted: 'On reaching N trips',
       triggerTotalSpent: 'On reaching a spend total',
       triggerFirstTrip: 'On completing the first trip',
