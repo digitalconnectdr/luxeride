@@ -31,6 +31,7 @@ import {
   haversineMiles,
   type DriverScoreInput,
 } from '@/lib/dispatch/scoring'
+import { getZonedIsoDate, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 
 // Margen entre el fin estimado de un viaje y el inicio del siguiente para no
 // considerarlos en conflicto — tiempo de traslado/descanso razonable.
@@ -88,7 +89,7 @@ export async function tryAutoAssignDriver(
   // empresa lo apagó, la reserva se queda pendiente para asignación manual.
   const { data: company } = await admin
     .from('companies')
-    .select('auto_assign_enabled, settings')
+    .select('auto_assign_enabled, settings, timezone')
     .eq('id', booking.company_id)
     .single()
   if (company && company.auto_assign_enabled === false) return { assigned: false }
@@ -187,7 +188,11 @@ export async function tryAutoAssignDriver(
   // Reparto justo = menos viajes COMPLETADOS hoy. Si a un conductor le
   // cancelan/rechazan un viaje antes de empezarlo, ese viaje nunca llega a
   // 'completed' y por lo tanto no cuenta en su contra.
-  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+  // "Hoy" en la zona horaria DE LA EMPRESA, no la del servidor — de lo
+  // contrario un viaje completado a las 9pm en Santo Domingo (UTC-4) sigue
+  // contando como "de hoy" hasta las 4am hora local del día siguiente,
+  // penalizando injustamente a quien trabajó el turno de la noche.
+  const todayStart = zonedMidnightUtc(getZonedIsoDate(new Date(), company?.timezone ?? null), company?.timezone ?? null)
   const { data: completedToday } = await admin
     .from('bookings')
     .select('driver_id')
@@ -588,7 +593,7 @@ export async function reassignForRisk(
 
   const { data: company } = await admin
     .from('companies')
-    .select('settings, name')
+    .select('settings, name, timezone')
     .eq('id', booking.company_id)
     .single()
   const weights = parseDispatchWeights((company?.settings as Record<string, unknown> | null)?.dispatch_weights)
@@ -674,7 +679,9 @@ export async function reassignForRisk(
     if (overlaps(newWindow, windowFor(b.scheduled_at, b.duration_minutes))) vehicleConflicted.add(b.vehicle_id)
   }
 
-  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+  // "Hoy" en la zona horaria de la empresa — ver mismo comentario en
+  // tryAutoAssignDriver más arriba en este archivo.
+  const todayStart = zonedMidnightUtc(getZonedIsoDate(new Date(), company?.timezone ?? null), company?.timezone ?? null)
   const { data: completedToday } = await admin
     .from('bookings')
     .select('driver_id')

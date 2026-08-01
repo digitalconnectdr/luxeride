@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { refreshFlightsForBookings } from '@/lib/flights/refresh'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { DispatchBoard } from '@/components/dispatcher/dispatch-board'
+import { getZonedIsoDate, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
 
 export const metadata: Metadata = { title: 'Dispatch' }
 export const dynamic = 'force-dynamic'
@@ -18,10 +19,19 @@ export default async function DispatcherDashboardPage() {
   }
 
   const admin = createAdminClient()
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
 
-  const [{ data: initialRows }, { data: drivers }, { data: companyRow }] = await Promise.all([
+  // "Hoy" en la zona horaria DE LA EMPRESA, no la del servidor (Vercel corre
+  // en UTC) — mismo criterio que app/admin/dashboard/page.tsx. Sin esto, un
+  // viaje completado a las 9pm en Santo Domingo (UTC-4) contaba como "de
+  // mañana" y desaparecía prematuramente del tablero en vivo.
+  const { data: companyRow } = await admin
+    .from('companies')
+    .select('timezone, auto_assign_enabled, settings')
+    .eq('id', user.company_id)
+    .single()
+  const todayStart = zonedMidnightUtc(getZonedIsoDate(new Date(), companyRow?.timezone ?? null), companyRow?.timezone ?? null)
+
+  const [{ data: initialRows }, { data: drivers }] = await Promise.all([
     admin
       .from('bookings')
       .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, total_amount, currency, driver_id, vehicle_type_id, flight_number, flight_status, flight_delay_minutes, flight_checked_at, distance_miles, arrived_at')
@@ -46,7 +56,6 @@ export default async function DispatcherDashboardPage() {
       .eq('role', 'driver')
       .eq('is_active', true)
       .order('first_name'),
-    admin.from('companies').select('auto_assign_enabled, settings').eq('id', user.company_id).single(),
   ])
 
   // Estado en vivo de cada conductor — disponibilidad + viaje actual + viajes
