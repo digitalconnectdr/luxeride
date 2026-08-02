@@ -90,7 +90,8 @@ Construido:
   bug — los 3 desbordamientos de texto/botón puntuales sí se confirmaron
   leyendo el código y sí son bugs reales, ya corregidos.
 
-Migraciones 86 y 87 pendientes de pegar a mano en el SQL Editor de Supabase.
+Migraciones 86 y 87 ✅ aplicadas por el usuario en el SQL Editor de Supabase
+(2026-08-02) — el chat Dispatch↔Conductor ya funciona en la app nativa.
 Sin build de EAS en esta ronda (regla: máximo 2/semana, el usuario avisa
 cuándo).
 
