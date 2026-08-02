@@ -3,6 +3,70 @@
 > Actualizado: 2026-08-02. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fix: preferencias del pasajero visibles en /admin/bookings/[id] + análisis de 3 ideas más de Empower (2026-08-02)
+
+Segunda parte de la ronda de driveempower.com. Dos pedidos del usuario:
+
+**1. Fix del hueco detectado en la ronda anterior**: `/admin/bookings/[id]`
+no mostraba NINGUNA preferencia del pasajero al despachador, ni siquiera las
+que existían desde julio (conversación, temperatura, música, ayuda con
+equipaje). La causa: `booking.passenger_preferences` (el snapshot JSONB
+congelado en cada reserva desde la migración 76) se guardaba pero nadie lo
+leía en esta página — ni `lib/passenger/preferences.ts` ni `summarizePreferences()`
+se usaban ahí pese a que el comentario del archivo ya decía que debían serlo.
+Fix: nueva tarjeta "Preferencias del pasajero" entre "Pasajero" y "Vehículo +
+conductor", que solo aparece si `hasAnyPreference()` es cierto (evita ruido
+para reservas sin nada configurado). Muestra conversación/temperatura/música/
+género preferido/tipo de vehículo preferido/conductor favorito (con nombre
+resuelto), y un badge si necesita ayuda con equipaje. Las notas fijas
+(`standingNotes`) NO se repiten aquí a propósito — ya se fusionan dentro de
+"Instrucciones especiales" al crear la reserva. i18n completo en/es/pt
+(`dict.admin.bookingDetail.preferences`). Verificado con `tsc`/`vitest`; no
+se verificó visualmente en navegador por falta de credenciales de demo en
+este entorno.
+
+**2. Análisis de 3 sugerencias adicionales** (para no copiar literal el
+modelo de Empower), verificadas contra el código real antes de opinar:
+
+- **Favoritos (chofer/vehículo/operador + preferencias)**: chofer favorito y
+  las preferencias de conversación/temperatura/música/equipaje YA estaban
+  construidas (esta ronda + antes). "Vehículo favorito" es redundante con
+  `preferredVehicleTypeId` que ya existe (preferencia por TIPO de vehículo,
+  no por unidad física — las empresas reasignan vehículos a choferes, así
+  que fijar una placa específica no aporta valor real). "Operador favorito"
+  **no aplica al modelo de LuxeRide**: el pasajero reserva a través del
+  micrositio/app de UNA sola empresa (white-label), no elige entre varios
+  operadores en una interfaz compartida tipo marketplace — eso es
+  exactamente el modelo de Empower que ya se descartó en la ronda anterior.
+- **Programa de referidos de pasajero (6 canales sugeridos)**: 3 de los 6 YA
+  EXISTEN bajo otro nombre — "operador refiere operador" es literalmente el
+  programa de referidos entre empresas ya construido (`company_referrals`);
+  "hotel refiere pasajero" e "influencer refiere pasajero" ya están cubiertos
+  por Partner Portals (`partners`/`partner_payments`, portal co-brandeado por
+  partner con comisión y reporte) — un influencer o un hotel son, en la
+  práctica, el mismo tipo de socio no-operador que ya modela ese sistema, sin
+  código nuevo, solo dar de alta el partner. Los 2 genuinamente nuevos
+  ("pasajero refiere pasajero", "conductor refiere pasajero") y el ambiguo
+  ("asistente corporativo refiere empresa") se presentaron al usuario, que
+  decidió **no construir ninguno por ahora** — queda como oportunidad
+  registrada, no como pendiente activo.
+- **Lanzamiento por ciudad (South Florida, NY/NJ, Orlando/Tampa, Atlanta,
+  Houston/Dallas)**: es una decisión de estrategia de mercado/marketing del
+  negocio de JPRS Digital Connect, no una funcionalidad de software — no se
+  tradujo en ninguna tarea de código. Lo único con solapamiento real de
+  producto es el "Growth Engine" (páginas programáticas por ciudad/ruta/
+  aeropuerto) ya registrado como pendiente de mayor alcance más abajo.
+- **Modelo dual de comisión (Direct Booking 0% vs Marketplace Booking
+  10%-15%)**: confirmado en el código que HOY todos los operadores pagan
+  suscripción + platform fee (0.5%-3%) sin distinguir el origen del
+  pasajero — el copy "No middleman commission on your direct bookings" del
+  landing/ToS es, en efecto, más una promesa de marketing que un modelo de
+  precio real diferenciado. Es un cambio de modelo de negocio/facturación
+  real (afecta planes de Whop y la comunicación a operadores ya activos), no
+  un ajuste de UI. Se presentó al usuario, que decidió **no construirlo por
+  ahora** sin antes definir los números exactos — queda registrado como
+  oportunidad, no como pendiente activo.
+
 ## ✅ Análisis driveempower.com + 2 preferencias de pasajero: conductor del mismo género y conductor favorito (2026-08-02)
 
 El usuario pidió comparar https://driveempower.com/ contra LuxeRide.

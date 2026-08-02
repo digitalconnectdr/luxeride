@@ -13,6 +13,7 @@ import { isStripeConfigured } from '@/lib/stripe/server'
 import { isWhopConnectConfigured } from '@/lib/whop/connect-server'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 import { getDict, getLocale } from '@/lib/i18n/server'
+import { toPreferences, hasAnyPreference } from '@/lib/passenger/preferences'
 
 const LOCALE_TAGS: Record<string, string> = { en: 'en-US', es: 'es-DO', pt: 'pt-BR' }
 
@@ -150,6 +151,42 @@ export default async function BookingDetailPage({
   const pickup  = parseLocation(booking.pickup_location)
   const dropoff = parseLocation(booking.dropoff_location)
   const isStaff = user.role !== 'accounting'
+
+  // Preferencias del pasajero (copiadas a la reserva en la migración 76) —
+  // existían desde julio pero nunca se mostraban al despachador, ni siquiera
+  // las que no dependen de la migración 85 (conversación/temperatura/música/
+  // ayuda con equipaje). Las notas fijas (standingNotes) NO se repiten aquí:
+  // ya se fusionan dentro de special_instructions al crear la reserva.
+  const passengerPrefs = toPreferences(booking.passenger_preferences as Record<string, unknown> | null)
+  const showPrefs = hasAnyPreference(passengerPrefs)
+
+  let preferredVehicleTypeName: string | null = null
+  if (passengerPrefs.preferredVehicleTypeId) {
+    if (passengerPrefs.preferredVehicleTypeId === booking.vehicle_type_id && vehicleType) {
+      preferredVehicleTypeName = vehicleType.name
+    } else {
+      const { data: prefVt } = await admin
+        .from('vehicle_types')
+        .select('name')
+        .eq('id', passengerPrefs.preferredVehicleTypeId)
+        .maybeSingle()
+      preferredVehicleTypeName = prefVt?.name ?? null
+    }
+  }
+
+  let favoriteDriverName: string | null = null
+  if (passengerPrefs.favoriteDriverId) {
+    if (passengerPrefs.favoriteDriverId === booking.driver_id && driverName !== '—') {
+      favoriteDriverName = driverName
+    } else {
+      const { data: favDriver } = await admin
+        .from('user_profiles')
+        .select('first_name, last_name')
+        .eq('id', passengerPrefs.favoriteDriverId)
+        .maybeSingle()
+      if (favDriver) favoriteDriverName = `${favDriver.first_name} ${favDriver.last_name}`
+    }
+  }
 
   // ── Sección G — Red de afiliados ──────────────────────────────────────────
   const affiliatesDict = getDict().affiliates
@@ -367,6 +404,64 @@ export default async function BookingDetailPage({
           </div>
         )}
       </div>
+
+      {/* Preferencias del pasajero — declaradas en su perfil, congeladas al reservar */}
+      {showPrefs && (
+        <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted">
+            {t.preferences.title}
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {passengerPrefs.conversation !== 'no_preference' && (
+              <div>
+                <p className="text-xs text-sl-on-surface-muted">{t.preferences.conversationLabel}</p>
+                <p className="text-sm text-sl-on-surface mt-0.5">
+                  {t.preferences.conversation[passengerPrefs.conversation]}
+                </p>
+              </div>
+            )}
+            {passengerPrefs.temperature !== 'no_preference' && (
+              <div>
+                <p className="text-xs text-sl-on-surface-muted">{t.preferences.temperatureLabel}</p>
+                <p className="text-sm text-sl-on-surface mt-0.5">
+                  {t.preferences.temperature[passengerPrefs.temperature]}
+                </p>
+              </div>
+            )}
+            {passengerPrefs.music !== 'no_preference' && (
+              <div>
+                <p className="text-xs text-sl-on-surface-muted">{t.preferences.musicLabel}</p>
+                <p className="text-sm text-sl-on-surface mt-0.5">{t.preferences.music[passengerPrefs.music]}</p>
+              </div>
+            )}
+            {passengerPrefs.preferredDriverGender !== 'no_preference' && (
+              <div>
+                <p className="text-xs text-sl-on-surface-muted">{t.preferences.genderLabel}</p>
+                <p className="text-sm text-sl-on-surface mt-0.5">
+                  {t.preferences.gender[passengerPrefs.preferredDriverGender]}
+                </p>
+              </div>
+            )}
+            {preferredVehicleTypeName && (
+              <div>
+                <p className="text-xs text-sl-on-surface-muted">{t.preferences.vehicleLabel}</p>
+                <p className="text-sm text-sl-on-surface mt-0.5">{preferredVehicleTypeName}</p>
+              </div>
+            )}
+            {favoriteDriverName && (
+              <div>
+                <p className="text-xs text-sl-on-surface-muted">{t.preferences.favoriteDriverLabel}</p>
+                <p className="text-sm text-sl-on-surface mt-0.5">★ {favoriteDriverName}</p>
+              </div>
+            )}
+          </div>
+          {passengerPrefs.luggageHelp && (
+            <p className="inline-flex text-xs font-medium text-bronze bg-gold/10 border border-bronze/20 rounded-lg px-3 py-1.5">
+              {t.preferences.luggageHelp}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Vehículo + conductor */}
       <div className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-5 space-y-3">
