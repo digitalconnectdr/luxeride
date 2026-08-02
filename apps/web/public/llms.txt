@@ -29,7 +29,8 @@
 - Driver payroll ($9/month): commission or flat-per-trip earnings calculation and reporting per driver. Calculation and reporting only | it does not move real money.
 - E-signature ($9/month): HTML5 signature capture for the driver agreement (at onboarding) and the corporate account contract.
 - Promo codes ($3/month): percentage or fixed-amount discount codes for the public booking wizard, with usage limits and minimum booking amount rules.
-- Affiliate network ($29/month on Starter/Professional; included on Elite/Enterprise): send and receive trips with other LuxeRide operators.
+- Affiliate network (variable commission per trip sent or received, no fixed monthly fee; the operator sets its own margin | included on Elite/Enterprise): send and receive trips with other LuxeRide operators.
+- Custom domain ($29 one-time on Starter/Professional; included on Elite/Enterprise): connect a domain the operator already owns to their booking page, or request LuxeRide to acquire one on their behalf (no fixed price, quoted per request).
 
 ## AI chat assistant (add-on, all plans | not free on any tier)
 
@@ -37,7 +38,7 @@
 
 ## AI Growth Assistant (add-on, all plans | not free on any tier)
 
-- AI Growth Assistant Basic ($9/month, 150 AI generations included) or Plus ($19/month, 500 generations included; $3 per extra 50 generations): AI-personalized follow-up emails for abandoned price quotes (automatic), plus an on-demand generator for marketing content (social media captions, Google Business posts) using only the operator's own fleet, services and city | text only, no auto-publishing. Powered by GPT-4o-mini. Included at no extra cost only on negotiated Enterprise plans.
+- AI Growth Assistant Basic ($9/month, 150 AI generations included) or Plus ($19/month, 500 generations included; $3 per extra 50 generations): AI-personalized follow-up emails for abandoned price quotes (automatic), plus an on-demand generator for marketing content (social media captions, Google Business posts) using only the operator's own fleet, services and city | text only, no auto-publishing. Also includes a frequent-routes report (top corridors and cities by trip count and revenue, with a heatmap) at no extra cost | it does not use the AI generation quota. Powered by GPT-4o-mini. Included at no extra cost only on negotiated Enterprise plans.
 
 ## Pricing (as of 2026-07-12)
 

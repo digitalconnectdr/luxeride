@@ -3,6 +3,45 @@
 > Actualizado: 2026-08-02. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Auditoría de comunicación de add-ons: landing + llms.txt + JSON-LD (2026-08-02)
+
+El usuario notó que "Rutas frecuentes" (AI Growth Assistant) no se comunicaba
+como beneficio en la tarjeta de `/admin/marketplace`, y pidió revisar si TODOS
+los add-ons se comunican bien en landing/SEO/GEO/AEO/LLM. Investigación
+(agente Explore) confirmó que el JSON-LD del landing (`lib/seo/structured-data.ts`)
+literalmente hereda texto por texto los mismos `features` de
+`dict.landing.plans` — así que arreglar la landing arregla las 3 superficies
+(A: landing, B: llms.txt, C: JSON-LD) a la vez para casi todo, excepto
+`llms.txt` que es un archivo estático separado.
+
+- **`ai_growth` (marketplace + landing + llms.txt)**: agregado el bullet de
+  "Rutas frecuentes" (`dict.admin.marketplace.items.ai_growth.features`,
+  `dict.landing.plans[].features` en Starter/Professional/Elite, y
+  `public/llms.txt`) — aclarando explícitamente que el reporte de rutas NO
+  consume la cuota de generaciones de IA (confirmado en el comentario de
+  `app/actions/route-insights.ts`).
+- **`affiliate_network` — desactualizado, no solo "sin detalle"**: landing y
+  `llms.txt` afirmaban **"$29/mes"** fijo, un precio que nunca existió (el
+  modelo real es comisión variable por viaje, `hasFixedPrice: false` en
+  `lib/billing/catalog.ts` con comentario explícito: "la UI nunca debe
+  mostrar un '$X/mes' inventado"). Corregido en las 3 superficies (en/es/pt +
+  llms.txt) a "comisión variable por viaje, tú defines el margen".
+- **`custom_domain_byod` — ausente en las 3 superficies**: no aparecía ni en
+  landing, ni en llms.txt, ni por lo tanto en el JSON-LD, pese a ser un
+  add-on activo y vendido desde julio. Agregado como bullet en los 4 planes
+  (add-on $29 pago único en Starter/Professional, incluido en Elite/
+  Enterprise) + llms.txt. `custom_domain_request` (la opción gratuita
+  "consíganme uno") se mencionó dentro del mismo bullet en vez de crear uno
+  aparte, ya que no tiene precio fijo propio.
+- **`ai_chat`/`ai_growth` en landing — no desactualizados, pero mínimos**:
+  antes solo mostraban el precio ("desde $X/mes") sin explicar qué hacen.
+  Se enriqueció cada bullet con el beneficio real en una frase corta.
+- `driver_payroll`, `esignature`, `promo_codes` ya estaban bien comunicados
+  en las 3 superficies — sin cambios.
+- Verificado en navegador (dev local) que los bullets más largos no rompen
+  el layout de las tarjetas de precio (mismo patrón ya usado por bullets
+  igual de largos preexistentes).
+
 ## ✅ Preferencias al conductor + chat Dispatch en la app nativa + fixes de overflow móvil (2026-08-02)
 
 Tercera ronda del día, a partir de capturas de pantalla móviles que mostró el
