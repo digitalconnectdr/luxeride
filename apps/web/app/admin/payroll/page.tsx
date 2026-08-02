@@ -100,26 +100,26 @@ export default async function PayrollPage({ searchParams }: { searchParams: { fr
         <p className="text-sm text-sl-on-surface-muted">{t.subtitle}</p>
       </div>
 
-      <form className="flex items-end gap-3 bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-4">
-        <div>
+      <form className="flex items-end flex-wrap gap-3 bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-4">
+        <div className="min-w-0">
           <label className="block text-xs text-sl-on-surface-muted mb-1">{t.from}</label>
           <input
             type="date"
             name="from"
             defaultValue={periodStart}
-            className="text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-2 py-1.5"
+            className="w-full max-w-[160px] text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-2 py-1.5"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="block text-xs text-sl-on-surface-muted mb-1">{t.to}</label>
           <input
             type="date"
             name="to"
             defaultValue={periodEnd}
-            className="text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-2 py-1.5"
+            className="w-full max-w-[160px] text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-2 py-1.5"
           />
         </div>
-        <button type="submit" className="text-sm font-medium px-4 py-1.5 bg-bronze text-white rounded-lg hover:opacity-90 transition-opacity">
+        <button type="submit" className="shrink-0 text-sm font-medium px-4 py-1.5 bg-bronze text-white rounded-lg hover:opacity-90 transition-opacity">
           {t.period}
         </button>
       </form>

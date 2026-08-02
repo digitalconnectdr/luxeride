@@ -371,24 +371,24 @@ export default async function BookingDetailPage({
           {t.passengerTitle}
         </p>
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs text-sl-on-surface-muted">{t.name}</p>
-            <p className="text-sm font-medium text-sl-on-surface mt-0.5">{booking.passenger_name ?? '—'}</p>
+            <p className="text-sm font-medium text-sl-on-surface mt-0.5 break-words">{booking.passenger_name ?? '—'}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs text-sl-on-surface-muted">{t.passengers}</p>
             <p className="text-sm text-sl-on-surface mt-0.5">{booking.passenger_count}</p>
           </div>
           {booking.passenger_phone && (
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-sl-on-surface-muted">{t.phone}</p>
-              <p className="text-sm text-sl-on-surface mt-0.5">{booking.passenger_phone}</p>
+              <p className="text-sm text-sl-on-surface mt-0.5 break-words">{booking.passenger_phone}</p>
             </div>
           )}
           {booking.passenger_email && (
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-sl-on-surface-muted">{t.email}</p>
-              <p className="text-sm text-sl-on-surface mt-0.5">{booking.passenger_email}</p>
+              <p className="text-sm text-sl-on-surface mt-0.5 break-all">{booking.passenger_email}</p>
             </div>
           )}
         </div>

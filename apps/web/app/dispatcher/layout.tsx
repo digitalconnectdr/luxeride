@@ -14,10 +14,10 @@ export default async function DispatcherLayout({
   return (
     <div className="min-h-screen bg-sl-bg flex flex-col">
       <header className="bg-sl-surface-high border-b border-sl-outline-variant shrink-0">
-        <div className="px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-6">
+        <div className="px-4 sm:px-6 py-3 flex items-center justify-between flex-wrap gap-x-4 gap-y-2">
+          <div className="flex items-center gap-3 sm:gap-6 flex-wrap">
             <Link href="/admin/dashboard" prefetch={false} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-              <div className="w-6 h-6 rounded-full bg-gold flex items-center justify-center">
+              <div className="w-6 h-6 rounded-full bg-gold flex items-center justify-center shrink-0">
                 <span className="text-gray-900 font-bold text-[10px] leading-none">L</span>
               </div>
               <span className="font-playfair text-sm font-semibold text-sl-on-surface">
@@ -28,7 +28,7 @@ export default async function DispatcherLayout({
                 Live
               </span>
             </Link>
-            <nav className="flex items-center gap-4">
+            <nav className="flex items-center gap-3 sm:gap-4 flex-wrap">
               <Link href="/dispatcher/dashboard" prefetch={false} className="text-sm text-sl-on-surface-muted hover:text-bronze transition-colors">
                 Board
               </Link>
@@ -40,12 +40,12 @@ export default async function DispatcherLayout({
               </Link>
             </nav>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-xs text-sl-on-surface-muted">
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+            <span className="hidden sm:inline text-xs text-sl-on-surface-muted">
               {user.profile.first_name} {user.profile.last_name}
             </span>
             <form action={logoutAction}>
-              <button type="submit" className="text-xs text-sl-on-surface-muted hover:text-red-400 transition-colors">
+              <button type="submit" className="text-xs text-sl-on-surface-muted hover:text-red-400 transition-colors whitespace-nowrap">
                 Sign out →
               </button>
             </form>

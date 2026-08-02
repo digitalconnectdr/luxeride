@@ -450,7 +450,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
         {driver && !isTerminal && (
           <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40 mb-4">{t.yourDriver}</p>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center flex-wrap gap-x-4 gap-y-3">
               {driverPhotoUrl ? (
                 <img
                   src={driverPhotoUrl}
@@ -462,7 +462,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
                   {driver.first_name.trim().charAt(0).toUpperCase()}
                 </div>
               )}
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="font-medium truncate">{driver.first_name}</p>
                 <p className="text-[11px] text-white/40">{t.driverRole}</p>
                 {vehicle && (
@@ -472,7 +472,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
                 )}
               </div>
               {vehicle && (
-                <div className="ml-auto text-right shrink-0">
+                <div className="text-right shrink-0">
                   <p className="text-[10px] uppercase tracking-[0.18em] text-white/30">{t.plate}</p>
                   <p className="font-mono text-sm" style={{ color: brandColor }}>{vehicle.plate_number}</p>
                 </div>

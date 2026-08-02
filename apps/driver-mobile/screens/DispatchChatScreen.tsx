@@ -1,40 +1,68 @@
+// ── Chat Dispatch ↔ Conductor (canal general, no atado a un viaje) ─────────
+// Espejo de ChatScreen.tsx (trip_messages) pero sobre driver_messages — un
+// canal por conductor que Dispatch usa para contactarlo aunque no tenga un
+// viaje activo (ver migración 24 + web: DriverChannelChat en /driver/trips).
+// Esta pantalla no existía en la app nativa — el conductor solo podía leer
+// estos mensajes desde la PWA web, nunca desde el móvil.
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { View, Text, TextInput, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
-import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
-import { callDriverApi } from '../lib/api'
 import { PressableScale } from '../components/PressableScale'
 import { ScreenLoader, EmptyState } from '../components/ui'
 import { color, font, radius, space } from '../lib/theme'
-import type { TripMessage, TripsStackParamList } from '../lib/types'
 
-type Props = NativeStackScreenProps<TripsStackParamList, 'Chat'>
+interface DriverChannelMessage {
+  id: string
+  sender: 'dispatch' | 'driver'
+  sender_name: string | null
+  body: string
+  created_at: string
+  read_at: string | null
+}
 
-export function ChatScreen({ route }: Props) {
-  const { tripId } = route.params
-  const [messages, setMessages] = useState<TripMessage[]>([])
+export function DispatchChatScreen() {
+  const [messages, setMessages] = useState<DriverChannelMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const driverIdRef = useRef<string | null>(null)
   const companyIdRef = useRef<string | null>(null)
-  const listRef = useRef<FlatList<TripMessage>>(null)
+  const listRef = useRef<FlatList<DriverChannelMessage>>(null)
+
+  const markDispatchRead = useCallback(() => {
+    if (!driverIdRef.current) return
+    supabase
+      .from('driver_messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('driver_id', driverIdRef.current)
+      .eq('sender', 'dispatch')
+      .is('read_at', null)
+      .then(() => {})
+  }, [])
 
   const load = useCallback(async () => {
-    const { data: booking } = await supabase.from('bookings').select('company_id').eq('id', tripId).maybeSingle()
-    companyIdRef.current = booking?.company_id ?? null
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+    driverIdRef.current = user.id
+
+    const { data: profile } = await supabase.from('user_profiles').select('company_id').eq('id', user.id).maybeSingle()
+    companyIdRef.current = profile?.company_id ?? null
 
     const { data } = await supabase
-      .from('trip_messages')
-      .select('id, sender, body, created_at, read_at')
-      .eq('booking_id', tripId)
+      .from('driver_messages')
+      .select('id, sender, sender_name, body, created_at, read_at')
+      .eq('driver_id', user.id)
       .order('created_at', { ascending: true })
       .limit(200)
-    setMessages((data as TripMessage[] | null) ?? [])
+    setMessages((data as DriverChannelMessage[] | null) ?? [])
     setLoading(false)
-    callDriverApi('mark-messages-read', { bookingId: tripId })
-  }, [tripId])
+    markDispatchRead()
+  }, [markDispatchRead])
 
   useFocusEffect(
     useCallback(() => {
@@ -42,42 +70,53 @@ export function ChatScreen({ route }: Props) {
     }, [load]),
   )
 
-  // Realtime: nuevos mensajes de ambos lados llegan por acá, incluyendo el
-  // propio (no se agrega optimista al enviar — evita duplicados).
+  // Realtime: mensajes nuevos de ambos lados, igual que ChatScreen.tsx.
   useEffect(() => {
-    const channel = supabase
-      .channel(`trip-messages-${tripId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'trip_messages', filter: `booking_id=eq.${tripId}` },
-        (payload) => {
-          const message = payload.new as TripMessage
-          setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]))
-          if (message.sender === 'client') {
-            callDriverApi('mark-messages-read', { bookingId: tripId })
-          }
-        },
-      )
-      .subscribe()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+    // El fetch del usuario es async — si la pantalla se desmonta antes de que
+    // resuelva, `cancelled` evita suscribirse a un canal que ya nadie va a
+    // limpiar (el cleanup de abajo corre con channel todavía en null).
+    let cancelled = false
+    ;(async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+      channel = supabase
+        .channel(`driver-messages-${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'driver_messages', filter: `driver_id=eq.${user.id}` },
+          (payload) => {
+            const message = payload.new as DriverChannelMessage
+            setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]))
+            if (message.sender === 'dispatch') markDispatchRead()
+          },
+        )
+        .subscribe()
+    })()
 
     return () => {
-      supabase.removeChannel(channel)
+      cancelled = true
+      if (channel) supabase.removeChannel(channel)
     }
-  }, [tripId])
+  }, [markDispatchRead])
 
   async function send() {
     const body = text.trim()
-    if (!body || !companyIdRef.current || sending) return
+    if (!body || !driverIdRef.current || !companyIdRef.current || sending) return
     setSending(true)
     setText('')
-    const { error } = await supabase.from('trip_messages').insert({
-      booking_id: tripId,
+    const { error } = await supabase.from('driver_messages').insert({
+      driver_id: driverIdRef.current,
       company_id: companyIdRef.current,
       sender: 'driver',
       body,
     })
     setSending(false)
-    if (error) setText(body)
+    if (error) {
+      setText(body)
+    }
   }
 
   if (loading) return <ScreenLoader />
@@ -90,7 +129,7 @@ export function ChatScreen({ route }: Props) {
     >
       {messages.length === 0 ? (
         <View style={styles.emptyWrap}>
-          <EmptyState icon="chatbubble-outline" title="Sin mensajes todavía" subtitle="Escribe abajo para coordinar con el pasajero." />
+          <EmptyState icon="chatbubbles-outline" title="Sin mensajes todavía" subtitle="Aquí verás los mensajes de Dispatch, aunque no tengas un viaje activo." />
         </View>
       ) : (
         <FlatList
@@ -115,7 +154,7 @@ export function ChatScreen({ route }: Props) {
       <View style={styles.inputRow}>
         <TextInput
           style={styles.input}
-          placeholder="Escribe un mensaje..."
+          placeholder="Escribe un mensaje a Dispatch..."
           placeholderTextColor={color.inkFaint}
           value={text}
           onChangeText={setText}

@@ -245,18 +245,18 @@ export default async function ReportsPage({
       </div>
 
       {/* Filtro de fechas */}
-      <form method="get" className="flex items-end gap-3 bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-4">
-        <div>
+      <form method="get" className="flex items-end flex-wrap gap-3 bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-4">
+        <div className="min-w-0">
           <label className="block text-xs text-sl-on-surface-muted mb-1">Desde</label>
-          <input type="date" name="from" defaultValue={fromIso} className={inputCls} />
+          <input type="date" name="from" defaultValue={fromIso} className={`${inputCls} w-full max-w-[160px]`} />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="block text-xs text-sl-on-surface-muted mb-1">Hasta</label>
-          <input type="date" name="to" defaultValue={toIso} className={inputCls} />
+          <input type="date" name="to" defaultValue={toIso} className={`${inputCls} w-full max-w-[160px]`} />
         </div>
         <button
           type="submit"
-          className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors"
+          className="shrink-0 px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors"
         >
           Aplicar
         </button>

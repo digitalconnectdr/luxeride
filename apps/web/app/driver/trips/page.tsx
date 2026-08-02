@@ -26,6 +26,7 @@ import { DriverChannelChat } from '@/components/shared/driver-channel-chat'
 import { ShareMenu } from '@/components/share/share-menu'
 import { getAppUrl } from '@/lib/app-url'
 import { FeatureRequestButton } from '@/components/admin/feature-request-modal'
+import { toPreferences, hasAnyPreference, summarizePreferences } from '@/lib/passenger/preferences'
 
 export const dynamic = 'force-dynamic'
 
@@ -88,7 +89,7 @@ export default async function DriverTripsPage() {
   const [{ data: trips }, { data: company }, { data: unratedTrips }, { data: driverRow }, { data: recentCompleted }, { data: affiliateTripsRaw }] = await Promise.all([
     admin
       .from('bookings')
-      .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id, route_polyline, meet_and_greet, flight_number, flight_status, flight_delay_minutes')
+      .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id, route_polyline, meet_and_greet, flight_number, flight_status, flight_delay_minutes, special_instructions, passenger_preferences')
       .eq('driver_id', user.id)
       .in('status', ['assigned', 'en_route', 'arrived', 'in_progress'])
       .order('scheduled_at'),
@@ -320,6 +321,8 @@ export default async function DriverTripsPage() {
             const stKey = t.status as 'assigned' | 'en_route' | 'arrived' | 'in_progress'
             const vehicle = t.vehicle_id ? vehiclesById.get(t.vehicle_id) : null
             const isActive = ACTIVE_STATUSES.has(t.status)
+            const prefs = toPreferences(t.passenger_preferences as Record<string, unknown> | null)
+            const showPrefs = hasAnyPreference(prefs)
 
             return (
               <article key={t.id} className={`${card} p-5 sm:p-6`} style={{ ['--brand' as string]: brandColor }}>
@@ -515,7 +518,32 @@ export default async function DriverTripsPage() {
                         brandColor={brandColor}
                         labels={{ call: dt.call, message: dt.message, showNumber: dt.showNumber }}
                       />
+                      {t.special_instructions && (
+                        <div className="mt-3 pt-3 border-t border-[#f0ede5]">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#75716a] mb-1">
+                            {dt.specialInstructions}
+                          </p>
+                          <p className="text-sm text-[#1d1b18] whitespace-pre-line">{t.special_instructions}</p>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Preferencias del pasajero — declaradas en su perfil, congeladas al reservar */}
+                    {showPrefs && (
+                      <div className="rounded-2xl border border-[#e5e1d8] bg-white p-5">
+                        <p className={`${sectionLabel} mb-3`}>{dt.preferencesTitle}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {summarizePreferences(prefs).map((label) => (
+                            <span
+                              key={label}
+                              className="text-xs font-medium text-[#8a6520] bg-[#8a6520]/10 border border-[#8a6520]/20 rounded-lg px-2.5 py-1"
+                            >
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Mensajes */}
                     <div id={chatId} className="scroll-mt-6">

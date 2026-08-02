@@ -3,6 +3,97 @@
 > Actualizado: 2026-08-02. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Preferencias al conductor + chat Dispatch en la app nativa + fixes de overflow móvil (2026-08-02)
+
+Tercera ronda del día, a partir de capturas de pantalla móviles que mostró el
+usuario. Tres frentes:
+
+**1. Preferencias del pasajero — cerrar el hueco también del lado conductor.**
+La ronda anterior arregló `/admin/bookings/[id]`; esta corrigió las dos
+superficies que ve el CONDUCTOR:
+- Web `/driver/trips`: la consulta de `bookings` no traía `special_instructions`
+  ni `passenger_preferences` — se agregaron ambas columnas + una tarjeta
+  "Preferencias del pasajero" (reutiliza `summarizePreferences()`) y un bloque
+  "Instrucciones" para `special_instructions`, entre la tarjeta de Pasajero y
+  el chat. i18n en/es/pt (`dict.driver.specialInstructions`/`.preferencesTitle`).
+- App nativa (`apps/driver-mobile/screens/TripDetailScreen.tsx`): el tipo
+  local `TripPreferences` y `preferenceLines()` solo conocían conversación/
+  temperatura/música/equipaje — se agregó `preferredDriverGender`. Se dejó
+  fuera a propósito `preferredVehicleTypeId`/`favoriteDriverId`: no aportan
+  nada accionable al conductor YA asignado a ese viaje.
+
+**2. Chat Dispatch ↔ Conductor: faltaba por completo en la app nativa.**
+Existía en la web (`DriverChannelChat`, tabla `driver_messages`) desde julio,
+pero `apps/driver-mobile` nunca tuvo pantalla ni acceso a esa tabla — el
+conductor solo podía ver esos mensajes abriendo la PWA en el navegador.
+Construido:
+- `apps/driver-mobile/screens/DispatchChatScreen.tsx` (nueva) — espejo de
+  `ChatScreen.tsx` (chat por viaje) pero sobre `driver_messages`, sin route
+  params (usa la sesión propia). Confirmado con `mobile-ux-reviewer`
+  (agente proactivo) que las policies RLS existentes (migración 24, julio)
+  ya dejaban al conductor leer/escribir su propio canal directo — solo faltó
+  la UI.
+- 5ª pestaña "Dispatch" en `App.tsx` (ícono chatbubbles), entre "Hoy" y
+  "Ganancias".
+- **Migración 86** (`20260805000086_driver_marks_dispatch_read.sql`): faltaba
+  una policy UPDATE — el conductor no podía marcar como leídos los mensajes
+  de Dispatch desde la app (solo tenía SELECT/INSERT).
+- **Migración 87** (`20260805000087_driver_messages_rls_harden.sql`): la
+  revisión del agente encontró 2 huecos reales en RLS que hasta ahora eran
+  solo teóricos (nadie escribía en `driver_messages` desde fuera del
+  servidor) y esta pantalla nueva los vuelve explotables de verdad: (a) la
+  policy INSERT del conductor nunca validaba que `company_id` fuera el suyo
+  — corregido comparando contra `user_profiles.company_id`; (b) la policy
+  UPDATE nueva de la migración 86 solo exigía `sender='dispatch'`, sin
+  impedir que el conductor cambiara `body`/`sender_name`/`company_id` en la
+  misma sentencia — se agregó un trigger `BEFORE UPDATE` que congela todos
+  los campos salvo `read_at` cuando quien actualiza es el propio conductor
+  (`auth.uid() = driver_id`); las actualizaciones de staff vía admin client
+  no pasan por `auth.uid()` y no se ven afectadas.
+- El agente también encontró y se corrigió: fuga del canal Realtime si la
+  pantalla se desmonta antes de que resuelva `supabase.auth.getUser()`
+  (bandera `cancelled`), y error silencioso al enviar un mensaje si el
+  `insert()` falla (ahora se restaura el texto para reintentar) — este último
+  también se corrigió en `ChatScreen.tsx` existente, mismo patrón.
+
+**3. Fixes de overflow horizontal en móvil** (capturas del usuario):
+- `/admin/reports` y `/admin/payroll`: el formulario de filtro de fechas
+  (`Desde`/`Hasta` + botón "Aplicar"/"Período") no tenía `flex-wrap` — dos
+  `<input type="date">` más un botón en una sola fila sin envolver siempre
+  iba a desbordar en una pantalla angosta. Se agregó `flex-wrap` + ancho
+  máximo a los inputs.
+- `/admin/bookings/[id]`: el email del pasajero (una cadena sin espacios)
+  podía desbordar su celda del grid porque ni el `<div>` ni el `<p>` tenían
+  `min-w-0`/`break-words` — el gotcha clásico de CSS Grid donde el ancho
+  mínimo por defecto de un ítem es su contenido. Se agregó `min-w-0` a las 4
+  celdas de esa tarjeta y `break-all`/`break-words` a nombre/teléfono/email.
+- `/dispatcher/layout.tsx`: el header (logo + nav + usuario + Sign out) nunca
+  tuvo tratamiento móvil — una sola fila sin `flex-wrap` con ~6 elementos.
+  Se agregó `flex-wrap`, se ocultó el nombre del usuario en pantallas chicas
+  (`hidden sm:inline`) y se redujo el padding lateral.
+- `/track/[id]`: la fila conductor+vehículo (nombre/rol/vehículo a la
+  izquierda, placa fija a la derecha con `ml-auto shrink-0`) se cambió a
+  `flex-wrap` para que la placa baje de línea en vez de desbordar si el
+  contenido de la izquierda no cabe — no se confirmó con certeza que esta
+  fuera la causa exacta del desborde visto en las capturas (podría ser un
+  overlay del navegador/teléfono del usuario, ver más abajo), pero es un
+  endurecimiento seguro sin efectos secundarios.
+- **Nota de verificación**: los fixes de `/admin/*` y `/dispatcher/*` no se
+  pudieron probar visualmente en navegador (sin credenciales de demo en este
+  entorno) — se confirmó con `tsc`/`vitest`/`build` limpios y lectura de
+  código, no con captura real post-fix. Se verificó con el navegador que la
+  landing pública NO tiene overflow horizontal a 375px de ancho (sin bug
+  global de CSS), lo que sugiere que la tira color crema + ícono de lápiz
+  flotante visible en TODAS las capturas del usuario (incluso en `/track/[id]`,
+  que es una página oscura) es probablemente un overlay del navegador/teléfono
+  (ej. el asistente "Leo" de Brave u otro widget), no necesariamente parte del
+  bug — los 3 desbordamientos de texto/botón puntuales sí se confirmaron
+  leyendo el código y sí son bugs reales, ya corregidos.
+
+Migraciones 86 y 87 pendientes de pegar a mano en el SQL Editor de Supabase.
+Sin build de EAS en esta ronda (regla: máximo 2/semana, el usuario avisa
+cuándo).
+
 ## ✅ Fix: preferencias del pasajero visibles en /admin/bookings/[id] + análisis de 3 ideas más de Empower (2026-08-02)
 
 Segunda parte de la ronda de driveempower.com. Dos pedidos del usuario:

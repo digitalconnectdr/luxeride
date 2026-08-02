@@ -16,12 +16,13 @@ import { NEXT_ACTION_LABEL, STATUS_LABEL, type BookingStatus, type DriverBooking
 const BOOKING_COLUMNS =
   'id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, flight_number, flight_status, flight_delay_minutes, total_amount, currency, completed_at, payment_method_intent, special_instructions, passenger_preferences'
 
-/** Preferencias congeladas en la reserva (ver migración 76). */
+/** Preferencias congeladas en la reserva (ver migración 76 + 85). */
 interface TripPreferences {
   conversation?: string
   temperature?: string
   music?: string
   luggageHelp?: boolean
+  preferredDriverGender?: string
 }
 
 const CONVERSATION_LABEL: Record<string, string> = {
@@ -38,6 +39,10 @@ const MUSIC_LABEL: Record<string, string> = {
   soft: 'Música suave',
   driver_choice: 'Música a tu elección',
 }
+const GENDER_LABEL: Record<string, string> = {
+  female: 'Prefiere conductora',
+  male: 'Prefiere conductor',
+}
 
 /** Solo lo que el pasajero SÍ pidió — omitir "sin preferencia" evita que la
  * lista se llene de ruido y se ignore entera. */
@@ -48,6 +53,7 @@ function preferenceLines(p: TripPreferences | null): string[] {
   if (p.temperature && TEMPERATURE_LABEL[p.temperature]) out.push(TEMPERATURE_LABEL[p.temperature])
   if (p.music && MUSIC_LABEL[p.music]) out.push(MUSIC_LABEL[p.music])
   if (p.luggageHelp) out.push('Necesita ayuda con el equipaje')
+  if (p.preferredDriverGender && GENDER_LABEL[p.preferredDriverGender]) out.push(GENDER_LABEL[p.preferredDriverGender])
   return out
 }
 

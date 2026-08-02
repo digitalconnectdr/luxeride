@@ -22,6 +22,7 @@ import { LoginScreen } from './screens/LoginScreen'
 import { TripsListScreen } from './screens/TripsListScreen'
 import { TripDetailScreen } from './screens/TripDetailScreen'
 import { ChatScreen } from './screens/ChatScreen'
+import { DispatchChatScreen } from './screens/DispatchChatScreen'
 import { AffiliateTripDetailScreen } from './screens/AffiliateTripDetailScreen'
 import { EarningsScreen } from './screens/EarningsScreen'
 import { DocumentsScreen } from './screens/DocumentsScreen'
@@ -52,6 +53,7 @@ function TripsStackScreen() {
 type TabIcon = { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }
 const TAB_ICON: Record<string, TabIcon> = {
   Hoy: { active: 'car-sport', inactive: 'car-sport-outline' },
+  Dispatch: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
   Ganancias: { active: 'wallet', inactive: 'wallet-outline' },
   Documentos: { active: 'document-text', inactive: 'document-text-outline' },
   Perfil: { active: 'person-circle', inactive: 'person-circle-outline' },
@@ -174,6 +176,7 @@ function DriverApp() {
         })}
       >
         <Tab.Screen name="Hoy" component={TripsStackScreen} />
+        <Tab.Screen name="Dispatch" component={DispatchChatScreen} />
         <Tab.Screen name="Ganancias" component={EarningsScreen} />
         <Tab.Screen name="Documentos" component={DocumentsScreen} />
         <Tab.Screen name="Perfil" component={ProfileScreen} />

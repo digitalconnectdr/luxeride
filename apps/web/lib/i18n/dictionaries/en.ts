@@ -583,6 +583,8 @@ export const en = {
     mobileSoon: 'The driver mobile app arrives in Phase 2.',
     vehicle: 'Vehicle',
     plate: 'Plate',
+    specialInstructions: 'Special instructions',
+    preferencesTitle: 'Passenger preferences',
     locationPauseNotice: 'Your location stopped sharing while you were out of the app. Keep this tab open during the trip so the passenger can see you live.',
     liveMap: {
       paused: 'Live location paused',

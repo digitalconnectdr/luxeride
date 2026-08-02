@@ -584,6 +584,8 @@ export const pt: Dictionary = {
     mobileSoon: 'O app móvel para motoristas chega na Fase 2.',
     vehicle: 'Veículo',
     plate: 'Placa',
+    specialInstructions: 'Instruções especiais',
+    preferencesTitle: 'Preferências do passageiro',
     locationPauseNotice: 'Sua localização parou de ser compartilhada enquanto você estava fora do app. Mantenha esta aba aberta durante a viagem para que o passageiro veja você em tempo real.',
     liveMap: {
       paused: 'Localização ao vivo pausada',
