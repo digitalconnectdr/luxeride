@@ -32,6 +32,7 @@ import {
   type DriverScoreInput,
 } from '@/lib/dispatch/scoring'
 import { getZonedIsoDate, zonedMidnightUtc } from '@/lib/time/zoned-bounds'
+import { toPreferences } from '@/lib/passenger/preferences'
 
 // Margen entre el fin estimado de un viaje y el inicio del siguiente para no
 // considerarlos en conflicto — tiempo de traslado/descanso razonable.
@@ -76,6 +77,100 @@ export function overlaps(a: { start: number; end: number }, b: { start: number; 
 }
 
 /**
+ * Filtro DURO de género del conductor (preferencia del pasajero — ver
+ * lib/passenger/preferences.ts). 'no_preference' no excluye a nadie; con una
+ * preferencia explícita, un conductor sin género declarado (`null`) NO
+ * califica — no se asume que coincide, porque el punto del feature es la
+ * confianza del pasajero, no rellenar el reparto a cualquier costo.
+ */
+export function matchesGenderPreference(driverGender: string | null, preference: string): boolean {
+  if (preference === 'no_preference') return true
+  return driverGender === preference
+}
+
+/**
+ * Conductor favorito del pasajero, SI sigue siendo un candidato elegible
+ * (disponible, sin choque de horario, tipo de vehículo compatible). A
+ * diferencia del género, esto es best-effort: si el favorito no calificó,
+ * no bloquea nada — se devuelve null y el llamador sigue con el scoring
+ * normal entre el resto de candidatos.
+ */
+export function pickFavoriteDriver(candidates: string[], favoriteDriverId: string | null): string | null {
+  if (!favoriteDriverId) return null
+  return candidates.includes(favoriteDriverId) ? favoriteDriverId : null
+}
+
+/**
+ * Cierra una asignación (actualiza la reserva, registra el evento, notifica)
+ * — compartido entre el camino de conductor favorito (sin score) y el
+ * camino normal de scoring, para no duplicar la parte de "ya elegimos a
+ * quién, ahora hay que confirmarlo".
+ */
+async function finalizeAutoAssignment(
+  admin: ReturnType<typeof createAdminClient>,
+  booking: AutoAssignBooking,
+  driverId: string,
+  currentVehicleByDriver: Map<string, string | null>,
+  candidateCount: number,
+  extraMetadata: Record<string, unknown>,
+): Promise<AutoAssignResult> {
+  const vehicleId = currentVehicleByDriver.get(driverId) ?? null
+
+  const now = new Date().toISOString()
+  const { error } = await admin
+    .from('bookings')
+    .update({ driver_id: driverId, status: 'assigned', dispatched_at: now, ...(vehicleId ? { vehicle_id: vehicleId } : {}) })
+    .eq('id', booking.id)
+    .eq('status', 'pending') // guard de carrera: no pisar una asignación manual que llegó primero
+
+  if (error) {
+    console.error('[tryAutoAssignDriver]', error)
+    return { assigned: false }
+  }
+
+  await admin.from('booking_events').insert({
+    booking_id: booking.id,
+    company_id: booking.company_id,
+    type: 'driver_assigned',
+    actor: 'system',
+    reason: 'Auto-asignación',
+    // El desglose queda en la bitácora: cuando el operador pregunte "¿por qué
+    // le tocó a este?", la respuesta está en la reserva y no en un log.
+    metadata: {
+      driver_id: driverId,
+      vehicle_id: vehicleId,
+      auto: true,
+      candidates: candidateCount,
+      ...extraMetadata,
+    },
+  })
+
+  const pickup = (booking.pickup_location as { address?: string } | null)?.address ?? ''
+  const dropoff = (booking.dropoff_location as { address?: string } | null)?.address ?? ''
+  notifyBookingEventInBackground('driver_assigned', {
+    companyId: booking.company_id,
+    bookingId: booking.id,
+    bookingNumber: booking.booking_number,
+    passengerName: booking.passenger_name,
+    passengerEmail: booking.passenger_email,
+    passengerPhone: booking.passenger_phone,
+    scheduledAt: booking.scheduled_at,
+    pickupAddress: pickup,
+    dropoffAddress: dropoff,
+    totalAmount: booking.total_amount,
+    currency: booking.currency ?? 'USD',
+    extraVars: { tracking_url: `${getAppUrl()}/track/${booking.id}` },
+  })
+
+  notifyDriverPushInBackground(driverId, 'Nuevo viaje asignado', `${booking.booking_number} · ${pickup}`, {
+    bookingId: booking.id,
+    type: 'trip_assigned',
+  })
+
+  return { assigned: true, driverId }
+}
+
+/**
  * Intenta asignar automáticamente un conductor a una reserva recién creada
  * (status='pending', sin driver_id). No lanza — si no hay conductor elegible,
  * simplemente no asigna y la reserva queda pendiente para asignación manual
@@ -103,24 +198,29 @@ export async function tryAutoAssignDriver(
   // consultan aquí una sola vez para no tener que tocarlos.
   const { data: bookingDetails } = await admin
     .from('bookings')
-    .select('vehicle_type_id, pickup_location')
+    .select('vehicle_type_id, pickup_location, passenger_preferences')
     .eq('id', booking.id)
     .single()
   const requiredVehicleTypeId = bookingDetails?.vehicle_type_id ?? null
   const pickupPoint = bookingDetails?.pickup_location as { lat?: number; lng?: number } | null
+  // Preferencias congeladas al reservar (migración 76 + 85) — género del
+  // conductor y favorito. `toPreferences` cae a "sin preferencia"/null si la
+  // reserva no trae nada (reservas viejas, o creadas por staff sin snapshot).
+  const passengerPrefs = toPreferences(bookingDetails?.passenger_preferences as Record<string, unknown> | null)
 
   // Conductores en servicio de la empresa. Sección J: un conductor bloqueado
   // por compliance (licencia/permiso vencido) nunca es candidato, ni siquiera
   // si está marcado "disponible".
   const { data: availableDrivers } = await admin
     .from('drivers')
-    .select('id, current_vehicle_id')
+    .select('id, current_vehicle_id, gender')
     .eq('company_id', booking.company_id)
     .eq('is_available', true)
     .eq('operational_block', false)
   const driverIds = (availableDrivers ?? []).map((d) => d.id)
   if (!driverIds.length) return { assigned: false }
   const currentVehicleByDriver = new Map((availableDrivers ?? []).map((d) => [d.id, d.current_vehicle_id]))
+  const genderByDriver = new Map((availableDrivers ?? []).map((d) => [d.id, d.gender]))
 
   // El vehículo que traen asignado tampoco puede estar bloqueado (seguro/
   // permiso for-hire/inspección vencidos) — si lo está, ese conductor queda
@@ -216,9 +316,21 @@ export async function tryAutoAssignDriver(
       const driverType = typeByVehicleId.get(vehicleId)
       if (driverType && driverType !== requiredVehicleTypeId) return false
     }
+    // Filtro duro de género (preferencia del pasajero) — ver matchesGenderPreference.
+    if (!matchesGenderPreference(genderByDriver.get(id) ?? null, passengerPrefs.preferredDriverGender)) return false
     return true
   })
   if (!candidates.length) return { assigned: false }
+
+  // Conductor favorito: si sigue siendo un candidato elegible, se asigna
+  // directo sin pasar por el score (ver pickFavoriteDriver) — pedir "otra
+  // vez a Juan" no debe competir contra el reparto justo del resto.
+  const favoriteDriverId = pickFavoriteDriver(candidates, passengerPrefs.favoriteDriverId)
+  if (favoriteDriverId) {
+    return finalizeAutoAssignment(admin, booking, favoriteDriverId, currentVehicleByDriver, candidates.length, {
+      favorite: true,
+    })
+  }
 
   // ── Señales del score compuesto (ver lib/dispatch/scoring.ts) ──────────────
 
@@ -275,73 +387,19 @@ export async function tryAutoAssignDriver(
 
   const ranked = scoreDrivers(scoreInputs, weights)
   const winner = ranked[0]
-  const driverId = winner.driverId
 
-  // Vehículo con el que el conductor está trabajando ahora mismo — así el
-  // pasajero ve marca/placa en /track aunque la asignación haya sido automática.
-  const vehicleId = currentVehicleByDriver.get(driverId) ?? null
-
-  const now = new Date().toISOString()
-  const { error } = await admin
-    .from('bookings')
-    .update({ driver_id: driverId, status: 'assigned', dispatched_at: now, ...(vehicleId ? { vehicle_id: vehicleId } : {}) })
-    .eq('id', booking.id)
-    .eq('status', 'pending') // guard de carrera: no pisar una asignación manual que llegó primero
-
-  if (error) {
-    console.error('[tryAutoAssignDriver]', error)
-    return { assigned: false }
-  }
-
-  await admin.from('booking_events').insert({
-    booking_id: booking.id,
-    company_id: booking.company_id,
-    type: 'driver_assigned',
-    actor: 'system',
-    reason: 'Auto-asignación',
-    // El desglose queda en la bitácora: cuando el operador pregunte "¿por qué
-    // le tocó a este?", la respuesta está en la reserva y no en un log.
-    metadata: {
-      driver_id: driverId,
-      vehicle_id: vehicleId,
-      auto: true,
-      score: winner.total,
-      score_breakdown: {
-        proximity: winner.proximity,
-        fairness: winner.fairness,
-        rating: winner.rating,
-        reliability: winner.reliability,
-      },
-      candidates: candidates.length,
-      distance_miles: distanceByDriver.has(driverId)
-        ? Math.round(distanceByDriver.get(driverId)! * 10) / 10
-        : null,
+  return finalizeAutoAssignment(admin, booking, winner.driverId, currentVehicleByDriver, candidates.length, {
+    score: winner.total,
+    score_breakdown: {
+      proximity: winner.proximity,
+      fairness: winner.fairness,
+      rating: winner.rating,
+      reliability: winner.reliability,
     },
+    distance_miles: distanceByDriver.has(winner.driverId)
+      ? Math.round(distanceByDriver.get(winner.driverId)! * 10) / 10
+      : null,
   })
-
-  const pickup = (booking.pickup_location as { address?: string } | null)?.address ?? ''
-  const dropoff = (booking.dropoff_location as { address?: string } | null)?.address ?? ''
-  notifyBookingEventInBackground('driver_assigned', {
-    companyId: booking.company_id,
-    bookingId: booking.id,
-    bookingNumber: booking.booking_number,
-    passengerName: booking.passenger_name,
-    passengerEmail: booking.passenger_email,
-    passengerPhone: booking.passenger_phone,
-    scheduledAt: booking.scheduled_at,
-    pickupAddress: pickup,
-    dropoffAddress: dropoff,
-    totalAmount: booking.total_amount,
-    currency: booking.currency ?? 'USD',
-    extraVars: { tracking_url: `${getAppUrl()}/track/${booking.id}` },
-  })
-
-  notifyDriverPushInBackground(driverId, 'Nuevo viaje asignado', `${booking.booking_number} · ${pickup}`, {
-    bookingId: booking.id,
-    type: 'trip_assigned',
-  })
-
-  return { assigned: true, driverId }
 }
 
 // ── Sección G, Fase 5 — Auto-farm a la Red de Afiliados ────────────────────────

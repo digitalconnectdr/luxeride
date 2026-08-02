@@ -15,7 +15,7 @@ import { callPassengerApi } from '../lib/api'
 import { Button, Card, EmptyState, ScreenLoader, StatusBadge, MetaChip } from '../components/ui'
 import { PressableScale } from '../components/PressableScale'
 import { font, radius, space, useThemedStyles, usePalette, type Palette } from '../lib/theme'
-import type { BookingStatus } from '../lib/types'
+import type { BookingStatus, PassengerTripPreferences } from '../lib/types'
 
 interface TripRow {
   id: string
@@ -26,6 +26,7 @@ interface TripRow {
   currency: string | null
   passenger_count: number
   rated_at: string | null
+  driver_id: string | null
   pickup_location: { address?: string; lat?: number; lng?: number } | null
   dropoff_location: { address?: string; lat?: number; lng?: number } | null
 }
@@ -96,6 +97,9 @@ interface TripCardProps {
   onNavigateTracking: () => void
   onRebook: () => void
   onRated: () => void
+  isFavoriteDriver: boolean
+  onToggleFavorite: () => void
+  favoriteBusy: boolean
 }
 
 // Componente propio (no una función inline dentro de renderItem) porque el
@@ -104,7 +108,15 @@ interface TripCardProps {
 // queda como closure suelto. Mismo patrón que TripRow en
 // apps/driver-mobile/screens/EarningsScreen.tsx ("Calificar pasajero"), aquí
 // invertido: el PASAJERO califica el viaje/conductor.
-function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps) {
+function TripCard({
+  item,
+  onNavigateTracking,
+  onRebook,
+  onRated,
+  isFavoriteDriver,
+  onToggleFavorite,
+  favoriteBusy,
+}: TripCardProps) {
   const styles = useThemedStyles(makeStyles)
   const c = usePalette()
   const [ratingOpen, setRatingOpen] = useState(false)
@@ -260,6 +272,17 @@ function TripCard({ item, onNavigateTracking, onRebook, onRated }: TripCardProps
             <View style={styles.rebookBtn}>
               <Ionicons name="repeat-outline" size={14} color={c.gold} />
               <Text style={styles.rebookText}>Reservar de nuevo</Text>
+            </View>
+          </PressableScale>
+        )}
+
+        {item.status === 'completed' && item.driver_id && (
+          <PressableScale onPress={onToggleFavorite} disabled={favoriteBusy}>
+            <View style={styles.rebookBtn}>
+              <Ionicons name={isFavoriteDriver ? 'star' : 'star-outline'} size={14} color={c.gold} />
+              <Text style={styles.rebookText}>
+                {isFavoriteDriver ? 'Tu conductor favorito · quitar' : 'Marcar conductor como favorito'}
+              </Text>
             </View>
           </PressableScale>
         )}
@@ -427,10 +450,18 @@ export function MyTripsScreen() {
   const [error, setError] = useState('')
   const [tab, setTab] = useState<TripTab>('upcoming')
 
+  // Conductor favorito — se guarda dentro de passenger_preferences (mismo
+  // objeto que edita ProfileScreen), así que aquí se lee completo antes de
+  // reenviarlo con solo favoriteDriverId cambiado: el endpoint upsertea TODO
+  // el body, y omitir un campo lo resetearía a su default.
+  const [fullPrefs, setFullPrefs] = useState<PassengerTripPreferences | null>(null)
+  const [favoriteDriverId, setFavoriteDriverId] = useState<string | null>(null)
+  const [favoriteBusy, setFavoriteBusy] = useState(false)
+
   const load = useCallback(async () => {
     const { data, error: loadError } = await supabase
       .from('bookings')
-      .select('id, booking_number, status, scheduled_at, total_amount, currency, passenger_count, rated_at, pickup_location, dropoff_location')
+      .select('id, booking_number, status, scheduled_at, total_amount, currency, passenger_count, rated_at, driver_id, pickup_location, dropoff_location')
       .order('scheduled_at', { ascending: false })
       .limit(30)
 
@@ -442,11 +473,38 @@ export function MyTripsScreen() {
     setTrips((data ?? []) as unknown as TripRow[])
   }, [])
 
+  const loadFavorite = useCallback(async () => {
+    const result = await callPassengerApi<{ preferences?: PassengerTripPreferences }>('preferences', {
+      companySlug: process.env.EXPO_PUBLIC_COMPANY_SLUG ?? '',
+    })
+    if (result.success && result.preferences) {
+      setFullPrefs(result.preferences)
+      setFavoriteDriverId(result.preferences.favoriteDriverId)
+    }
+  }, [])
+
   useFocusEffect(
     useCallback(() => {
       load()
-    }, [load]),
+      loadFavorite()
+    }, [load, loadFavorite]),
   )
+
+  async function toggleFavoriteDriver(driverId: string) {
+    if (!fullPrefs || favoriteBusy) return
+    setFavoriteBusy(true)
+    const nextFavoriteId = favoriteDriverId === driverId ? null : driverId
+    const result = await callPassengerApi('preferences', {
+      save: true,
+      ...fullPrefs,
+      favoriteDriverId: nextFavoriteId,
+    })
+    setFavoriteBusy(false)
+    if (result.success) {
+      setFullPrefs((cur) => (cur ? { ...cur, favoriteDriverId: nextFavoriteId } : cur))
+      setFavoriteDriverId(nextFavoriteId)
+    }
+  }
 
   async function onRefresh() {
     setRefreshing(true)
@@ -548,6 +606,9 @@ export function MyTripsScreen() {
             }
             onRebook={() => rebook(item)}
             onRated={load}
+            isFavoriteDriver={!!item.driver_id && item.driver_id === favoriteDriverId}
+            onToggleFavorite={() => item.driver_id && toggleFavoriteDriver(item.driver_id)}
+            favoriteBusy={favoriteBusy}
           />
         )}
       />

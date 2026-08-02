@@ -41,7 +41,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
     .from('drivers')
     .select(`
       id, license_number, license_expiry, license_state, current_vehicle_id, is_available, rating, total_trips, total_earnings, photo_url,
-      compliance, chauffeur_permit_expires_at, compliance_status, compliance_score, operational_block, block_reason
+      compliance, chauffeur_permit_expires_at, compliance_status, compliance_score, operational_block, block_reason, gender
     `)
     .eq('id', params.id)
     .eq('company_id', companyId)          // IDOR guard
@@ -296,6 +296,7 @@ export default async function DriverDetailPage({ params }: PageProps) {
                   license_number: dr?.license_number ?? '',
                   license_expiry: dr?.license_expiry ?? '',
                   license_state:  dr?.license_state ?? '',
+                  gender: dr?.gender ?? null,
                 }}
                 labels={t}
               />

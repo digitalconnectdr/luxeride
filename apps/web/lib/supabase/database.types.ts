@@ -638,6 +638,7 @@ export type Database = {
           compliance_reviewed_by: string | null
           payroll_type: string | null
           payroll_rate: number | null
+          gender: string | null
           created_at: string
           updated_at: string
         }
@@ -666,6 +667,7 @@ export type Database = {
           compliance_reviewed_by?: string | null | undefined
           payroll_type?: string | null | undefined
           payroll_rate?: number | null | undefined
+          gender?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -694,6 +696,7 @@ export type Database = {
           compliance_reviewed_by?: string | null | undefined
           payroll_type?: string | null | undefined
           payroll_rate?: number | null | undefined
+          gender?: string | null | undefined
           created_at?: string | undefined
           updated_at?: string | undefined
         }
@@ -1795,7 +1798,7 @@ export type Database = {
         Relationships: []
       }
 
-      // ── Preferencias de viaje del pasajero (migración 76) ────────────────────
+      // ── Preferencias de viaje del pasajero (migración 76, +85 género/favorito) ─
       passenger_preferences: {
         Row: {
           customer_id: string
@@ -1805,6 +1808,8 @@ export type Database = {
           luggage_help: boolean
           standing_notes: string | null
           preferred_vehicle_type_id: string | null
+          preferred_driver_gender: string
+          favorite_driver_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1815,6 +1820,8 @@ export type Database = {
           luggage_help?: boolean | undefined
           standing_notes?: string | null | undefined
           preferred_vehicle_type_id?: string | null | undefined
+          preferred_driver_gender?: string | undefined
+          favorite_driver_id?: string | null | undefined
           updated_at?: string | undefined
         }
         Update: {
@@ -1825,6 +1832,8 @@ export type Database = {
           luggage_help?: boolean | undefined
           standing_notes?: string | null | undefined
           preferred_vehicle_type_id?: string | null | undefined
+          preferred_driver_gender?: string | undefined
+          favorite_driver_id?: string | null | undefined
           updated_at?: string | undefined
         }
         Relationships: []

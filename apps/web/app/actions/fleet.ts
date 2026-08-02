@@ -664,10 +664,15 @@ export async function updateDriverLicense(
   const license_number = (formData.get('license_number') as string ?? '').trim() || null
   const license_state  = (formData.get('license_state')  as string ?? '').trim() || null
   const license_expiry = (formData.get('license_expiry') as string ?? '') || null
+  // Usado para la preferencia de género del pasajero en auto-asignación (ver
+  // lib/dispatch/auto-assign.ts) — sin declarar, el conductor simplemente no
+  // califica cuando el pasajero pide un género específico.
+  const genderRaw = (formData.get('gender') as string ?? '').trim()
+  const gender = genderRaw === 'female' || genderRaw === 'male' ? genderRaw : null
 
   const { error } = await admin
     .from('drivers')
-    .update({ license_number, license_state, license_expiry })
+    .update({ license_number, license_state, license_expiry, gender })
     .eq('id', driverId)
 
   if (error) return { success: false, error: error.message }

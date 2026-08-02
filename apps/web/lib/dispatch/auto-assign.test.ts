@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { overlaps, windowFor } from './auto-assign'
+import { matchesGenderPreference, overlaps, pickFavoriteDriver, windowFor } from './auto-assign'
 
 describe('windowFor/overlaps (conflicto de horario conductor/vehículo)', () => {
   it('dos viajes seguidos sin margen suficiente se consideran en conflicto', () => {
@@ -24,5 +24,37 @@ describe('windowFor/overlaps (conflicto de horario conductor/vehículo)', () => 
     const a = windowFor('2026-08-01T10:00:00.000Z', null)
     const b = windowFor('2026-08-01T10:00:00.000Z', 60)
     expect(a).toEqual(b)
+  })
+})
+
+describe('matchesGenderPreference (preferencia de género del conductor)', () => {
+  it('sin preferencia, cualquier conductor califica, incluso sin género declarado', () => {
+    expect(matchesGenderPreference(null, 'no_preference')).toBe(true)
+    expect(matchesGenderPreference('female', 'no_preference')).toBe(true)
+    expect(matchesGenderPreference('male', 'no_preference')).toBe(true)
+  })
+
+  it('con preferencia, solo el conductor que coincide exactamente califica', () => {
+    expect(matchesGenderPreference('female', 'female')).toBe(true)
+    expect(matchesGenderPreference('male', 'female')).toBe(false)
+  })
+
+  it('con preferencia, un conductor sin género declarado NO califica (no se asume)', () => {
+    expect(matchesGenderPreference(null, 'female')).toBe(false)
+    expect(matchesGenderPreference(null, 'male')).toBe(false)
+  })
+})
+
+describe('pickFavoriteDriver (best-effort, nunca bloquea)', () => {
+  it('sin favorito guardado, no elige a nadie', () => {
+    expect(pickFavoriteDriver(['a', 'b'], null)).toBeNull()
+  })
+
+  it('favorito disponible entre los candidatos: lo elige', () => {
+    expect(pickFavoriteDriver(['a', 'b', 'c'], 'b')).toBe('b')
+  })
+
+  it('favorito guardado pero NO disponible ahora mismo: no bloquea, devuelve null', () => {
+    expect(pickFavoriteDriver(['a', 'c'], 'b')).toBeNull()
   })
 })

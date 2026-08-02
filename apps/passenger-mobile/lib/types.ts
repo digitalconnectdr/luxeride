@@ -70,6 +70,22 @@ export interface BookingResult {
   bookingNumber: string
 }
 
+// ── Preferencias de viaje (perfil + acción "marcar favorito" en Mis viajes) ─
+// Espejo de PassengerPreferences en apps/web/lib/passenger/preferences.ts —
+// se guarda completo en cada POST (el endpoint upsertea TODOS los campos con
+// default si faltan), así que cualquier pantalla que cambie un solo campo
+// debe leer esto primero y reenviarlo entero para no resetear el resto.
+export interface PassengerTripPreferences {
+  conversation: string
+  temperature: string
+  music: string
+  luggageHelp: boolean
+  standingNotes: string | null
+  preferredVehicleTypeId: string | null
+  preferredDriverGender: string
+  favoriteDriverId: string | null
+}
+
 // "Reservar de nuevo" desde Mis viajes — prefill parcial (solo lo que
 // tenemos guardado de la reserva anterior: no hay placeId/código postal
 // persistidos en bookings, así que el autocomplete no queda "seleccionado"

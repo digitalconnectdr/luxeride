@@ -7,6 +7,7 @@ import type { Dictionary } from '@/lib/i18n/server'
 type Labels = Pick<
   Dictionary['admin']['driverDetail'],
   'licenseFormTitle' | 'licenseUpdated' | 'licenseNumber' | 'licenseStateIssuer' | 'licenseExpiryDate' | 'update'
+  | 'genderLabel' | 'genderUnspecified' | 'genderFemale' | 'genderMale'
 >
 
 const inputCls =
@@ -19,6 +20,7 @@ interface Props {
     license_number: string
     license_expiry: string   // ISO date string or ''
     license_state:  string
+    gender: string | null
   }
   labels: Labels
 }
@@ -76,6 +78,14 @@ export function UpdateDriverLicenseForm({ driverId, current, labels: t }: Props)
             defaultValue={current.license_expiry ? current.license_expiry.split('T')[0] : ''}
             className={inputCls}
           />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-sl-on-surface-muted">{t.genderLabel}</label>
+          <select name="gender" defaultValue={current.gender ?? ''} className={inputCls}>
+            <option value="">{t.genderUnspecified}</option>
+            <option value="female">{t.genderFemale}</option>
+            <option value="male">{t.genderMale}</option>
+          </select>
         </div>
 
         <div className="sm:col-span-3 flex justify-end">

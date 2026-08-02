@@ -1,7 +1,52 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-08-01. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-08-02. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## ✅ Análisis driveempower.com + 2 preferencias de pasajero: conductor del mismo género y conductor favorito (2026-08-02)
+
+El usuario pidió comparar https://driveempower.com/ contra LuxeRide.
+Investigación en vivo (home, /drivers/, /riders/): Empower es un marketplace
+B2C de rideshare "propiedad del conductor" (0% comisión, el conductor paga
+suscripción, referidos en efectivo, garantía de lanzamiento por ciudad) — un
+modelo que no aplica a LuxeRide, cuyo software es B2B para flotas ya
+establecidas con choferes empleados/contratados, no gig workers que se
+inscriben directo a una plataforma. De todo Empower, solo 2 ideas eran
+transferibles de verdad: preferencia de género del conductor y "conductor
+favorito" (pedir de nuevo al mismo chofer). El usuario confirmó construir
+ambas.
+
+- **Migración 85** (`20260804000085_driver_gender_favorite.sql`, pendiente
+  de pegar en Supabase): `drivers.gender` ('female'/'male'/NULL, lo declara
+  el operador desde `/admin/drivers/[id]`, no autoservicio del conductor) +
+  `passenger_preferences.preferred_driver_gender` /
+  `.favorite_driver_id`. No hace falta tocar `bookings.passenger_preferences`
+  (JSONB) — ya copia el objeto completo de preferencias al reservar
+  (migración 76), así que ambos campos nuevos quedan incluidos solos.
+- **Diseño asimétrico a propósito**: la preferencia de género es un filtro
+  DURO en `lib/dispatch/auto-assign.ts` — si nadie califica, la reserva
+  queda `pending` para asignación manual (mismo comportamiento que ya existe
+  cuando ningún candidato califica por tipo de vehículo). El conductor
+  favorito es best-effort — si no está disponible, la reserva sigue el flujo
+  normal de auto-asignación en vez de bloquear el viaje. Un conductor sin
+  género declarado (`NULL`) nunca satisface una preferencia explícita del
+  pasajero (no se asume, se excluye). Ninguno de los dos cambios toca
+  `reassignForRisk` (reasignación de emergencia del protocolo de respaldo) —
+  ahí importa más conseguir CUALQUIER conductor calificado que respetar la
+  preferencia.
+- IDOR: `favoriteDriverId` solo se acepta si existe una reserva `completed`
+  real entre ese pasajero y ese conductor — no se puede marcar como favorito
+  a un conductor con el que nunca se viajó.
+- Web: selector de género en `/admin/drivers/[id]` (i18n en/es/pt). App
+  nativa del pasajero: chips de preferencia de género + bloque de conductor
+  favorito (con nombre y opción de quitar) en Perfil → Preferencias de
+  viaje; botón "Marcar conductor como favorito" en cada viaje completado de
+  Mis viajes.
+- **Pendiente conocido, no corregido en esta ronda**: `/admin/bookings/[id]`
+  no muestra NINGUNA preferencia del pasajero al despachador (ni las que ya
+  existían: conversación, temperatura, música, ayuda con equipaje). Es un
+  hueco preexistente, no algo que se rompió aquí — anotado para una ronda
+  futura de UI de dispatch.
 
 ## ✅ Reportes: conectar la atribución de marketing (UTM/gclid) ya capturada (2026-08-01)
 

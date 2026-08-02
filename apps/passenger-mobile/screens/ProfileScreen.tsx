@@ -35,6 +35,7 @@ import {
   type ThemeMode,
 } from '../lib/theme'
 import type { PlaceDetails } from '../lib/places'
+import type { PassengerTripPreferences } from '../lib/types'
 
 interface SavedAddress {
   id: string
@@ -63,15 +64,15 @@ type Panel = 'personal' | 'payment' | 'addresses' | 'preferences' | 'security' |
 // Referencia de mercado: Uber Black deja fijar temperatura, nivel de
 // conversación y ayuda con equipaje; Blacklane ajusta música y temperatura.
 // Las notas fijas son propias — hoy el pasajero reescribe "portón azul, no
-// tocar bocina" en cada reserva.
-interface TripPreferences {
-  conversation: string
-  temperature: string
-  music: string
-  luggageHelp: boolean
-  standingNotes: string | null
-  preferredVehicleTypeId: string | null
-}
+// tocar bocina" en cada reserva. Género del conductor y favorito, inspirados
+// en Empower (driveempower.com): ver comentario en lib/passenger/preferences.ts.
+type TripPreferences = PassengerTripPreferences
+
+const GENDER_OPTIONS: { value: string; label: string }[] = [
+  { value: 'no_preference', label: 'Sin preferencia' },
+  { value: 'female', label: 'Prefiero conductora' },
+  { value: 'male', label: 'Prefiero conductor' },
+]
 
 const PREF_OPTIONS: {
   key: 'conversation' | 'temperature' | 'music'
@@ -167,6 +168,7 @@ export function ProfileScreen() {
   const [vehicleTypes, setVehicleTypes] = useState<{ id: string; name: string }[]>([])
   const [prefsSaving, setPrefsSaving] = useState(false)
   const [prefsSaved, setPrefsSaved] = useState(false)
+  const [favoriteDriverName, setFavoriteDriverName] = useState<string | null>(null)
 
   const [addresses, setAddresses] = useState<SavedAddress[] | null>(null)
   const [addingAddress, setAddingAddress] = useState(false)
@@ -246,10 +248,12 @@ export function ProfileScreen() {
     const result = await callPassengerApi<{
       preferences?: TripPreferences
       vehicleTypes?: { id: string; name: string }[]
+      favoriteDriverName?: string | null
     }>('preferences', { companySlug: process.env.EXPO_PUBLIC_COMPANY_SLUG ?? '' })
     if (result.success && result.preferences) {
       setPrefs(result.preferences)
       setVehicleTypes(result.vehicleTypes ?? [])
+      setFavoriteDriverName(result.favoriteDriverName ?? null)
     }
   }
 
@@ -261,9 +265,20 @@ export function ProfileScreen() {
   async function savePreferences() {
     if (!prefs) return
     setPrefsSaving(true)
-    const result = await callPassengerApi('preferences', { save: true, ...prefs })
+    const result = await callPassengerApi<{ favoriteDriverName?: string | null }>('preferences', {
+      save: true,
+      ...prefs,
+    })
     setPrefsSaving(false)
-    if (result.success) setPrefsSaved(true)
+    if (result.success) {
+      setPrefsSaved(true)
+      setFavoriteDriverName(result.favoriteDriverName ?? null)
+    }
+  }
+
+  function clearFavoriteDriver() {
+    setPref('favoriteDriverId', null)
+    setFavoriteDriverName(null)
   }
 
   async function checkSavedCard() {
@@ -729,6 +744,50 @@ export function ProfileScreen() {
                   </View>
                 </PressableScale>
 
+                <View style={styles.prefGroup}>
+                  <Text style={styles.prefLabel}>Género del conductor</Text>
+                  <View style={styles.prefChips}>
+                    {GENDER_OPTIONS.map((opt) => {
+                      const active = prefs.preferredDriverGender === opt.value
+                      return (
+                        <PressableScale
+                          key={opt.value}
+                          onPress={() => setPref('preferredDriverGender', opt.value)}
+                          haptic="light"
+                        >
+                          <View style={[styles.chip, active && styles.chipActive]}>
+                            <Text style={[styles.chipText, active && styles.chipTextActive]}>{opt.label}</Text>
+                          </View>
+                        </PressableScale>
+                      )
+                    })}
+                  </View>
+                  {prefs.preferredDriverGender !== 'no_preference' && (
+                    <Text style={styles.panelHint}>
+                      Si no hay un conductor disponible con esta preferencia, tu reserva queda pendiente para
+                      asignación manual.
+                    </Text>
+                  )}
+                </View>
+
+                {prefs.favoriteDriverId && (
+                  <View style={styles.prefGroup}>
+                    <Text style={styles.prefLabel}>Conductor favorito</Text>
+                    <View style={styles.favoriteRow}>
+                      <Ionicons name="star" size={16} color={c.gold} />
+                      <Text style={styles.favoriteName} numberOfLines={1}>
+                        {favoriteDriverName ?? 'Conductor guardado'}
+                      </Text>
+                      <PressableScale onPress={clearFavoriteDriver} hitSlop={8}>
+                        <Text style={styles.favoriteClear}>Quitar</Text>
+                      </PressableScale>
+                    </View>
+                    <Text style={styles.panelHint}>
+                      Marca &quot;Conductor favorito&quot; desde un viaje completado en Mis viajes para cambiarlo.
+                    </Text>
+                  </View>
+                )}
+
                 {vehicleTypes.length > 0 && (
                   <View style={styles.prefGroup}>
                     <Text style={styles.prefLabel}>Vehículo preferido</Text>
@@ -979,6 +1038,19 @@ const makeStyles = (c: Palette) =>
     prefChips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
     toggleRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
     toggleText: { flex: 1, color: c.ink, fontFamily: font.body, fontSize: 13.5 },
+    favoriteRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      backgroundColor: c.surfaceRaised,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      paddingHorizontal: space.md,
+      paddingVertical: space.sm,
+    },
+    favoriteName: { flex: 1, color: c.ink, fontFamily: font.bodySemi, fontSize: 13.5 },
+    favoriteClear: { color: c.danger, fontFamily: font.bodyMedium, fontSize: 12 },
     textarea: {
       color: c.ink,
       fontFamily: font.body,

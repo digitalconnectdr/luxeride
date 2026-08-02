@@ -15,6 +15,7 @@ export const dynamic = 'force-dynamic'
 const CONVERSATION = ['no_preference', 'quiet', 'chatty']
 const TEMPERATURE = ['no_preference', 'cool', 'mild', 'warm']
 const MUSIC = ['no_preference', 'none', 'soft', 'driver_choice']
+const DRIVER_GENDER = ['no_preference', 'female', 'male']
 
 export async function POST(request: Request) {
   const user = await getUserFromBearerToken(request.headers.get('authorization'))
@@ -46,6 +47,30 @@ export async function POST(request: Request) {
     const preferredVehicleTypeId =
       typeof body.preferredVehicleTypeId === 'string' && body.preferredVehicleTypeId ? body.preferredVehicleTypeId : null
 
+    const preferredDriverGender = String(body.preferredDriverGender ?? 'no_preference')
+    if (!DRIVER_GENDER.includes(preferredDriverGender)) {
+      return NextResponse.json({ success: false, error: 'Preferencia no válida' }, { status: 400 })
+    }
+
+    // "Favorito" solo puede ser un conductor con el que el pasajero YA viajó
+    // (viaje completado) — evita marcar como favorito el id de un conductor
+    // ajeno del que no se tiene ningún dato real.
+    let favoriteDriverId: string | null =
+      typeof body.favoriteDriverId === 'string' && body.favoriteDriverId ? body.favoriteDriverId : null
+    if (favoriteDriverId) {
+      const { data: rideTogether } = await admin
+        .from('bookings')
+        .select('id')
+        .eq('customer_id', user.id)
+        .eq('driver_id', favoriteDriverId)
+        .eq('status', 'completed')
+        .limit(1)
+        .maybeSingle()
+      if (!rideTogether) {
+        return NextResponse.json({ success: false, error: 'Solo puedes marcar como favorito a un conductor con el que ya viajaste' }, { status: 400 })
+      }
+    }
+
     const { error } = await admin.from('passenger_preferences').upsert(
       {
         customer_id: user.id,
@@ -55,6 +80,8 @@ export async function POST(request: Request) {
         luggage_help: Boolean(body.luggageHelp),
         standing_notes: standingNotes || null,
         preferred_vehicle_type_id: preferredVehicleTypeId,
+        preferred_driver_gender: preferredDriverGender,
+        favorite_driver_id: favoriteDriverId,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'customer_id' },
@@ -67,9 +94,21 @@ export async function POST(request: Request) {
 
   const { data: row } = await admin
     .from('passenger_preferences')
-    .select('conversation, temperature, music, luggage_help, standing_notes, preferred_vehicle_type_id')
+    .select('conversation, temperature, music, luggage_help, standing_notes, preferred_vehicle_type_id, preferred_driver_gender, favorite_driver_id')
     .eq('customer_id', user.id)
     .maybeSingle()
+
+  // Nombre del conductor favorito, para mostrarlo en el perfil sin que la app
+  // tenga que resolverlo aparte (no tiene acceso directo a user_profiles).
+  let favoriteDriverName: string | null = null
+  if (row?.favorite_driver_id) {
+    const { data: favProfile } = await admin
+      .from('user_profiles')
+      .select('first_name, last_name')
+      .eq('id', row.favorite_driver_id)
+      .maybeSingle()
+    if (favProfile) favoriteDriverName = `${favProfile.first_name} ${favProfile.last_name}`.trim()
+  }
 
   // Tipos de vehículo de la empresa del pasajero, para el selector de
   // "vehículo preferido".
@@ -89,5 +128,5 @@ export async function POST(request: Request) {
   }
 
   const preferences: PassengerPreferences = toPreferences(row as Record<string, unknown> | null)
-  return NextResponse.json({ success: true, preferences, vehicleTypes })
+  return NextResponse.json({ success: true, preferences, vehicleTypes, favoriteDriverName })
 }
