@@ -205,6 +205,13 @@ export default async function DriverTripsPage() {
   const mapsUrl = (addr: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`
   const wazeUrl = (addr: string) => `https://www.waze.com/ul?q=${encodeURIComponent(addr)}&navigate=yes`
 
+  // Si el conductor tiene varios viajes asignados, solo el que ya está en
+  // curso (en_route/arrived/in_progress) muestra el detalle completo (mapa,
+  // progreso, chat) — los que todavía están en 'assigned' (no iniciados) van
+  // en una lista compacta más abajo, para no repetir el mismo detalle N veces.
+  const activeTrips = (trips ?? []).filter((t) => t.status !== 'assigned')
+  const queuedTrips = (trips ?? []).filter((t) => t.status === 'assigned')
+
   return (
     <MapsProvider>
     <div className="min-h-screen bg-[#f6f4ef] text-[#1d1b18] antialiased">
@@ -309,7 +316,13 @@ export default async function DriverTripsPage() {
             <p className="text-sm text-[#75716a]">{dt.noTrips}</p>
           </div>
         ) : (
-          trips.map((t) => {
+          <>
+          {/* Viaje(s) ya iniciados (en_route/arrived/in_progress) — vista completa
+              con mapa, progreso y chat. Los que todavía están en 'assigned' (no
+              iniciados) van en la lista compacta de abajo, no aquí — si no, con
+              varios viajes asignados se repetía el mismo detalle completo N
+              veces y no se distinguía cuál era el viaje activo. */}
+          {activeTrips.map((t) => {
             const pLoc = t.pickup_location as { address?: string; lat?: number; lng?: number } | null
             const dLoc = t.dropoff_location as { address?: string; lat?: number; lng?: number } | null
             const pickup = pLoc?.address ?? '—'
@@ -579,7 +592,56 @@ export default async function DriverTripsPage() {
                 </div>
               </article>
             )
-          })
+          })}
+
+          {/* Viajes ya asignados pero todavía no iniciados — lista compacta,
+              sin mapa/chat/progreso repetido. Cada uno conserva su propio
+              botón de acción (iniciar / rechazar) para arrancarlo cuando el
+              conductor esté listo. */}
+          {queuedTrips.length > 0 && (
+            <div className="space-y-3">
+              <div>
+                <p className={sectionLabel}>{dt.queue.sectionTitle}</p>
+                <p className="text-xs text-[#75716a] mt-1">{dt.queue.sectionSubtitle}</p>
+              </div>
+              {queuedTrips.map((t) => {
+                const pLoc = t.pickup_location as { address?: string } | null
+                const dLoc = t.dropoff_location as { address?: string } | null
+                const pickup = pLoc?.address ?? '—'
+                const dropoff = dLoc?.address ?? '—'
+                return (
+                  <div key={t.id} className={`${card} p-4 sm:p-5`}>
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-[11px] text-[#8a6520]">{t.booking_number}</span>
+                          <span className="text-[11px] text-[#75716a]">
+                            {new Date(t.scheduled_at).toLocaleString(localeTag, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          {t.meet_and_greet && (
+                            <span className="text-[10px] font-medium text-[#8a6520] bg-[#8a6520]/10 border border-[#8a6520]/20 rounded-lg px-2 py-0.5">
+                              {dt.meetAndGreet.split(' | ')[0]}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm font-medium text-[#1d1b18] mt-1">{t.passenger_name ?? dt.passenger}</p>
+                        <p className="text-xs text-[#75716a] mt-0.5 truncate max-w-md">{pickup} → {dropoff}</p>
+                        {t.distance_miles != null && t.duration_minutes != null && (
+                          <p className="text-[11px] text-[#a8a39a] mt-1">
+                            {Number(t.distance_miles).toFixed(1)} mi · {t.duration_minutes} min
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-[#f0ede5]">
+                      <DriverTripActions bookingId={t.id} status={t.status} labels={dt.actions} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          </>
         )}
 
         {/* Calificar pasajeros de viajes recién completados */}

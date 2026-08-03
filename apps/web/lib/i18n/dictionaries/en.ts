@@ -588,6 +588,10 @@ export const en = {
     plate: 'Plate',
     specialInstructions: 'Special instructions',
     preferencesTitle: 'Passenger preferences',
+    queue: {
+      sectionTitle: 'Other assigned trips',
+      sectionSubtitle: 'Already assigned and queued — start them when you\'re ready.',
+    },
     locationPauseNotice: 'Your location stopped sharing while you were out of the app. Keep this tab open during the trip so the passenger can see you live.',
     liveMap: {
       paused: 'Live location paused',

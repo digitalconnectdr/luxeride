@@ -589,6 +589,10 @@ export const es: Dictionary = {
     plate: 'Placa',
     specialInstructions: 'Instrucciones especiales',
     preferencesTitle: 'Preferencias del pasajero',
+    queue: {
+      sectionTitle: 'Otros viajes asignados',
+      sectionSubtitle: 'Ya asignados y en cola — inícialos cuando estés listo.',
+    },
     locationPauseNotice: 'Tu ubicación dejó de compartirse mientras estuviste fuera de la app. Mantén esta pestaña abierta durante el viaje para que el pasajero te vea en tiempo real.',
     liveMap: {
       paused: 'Ubicación en vivo pausada',
