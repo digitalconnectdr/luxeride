@@ -3,6 +3,66 @@
 > Actualizado: 2026-08-02. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fix: conductor podía iniciar 2 viajes a la vez + countdown en cola (2026-08-02)
+
+Tras el fix anterior de la vista en cola, el usuario preguntó si un conductor
+podía darle "Iniciar ruta" a dos viajes asignados a la vez — sí podía: nada en
+el código lo impedía. También pidió un reloj de cuenta regresiva para los
+viajes en cola, y que la fecha/hora programada se viera más grande (se veía
+en texto de 11px, casi ilegible).
+
+- **`app/actions/driver.ts` — `advanceDriverTrip`**: se agregó un guard antes
+  de la transición `assigned → en_route` (el paso de "iniciar" un viaje) que
+  verifica si el conductor ya tiene OTRO booking en `en_route`/`arrived`/
+  `in_progress`. Si es así, rechaza con "Ya tienes un viaje en curso.
+  Complétalo antes de iniciar otro." Esta función es compartida entre el
+  server action web y `/api/mobile/driver/advance-trip` (la app nativa
+  Android) — el guard cubre ambas superficies con un solo cambio. Los demás
+  pasos (en_route→arrived→in_progress→completed) NO se validan porque avanzan
+  el mismo viaje que ya está activo, no crean uno nuevo concurrente.
+- **`components/driver/trip-countdown.tsx`** (nuevo): client component con
+  cuenta regresiva ("Inicia en 2h 15min" / en rojo "Debía iniciar hace
+  10min" si ya se pasó la hora), actualizado cada 30s. `now` arranca en
+  `null` y se fija en `useEffect` para evitar mismatch de hidratación (el
+  servidor no puede saber "ahora" en el instante exacto del cliente).
+- **`app/driver/trips/page.tsx`**: la fecha/hora programada de cada viaje en
+  cola pasó de `text-[11px]` a `font-playfair text-lg font-semibold` (mismo
+  tratamiento tipográfico que usa la tarjeta del viaje activo), y se agregó
+  el `<TripCountdown>` al lado.
+- i18n: `dict.driver.queue.startsIn`/`overdue` (en/es/pt).
+
+## ✅ Fix: /driver/trips repetía el detalle completo por cada viaje asignado (2026-08-02)
+
+El usuario probó con el conductor Jean Carlos (empresa "LuxeRide Platform")
+tener varios viajes asignados a la vez y notó que TODOS se mostraban con el
+mismo bloque completo (mapa, progreso, chat, pasajero) apilados uno tras
+otro, y que al iniciar uno, los demás seguían mostrando el mismo detalle
+completo en vez de reducirse a algo simple.
+
+- **`app/driver/trips/page.tsx`**: se separan los viajes en `activeTrips`
+  (status `en_route`/`arrived`/`in_progress` — ya iniciados) y `queuedTrips`
+  (status `assigned` — todavía no iniciados). Solo `activeTrips` renderiza el
+  bloque completo (mapa interactivo, progreso, chat, `LiveLocationReporter`);
+  `queuedTrips` se muestra como una lista compacta nueva ("Otros viajes
+  asignados") con booking number, hora programada, pasajero, ruta resumida y
+  su propio botón de iniciar/rechazar (`DriverTripActions`, reusado tal
+  cual — sin cambios de lógica de negocio).
+- **No se agregó ningún bloqueo** para impedir iniciar un viaje en cola
+  mientras otro está activo — eso sigue funcionando como antes (decisión
+  deliberada para no meter una regla de negocio nueva en un fix visual; si el
+  operador quiere restringir eso, es una decisión aparte a tomar con el
+  usuario).
+- Efecto colateral bueno: antes `LiveLocationReporter` se montaba una vez por
+  CADA viaje asignado (incluidos los no iniciados), reportando la ubicación
+  del conductor contra varios `booking_id` a la vez innecesariamente. Ahora
+  solo se monta para el/los viaje(s) realmente activos.
+- i18n: nueva clave `dict.driver.queue` (en/es/pt).
+
+**Nota**: no se pudo verificar visualmente en navegador (el portal del
+conductor corre dentro de la app de escritorio del usuario, con datos reales
+de producción, sin credenciales demo disponibles en este entorno) — se
+verificó con lectura de código + `tsc`/`eslint`/`vitest`/`build` en verde.
+
 ## ✅ Fix: cargo de cancelación no reflejado en Total + timezone en bitácora (2026-08-02)
 
 El usuario reportó, sobre una reserva de prueba real (LXR-2026-00022) cancelada

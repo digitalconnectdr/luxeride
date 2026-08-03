@@ -592,6 +592,8 @@ export const es: Dictionary = {
     queue: {
       sectionTitle: 'Otros viajes asignados',
       sectionSubtitle: 'Ya asignados y en cola — inícialos cuando estés listo.',
+      startsIn: 'Inicia en {time}',
+      overdue: 'Debía iniciar hace {time}',
     },
     locationPauseNotice: 'Tu ubicación dejó de compartirse mientras estuviste fuera de la app. Mantén esta pestaña abierta durante el viaje para que el pasajero te vea en tiempo real.',
     liveMap: {

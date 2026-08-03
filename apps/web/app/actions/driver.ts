@@ -91,6 +91,25 @@ export async function advanceDriverTrip(
     return { success: false, error: `No puedes avanzar un viaje en estado "${current}"` }
   }
 
+  // Un conductor no puede tener dos viajes "en curso" a la vez — solo se
+  // valida al INICIAR uno nuevo (assigned → en_route); los demás pasos
+  // (en_route → arrived → in_progress → completed) avanzan el mismo viaje
+  // que ya está activo, así que no generan un segundo viaje concurrente.
+  if (current === 'assigned') {
+    const { data: otherActive } = await admin
+      .from('bookings')
+      .select('id')
+      .eq('driver_id', user.id)
+      .eq('company_id', user.company_id)
+      .in('status', ['en_route', 'arrived', 'in_progress'])
+      .neq('id', bookingId)
+      .limit(1)
+      .maybeSingle()
+    if (otherActive) {
+      return { success: false, error: 'Ya tienes un viaje en curso. Complétalo antes de iniciar otro.' }
+    }
+  }
+
   const now = new Date().toISOString()
   const updates: {
     status: BookingStatus

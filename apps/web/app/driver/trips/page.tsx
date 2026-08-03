@@ -27,6 +27,7 @@ import { ShareMenu } from '@/components/share/share-menu'
 import { getAppUrl } from '@/lib/app-url'
 import { FeatureRequestButton } from '@/components/admin/feature-request-modal'
 import { toPreferences, hasAnyPreference, summarizePreferences } from '@/lib/passenger/preferences'
+import { TripCountdown } from '@/components/driver/trip-countdown'
 
 export const dynamic = 'force-dynamic'
 
@@ -613,18 +614,18 @@ export default async function DriverTripsPage() {
                   <div key={t.id} className={`${card} p-4 sm:p-5`}>
                     <div className="flex items-start justify-between gap-3 flex-wrap">
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
                           <span className="font-mono text-[11px] text-[#8a6520]">{t.booking_number}</span>
-                          <span className="text-[11px] text-[#75716a]">
-                            {new Date(t.scheduled_at).toLocaleString(localeTag, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          </span>
                           {t.meet_and_greet && (
                             <span className="text-[10px] font-medium text-[#8a6520] bg-[#8a6520]/10 border border-[#8a6520]/20 rounded-lg px-2 py-0.5">
                               {dt.meetAndGreet.split(' | ')[0]}
                             </span>
                           )}
                         </div>
-                        <p className="text-sm font-medium text-[#1d1b18] mt-1">{t.passenger_name ?? dt.passenger}</p>
+                        <p className="font-playfair text-lg font-semibold text-[#1d1b18]">
+                          {new Date(t.scheduled_at).toLocaleString(localeTag, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        <p className="text-sm font-medium text-[#1d1b18] mt-1.5">{t.passenger_name ?? dt.passenger}</p>
                         <p className="text-xs text-[#75716a] mt-0.5 truncate max-w-md">{pickup} → {dropoff}</p>
                         {t.distance_miles != null && t.duration_minutes != null && (
                           <p className="text-[11px] text-[#a8a39a] mt-1">
@@ -632,6 +633,10 @@ export default async function DriverTripsPage() {
                           </p>
                         )}
                       </div>
+                      <TripCountdown
+                        targetIso={t.scheduled_at}
+                        labels={{ startsIn: dt.queue.startsIn, overdue: dt.queue.overdue }}
+                      />
                     </div>
                     <div className="mt-3 pt-3 border-t border-[#f0ede5]">
                       <DriverTripActions bookingId={t.id} status={t.status} labels={dt.actions} />
