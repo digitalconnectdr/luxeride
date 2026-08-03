@@ -2315,6 +2315,7 @@ export const es: Dictionary = {
       pax: 'pax',
       feesTitle: 'Desglose de cargos',
       total: 'Total',
+      feeReviewWarning: '⚠ El cliente rechazó el servicio con un conductor ya asignado y se le cobró un cargo automáticamente. Revisa el motivo en la bitácora de eventos — si la causa fue que el conductor no se presentó, considera reembolsar el cargo manualmente.',
       timelineTitle: 'Historial de tiempos',
       by: 'por',
       ts: {

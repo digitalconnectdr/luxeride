@@ -2315,6 +2315,7 @@ export const pt: Dictionary = {
       pax: 'pax',
       feesTitle: 'Detalhamento de taxas',
       total: 'Total',
+      feeReviewWarning: '⚠ O cliente recusou o serviço com um motorista já designado, e uma taxa foi cobrada automaticamente. Verifique o motivo no registro de eventos abaixo — se o motorista nunca apareceu, considere reembolsar a taxa manualmente.',
       timelineTitle: 'Histórico de tempos',
       by: 'por',
       ts: {

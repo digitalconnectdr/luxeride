@@ -3,6 +3,42 @@
 > Actualizado: 2026-08-02. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Fix: cargo de cancelación no reflejado en Total + timezone en bitácora (2026-08-02)
+
+El usuario reportó, sobre una reserva de prueba real (LXR-2026-00022) cancelada
+por el cliente citando "conductor nunca llegó", que el "Desglose de cargos" no
+cuadraba (Total no incluía el cargo de cancelación) y que la hora en "Bitácora
+de eventos" tenía 4 horas de más (repetición del bug UTC-vs-timezone-de-empresa
+ya visto varias veces esta semana).
+
+- **`app/actions/trip.ts` — `cancelTripByClientAction`**: al insertar el fee de
+  cancelación, ahora también actualiza `bookings.total_amount = fee.feeAmount`
+  — el mismo fix que ya existía en `bookings.ts:759` (con el comentario "bug
+  real encontrado en producción") pero que nunca se replicó al flujo de
+  cancelación pública del cliente. Antes, el Total mostrado en
+  `/admin/bookings/[id]` ignoraba por completo el cargo recién cobrado.
+- **`app/admin/bookings/[id]/page.tsx` — timezone**: se agregó `companies.timezone`
+  al query y se extendió `fmt()` para aceptar un `timeZone` de Intl — todos los
+  timestamps de esta página (timeline + bitácora de eventos) ahora se muestran
+  en la zona horaria de la empresa, no en UTC (hora del servidor de Vercel).
+- **Aviso de revisión (decisión del usuario)**: se decidió mantener el cobro
+  automático del cargo de cancelación aunque el motivo sea "conductor no se
+  presentó" (para no abrir la puerta a que cualquier cliente evite un cargo
+  legítimo alegando esto en texto libre), pero se agregó un banner de
+  advertencia en `/admin/bookings/[id]` cuando coexisten un evento
+  `customer_rejected` (cliente rechazó a un conductor ya asignado) y un cargo
+  `cancellation_fee`/`no_show_fee` — invita al staff a revisar el motivo en la
+  bitácora y reembolsar manualmente si fue culpa del conductor.
+- **No se tocó** `lib/policy/engine.ts` — `computeCancellationFee` sigue sin
+  distinguir el motivo del texto libre, a propósito, por la decisión anterior.
+- Datos de la reserva de prueba LXR-2026-00022 limpiados manualmente en
+  Supabase (cargo de $82.83 erróneo eliminado) — no afecta reservas reales.
+
+**Nota para el futuro**: si se agrega un flujo nuevo de cancelación/no-show
+(fuera de `trip.ts` y `bookings.ts`), recordar aplicar el mismo patrón de
+actualizar `total_amount` al insertar el fee — no hay una función compartida
+que lo haga automáticamente, cada call site lo repite.
+
 ## ✅ Auditoría de comunicación de add-ons: landing + llms.txt + JSON-LD (2026-08-02)
 
 El usuario notó que "Rutas frecuentes" (AI Growth Assistant) no se comunicaba

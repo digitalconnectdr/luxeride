@@ -33,11 +33,12 @@ function parseLocation(raw: unknown): LocationJson {
   return raw as LocationJson
 }
 
-function fmt(iso: string | null, tag: string): string {
+function fmt(iso: string | null, tag: string, timeZone?: string | null): string {
   if (!iso) return '—'
   return new Date(iso).toLocaleString(tag, {
     year: 'numeric', month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
+    ...(timeZone ? { timeZone } : {}),
   })
 }
 
@@ -69,7 +70,7 @@ export default async function BookingDetailPage({
   if (!booking) return notFound()
 
   // Datos relacionados
-  const [{ data: fees }, { data: drivers }, { data: vehicleType }, { data: payments }, { data: events }] = await Promise.all([
+  const [{ data: fees }, { data: drivers }, { data: vehicleType }, { data: payments }, { data: events }, { data: companyTz }] = await Promise.all([
     admin
       .from('booking_fees')
       .select('*')
@@ -99,7 +100,25 @@ export default async function BookingDetailPage({
       .select('id, type, actor, actor_id, reason, metadata, created_at')
       .eq('booking_id', booking.id)
       .order('created_at', { ascending: false }),
+    admin
+      .from('companies')
+      .select('timezone')
+      .eq('id', companyId)
+      .single(),
   ])
+  // Zona horaria de la empresa, no la del servidor (Vercel corre en UTC) —
+  // sin esto los timestamps de esta página (timeline + bitácora) se muestran
+  // desplazados respecto a la hora real de la empresa. Mismo bug de fondo que
+  // lib/time/zoned-bounds.ts documenta y ya se corrigió en otras páginas.
+  const companyTimeZone = companyTz?.timezone ?? null
+
+  // Aviso de revisión: el cliente rechazó un conductor ya asignado (posible
+  // falla del operador, no del pasajero) y de todas formas se le cobró un
+  // cargo de cancelación/no-show automáticamente — el staff debe revisar el
+  // motivo antes de dar el cobro por bueno.
+  const hasCustomerRejection = (events ?? []).some((e) => e.type === 'customer_rejected')
+  const hasCancellationCharge = (fees ?? []).some((f) => f.type === 'cancellation_fee' || f.type === 'no_show_fee')
+  const needsFeeReview = hasCustomerRejection && hasCancellationCharge
 
   // Conductor asignado
   let driverName = '—'
@@ -321,7 +340,7 @@ export default async function BookingDetailPage({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2 border-t border-sl-outline-variant">
           <div>
             <p className="text-xs text-sl-on-surface-muted">{t.dateTime}</p>
-            <p className="text-sm text-sl-on-surface mt-0.5">{fmt(booking.scheduled_at, localeTag)}</p>
+            <p className="text-sm text-sl-on-surface mt-0.5">{fmt(booking.scheduled_at, localeTag, companyTimeZone)}</p>
           </div>
           <div>
             <p className="text-xs text-sl-on-surface-muted">{t.distance}</p>
@@ -358,7 +377,7 @@ export default async function BookingDetailPage({
             </p>
             {booking.flight_arrival_at && (
               <p className="text-xs text-sl-on-surface-muted mt-1">
-                {t.flightEta}: {fmt(booking.flight_arrival_at, localeTag)}
+                {t.flightEta}: {fmt(booking.flight_arrival_at, localeTag, companyTimeZone)}
               </p>
             )}
           </div>
@@ -508,6 +527,11 @@ export default async function BookingDetailPage({
           <p className="text-[10px] font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-3">
             {t.feesTitle}
           </p>
+          {needsFeeReview && (
+            <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              {t.feeReviewWarning}
+            </div>
+          )}
           <div className="space-y-2">
             {fees.map((fee) => (
               <div key={fee.id} className="flex justify-between text-sm">
@@ -556,7 +580,7 @@ export default async function BookingDetailPage({
           ].filter((row) => row.value).map((row) => (
             <div key={row.label}>
               <p className="text-xs text-sl-on-surface-muted">{row.label}</p>
-              <p className="text-sl-on-surface">{fmt(row.value ?? null, localeTag)}</p>
+              <p className="text-sl-on-surface">{fmt(row.value ?? null, localeTag, companyTimeZone)}</p>
               {row.by && (
                 <p className="text-[11px] text-sl-on-surface-muted mt-0.5">{t.by} {row.by}</p>
               )}
@@ -592,7 +616,7 @@ export default async function BookingDetailPage({
                       {t.eventTypes[ev.type as keyof typeof t.eventTypes] ?? ev.type}
                       {category && ` | ${t.incidentCategories[category as keyof typeof t.incidentCategories] ?? category}`}
                     </span>
-                    <span className="text-[11px] text-sl-on-surface-muted">{fmt(ev.created_at, localeTag)}</span>
+                    <span className="text-[11px] text-sl-on-surface-muted">{fmt(ev.created_at, localeTag, companyTimeZone)}</span>
                   </div>
                   {ev.reason && (
                     <p className="text-sm text-sl-on-surface mt-1.5">{ev.reason}</p>

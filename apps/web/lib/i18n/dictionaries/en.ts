@@ -2314,6 +2314,7 @@ export const en = {
       pax: 'pax',
       feesTitle: 'Fee breakdown',
       total: 'Total',
+      feeReviewWarning: '⚠ The customer rejected the service after a driver was already assigned, and a fee was charged automatically. Check the reason in the event log below — if the driver never showed up, consider refunding the fee manually.',
       timelineTitle: 'Time history',
       by: 'by',
       ts: {

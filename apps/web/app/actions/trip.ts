@@ -154,6 +154,11 @@ export async function cancelTripByClientAction(
         description: `Cargo por cancelación del cliente (${fee.feePct}% según política)`,
         amount: fee.feeAmount,
       })
+      // El monto que el cliente debe pagar ahora ES el cargo de cancelación, no
+      // la tarifa completa original (mismo fix que updateBookingStatusAction en
+      // bookings.ts:759) — sin esto, el Total en /admin/bookings/[id] ignora el
+      // cargo recién insertado.
+      await admin.from('bookings').update({ total_amount: fee.feeAmount }).eq('id', bookingId)
     }
   }
 
