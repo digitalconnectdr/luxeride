@@ -3,6 +3,29 @@
 > Actualizado: 2026-08-02. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Polish: header del portal del conductor (2026-08-02)
+
+El usuario pidió (skill `impeccable`, comando `polish`) que el header de
+`/driver/trips` se viera "realmente profesional". Antes: nombre/vehículo,
+toggle en/fuera de servicio, compartir link, idioma, feedback y cerrar
+sesión flotaban sueltos en una sola fila sin agrupación ni jerarquía.
+
+- Avatar circular con la inicial del conductor (mismo patrón ya usado para
+  el pasajero en otras partes del sistema).
+- Nombre + toggle de servicio en una línea, vehículo asignado debajo — todo
+  agrupado como una sola unidad con el avatar (antes: 3 elementos sueltos).
+- "Compartir link de reservas" pasó de texto siempre visible a tooltip
+  nativo (`title`) sobre el ícono — menos ruido visual.
+- Divisores sutiles entre marca | identidad del conductor | utilidades |
+  cerrar sesión, para que la fila se lea en grupos en vez de una lista plana.
+- **Investigado y descartado**: unificar la forma del botón de feedback
+  (`FeatureRequestButton`, ícono plano `rounded-lg`) con la píldora
+  `rounded-full` de Compartir/Idioma. Se probó y revirtió porque ese mismo
+  componente se usa en el topbar de `/admin`, donde YA es consistente con
+  otros 3 íconos planos (Mensajes, Cumplimiento, Ayuda) — cambiarlo ahí
+  habría roto esa consistencia para "arreglar" una inconsistencia distinta
+  en el portal del conductor. Ver memoria para el detalle.
+
 ## ✅ Fix: conductor podía iniciar 2 viajes a la vez + countdown en cola (2026-08-02)
 
 Tras el fix anterior de la vista en cola, el usuario preguntó si un conductor
