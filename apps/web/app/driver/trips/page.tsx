@@ -244,36 +244,56 @@ export default async function DriverTripsPage() {
             <p className="text-[10px] uppercase tracking-[0.22em] text-[#8a6520] mt-0.5">{dt.portal}</p>
           </div>
         </div>
-        <div className="flex items-center gap-4 ml-auto">
-          <div className="text-right">
-            <p className="text-sm font-medium truncate">{driverName}</p>
-            <p className="text-[11px] text-[#75716a] mt-0.5">
-              {assignedVehicle
-                ? `${dt.assignedVehicle}: ${[assignedVehicle.typeName, assignedVehicle.plate_number].filter(Boolean).join(' · ')}`
-                : dt.noVehicleAssigned}
-            </p>
-            <div className="mt-1 flex justify-end">
-              <DriverSelfAvailabilityToggle
-                isAvailable={isAvailable}
-                labels={{ onDuty: dt.onDuty, offDuty: dt.offDuty, saving: dt.actions.saving }}
-              />
+        <div className="flex items-center gap-3 sm:gap-4 ml-auto">
+          {/* Identidad del conductor — avatar + nombre + estado, con el
+              vehículo asignado debajo, agrupados como una sola unidad en vez
+              de flotar sueltos junto a los botones de utilidad. */}
+          <div className="flex items-center gap-3 pr-3 sm:pr-4 border-r border-[#e5e1d8]">
+            <div
+              className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 font-bold text-sm ring-1 ring-[#e5e1d8]"
+              style={{ backgroundColor: brandColor, color: '#1d1b18' }}
+              aria-hidden
+            >
+              {(driverName || '?').trim().charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-semibold text-[#1d1b18] truncate">{driverName}</p>
+                <DriverSelfAvailabilityToggle
+                  isAvailable={isAvailable}
+                  labels={{ onDuty: dt.onDuty, offDuty: dt.offDuty, saving: dt.actions.saving }}
+                />
+              </div>
+              <p className="text-[11px] text-[#75716a] mt-0.5 truncate">
+                {assignedVehicle
+                  ? `${dt.assignedVehicle}: ${[assignedVehicle.typeName, assignedVehicle.plate_number].filter(Boolean).join(' · ')}`
+                  : dt.noVehicleAssigned}
+              </p>
             </div>
           </div>
-          {bookingUrl && (
-            <div className="flex items-center gap-1.5">
-              <span className="hidden sm:inline text-[11px] text-[#75716a]">{dt.shareBookingLink}</span>
-              <ShareMenu
-                url={bookingUrl}
-                title={companyName}
-                variant="light"
-                labels={{ share: dt.share, copyLink: dt.shareCopyLink, copied: dt.copied, instagramHint: dt.shareInstagramHint }}
-              />
-            </div>
-          )}
-          <LanguageSwitcher current={locale} variant="light" />
-          <FeatureRequestButton labels={getDict(locale).admin.featureRequest} />
-          <form action={logoutAction}>
-            <button type="submit" className="text-xs text-[#75716a] hover:text-red-500 transition-colors">{dt.signOut} →</button>
+
+          {/* Utilidades — mismo vocabulario visual (píldora circular) para
+              que se lean como un solo grupo de acciones, no botones sueltos
+              de formas distintas. */}
+          <div className="flex items-center gap-1.5">
+            {bookingUrl && (
+              <span title={dt.shareBookingLink}>
+                <ShareMenu
+                  url={bookingUrl}
+                  title={companyName}
+                  variant="light"
+                  labels={{ share: dt.share, copyLink: dt.shareCopyLink, copied: dt.copied, instagramHint: dt.shareInstagramHint }}
+                />
+              </span>
+            )}
+            <LanguageSwitcher current={locale} variant="light" />
+            <FeatureRequestButton labels={getDict(locale).admin.featureRequest} />
+          </div>
+
+          <form action={logoutAction} className="pl-1 sm:pl-2 border-l border-[#e5e1d8]">
+            <button type="submit" className="text-xs font-medium text-[#75716a] hover:text-red-500 transition-colors whitespace-nowrap">
+              {dt.signOut} →
+            </button>
           </form>
         </div>
       </header>
