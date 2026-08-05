@@ -423,12 +423,19 @@ export type ExtraChargeType = 'extra_passenger' | 'extra_luggage'
 // (ej.: reservaron para 3 personas y llegaron 4). El monto unitario lo define
 // el operador en Configuración (settings.fees); si está en 0 el cargo está
 // desactivado. Se registra en booking_fees, suma al total y avisa por chat.
-export async function driverAddExtraChargeAction(
+//
+// Núcleo compartido: recibe el usuario ya resuelto en vez de leerlo de las
+// cookies, para que tanto el server action (web) como la ruta API de la app
+// móvil (bearer token, sin cookies) reusen la misma lógica — mismo patrón que
+// advanceDriverTrip en driver.ts. Antes esto solo existía en el portal web
+// (driver-add-charge.tsx); el conductor en la app nativa no podía cobrar
+// peaje/parking/equipaje extra durante el viaje.
+export async function addDriverExtraCharge(
+  user: SessionUser,
   bookingId: string,
   type: ExtraChargeType,
   qty: number,
 ): Promise<{ success: boolean; error?: string; amount?: number; currency?: string }> {
-  const user = await requireRole('driver')
   if (!UUID_RE.test(bookingId)) return { success: false, error: 'Reserva inválida' }
   if (type !== 'extra_passenger' && type !== 'extra_luggage') {
     return { success: false, error: 'Tipo de cargo inválido' }
@@ -471,7 +478,7 @@ export async function driverAddExtraChargeAction(
     amount,
   })
   if (feeErr) {
-    console.error('[driverAddExtraChargeAction]', feeErr)
+    console.error('[addDriverExtraCharge]', feeErr)
     return { success: false, error: 'No se pudo registrar el cargo. Intenta de nuevo.' }
   }
 
@@ -488,6 +495,42 @@ export async function driverAddExtraChargeAction(
 
   revalidatePath('/driver/trips')
   return { success: true, amount, currency }
+}
+
+export async function driverAddExtraChargeAction(
+  bookingId: string,
+  type: ExtraChargeType,
+  qty: number,
+): Promise<{ success: boolean; error?: string; amount?: number; currency?: string }> {
+  const user = await requireRole('driver')
+  return addDriverExtraCharge(user, bookingId, type, qty)
+}
+
+// Qué montos de cargo extra tiene configurados el operador, para que la UI
+// (móvil, que no tiene una página server-side donde resolverlo de antemano
+// como sí hace /driver/trips) sepa qué opciones mostrar antes de cobrar.
+export async function resolveDriverTripFees(
+  user: SessionUser,
+  bookingId: string,
+): Promise<{ success: boolean; error?: string; passengerFee?: number; luggageFee?: number; currency?: string }> {
+  if (!UUID_RE.test(bookingId)) return { success: false, error: 'Reserva inválida' }
+  const admin = createAdminClient()
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('id, company_id, driver_id, currency')
+    .eq('id', bookingId)
+    .single()
+  if (!booking || booking.driver_id !== user.id) {
+    return { success: false, error: 'Viaje no encontrado o no asignado a ti' }
+  }
+  const { data: company } = await admin.from('companies').select('settings').eq('id', booking.company_id).single()
+  const fees = parseExtraFees(company?.settings)
+  return {
+    success: true,
+    passengerFee: fees.extra_passenger_fee,
+    luggageFee: fees.extra_luggage_fee,
+    currency: booking.currency ?? 'USD',
+  }
 }
 
 // Crea un Stripe Checkout SOLO por la diferencia, si el viaje ya tenía un pago

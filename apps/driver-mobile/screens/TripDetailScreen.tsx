@@ -13,6 +13,14 @@ import { Button, Card, ScreenLoader, SectionLabel } from '../components/ui'
 import { color, font, radius, space, STATUS_COLOR } from '../lib/theme'
 import { NEXT_ACTION_LABEL, STATUS_LABEL, type BookingStatus, type DriverBooking, type TripsStackParamList } from '../lib/types'
 
+type ExtraChargeType = 'extra_passenger' | 'extra_luggage'
+
+interface TripFees {
+  passengerFee: number
+  luggageFee: number
+  currency: string
+}
+
 const BOOKING_COLUMNS =
   'id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, flight_number, flight_status, flight_delay_minutes, total_amount, currency, completed_at, payment_method_intent, special_instructions, passenger_preferences'
 
@@ -86,6 +94,15 @@ const ACTION_ICON: Partial<Record<BookingStatus, keyof typeof Ionicons.glyphMap>
 
 const ACTIVE_INCIDENT_STATUSES = new Set<BookingStatus>(['en_route', 'arrived', 'in_progress'])
 
+// Mismo set que STOP_ALLOWED en app/actions/trip.ts (web) — mientras el viaje
+// esté en alguno de estos estados, el conductor puede agregar un cargo extra.
+const STOP_ALLOWED = new Set<BookingStatus>(['assigned', 'en_route', 'arrived', 'in_progress'])
+
+const CHARGE_TYPE_LABEL: Record<ExtraChargeType, string> = {
+  extra_passenger: 'Pasajero extra',
+  extra_luggage: 'Equipaje extra',
+}
+
 const INCIDENT_CATEGORIES: { value: string; label: string }[] = [
   { value: 'accident', label: 'Accidente' },
   { value: 'breakdown', label: 'Avería del vehículo' },
@@ -116,6 +133,12 @@ export function TripDetailScreen({ route, navigation }: Props) {
   const [incidentSent, setIncidentSent] = useState(false)
   const [mapUrl, setMapUrl] = useState<string | null>(null)
   const [mapFailed, setMapFailed] = useState(false)
+  const [fees, setFees] = useState<TripFees | null>(null)
+  const [showAddCharge, setShowAddCharge] = useState(false)
+  const [chargeType, setChargeType] = useState<ExtraChargeType>('extra_passenger')
+  const [chargeQty, setChargeQty] = useState(1)
+  const [addingCharge, setAddingCharge] = useState(false)
+  const [chargeDone, setChargeDone] = useState<{ amount: number; currency: string } | null>(null)
 
   const { pauseNotice, dismissPauseNotice, backgroundUnavailable, openSettingsForBackground } =
     useDriverLocationReporter(trip?.id ?? '', trip?.status ?? 'pending')
@@ -143,6 +166,23 @@ export function TripDetailScreen({ route, navigation }: Props) {
     setMapFailed(false)
     callDriverApi<{ mapUrl?: string | null }>('trip-map', { bookingId: trip.id }).then((res) => {
       if (!cancelled) setMapUrl(res.mapUrl ?? null)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [trip?.id, trip?.status])
+
+  // Montos de cargo extra configurados por el operador — antes esto solo
+  // existía en el portal web (driverAddExtraChargeAction); el conductor con
+  // la app nativa no tenía cómo cobrar peaje/parking/equipaje extra en ruta.
+  useEffect(() => {
+    if (!trip || !STOP_ALLOWED.has(trip.status)) {
+      setFees(null)
+      return
+    }
+    let cancelled = false
+    callDriverApi<TripFees>('trip-fees', { bookingId: trip.id }).then((res) => {
+      if (!cancelled && res.success) setFees(res)
     })
     return () => {
       cancelled = true
@@ -229,6 +269,25 @@ export function TripDetailScreen({ route, navigation }: Props) {
       setIncidentCategory(null)
       setIncidentReason('')
       setIncidentSent(true)
+    }
+  }
+
+  async function confirmAddCharge() {
+    if (!trip) return
+    setAddingCharge(true)
+    setError('')
+    const result = await callDriverApi<{ amount?: number; currency?: string }>('add-charge', {
+      bookingId: trip.id,
+      type: chargeType,
+      qty: chargeQty,
+    })
+    setAddingCharge(false)
+    if (!result.success || result.amount == null) {
+      setError(result.error ?? 'No se pudo registrar el cargo')
+    } else {
+      setShowAddCharge(false)
+      setChargeQty(1)
+      setChargeDone({ amount: result.amount, currency: result.currency ?? 'USD' })
     }
   }
 
@@ -411,7 +470,7 @@ export function TripDetailScreen({ route, navigation }: Props) {
         </View>
       ) : null}
 
-      {!showComplete && NEXT_ACTION_LABEL[trip.status] && (
+      {!showComplete && !showAddCharge && !showReject && !showIncident && NEXT_ACTION_LABEL[trip.status] && (
         <Button
           label={NEXT_ACTION_LABEL[trip.status]!}
           icon={ACTION_ICON[trip.status]}
@@ -421,12 +480,26 @@ export function TripDetailScreen({ route, navigation }: Props) {
         />
       )}
 
-      {!showComplete && !showReject && !showIncident && (trip.status === 'assigned' || ACTIVE_INCIDENT_STATUSES.has(trip.status)) && (
+      {!showComplete && !showReject && !showIncident && !showAddCharge && STOP_ALLOWED.has(trip.status) && (
         <View style={styles.secondaryActionsRow}>
           {trip.status === 'assigned' && (
             <PressableScale style={styles.secondaryAction} onPress={() => setShowReject(true)}>
               <Ionicons name="close-circle-outline" size={15} color={color.danger} />
               <Text style={styles.secondaryActionTextDanger}>Rechazar viaje</Text>
+            </PressableScale>
+          )}
+          {fees && (fees.passengerFee > 0 || fees.luggageFee > 0) && (
+            <PressableScale
+              style={styles.secondaryAction}
+              onPress={() => {
+                setChargeType(fees.passengerFee > 0 ? 'extra_passenger' : 'extra_luggage')
+                setChargeQty(1)
+                setChargeDone(null)
+                setShowAddCharge(true)
+              }}
+            >
+              <Ionicons name="pricetag-outline" size={15} color={color.gold} />
+              <Text style={styles.secondaryActionText}>Agregar cargo</Text>
             </PressableScale>
           )}
           {ACTIVE_INCIDENT_STATUSES.has(trip.status) && !incidentSent && (
@@ -442,6 +515,15 @@ export function TripDetailScreen({ route, navigation }: Props) {
         <View style={styles.incidentSentRow}>
           <Ionicons name="checkmark-circle" size={14} color={color.success} />
           <Text style={styles.incidentSentText}>Incidente reportado al equipo de operaciones</Text>
+        </View>
+      )}
+
+      {chargeDone && (
+        <View style={styles.incidentSentRow}>
+          <Ionicons name="checkmark-circle" size={14} color={color.success} />
+          <Text style={styles.incidentSentText}>
+            Cargo agregado: +{chargeDone.amount.toFixed(2)} {chargeDone.currency}
+          </Text>
         </View>
       )}
 
@@ -520,6 +602,73 @@ export function TripDetailScreen({ route, navigation }: Props) {
               onPress={submitIncident}
               loading={reportingIncident}
               disabled={!incidentCategory || !incidentReason.trim()}
+              haptic="medium"
+              style={styles.formActionButton}
+            />
+          </View>
+        </Card>
+      )}
+
+      {showAddCharge && fees && (
+        <Card>
+          <Text style={styles.sectionTitle}>Agregar cargo</Text>
+          <SectionLabel>Tipo</SectionLabel>
+          <View style={styles.categoryChips}>
+            {([
+              ...(fees.passengerFee > 0 ? (['extra_passenger'] as const) : []),
+              ...(fees.luggageFee > 0 ? (['extra_luggage'] as const) : []),
+            ] satisfies ExtraChargeType[]).map((t) => (
+              <PressableScale
+                key={t}
+                style={[styles.categoryChip, chargeType === t && styles.categoryChipActive]}
+                onPress={() => setChargeType(t)}
+              >
+                <Text style={[styles.categoryChipText, chargeType === t && styles.categoryChipTextActive]}>
+                  {CHARGE_TYPE_LABEL[t]}
+                </Text>
+              </PressableScale>
+            ))}
+          </View>
+
+          <SectionLabel>Cantidad</SectionLabel>
+          <View style={styles.qtyRow}>
+            <PressableScale
+              style={[styles.qtyButton, chargeQty <= 1 && styles.qtyButtonDisabled]}
+              onPress={() => setChargeQty((q) => Math.max(1, q - 1))}
+              disabled={chargeQty <= 1}
+              hitSlop={8}
+            >
+              <Ionicons name="remove" size={16} color={color.ink} />
+            </PressableScale>
+            <Text style={styles.qtyValue}>{chargeQty}</Text>
+            <PressableScale
+              style={[styles.qtyButton, chargeQty >= 10 && styles.qtyButtonDisabled]}
+              onPress={() => setChargeQty((q) => Math.min(10, q + 1))}
+              disabled={chargeQty >= 10}
+              hitSlop={8}
+            >
+              <Ionicons name="add" size={16} color={color.ink} />
+            </PressableScale>
+          </View>
+
+          <Text style={styles.chargeTotalText}>
+            Total: {((chargeType === 'extra_passenger' ? fees.passengerFee : fees.luggageFee) * chargeQty).toFixed(2)}{' '}
+            {fees.currency}
+          </Text>
+
+          <View style={styles.formActionsRow}>
+            <Button
+              label="Cancelar"
+              variant="secondary"
+              onPress={() => setShowAddCharge(false)}
+              disabled={addingCharge}
+              style={styles.formActionButton}
+            />
+            <Button
+              label="Confirmar cargo"
+              icon="pricetag"
+              onPress={confirmAddCharge}
+              loading={addingCharge}
               haptic="medium"
               style={styles.formActionButton}
             />
@@ -749,4 +898,18 @@ const styles = StyleSheet.create({
   categoryChipActive: { backgroundColor: `${color.warning}22`, borderColor: color.warning },
   categoryChipText: { color: color.inkMuted, fontFamily: font.bodyMedium, fontSize: 12 },
   categoryChipTextActive: { color: color.warning },
+  qtyRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.sm, marginBottom: space.lg },
+  qtyButton: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.borderStrong,
+    backgroundColor: color.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtyButtonDisabled: { opacity: 0.4 },
+  qtyValue: { color: color.ink, fontFamily: font.bodySemi, fontSize: 16, minWidth: 20, textAlign: 'center' },
+  chargeTotalText: { color: color.gold, fontFamily: font.bodySemi, fontSize: 13, marginBottom: space.lg },
 })
