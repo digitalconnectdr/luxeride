@@ -50,3 +50,6 @@ apps/*/.expo/
 .impeccable/
 apps/*/.impeccable/
 graphify-out/
+
+# Credenciales del respaldo manual de la base de datos — nunca a git
+scripts/.env.backup
