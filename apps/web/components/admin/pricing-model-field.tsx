@@ -58,19 +58,34 @@ export function PricingModelField({
       )}
 
       {model === 'hourly' && (
-        <div>
-          <label className="block text-xs text-sl-on-surface-muted mb-1">
-            {t.minimumHours}<InfoTip text={t.help.minimumHours} />
-          </label>
-          <input
-            name="minimum_hours"
-            type="number"
-            step="0.5"
-            min="0"
-            defaultValue="0"
-            className={inputCls}
-          />
-        </div>
+        <>
+          <div>
+            <label className="block text-xs text-sl-on-surface-muted mb-1">
+              {t.minimumHours}<InfoTip text={t.help.minimumHours} />
+            </label>
+            <input
+              name="minimum_hours"
+              type="number"
+              step="0.5"
+              min="0"
+              defaultValue="0"
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-sl-on-surface-muted mb-1">
+              {t.includedMiles}<InfoTip text={t.help.includedMiles} />
+            </label>
+            <input
+              name="included_miles"
+              type="number"
+              step="1"
+              min="0"
+              placeholder={t.includedMilesPlaceholder}
+              className={inputCls}
+            />
+          </div>
+        </>
       )}
     </>
   )

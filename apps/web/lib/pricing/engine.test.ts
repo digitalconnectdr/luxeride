@@ -18,6 +18,7 @@ function rule(overrides: Partial<PricingRuleFields> = {}): PricingRuleFields {
     hourly_rate: null,
     minimum_fare: null,
     minimum_hours: null,
+    included_miles: null,
     origin_zone_id: null,
     destination_zone_id: null,
     airport_pickup_fee: null,
@@ -113,6 +114,38 @@ describe('calculateFare | modelos', () => {
       0, 90, WEEKDAY_AFTERNOON, 'one_way', TZ_SD, 0,
     )
     expect(fare.baseAmount).toBe(150) // 1.5h * 100, requestedHours=0 se ignora
+  })
+
+  it('hourly con included_miles: sin excedente no cobra de más', () => {
+    const fare = calculateFare(
+      rule({ model: 'hourly', hourly_rate: 100, minimum_hours: 2, included_miles: 50, per_mile_rate: 2 }),
+      40, 90, WEEKDAY_AFTERNOON, 'one_way', TZ_SD, // 1.5h -> piso de 2h; 40mi está DENTRO de las 50 incluidas
+    )
+    expect(fare.baseAmount).toBe(200) // 2h * 100, sin excedente
+  })
+
+  it('hourly con included_miles: cobra el excedente con per_mile_rate', () => {
+    const fare = calculateFare(
+      rule({ model: 'hourly', hourly_rate: 100, minimum_hours: 2, included_miles: 50, per_mile_rate: 2 }),
+      90, 90, WEEKDAY_AFTERNOON, 'one_way', TZ_SD, // 90mi en las mismas 2h -> 40mi de excedente
+    )
+    expect(fare.baseAmount).toBe(280) // 200 (2h*100) + 40mi excedente * $2 = 280
+  })
+
+  it('hourly con included_miles: usa per_km_rate convertido si no hay per_mile_rate', () => {
+    const fare = calculateFare(
+      rule({ model: 'hourly', hourly_rate: 100, minimum_hours: 2, included_miles: 50, per_mile_rate: 0, per_km_rate: 1 }),
+      90, 90, WEEKDAY_AFTERNOON, 'one_way', TZ_SD, // 40mi excedente * ($1/km * 1.60934km/mi)
+    )
+    expect(fare.baseAmount).toBeCloseTo(200 + 40 * 1.60934, 2)
+  })
+
+  it('hourly sin included_miles (null): nunca cobra excedente, comportamiento anterior intacto', () => {
+    const fare = calculateFare(
+      rule({ model: 'hourly', hourly_rate: 100, minimum_hours: 2, per_mile_rate: 2 }),
+      500, 90, WEEKDAY_AFTERNOON, 'one_way', TZ_SD, // 500 millas, pero sin tope configurado
+    )
+    expect(fare.baseAmount).toBe(200) // solo horas, la distancia se ignora igual que antes
   })
 
   it('aplica tarifa mínima', () => {
@@ -337,6 +370,44 @@ describe('bestRule', () => {
   it('zona: sin zonePair, zone_based se ignora por completo', () => {
     const zoneRule = rule({ id: 'zone', model: 'zone_based', vehicle_type_id: null, origin_zone_id: 'a', destination_zone_id: 'b' })
     expect(bestRule([zoneRule], null)).toBeUndefined()
+  })
+
+  // ── Filtro por bookingType (bug real: un vehículo con la ÚNICA regla
+  // "Por hora" configurada cobraba viajes punto-a-punto largos como si
+  // fueran las horas mínimas del chárter) ─────────────────────────────────
+
+  it('sin bookingType (llamadas viejas), no filtra por modelo — comportamiento anterior intacto', () => {
+    const hourlyRule = rule({ id: 'hourly', model: 'hourly', vehicle_type_id: 'vt1' })
+    expect(bestRule([hourlyRule], 'vt1')?.id).toBe('hourly')
+  })
+
+  it('bookingType one_way EXCLUYE una regla "Por hora", aunque sea la única para ese vehículo', () => {
+    const hourlyRule = rule({ id: 'hourly', model: 'hourly', vehicle_type_id: 'vt1' })
+    expect(bestRule([hourlyRule], 'vt1', undefined, undefined, 'one_way')).toBeUndefined()
+  })
+
+  it('bookingType one_way prefiere una regla per_mile sobre una hourly del mismo vehículo', () => {
+    const hourlyRule = rule({ id: 'hourly', model: 'hourly', vehicle_type_id: 'vt1' })
+    const mileRule = rule({ id: 'mile', model: 'per_mile', vehicle_type_id: 'vt1' })
+    expect(bestRule([hourlyRule, mileRule], 'vt1', undefined, undefined, 'one_way')?.id).toBe('mile')
+  })
+
+  it('bookingType hourly SOLO matchea reglas model==="hourly"', () => {
+    const hourlyRule = rule({ id: 'hourly', model: 'hourly', vehicle_type_id: 'vt1' })
+    const mileRule = rule({ id: 'mile', model: 'per_mile', vehicle_type_id: 'vt1' })
+    expect(bestRule([hourlyRule, mileRule], 'vt1', undefined, undefined, 'hourly')?.id).toBe('hourly')
+  })
+
+  it('bookingType airport_pickup también excluye reglas "Por hora"', () => {
+    const hourlyRule = rule({ id: 'hourly', model: 'hourly', vehicle_type_id: null })
+    expect(bestRule([hourlyRule], 'vt1', undefined, undefined, 'airport_pickup')).toBeUndefined()
+  })
+
+  it('bookingType hourly ignora por completo un match de zona (zone_based no aplica a chárter)', () => {
+    const zoneRule = rule({ id: 'zone', model: 'zone_based', vehicle_type_id: null, origin_zone_id: 'a', destination_zone_id: 'b' })
+    const hourlyRule = rule({ id: 'hourly', model: 'hourly', vehicle_type_id: null })
+    const zonePair = { originZoneId: 'a', destinationZoneId: 'b' }
+    expect(bestRule([zoneRule, hourlyRule], null, zonePair, undefined, 'hourly')?.id).toBe('hourly')
   })
 })
 

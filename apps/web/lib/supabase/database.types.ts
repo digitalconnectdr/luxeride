@@ -2027,6 +2027,7 @@ export type Database = {
           hourly_rate: number | null
           minimum_fare: number | null
           minimum_hours: number | null
+          included_miles: number | null
           origin_zone_id: string | null
           destination_zone_id: string | null
           airport_pickup_fee: number | null
@@ -2056,6 +2057,7 @@ export type Database = {
           hourly_rate?: number | null | undefined
           minimum_fare?: number | null | undefined
           minimum_hours?: number | null | undefined
+          included_miles?: number | null | undefined
           origin_zone_id?: string | null | undefined
           destination_zone_id?: string | null | undefined
           airport_pickup_fee?: number | null | undefined
@@ -2085,6 +2087,7 @@ export type Database = {
           hourly_rate?: number | null | undefined
           minimum_fare?: number | null | undefined
           minimum_hours?: number | null | undefined
+          included_miles?: number | null | undefined
           origin_zone_id?: string | null | undefined
           destination_zone_id?: string | null | undefined
           airport_pickup_fee?: number | null | undefined

@@ -231,7 +231,7 @@ async function recomputeWithStop(
         .single()
       const { data: rulesRaw } = await admin
         .from('pricing_rules')
-        .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, holiday_surcharge_pct, surge_enabled, surge_multiplier, valid_from, valid_until, days_of_week, vehicle_type_id, priority')
+        .select('id, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, minimum_hours, included_miles, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, holiday_surcharge_pct, surge_enabled, surge_multiplier, valid_from, valid_until, days_of_week, vehicle_type_id, priority')
         .eq('company_id', booking.company_id)
         .eq('is_active', true)
         .order('priority', { ascending: false })
@@ -245,6 +245,7 @@ async function recomputeWithStop(
         booking.vehicle_type_id,
         undefined,
         getLocalTimeParts(scheduledAt, company?.timezone),
+        booking.type as BookingType,
       )
       if (rule) {
         const fare = calculateFare(

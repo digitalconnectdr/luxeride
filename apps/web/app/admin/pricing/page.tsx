@@ -40,7 +40,7 @@ export default async function PricingPage() {
   ] = await Promise.all([
     admin
       .from('pricing_rules')
-      .select('id, name, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, minimum_hours, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, holiday_surcharge_pct, surge_enabled, surge_multiplier, valid_from, valid_until, days_of_week, priority, is_active, vehicle_type_id')
+      .select('id, name, model, base_price, per_mile_rate, per_km_rate, hourly_rate, minimum_fare, minimum_hours, included_miles, origin_zone_id, destination_zone_id, airport_pickup_fee, airport_dropoff_fee, night_surcharge_pct, weekend_surcharge_pct, holiday_surcharge_pct, surge_enabled, surge_multiplier, valid_from, valid_until, days_of_week, priority, is_active, vehicle_type_id')
       .eq('company_id', user.company_id!)
       .order('priority', { ascending: false })
       .order('name', { ascending: true }),

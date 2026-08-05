@@ -4693,6 +4693,55 @@ así la carga ya insinúa qué está por aparecer. `App.tsx` conserva
 `ScreenLoader` para el splash de arranque/sesión (no hay una forma de
 contenido que anticipar ahí).
 
+## Motor de precios: excedente de distancia en "Por hora" + filtro por tipo de reserva (2026-08-05)
+
+El usuario reportó un bug real vía captura: un viaje punto-a-punto de 1389
+millas (NY → Naples, FL) se cotizó en solo $213.12 porque el único tipo de
+vehículo cotizado tenía configurada una regla "Por hora" ($106.56/h,
+mínimo 2h) — el modelo "Por hora" nunca mira la distancia, así que el motor
+cobró literalmente 2 horas mínimas sin importar que el viaje real fueran
+~21 horas de conducción.
+
+**Migración pendiente de aplicar** (`supabase/migrations/20260805000088_pricing_hourly_included_miles.sql`,
+presentada al usuario para pegar en el SQL Editor de Supabase — no
+aplicada automáticamente):
+```sql
+ALTER TABLE public.pricing_rules ADD COLUMN included_miles NUMERIC(8,2);
+```
+
+**Dos fixes en `lib/pricing/engine.ts`** (con tests nuevos en `engine.test.ts`,
+56 casos totales, todos verdes):
+
+1. **Excedente de distancia en el modelo "Por hora"**: nuevo campo
+   `included_miles` (opcional, NULL = sin tope = comportamiento anterior
+   intacto). Si el viaje excede el millaje incluido, el excedente se cobra
+   con la Tarifa por milla/km YA configurada en la misma regla — no se
+   agregó ningún cargo nuevo. Así un viaje de 2h/40 millas y uno de
+   2h/200 millas dejan de costar lo mismo.
+2. **`bestRule()` ahora filtra por tipo de reserva**: nuevo parámetro
+   opcional `bookingType` (5to argumento, al final para no romper llamadas
+   viejas/tests existentes). Con `bookingType==='hourly'`, solo matchean
+   reglas `model==='hourly'` (y se ignora zone_based por completo). Con
+   cualquier otro tipo (`one_way`, `airport_pickup`, etc.), las reglas
+   `model==='hourly'` quedan EXCLUIDAS de la selección — así un vehículo
+   cuya única regla configurada sea "Por hora" ya no la usa para cotizar
+   viajes punto-a-punto. Actualizados los 3 call sites de `bestRule()`
+   (`getPublicVehicleQuotesAction`, `createBookingAction` en
+   `app/actions/bookings.ts`, y el re-quote de parada en
+   `app/actions/trip.ts`) para pasar el `bookingType` real.
+
+**Admin** (`/admin/pricing`, pestaña Reglas): nuevo campo "Millas incluidas
+(opcional)" junto a "Mínimo de horas", visible solo cuando el modelo es
+"Por hora" — en el form de crear (`pricing-model-field.tsx`) y en la edición
+inline (`pricing-rule-row.tsx`). Vacío = sin tope. i18n en/es/pt, incluye
+una aclaración nueva en la ayuda del campo Modelo explicando que "Por hora"
+solo aplica a reservas tipo "Por horas".
+
+**Recomendación dada al usuario mientras la migración no está aplicada**:
+para el caso reportado (Mercedes E Class con solo una regla "Por hora"),
+crear una regla adicional "Por milla"/"Por km" con prioridad más alta para
+que los viajes punto-a-punto no dependan de la regla hourly.
+
 ## Datos operativos
 
 - Deploy: push a develop → preview (requiere login de Vercel salvo que se

@@ -15,6 +15,15 @@ function parseDecimal(val: FormDataEntryValue | null, fallback = 0): number {
   return isNaN(n) ? fallback : n
 }
 
+/** Vacío = sin tope (NULL) — a diferencia de parseDecimal, un campo vacío
+ *  aquí NO debe convertirse en 0 (0 millas incluidas sería un tope real). */
+function parseNullableDecimal(val: FormDataEntryValue | null): number | null {
+  const s = (val as string ?? '').trim()
+  if (s === '') return null
+  const n = parseFloat(s)
+  return Number.isFinite(n) && n >= 0 ? n : null
+}
+
 /** `<input type="date">` vacío llega como '' — la columna quiere NULL. */
 function parseDate(val: FormDataEntryValue | null): string | null {
   const s = (val as string ?? '').trim()
@@ -76,6 +85,7 @@ export async function createPricingRuleAction(
     hourly_rate:            parseDecimal(formData.get('hourly_rate')),
     minimum_fare:           parseDecimal(formData.get('minimum_fare')),
     minimum_hours:          parseDecimal(formData.get('minimum_hours')),
+    included_miles:         parseNullableDecimal(formData.get('included_miles')),
     origin_zone_id:         originZoneId,
     destination_zone_id:    destZoneId,
     airport_pickup_fee:     parseDecimal(formData.get('airport_pickup_fee')),
@@ -131,6 +141,7 @@ export async function updatePricingRuleAction(
       hourly_rate:            parseDecimal(formData.get('hourly_rate')),
       minimum_fare:           parseDecimal(formData.get('minimum_fare')),
       minimum_hours:          parseDecimal(formData.get('minimum_hours')),
+      included_miles:         parseNullableDecimal(formData.get('included_miles')),
       origin_zone_id:         originZoneId,
       destination_zone_id:    destZoneId,
       airport_pickup_fee:     parseDecimal(formData.get('airport_pickup_fee')),

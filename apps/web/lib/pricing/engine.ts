@@ -14,6 +14,10 @@ export interface PricingRuleFields {
   hourly_rate: number | null
   minimum_fare: number | null
   minimum_hours: number | null
+  /** Millaje incluido en el modelo "Por hora" junto con minimum_hours — el
+   *  excedente se cobra con per_mile_rate (o per_km_rate convertido a
+   *  millas). NULL = sin tope, mismo comportamiento de siempre. */
+  included_miles: number | null
   origin_zone_id: string | null
   destination_zone_id: string | null
   airport_pickup_fee: number | null
@@ -139,6 +143,20 @@ export function calculateFare(
         : durationMinutes / 60
       const hours = Math.max(baseHours, rule.minimum_hours ?? 0)
       base = (rule.hourly_rate ?? 0) * hours
+
+      // Millaje incluido: el mínimo de horas por sí solo no distingue un
+      // viaje de 2h/40 millas de uno de 2h/200 millas — sin este tope
+      // cobran exactamente lo mismo. Si el viaje excede el millaje
+      // incluido, el excedente se cobra con la tarifa por milla/km YA
+      // configurada en la misma regla (no es un cargo nuevo). NULL =
+      // sin tope, comportamiento anterior intacto.
+      if (rule.included_miles != null && distanceMiles > rule.included_miles) {
+        const excessMiles = distanceMiles - rule.included_miles
+        const excessRatePerMile = (rule.per_mile_rate ?? 0) > 0
+          ? (rule.per_mile_rate as number)
+          : (rule.per_km_rate ?? 0) * 1.60934
+        base += excessMiles * excessRatePerMile
+      }
       break
     }
     case 'zone_based':
@@ -216,9 +234,11 @@ export function isRuleApplicable(rule: PricingRuleFields, when?: RuleWhen): bool
 
 /**
  * Mejor regla para un tipo de vehículo (+ opcionalmente un par de zona
- * origen/destino). Prioridad:
+ * origen/destino, + opcionalmente el tipo de reserva). Prioridad:
  *   1. Regla "Por zona" que coincida EXACTO con el par de zonas Y el tipo
- *      de vehículo específico (ej. "Aeropuerto → 51000 en SUV").
+ *      de vehículo específico (ej. "Aeropuerto → 51000 en SUV"). Se
+ *      ignora por completo si `bookingType` es 'hourly' — un precio fijo
+ *      por par de zonas no tiene sentido para un chárter por horas.
  *   2. Regla "Por zona" que coincida con el par de zonas para CUALQUIER
  *      tipo de vehículo (vehicle_type_id NULL).
  *   3. Si no hay match de zona (o no se pasó zonePair): regla NO-zona
@@ -227,18 +247,31 @@ export function isRuleApplicable(rule: PricingRuleFields, when?: RuleWhen): bool
  *      coincida, una regla zone_based no tiene un precio que tenga sentido
  *      usar como respaldo genérico.
  * Las reglas vienen ordenadas por priority DESC.
+ *
+ * Filtro por `bookingType`: una regla "Por hora" calcula el precio por
+ * BLOQUE DE TIEMPO, nunca por distancia — tiene sentido solo cuando el
+ * cliente pidió explícitamente un chárter por horas (bookingType==='hourly').
+ * Sin este filtro, un vehículo cuya ÚNICA regla configurada sea "Por hora"
+ * terminaba cobrando un viaje punto-a-punto largo como si fueran las horas
+ * mínimas del chárter (bug real: un viaje de 1389 millas se cobró como 2h
+ * mínimas porque no había ninguna regla "Por milla" que compitiera). Con
+ * `bookingType` presente: 'hourly' solo puede matchear reglas model==='hourly';
+ * cualquier otro tipo excluye las reglas 'hourly' de la selección. Sin
+ * `bookingType` (llamadas viejas / tests), no se filtra — comportamiento
+ * anterior intacto.
  */
 export function bestRule(
   allRules: PricingRuleFields[],
   vehicleTypeId: string | null,
   zonePair?: ZonePair,
   when?: RuleWhen,
+  bookingType?: BookingType,
 ): PricingRuleFields | undefined {
   // La vigencia se filtra ANTES de cualquier prioridad: una regla vencida no
   // es la "mejor regla", no existe para este viaje.
   const rules = when ? allRules.filter((r) => isRuleApplicable(r, when)) : allRules
 
-  if (zonePair?.originZoneId && zonePair?.destinationZoneId) {
+  if (bookingType !== 'hourly' && zonePair?.originZoneId && zonePair?.destinationZoneId) {
     const zoneMatch =
       rules.find(
         (r) =>
@@ -258,7 +291,13 @@ export function bestRule(
     if (zoneMatch) return zoneMatch
   }
 
-  const nonZoneRules = rules.filter((r) => r.model !== 'zone_based')
+  const modelFiltered = bookingType === undefined
+    ? rules
+    : bookingType === 'hourly'
+      ? rules.filter((r) => r.model === 'hourly')
+      : rules.filter((r) => r.model !== 'hourly')
+
+  const nonZoneRules = modelFiltered.filter((r) => r.model !== 'zone_based')
   return (
     nonZoneRules.find((r) => vehicleTypeId && r.vehicle_type_id === vehicleTypeId) ??
     nonZoneRules.find((r) => r.vehicle_type_id === null)
