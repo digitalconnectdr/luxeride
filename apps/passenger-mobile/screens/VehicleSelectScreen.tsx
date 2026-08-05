@@ -8,7 +8,7 @@ import { View, Text, StyleSheet, FlatList, Image } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { callPassengerApi } from '../lib/api'
-import { Card, EmptyState, ScreenLoader, MetaChip } from '../components/ui'
+import { Card, EmptyState, Skeleton, MetaChip } from '../components/ui'
 import { PressableScale } from '../components/PressableScale'
 import { font, radius, space, useThemedStyles, usePalette, type Palette, type ShadowSet } from '../lib/theme'
 import type { BookingStackParamList, VehicleQuote } from '../lib/types'
@@ -29,6 +29,31 @@ const CLASS_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
 // no alcance ni con el tope se marca como insuficiente en vez de dejar que
 // el pasajero lo elija y se lleve una sorpresa en la confirmación.
 const MAX_LUGGAGE_EXTRA_PER_CATEGORY = 1
+
+// Misma forma que una VehicleQuote real: caja de imagen, nombre (2 líneas
+// posibles → barra ancha), precio en grande a la derecha (el dato que más
+// pesa visualmente en la tarjeta real), y la fila de meta más chica y clara.
+function VehicleCardSkeleton() {
+  const styles = useThemedStyles(makeStyles)
+  return (
+    <Card style={styles.card}>
+      <View style={styles.topRow}>
+        <Skeleton width={88} height={60} radius={radius.md} />
+        <View style={styles.info}>
+          <Skeleton width="80%" height={16} />
+        </View>
+        <View style={styles.priceWrap}>
+          <Skeleton width={54} height={22} />
+          <Skeleton width={30} height={10} style={{ marginTop: 6 }} />
+        </View>
+      </View>
+      <View style={styles.metaRow}>
+        <Skeleton width={90} height={12} />
+        <Skeleton width={130} height={12} />
+      </View>
+    </Card>
+  )
+}
 
 export function VehicleSelectScreen({ route, navigation }: Props) {
   const { draft } = route.params
@@ -75,7 +100,17 @@ export function VehicleSelectScreen({ route, navigation }: Props) {
     return quotes.reduce((best, q) => (q.totalAmount < best.totalAmount ? q : best), quotes[0]).vehicleType.id
   }, [quotes])
 
-  if (!quotes && !error) return <ScreenLoader />
+  if (!quotes && !error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.list}>
+          <VehicleCardSkeleton />
+          <VehicleCardSkeleton />
+          <VehicleCardSkeleton />
+        </View>
+      </View>
+    )
+  }
 
   if (error) {
     return (

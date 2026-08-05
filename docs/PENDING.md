@@ -4675,8 +4675,23 @@ sesión:
   vez de un campo de moneda compacto de una sola línea.
 - **Pendiente de esta iniciativa**: rediseño visual pantalla por pantalla
   de ambas apps nativas hacia "nivel ejecutivo" (esto fue paridad
-  funcional/de kit, no un rediseño visual completo), passenger-mobile:
-  skeletons en vez de spinners + jerarquía tipográfica.
+  funcional/de kit, no un rediseño visual completo).
+
+## Passenger-mobile: skeletons en vez de spinners (2026-08-05)
+
+Nuevo `Skeleton` (bloque fantasma con pulso, `components/ui.tsx`) sustituye
+`ScreenLoader` (spinner de pantalla completa) en las 6 pantallas que
+cargaban datos de forma asíncrona: Mis viajes, Vehículos disponibles,
+Notificaciones, Perfil, Seguimiento en vivo y Chat. Cada pantalla tiene su
+propio skeleton con la FORMA real de su contenido (tarjeta de viaje,
+tarjeta de vehículo con precio grande, fila de notificación con
+icono+título+cuerpo+hora, cabecera de perfil con avatar+nombre, mapa +
+tarjetas de conductor/vehículo, burbujas de chat alternadas) — el peso de
+cada bloque (ancho/alto) refleja la jerarquía tipográfica real de esa
+pantalla (título más grueso, meta más chico) en vez de una barra uniforme,
+así la carga ya insinúa qué está por aparecer. `App.tsx` conserva
+`ScreenLoader` para el splash de arranque/sesión (no hay una forma de
+contenido que anticipar ahí).
 
 ## Datos operativos
 

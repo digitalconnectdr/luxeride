@@ -13,7 +13,7 @@ import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { callPassengerApi } from '../lib/api'
-import { EmptyState, ScreenLoader } from '../components/ui'
+import { EmptyState, Skeleton } from '../components/ui'
 import { PressableScale } from '../components/PressableScale'
 import { font, radius, space, useThemedStyles, usePalette, type Palette } from '../lib/theme'
 
@@ -51,6 +51,23 @@ function relativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString('es-DO', { day: 'numeric', month: 'short' })
 }
 
+// Título (barra media, el dato que el ojo busca primero al escanear la
+// lista) sobre cuerpo (barra angosta, secundario) sobre hora (la más chica
+// de las 3) — la misma jerarquía título/cuerpo/hora del renderItem real.
+function NotificationSkeleton() {
+  const styles = useThemedStyles(makeStyles)
+  return (
+    <View style={styles.card}>
+      <Skeleton width={38} height={38} radius={999} />
+      <View style={styles.textWrap}>
+        <Skeleton width="60%" height={14} />
+        <Skeleton width="85%" height={12.5} style={{ marginTop: 5 }} />
+        <Skeleton width={50} height={11} style={{ marginTop: 5 }} />
+      </View>
+    </View>
+  )
+}
+
 export function NotificationsScreen() {
   const navigation = useNavigation<any>()
   const styles = useThemedStyles(makeStyles)
@@ -79,7 +96,18 @@ export function NotificationsScreen() {
     setRefreshing(false)
   }
 
-  if (!items) return <ScreenLoader />
+  if (!items) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.list}>
+          <NotificationSkeleton />
+          <NotificationSkeleton />
+          <NotificationSkeleton />
+          <NotificationSkeleton />
+        </View>
+      </View>
+    )
+  }
 
   return (
     <FlatList

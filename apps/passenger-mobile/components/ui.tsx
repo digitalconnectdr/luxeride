@@ -4,13 +4,14 @@
 // fuera de su fábrica de estilos, para que cambiar de tema no deje islas
 // del tema anterior.
 
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import {
   View,
   Text,
   TextInput,
   StyleSheet,
   ActivityIndicator,
+  Animated,
   type StyleProp,
   type ViewStyle,
   type TextInputProps,
@@ -47,6 +48,55 @@ export function ScreenLoader() {
     <View style={styles.center}>
       <ActivityIndicator color={c.gold} size="large" />
     </View>
+  )
+}
+
+/**
+ * Bloque fantasma con pulso — el bloque base de todos los skeletons de
+ * carga. Sustituye el spinner de pantalla completa donde ya se conoce la
+ * FORMA del contenido real (una tarjeta de viaje, una fila de notificación):
+ * un bloque del tamaño y peso correcto de cada texto comunica la jerarquía
+ * tipográfica del contenido antes de que llegue, en vez de un giro genérico
+ * que no dice nada sobre lo que se está cargando.
+ */
+export function Skeleton({
+  width,
+  height,
+  radius: r,
+  style,
+}: {
+  width: number | `${number}%`
+  height: number
+  radius?: number
+  style?: StyleProp<ViewStyle>
+}) {
+  const c = usePalette()
+  const opacity = useRef(new Animated.Value(0.4)).current
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 750, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.4, duration: 750, useNativeDriver: true }),
+      ]),
+    )
+    loop.start()
+    return () => loop.stop()
+  }, [opacity])
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          borderRadius: r ?? 4,
+          backgroundColor: c.surfaceRaised,
+          opacity,
+        },
+        style,
+      ]}
+    />
   )
 }
 

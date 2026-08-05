@@ -24,7 +24,7 @@ import { useBranding } from '../lib/branding'
 import { BrandMark } from '../components/BrandMark'
 import { PressableScale } from '../components/PressableScale'
 import { AddressAutocomplete } from '../components/AddressAutocomplete'
-import { Button, Card, Field, FieldButton, SectionLabel, ScreenLoader, MenuRow } from '../components/ui'
+import { Button, Card, Field, FieldButton, SectionLabel, Skeleton, MenuRow } from '../components/ui'
 import {
   font,
   radius,
@@ -122,6 +122,44 @@ function parseDob(iso: string | null): Date | null {
 }
 
 const DEFAULT_DOB = new Date(new Date().getFullYear() - 25, 0, 1)
+
+// Cabecera (avatar circular + nombre en grande + línea de email) y luego
+// filas del tamaño exacto de MenuRow — la misma jerarquía "identidad grande
+// arriba, lista utilitaria abajo" del perfil ya cargado.
+function ProfileSkeleton() {
+  const styles = useThemedStyles(makeStyles)
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
+      <View style={styles.header}>
+        <Skeleton width={76} height={76} radius={999} />
+        <Skeleton width={140} height={20} style={{ marginTop: space.sm }} />
+        <Skeleton width={100} height={12} style={{ marginTop: 6 }} />
+      </View>
+      <View style={styles.brandRow}>
+        <Skeleton width={38} height={38} radius={999} />
+        <View style={styles.brandTextWrap}>
+          <Skeleton width={70} height={10} />
+          <Skeleton width={110} height={13} style={{ marginTop: 5 }} />
+        </View>
+      </View>
+      <View style={styles.section}>
+        <Skeleton width={60} height={11} />
+        <View style={styles.skeletonRow}>
+          <Skeleton width={18} height={18} radius={4} />
+          <Skeleton width="55%" height={14} />
+        </View>
+        <View style={styles.skeletonRow}>
+          <Skeleton width={18} height={18} radius={4} />
+          <Skeleton width="40%" height={14} />
+        </View>
+        <View style={styles.skeletonRow}>
+          <Skeleton width={18} height={18} radius={4} />
+          <Skeleton width="65%" height={14} />
+        </View>
+      </View>
+    </ScrollView>
+  )
+}
 
 export function ProfileScreen() {
   const { branding } = useBranding()
@@ -428,7 +466,7 @@ export function ProfileScreen() {
     ])
   }
 
-  if (loading) return <ScreenLoader />
+  if (loading) return <ProfileSkeleton />
 
   const addressCount = addresses?.length ?? 0
   const themeLabel = THEME_OPTIONS.find((o) => o.key === mode)?.label ?? 'Sistema'
@@ -1027,6 +1065,17 @@ const makeStyles = (c: Palette) =>
     brandLabel: { color: c.inkFaint, fontFamily: font.body, fontSize: 11 },
     brandName: { color: c.ink, fontFamily: font.bodySemi, fontSize: 14 },
     section: { gap: space.sm },
+    skeletonRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.md,
+      backgroundColor: c.surface,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: space.lg,
+      paddingVertical: 14,
+    },
     panel: { gap: space.md },
     panelStack: { gap: space.sm },
     panelHint: { color: c.inkFaint, fontFamily: font.body, fontSize: 12.5, lineHeight: 18 },

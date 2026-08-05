@@ -25,7 +25,7 @@ import { supabase } from '../lib/supabase'
 import { callPassengerApi } from '../lib/api'
 import { decodePolyline, type LatLng } from '../lib/polyline'
 import { PressableScale } from '../components/PressableScale'
-import { ScreenLoader, StatusBadge, EmptyState, Button, MetaChip } from '../components/ui'
+import { Skeleton, StatusBadge, EmptyState, Button, MetaChip } from '../components/ui'
 import { font, space, radius, useThemedStyles, usePalette, type Palette, type ShadowSet } from '../lib/theme'
 import type { BookingStackParamList, BookingStatus } from '../lib/types'
 
@@ -64,6 +64,52 @@ interface TripDetail {
   } | null
   durationMinutes: number | null
   distanceMiles: number | null
+}
+
+// Misma composición vertical de la pantalla real: barra de estado, mapa
+// (el bloque más grande, protagonista igual que el real) y debajo las
+// tarjetas de conductor/vehículo con su propio patrón avatar+nombre+meta.
+function TrackingSkeleton() {
+  const styles = useThemedStyles(makeStyles)
+  return (
+    <View style={styles.container}>
+      <View style={styles.statusBar}>
+        <View style={styles.statusBarLeft}>
+          <Skeleton width={70} height={12} />
+          <Skeleton width={64} height={20} radius={radius.pill} />
+        </View>
+        <View style={{ alignItems: 'flex-end', gap: 4 }}>
+          <Skeleton width={44} height={10} />
+          <Skeleton width={52} height={14} />
+        </View>
+      </View>
+
+      <Skeleton width="100%" height={220} radius={0} />
+
+      <View style={styles.sheetContent}>
+        <View style={styles.card}>
+          <Skeleton width={80} height={10.5} />
+          <View style={styles.driverRow}>
+            <Skeleton width={44} height={44} radius={999} />
+            <View style={styles.driverInfo}>
+              <Skeleton width={120} height={15} />
+              <Skeleton width={90} height={12} style={{ marginTop: 6 }} />
+            </View>
+          </View>
+        </View>
+        <View style={styles.card}>
+          <Skeleton width={110} height={10.5} />
+          <View style={styles.vehicleRow}>
+            <Skeleton width={44} height={44} radius={radius.md} />
+            <View style={styles.vehicleInfo}>
+              <Skeleton width={130} height={15} />
+              <Skeleton width={80} height={12} style={{ marginTop: 6 }} />
+            </View>
+          </View>
+        </View>
+      </View>
+    </View>
+  )
 }
 
 export function TripTrackingScreen({ route, navigation }: Props) {
@@ -241,7 +287,7 @@ export function TripTrackingScreen({ route, navigation }: Props) {
     )
   }
 
-  if (!booking) return <ScreenLoader />
+  if (!booking) return <TrackingSkeleton />
 
   const pickupCoord: LatLng | null =
     booking.pickup?.lat != null && booking.pickup?.lng != null

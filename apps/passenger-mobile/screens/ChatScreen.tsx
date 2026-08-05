@@ -12,11 +12,33 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
 import { PressableScale } from '../components/PressableScale'
-import { ScreenLoader, EmptyState } from '../components/ui'
+import { EmptyState, Skeleton } from '../components/ui'
 import { font, radius, space, useThemedStyles, usePalette, type Palette } from '../lib/theme'
 import type { BookingStackParamList, TripMessage } from '../lib/types'
 
 type Props = NativeStackScreenProps<BookingStackParamList, 'Chat'>
+
+// Burbujas alternadas (conductor/cliente) con anchos variables — el mismo
+// vaivén visual de una conversación real en vez de un bloque uniforme.
+function ChatSkeleton() {
+  const styles = useThemedStyles(makeStyles)
+  const rows: { client: boolean; width: number }[] = [
+    { client: false, width: 160 },
+    { client: true, width: 120 },
+    { client: false, width: 200 },
+    { client: false, width: 90 },
+    { client: true, width: 150 },
+  ]
+  return (
+    <View style={styles.list}>
+      {rows.map((row, i) => (
+        <View key={i} style={[styles.bubbleRow, row.client && styles.bubbleRowClient]}>
+          <Skeleton width={row.width} height={38} radius={radius.md} />
+        </View>
+      ))}
+    </View>
+  )
+}
 
 export function ChatScreen({ route }: Props) {
   const { bookingId } = route.params
@@ -83,15 +105,15 @@ export function ChatScreen({ route }: Props) {
     setSending(false)
   }
 
-  if (loading) return <ScreenLoader />
-
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={100}
     >
-      {messages.length === 0 ? (
+      {loading ? (
+        <ChatSkeleton />
+      ) : messages.length === 0 ? (
         <View style={styles.emptyWrap}>
           <EmptyState icon="chatbubble-outline" title="Sin mensajes todavía" subtitle="Escribe abajo para coordinar con tu conductor." />
         </View>

@@ -12,7 +12,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
 import { callPassengerApi } from '../lib/api'
-import { Button, Card, EmptyState, ScreenLoader, StatusBadge, MetaChip } from '../components/ui'
+import { Button, Card, EmptyState, Skeleton, StatusBadge, MetaChip } from '../components/ui'
 import { PressableScale } from '../components/PressableScale'
 import { font, radius, space, useThemedStyles, usePalette, type Palette } from '../lib/theme'
 import type { BookingStatus, PassengerTripPreferences } from '../lib/types'
@@ -438,6 +438,34 @@ function ReceiptLine({ label, amount, currency }: { label: string; amount: numbe
   )
 }
 
+// Bloques del mismo peso que el contenido real de una TripCard: badge +
+// número (fila superior, más gruesa), 2 líneas de dirección (peso medio),
+// footer de fecha/precio (más chico) — así la carga ya insinúa la forma de
+// un viaje en vez de un giro genérico.
+function TripCardSkeleton() {
+  const styles = useThemedStyles(makeStyles)
+  return (
+    <Card style={styles.card}>
+      <View style={styles.row}>
+        <Skeleton width={78} height={22} radius={radius.pill} />
+        <Skeleton width={64} height={13} />
+      </View>
+      <View style={styles.addressRow}>
+        <Skeleton width={8} height={8} radius={4} />
+        <Skeleton width="70%" height={13} />
+      </View>
+      <View style={styles.addressRow}>
+        <Skeleton width={8} height={8} radius={4} />
+        <Skeleton width="55%" height={13} />
+      </View>
+      <View style={styles.footer}>
+        <Skeleton width={100} height={12} />
+        <Skeleton width={70} height={16} />
+      </View>
+    </Card>
+  )
+}
+
 export function MyTripsScreen() {
   // any: esta pantalla vive en el Tab.Navigator raíz, no en BookingStack
   // (que es donde vive TripTracking) — React Navigation soporta navegar a un
@@ -532,7 +560,17 @@ export function MyTripsScreen() {
     })
   }
 
-  if (!trips && !error) return <ScreenLoader />
+  if (!trips && !error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.listContent}>
+          <TripCardSkeleton />
+          <TripCardSkeleton />
+          <TripCardSkeleton />
+        </View>
+      </View>
+    )
+  }
 
   if (error) {
     return (
