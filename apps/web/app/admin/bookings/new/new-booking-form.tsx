@@ -47,6 +47,7 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
   const [bookingType, setBookingType] = useState<typeof BOOKING_TYPE_VALUES[number]>('one_way')
   const [stopCount, setStopCount] = useState(0) // multi-stop (máx. 3)
   const [quote, setQuote]  = useState<QuoteResult | null>(null)
+  const [meetAndGreet, setMeetAndGreet] = useState(false)
   const [error, setError]  = useState('')
   const [success, setSuccess] = useState('')
 
@@ -269,11 +270,27 @@ export function NewBookingForm({ vehicleTypes, drivers, corporateAccounts = [], 
               type="checkbox"
               name="meet_and_greet"
               value="true"
+              checked={meetAndGreet}
+              onChange={(e) => setMeetAndGreet(e.target.checked)}
               className="w-4 h-4 rounded accent-bronze"
             />
             <span className="text-sm text-sl-on-surface">{t.meetAndGreet}</span>
           </label>
         </div>
+
+        {meetAndGreet && (
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-widest text-sl-on-surface-muted mb-2">
+              {t.signName} <span className="font-normal normal-case">{t.optional}</span>
+            </label>
+            <input
+              type="text"
+              name="sign_name"
+              placeholder={t.signNamePlaceholder}
+              className="w-full rounded-xl border border-sl-outline-variant bg-white px-4 py-2.5 text-sm text-sl-on-surface focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/20"
+            />
+          </div>
+        )}
 
         {error && <ActionErrorBanner error={error} />}
 

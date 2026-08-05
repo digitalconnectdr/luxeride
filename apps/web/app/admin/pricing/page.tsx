@@ -398,6 +398,18 @@ export default async function PricingPage() {
               />
             </div>
             <div>
+              <label className={labelCls}>{s.noShowGraceMinutes}</label>
+              <input
+                name="no_show_grace_minutes"
+                type="number"
+                min="0"
+                max="60"
+                step="1"
+                defaultValue={policy.no_show_grace_minutes}
+                className={inputCls}
+              />
+            </div>
+            <div>
               <label className={labelCls}>{s.modificationHours}</label>
               <input
                 name="modification_min_hours"

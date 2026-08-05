@@ -419,6 +419,7 @@ export async function createBookingAction(
   const internalNotes = (formData.get('internal_notes') as string)?.trim()
   const flightNumber  = (formData.get('flight_number') as string)?.trim()
   const meetAndGreet  = formData.get('meet_and_greet') === 'true'
+  const signName      = (formData.get('sign_name') as string)?.trim()
   const corporateAccountId = (formData.get('corporate_account_id') as string)?.trim() || null
   // Pipeline de cotizaciones: guardar como cotización (status 'quote') en vez de confirmar.
   const asQuote = formData.get('as_quote') === 'true'
@@ -517,6 +518,7 @@ export async function createBookingAction(
       special_instructions: specialInstructions || null,
       internal_notes:   internalNotes || null,
       meet_and_greet:   meetAndGreet,
+      sign_name:        meetAndGreet ? (signName || passengerName) : null,
       price_quote_id:   quoteId,
       // Montos SIEMPRE del quote (server-calculated) — nunca del form
       base_amount:      quote.base_amount,
@@ -1272,6 +1274,8 @@ export async function createPublicBookingAction(data: {
   specialInstructions?: string
   flightNumber?: string
   meetAndGreet?: boolean
+  /** Nombre a mostrar en el letrero de bienvenida — solo si meetAndGreet=true. */
+  signName?: string
   scheduledAt: string
   pickupAddress: string
   pickupLat: number
@@ -1551,6 +1555,7 @@ export async function createPublicBookingAction(data: {
       special_instructions: mergedInstructions,
       passenger_preferences: prefsSnapshot as unknown as Json,
       meet_and_greet:   Boolean(data.meetAndGreet),
+      sign_name:        data.meetAndGreet ? (data.signName?.trim().slice(0, 80) || name) : null,
       price_quote_id:   data.quoteId,
       base_amount:      quote.base_amount,
       total_amount:     quote.total_amount - discountAmount + luggageOverageFee + airportFeeTotal,

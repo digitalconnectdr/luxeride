@@ -156,7 +156,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
   const [passengerData, setPassengerData] = useState({
     name: '', phone: '', email: '', count: 1,
     luggageCarryOn: 0, luggageChecked: 0, luggageExtraLarge: 0,
-    instructions: '', flightNumber: '', meetAndGreet: false,
+    instructions: '', flightNumber: '', meetAndGreet: false, signName: '',
   })
   const [confirmation, setConfirmation] = useState<BookingResult | null>(null)
 
@@ -509,6 +509,7 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
         specialInstructions: passengerData.instructions || undefined,
         flightNumber:        passengerData.flightNumber || undefined,
         meetAndGreet:        passengerData.meetAndGreet,
+        signName:            passengerData.meetAndGreet ? (passengerData.signName || undefined) : undefined,
         scheduledAt:         routeData.scheduledAt,
         pickupAddress:       routeData.pickupAddress,
         pickupLat:           routeData.pickupLat,
@@ -1206,6 +1207,21 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
               />
               <span className="text-sm text-[#1d1d1f]">{dict.meetAndGreet}</span>
             </label>
+          )}
+
+          {routeData.bookingType === 'airport_pickup' && passengerData.meetAndGreet && (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">
+                {dict.signName} <span className="font-normal normal-case text-gray-400">{dict.optional}</span>
+              </label>
+              <input
+                type="text"
+                value={passengerData.signName}
+                onChange={(e) => setPassengerData((p) => ({ ...p, signName: e.target.value }))}
+                placeholder={passengerData.name || dict.signNamePlaceholder}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-[#1d1d1f] focus:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/20"
+              />
+            </div>
           )}
 
           <div>

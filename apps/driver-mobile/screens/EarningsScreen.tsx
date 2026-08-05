@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
 import { callDriverApi } from '../lib/api'
 import { PressableScale } from '../components/PressableScale'
-import { Button, Card, EmptyState, ScreenLoader, SectionLabel } from '../components/ui'
+import { Button, Card, EmptyState, ScreenLoader, SectionLabel, TabHeader } from '../components/ui'
 import { color, font, radius, space } from '../lib/theme'
 import type { DriverBooking } from '../lib/types'
 
@@ -156,7 +156,7 @@ export function EarningsScreen() {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={color.gold} />}
     >
-      <Text style={styles.headerTitle}>Ganancias</Text>
+      <TabHeader title="Ganancias" />
 
       <LinearGradient colors={[color.surfaceRaised, color.surface]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroCard}>
         <Text style={styles.heroLabel}>GANANCIAS TOTALES</Text>
@@ -210,7 +210,6 @@ export function EarningsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.bg },
   content: { padding: space.xl, paddingTop: space.lg, gap: space.lg, flexGrow: 1 },
-  headerTitle: { color: color.ink, fontFamily: font.display, fontSize: 28, marginBottom: -space.xs },
   heroCard: {
     borderRadius: radius.xl,
     borderWidth: 1,

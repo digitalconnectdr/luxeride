@@ -41,6 +41,7 @@ describe('computeCancellationFee', () => {
     late_cancellation_fee_pct: 50,
     no_show_fee_pct: 100,
     modification_min_hours: 4,
+    no_show_grace_minutes: 10,
   }
 
   it('cancelación fuera de la ventana es gratis', () => {

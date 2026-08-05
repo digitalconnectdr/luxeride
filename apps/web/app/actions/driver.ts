@@ -12,6 +12,7 @@ import { broadcastTripEvent } from '@/lib/tracking/broadcast'
 import { autoChargeDeferredCardInBackground } from '@/app/actions/payments'
 import { grantRewardsForBooking } from '@/lib/rewards/grant'
 import { getAppUrl } from '@/lib/app-url'
+import { parsePolicy } from '@/lib/policy/engine'
 import type { BookingStatus } from '@/lib/supabase/database.types'
 
 // ─── Disponibilidad del conductor (para auto-asignación de viajes) ────────────
@@ -269,16 +270,19 @@ export async function completeDriverTripWithExtras(
 // ─── No-show: el pasajero no se presentó ──────────────────────────────────────
 // Solo válido cuando el conductor ya llegó al punto (status = 'arrived').
 
-export async function driverNoShowAction(
+// Núcleo compartido: recibe el usuario ya resuelto para que tanto el server
+// action (web) como la ruta API móvil (bearer token) reusen la misma lógica
+// — mismo patrón que advanceDriverTrip.
+export async function markDriverNoShow(
+  user: SessionUser,
   bookingId: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const user = await requireRole('driver')
   if (!user.company_id) return { success: false, error: 'Sin empresa asignada' }
 
   const admin = createAdminClient()
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, status')
+    .select('id, status, arrived_at')
     .eq('id', bookingId)
     .eq('company_id', user.company_id)
     .eq('driver_id', user.id)
@@ -289,6 +293,24 @@ export async function driverNoShowAction(
     return { success: false, error: 'Solo puedes marcar no-show después de llegar al punto de recogida' }
   }
 
+  // Cortesía: el conductor debe esperar los minutos configurados por el
+  // operador (por defecto 10) antes de poder marcar no-show. Protege al
+  // pasajero de un conductor que marca no-show apenas llega. Se valida
+  // server-side — el countdown en la UI es solo para no dejar tocar un
+  // botón que el servidor va a rechazar de todos modos.
+  const { data: company } = await admin.from('companies').select('settings').eq('id', user.company_id).single()
+  const graceMinutes = parsePolicy(company?.settings).no_show_grace_minutes
+  if (booking.arrived_at) {
+    const elapsedMinutes = (Date.now() - new Date(booking.arrived_at).getTime()) / 60_000
+    const remaining = Math.ceil(graceMinutes - elapsedMinutes)
+    if (remaining > 0) {
+      return {
+        success: false,
+        error: `Cortesía en curso — espera ${remaining} min más antes de marcar no-show.`,
+      }
+    }
+  }
+
   const { error } = await admin
     .from('bookings')
     .update({ status: 'no_show', no_show_at: new Date().toISOString() })
@@ -296,12 +318,21 @@ export async function driverNoShowAction(
     .eq('driver_id', user.id)
 
   if (error) {
-    console.error('[driverNoShowAction]', error)
+    console.error('[markDriverNoShow]', error)
     return { success: false, error: 'Error al marcar no-show' }
   }
 
+  waitUntil(broadcastTripEvent(bookingId, 'status', { status: 'no_show' }))
+
   revalidatePath('/driver/trips')
   return { success: true }
+}
+
+export async function driverNoShowAction(
+  bookingId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await requireRole('driver')
+  return markDriverNoShow(user, bookingId)
 }
 
 // ─── Calificación del pasajero (conductor→pasajero, uso interno) ───────────────

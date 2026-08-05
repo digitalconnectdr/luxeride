@@ -11,7 +11,7 @@ import { NewTripAlert } from '@/components/driver/new-trip-alert'
 import { DriverTripActions } from '@/components/driver/trip-actions'
 import { DriverAddStop } from '@/components/driver/driver-add-stop'
 import { DriverAddCharge } from '@/components/driver/driver-add-charge'
-import { parseExtraFees } from '@/lib/policy/engine'
+import { parseExtraFees, parsePolicy } from '@/lib/policy/engine'
 import { TripChat } from '@/components/trip/trip-chat'
 import { PassengerContact } from '@/components/driver/passenger-contact'
 import { CopyButton } from '@/components/trip/copy-button'
@@ -90,7 +90,7 @@ export default async function DriverTripsPage() {
   const [{ data: trips }, { data: company }, { data: unratedTrips }, { data: driverRow }, { data: recentCompleted }, { data: affiliateTripsRaw }] = await Promise.all([
     admin
       .from('bookings')
-      .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id, route_polyline, meet_and_greet, flight_number, flight_status, flight_delay_minutes, special_instructions, passenger_preferences')
+      .select('id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, waypoints, distance_miles, duration_minutes, vehicle_id, route_polyline, meet_and_greet, sign_name, flight_number, flight_status, flight_delay_minutes, special_instructions, passenger_preferences, arrived_at')
       .eq('driver_id', user.id)
       .in('status', ['assigned', 'en_route', 'arrived', 'in_progress'])
       .order('scheduled_at'),
@@ -200,6 +200,7 @@ export default async function DriverTripsPage() {
   const addStopLabels = { ...dt.addStop, saving: dt.actions.saving }
   const extraFees = parseExtraFees(co?.settings)
   const chargeFees = { passenger: extraFees.extra_passenger_fee, luggage: extraFees.extra_luggage_fee }
+  const noShowGraceMinutes = parsePolicy(co?.settings).no_show_grace_minutes
   const chargeCurrency = co?.currency ?? 'USD'
   const addChargeLabels = { ...dt.addCharge, saving: dt.actions.saving }
   const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
@@ -374,8 +375,11 @@ export default async function DriverTripsPage() {
                       <p className="font-playfair text-xl font-semibold text-[#1d1b18]">{dt.statusTitle[stKey] ?? t.status}</p>
                       <p className="text-sm text-[#75716a] mt-2 leading-relaxed">{(dt.sentence[stKey] ?? '').replace('{name}', name)}</p>
                       {t.meet_and_greet && (
-                        <p className="inline-flex mt-2 text-xs font-medium text-[#8a6520] bg-[#8a6520]/10 border border-[#8a6520]/20 rounded-lg px-2.5 py-1">
-                          {dt.meetAndGreet}
+                        <p className="inline-flex items-center gap-1.5 mt-2 text-xs font-medium text-[#8a6520] bg-[#8a6520]/10 border border-[#8a6520]/20 rounded-lg px-2.5 py-1">
+                          <span>🪧</span>
+                          <span>
+                            {dt.meetAndGreetSign}: <strong>{t.sign_name || t.passenger_name}</strong>
+                          </span>
                         </p>
                       )}
                       {t.flight_number && (
@@ -437,7 +441,13 @@ export default async function DriverTripsPage() {
                     {/* Acción principal */}
                     <div className="rounded-2xl border border-[#e5e1d8] bg-white p-5">
                       <p className={`${sectionLabel} mb-3`}>{dt.mainAction}</p>
-                      <DriverTripActions bookingId={t.id} status={t.status} labels={dt.actions} />
+                      <DriverTripActions
+                        bookingId={t.id}
+                        status={t.status}
+                        labels={dt.actions}
+                        arrivedAt={t.arrived_at}
+                        graceMinutes={noShowGraceMinutes}
+                      />
                     </div>
                   </div>
 
@@ -638,7 +648,7 @@ export default async function DriverTripsPage() {
                           <span className="font-mono text-[11px] text-[#8a6520]">{t.booking_number}</span>
                           {t.meet_and_greet && (
                             <span className="text-[10px] font-medium text-[#8a6520] bg-[#8a6520]/10 border border-[#8a6520]/20 rounded-lg px-2 py-0.5">
-                              {dt.meetAndGreet.split(' | ')[0]}
+                              🪧 {t.sign_name || t.passenger_name}
                             </span>
                           )}
                         </div>

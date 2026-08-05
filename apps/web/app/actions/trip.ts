@@ -506,13 +506,22 @@ export async function driverAddExtraChargeAction(
   return addDriverExtraCharge(user, bookingId, type, qty)
 }
 
-// Qué montos de cargo extra tiene configurados el operador, para que la UI
-// (móvil, que no tiene una página server-side donde resolverlo de antemano
-// como sí hace /driver/trips) sepa qué opciones mostrar antes de cobrar.
+// Qué montos de cargo extra tiene configurados el operador y su minuto de
+// cortesía de no-show, para que la UI (móvil, que no tiene una página
+// server-side donde resolverlo de antemano como sí hace /driver/trips) sepa
+// qué opciones mostrar antes de cobrar y cuánta cortesía queda antes de
+// habilitar el botón de no-show.
 export async function resolveDriverTripFees(
   user: SessionUser,
   bookingId: string,
-): Promise<{ success: boolean; error?: string; passengerFee?: number; luggageFee?: number; currency?: string }> {
+): Promise<{
+  success: boolean
+  error?: string
+  passengerFee?: number
+  luggageFee?: number
+  currency?: string
+  noShowGraceMinutes?: number
+}> {
   if (!UUID_RE.test(bookingId)) return { success: false, error: 'Reserva inválida' }
   const admin = createAdminClient()
   const { data: booking } = await admin
@@ -530,6 +539,7 @@ export async function resolveDriverTripFees(
     passengerFee: fees.extra_passenger_fee,
     luggageFee: fees.extra_luggage_fee,
     currency: booking.currency ?? 'USD',
+    noShowGraceMinutes: parsePolicy(company?.settings).no_show_grace_minutes,
   }
 }
 

@@ -218,11 +218,14 @@ export async function updatePolicySettingsAction(
 
   const clampPct = (v: number) => Math.min(100, Math.max(0, v))
   const clampHrs = (v: number) => Math.max(0, v)
+  const clampGraceMinutes = (v: number) => Math.min(60, Math.max(0, v))
 
   const freeCancellationHours   = clampHrs(parseFloat(formData.get('free_cancellation_hours') as string ?? '24') || 24)
   const lateCancellationFeePct  = clampPct(parseFloat(formData.get('late_cancellation_fee_pct') as string ?? '50') || 0)
   const noShowFeePct            = clampPct(parseFloat(formData.get('no_show_fee_pct') as string ?? '100') || 0)
   const modificationMinHours    = clampHrs(parseFloat(formData.get('modification_min_hours') as string ?? '4') || 4)
+  const noShowGraceMinutesRaw   = parseFloat(formData.get('no_show_grace_minutes') as string ?? '10')
+  const noShowGraceMinutes      = clampGraceMinutes(Number.isNaN(noShowGraceMinutesRaw) ? 10 : noShowGraceMinutesRaw)
 
   const admin = createAdminClient()
 
@@ -242,6 +245,7 @@ export async function updatePolicySettingsAction(
       late_cancellation_fee_pct: lateCancellationFeePct,
       no_show_fee_pct:           noShowFeePct,
       modification_min_hours:    modificationMinHours,
+      no_show_grace_minutes:     noShowGraceMinutes,
     },
   }
 

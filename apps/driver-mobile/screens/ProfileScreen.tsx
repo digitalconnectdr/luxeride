@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase'
 import { callDriverApi } from '../lib/api'
 import { uploadDriverAvatar } from '../lib/upload'
 import { PressableScale } from '../components/PressableScale'
-import { Button, Card, ScreenLoader } from '../components/ui'
+import { Button, Card, ScreenLoader, TabHeader } from '../components/ui'
 import { color, font, radius, space } from '../lib/theme'
 
 async function pickAndUploadAvatar(userId: string): Promise<string | null> {
@@ -87,7 +87,7 @@ export function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerTitle}>Perfil</Text>
+      <TabHeader title="Perfil" />
 
       <Card style={styles.identityCard}>
         <PressableScale style={styles.avatarWrap} onPress={handleChangePhoto} disabled={uploadingPhoto}>
@@ -154,7 +154,6 @@ export function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.bg, padding: space.xl, paddingTop: space.lg, gap: space.md },
-  headerTitle: { color: color.ink, fontFamily: font.display, fontSize: 28, marginBottom: -space.xs },
   identityCard: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
   avatarWrap: { position: 'relative' },
   avatar: {

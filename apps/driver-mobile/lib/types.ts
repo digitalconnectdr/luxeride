@@ -23,6 +23,11 @@ export interface DriverBooking {
   total_amount: number | null
   currency: string | null
   completed_at: string | null
+  /** Cuándo el conductor marcó "llegué" — base para el countdown de cortesía de no-show. */
+  arrived_at: string | null
+  /** Recibo con letrero (solo pickups de aeropuerto) — ver migración 20260607000007. */
+  meet_and_greet?: boolean | null
+  sign_name?: string | null
   // Declarado por el pasajero al reservar (app pasajero, Sprint 5) — 'card'
   // cubre "pagar ahora" (ya cobrado) y "cobrar al finalizar" (se cobra solo
   // al completar el viaje). NULL = reserva vieja o guest de la web, sin dato.

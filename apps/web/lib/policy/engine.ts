@@ -6,6 +6,7 @@
 //     late_cancellation_fee_pct: 50,   // % del total si cancela dentro de la ventana
 //     no_show_fee_pct:           100,  // % del total si el pasajero no aparece
 //     modification_min_hours:    4,    // horas mínimas antes del viaje para modificar
+//     no_show_grace_minutes:     10,   // minutos de cortesía tras "llegué" antes de poder marcar no-show
 //   }
 //
 //   settings.booking = {
@@ -18,6 +19,7 @@ export interface PolicySettings {
   late_cancellation_fee_pct: number
   no_show_fee_pct: number
   modification_min_hours: number
+  no_show_grace_minutes: number
 }
 
 export interface BookingWindowSettings {
@@ -30,6 +32,7 @@ export const DEFAULT_POLICY: PolicySettings = {
   late_cancellation_fee_pct: 50,
   no_show_fee_pct: 100,
   modification_min_hours: 4,
+  no_show_grace_minutes: 10,
 }
 
 export const DEFAULT_BOOKING_WINDOW: BookingWindowSettings = {
@@ -47,6 +50,11 @@ function clampHours(n: unknown, fallback: number): number {
   return n
 }
 
+function clampGraceMinutes(n: unknown, fallback: number): number {
+  if (typeof n !== 'number' || Number.isNaN(n) || n < 0) return fallback
+  return Math.min(60, n)
+}
+
 /** Extrae la política de cancelación del JSONB de settings, con defaults seguros. */
 export function parsePolicy(settings: unknown): PolicySettings {
   const raw = (settings as { policy?: Partial<PolicySettings> } | null)?.policy ?? {}
@@ -55,6 +63,7 @@ export function parsePolicy(settings: unknown): PolicySettings {
     late_cancellation_fee_pct: clampPct(raw.late_cancellation_fee_pct, DEFAULT_POLICY.late_cancellation_fee_pct),
     no_show_fee_pct:           clampPct(raw.no_show_fee_pct, DEFAULT_POLICY.no_show_fee_pct),
     modification_min_hours:    clampHours(raw.modification_min_hours, DEFAULT_POLICY.modification_min_hours),
+    no_show_grace_minutes:     clampGraceMinutes(raw.no_show_grace_minutes, DEFAULT_POLICY.no_show_grace_minutes),
   }
 }
 

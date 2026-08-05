@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
 import { uploadDriverDocumentPhoto } from '../lib/upload'
-import { Button, Card, ScreenLoader, SectionLabel } from '../components/ui'
+import { Button, Card, ScreenLoader, TabHeader } from '../components/ui'
 import { color, font, radius, space } from '../lib/theme'
 import type { DriverRow } from '../lib/types'
 
@@ -138,8 +138,7 @@ export function DocumentsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.headerTitle}>Documentos</Text>
-      <SectionLabel>Mantenlos vigentes para seguir recibiendo viajes</SectionLabel>
+      <TabHeader title="Documentos" subtitle="Mantenlos vigentes para seguir recibiendo viajes" />
 
       <DocumentCard
         icon="card-outline"
@@ -166,7 +165,6 @@ export function DocumentsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.bg },
   content: { padding: space.xl, paddingTop: space.lg, gap: space.md, flexGrow: 1 },
-  headerTitle: { color: color.ink, fontFamily: font.display, fontSize: 28, marginBottom: -space.xs },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   iconWrap: {
     width: 40,

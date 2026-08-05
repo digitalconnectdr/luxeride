@@ -1,13 +1,19 @@
 'use client'
 // ── Botón de avance de viaje para el conductor + no-show + rechazo + incidente ──
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import {
   driverAdvanceTripAction,
   driverNoShowAction,
   driverRejectTripAction,
   reportDriverIncidentAction,
 } from '@/app/actions/driver'
+
+function formatMinutesSeconds(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60)
+  const s = totalSeconds % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
 
 const INCIDENT_CATEGORIES = ['accident', 'breakdown', 'safety', 'unable_to_reach_passenger', 'other'] as const
 
@@ -18,6 +24,7 @@ export interface DriverActionLabels {
   in_progress: string
   saving: string
   noShow: string
+  noShowGraceActive: string
   noShowQ: string
   back: string
   noShowConfirm: string
@@ -37,14 +44,40 @@ export function DriverTripActions({
   bookingId,
   status,
   labels,
+  arrivedAt,
+  graceMinutes,
 }: {
   bookingId: string
   status: string
   labels: DriverActionLabels
+  /** ISO timestamp de cuándo el conductor marcó "llegué" — solo aplica en status='arrived'. */
+  arrivedAt?: string | null
+  /** Minutos de cortesía antes de poder marcar no-show (companies.settings.policy.no_show_grace_minutes). */
+  graceMinutes?: number
 }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
   const [confirmNoShow, setConfirmNoShow] = useState(false)
+
+  // Countdown de cortesía: cuánto le falta al conductor antes de que el
+  // servidor le permita marcar no-show (markDriverNoShow ya lo valida
+  // server-side — esto es solo para no dejar tocar un botón que el
+  // servidor va a rechazar de todos modos).
+  const graceDeadline =
+    status === 'arrived' && arrivedAt && graceMinutes != null
+      ? new Date(arrivedAt).getTime() + graceMinutes * 60_000
+      : null
+  const [graceRemaining, setGraceRemaining] = useState(() =>
+    graceDeadline ? Math.max(0, Math.ceil((graceDeadline - Date.now()) / 1000)) : 0,
+  )
+  useEffect(() => {
+    if (!graceDeadline) return
+    const tick = () => setGraceRemaining(Math.max(0, Math.ceil((graceDeadline - Date.now()) / 1000)))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [graceDeadline])
+  const graceActive = graceRemaining > 0
   const [rejecting, setRejecting] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [reportingIncident, setReportingIncident] = useState(false)
@@ -108,8 +141,15 @@ export function DriverTripActions({
         </button>
       )}
 
-      {/* No-show: solo cuando el conductor ya llegó al punto */}
-      {status === 'arrived' && (
+      {/* No-show: solo cuando el conductor ya llegó al punto, y solo tras la
+      cortesía de espera configurada por el operador */}
+      {status === 'arrived' && graceActive && (
+        <p className="w-full text-center py-2.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-xl">
+          {labels.noShowGraceActive.replace('{minutes}', formatMinutesSeconds(graceRemaining))}
+        </p>
+      )}
+
+      {status === 'arrived' && !graceActive && (
         confirmNoShow ? (
           <div className="rounded-xl border border-red-200 bg-red-50 p-3 space-y-2">
             <p className="text-xs text-red-700">{labels.noShowQ}</p>

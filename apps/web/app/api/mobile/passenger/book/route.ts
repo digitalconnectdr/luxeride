@@ -60,6 +60,7 @@ export async function POST(request: Request) {
     specialInstructions: typeof body?.specialInstructions === 'string' ? body.specialInstructions : undefined,
     flightNumber: typeof body?.flightNumber === 'string' ? body.flightNumber : undefined,
     meetAndGreet: Boolean(body?.meetAndGreet),
+    signName: typeof body?.signName === 'string' ? body.signName : undefined,
     scheduledAt,
     pickupAddress,
     pickupLat,

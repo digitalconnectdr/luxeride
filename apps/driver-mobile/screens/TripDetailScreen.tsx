@@ -19,10 +19,17 @@ interface TripFees {
   passengerFee: number
   luggageFee: number
   currency: string
+  noShowGraceMinutes: number
 }
 
 const BOOKING_COLUMNS =
-  'id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, flight_number, flight_status, flight_delay_minutes, total_amount, currency, completed_at, payment_method_intent, special_instructions, passenger_preferences'
+  'id, booking_number, status, passenger_name, passenger_phone, scheduled_at, pickup_location, dropoff_location, flight_number, flight_status, flight_delay_minutes, total_amount, currency, completed_at, payment_method_intent, special_instructions, passenger_preferences, arrived_at, meet_and_greet, sign_name'
+
+function formatMinutesSeconds(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60)
+  const s = totalSeconds % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
 
 /** Preferencias congeladas en la reserva (ver migración 76 + 85). */
 interface TripPreferences {
@@ -139,9 +146,39 @@ export function TripDetailScreen({ route, navigation }: Props) {
   const [chargeQty, setChargeQty] = useState(1)
   const [addingCharge, setAddingCharge] = useState(false)
   const [chargeDone, setChargeDone] = useState<{ amount: number; currency: string } | null>(null)
+  const [showNoShow, setShowNoShow] = useState(false)
+  const [noShowSubmitting, setNoShowSubmitting] = useState(false)
 
   const { pauseNotice, dismissPauseNotice, backgroundUnavailable, openSettingsForBackground } =
     useDriverLocationReporter(trip?.id ?? '', trip?.status ?? 'pending')
+
+  // Countdown de cortesía antes de poder marcar no-show — el servidor
+  // (markDriverNoShow) ya lo valida de todos modos; esto es solo para no
+  // dejar tocar un botón que el servidor va a rechazar. graceDeadline y
+  // graceActive se calculan de forma SÍNCRONA en cada render (a diferencia
+  // de graceRemaining, que es estado y por tanto tarda un render en
+  // actualizarse) — a diferencia de la web, aquí `fees` llega por un fetch
+  // asíncrono después del montaje, así que si el gating dependiera del
+  // estado en vez de este cálculo síncrono, el botón "No-show" podría
+  // parpadear visible por un render antes de que el efecto lo corrija.
+  const graceDeadline =
+    trip?.status === 'arrived' && trip.arrived_at && fees
+      ? new Date(trip.arrived_at).getTime() + fees.noShowGraceMinutes * 60_000
+      : null
+  const graceActive = graceDeadline !== null && graceDeadline > Date.now()
+  const [graceRemaining, setGraceRemaining] = useState(() =>
+    graceDeadline ? Math.max(0, Math.ceil((graceDeadline - Date.now()) / 1000)) : 0,
+  )
+  useEffect(() => {
+    if (!graceDeadline) {
+      setGraceRemaining(0)
+      return
+    }
+    const tick = () => setGraceRemaining(Math.max(0, Math.ceil((graceDeadline - Date.now()) / 1000)))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [graceDeadline])
 
   const loadTrip = useCallback(async () => {
     const { data } = await supabase.from('bookings').select(BOOKING_COLUMNS).eq('id', tripId).maybeSingle()
@@ -291,6 +328,16 @@ export function TripDetailScreen({ route, navigation }: Props) {
     }
   }
 
+  async function confirmNoShow() {
+    if (!trip) return
+    setNoShowSubmitting(true)
+    setError('')
+    const result = await callDriverApi('no-show', { bookingId: trip.id })
+    setNoShowSubmitting(false)
+    if (!result.success) setError(result.error ?? 'No se pudo marcar no-show')
+    else navigation.goBack()
+  }
+
   if (loading) return <ScreenLoader />
 
   if (!trip) {
@@ -325,6 +372,18 @@ export function TripDetailScreen({ route, navigation }: Props) {
             para que no se interrumpa si usas Waze o Google Maps.
           </Text>
         </PressableScale>
+      )}
+
+      {trip.meet_and_greet && (
+        <View style={styles.meetGreetBanner}>
+          <Ionicons name="reader-outline" size={18} color={color.gold} />
+          <View style={styles.meetGreetTextWrap}>
+            <Text style={styles.meetGreetTitle}>Meet &amp; Greet solicitado</Text>
+            <Text style={styles.meetGreetText}>
+              Sostén un letrero con: <Text style={styles.meetGreetName}>{trip.sign_name || trip.passenger_name || 'el pasajero'}</Text>
+            </Text>
+          </View>
+        </View>
       )}
 
       <Card>
@@ -470,7 +529,7 @@ export function TripDetailScreen({ route, navigation }: Props) {
         </View>
       ) : null}
 
-      {!showComplete && !showAddCharge && !showReject && !showIncident && NEXT_ACTION_LABEL[trip.status] && (
+      {!showComplete && !showAddCharge && !showReject && !showIncident && !showNoShow && NEXT_ACTION_LABEL[trip.status] && (
         <Button
           label={NEXT_ACTION_LABEL[trip.status]!}
           icon={ACTION_ICON[trip.status]}
@@ -480,12 +539,24 @@ export function TripDetailScreen({ route, navigation }: Props) {
         />
       )}
 
-      {!showComplete && !showReject && !showIncident && !showAddCharge && STOP_ALLOWED.has(trip.status) && (
+      {trip.status === 'arrived' && graceActive && (
+        <Text style={styles.graceBanner}>
+          Cortesía de espera: {formatMinutesSeconds(graceRemaining)} restantes
+        </Text>
+      )}
+
+      {!showComplete && !showReject && !showIncident && !showAddCharge && !showNoShow && STOP_ALLOWED.has(trip.status) && (
         <View style={styles.secondaryActionsRow}>
           {trip.status === 'assigned' && (
             <PressableScale style={styles.secondaryAction} onPress={() => setShowReject(true)}>
               <Ionicons name="close-circle-outline" size={15} color={color.danger} />
               <Text style={styles.secondaryActionTextDanger}>Rechazar viaje</Text>
+            </PressableScale>
+          )}
+          {trip.status === 'arrived' && fees && !graceActive && (
+            <PressableScale style={styles.secondaryAction} onPress={() => setShowNoShow(true)}>
+              <Ionicons name="alert-circle-outline" size={15} color={color.danger} />
+              <Text style={styles.secondaryActionTextDanger}>No-show</Text>
             </PressableScale>
           )}
           {fees && (fees.passengerFee > 0 || fees.luggageFee > 0) && (
@@ -553,6 +624,33 @@ export function TripDetailScreen({ route, navigation }: Props) {
               variant="danger"
               onPress={rejectTrip}
               loading={rejecting}
+              haptic="medium"
+              style={styles.formActionButton}
+            />
+          </View>
+        </Card>
+      )}
+
+      {showNoShow && (
+        <Card>
+          <Text style={styles.sectionTitle}>No-show</Text>
+          <Text style={styles.noShowQuestionText}>
+            ¿Marcar que el pasajero no se presentó? Esto cancela el viaje.
+          </Text>
+          <View style={styles.formActionsRow}>
+            <Button
+              label="Volver"
+              variant="secondary"
+              onPress={() => setShowNoShow(false)}
+              disabled={noShowSubmitting}
+              style={styles.formActionButton}
+            />
+            <Button
+              label="Confirmar no-show"
+              icon="alert-circle"
+              variant="danger"
+              onPress={confirmNoShow}
+              loading={noShowSubmitting}
               haptic="medium"
               style={styles.formActionButton}
             />
@@ -746,6 +844,19 @@ const styles = StyleSheet.create({
     padding: space.md,
   },
   pauseBannerText: { flex: 1, color: color.warning, fontFamily: font.bodyMedium, fontSize: 12, lineHeight: 17 },
+  meetGreetBanner: {
+    flexDirection: 'row',
+    gap: space.sm,
+    backgroundColor: `${color.gold}14`,
+    borderWidth: 1,
+    borderColor: `${color.gold}55`,
+    borderRadius: radius.md,
+    padding: space.md,
+  },
+  meetGreetTextWrap: { flex: 1 },
+  meetGreetTitle: { color: color.gold, fontFamily: font.bodySemi, fontSize: 12, letterSpacing: 0.3 },
+  meetGreetText: { color: color.ink, fontFamily: font.body, fontSize: 13, marginTop: 2, lineHeight: 18 },
+  meetGreetName: { fontFamily: font.bodyBold },
   bookingNumber: { color: color.inkFaint, fontFamily: font.bodySemi, fontSize: 12, letterSpacing: 1 },
   statusHero: {
     flexDirection: 'row',
@@ -870,6 +981,18 @@ const styles = StyleSheet.create({
   secondaryActionTextDanger: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 13 },
   incidentSentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   incidentSentText: { color: color.success, fontFamily: font.bodyMedium, fontSize: 12 },
+  graceBanner: {
+    textAlign: 'center',
+    color: color.warning,
+    fontFamily: font.bodyMedium,
+    fontSize: 12,
+    backgroundColor: color.warningSoft,
+    borderWidth: 1,
+    borderColor: `${color.warning}55`,
+    borderRadius: radius.md,
+    paddingVertical: 10,
+  },
+  noShowQuestionText: { color: color.inkMuted, fontFamily: font.body, fontSize: 13, marginBottom: space.lg, lineHeight: 18 },
   reasonInput: {
     backgroundColor: color.bg,
     color: color.ink,

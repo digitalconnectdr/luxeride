@@ -45,7 +45,7 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const admin = createAdminClient()
   const { data: booking } = await admin
     .from('bookings')
-    .select('id, booking_number, status, scheduled_at, pickup_location, dropoff_location, waypoints, driver_id, vehicle_id, company_id, passenger_name, distance_miles, duration_minutes, route_polyline, dispatched_at, en_route_at, arrived_at, started_at, completed_at, rated_at')
+    .select('id, booking_number, status, scheduled_at, pickup_location, dropoff_location, waypoints, driver_id, vehicle_id, company_id, passenger_name, distance_miles, duration_minutes, route_polyline, dispatched_at, en_route_at, arrived_at, started_at, completed_at, rated_at, meet_and_greet, sign_name')
     .eq('id', params.id)
     .single()
 
@@ -486,6 +486,12 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
                 </div>
               )}
             </div>
+            {booking.meet_and_greet && (
+              <p className="mt-3 text-xs text-white/60 flex items-center gap-1.5">
+                <span>🪧</span>
+                <span>{t.meetAndGreetNote.replace('{name}', booking.sign_name || booking.passenger_name || '')}</span>
+              </p>
+            )}
             <div className="mt-4 pt-4 border-t border-white/[0.06] flex items-center gap-2">
               {showChat && (
                 <a href="#trip-chat" className="flex-1 text-center rounded-full border border-white/15 px-3.5 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 transition-colors">
