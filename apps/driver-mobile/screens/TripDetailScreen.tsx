@@ -13,7 +13,7 @@ import { Button, Card, ScreenLoader, SectionLabel } from '../components/ui'
 import { color, font, radius, space, STATUS_COLOR } from '../lib/theme'
 import { NEXT_ACTION_LABEL, STATUS_LABEL, type BookingStatus, type DriverBooking, type TripsStackParamList } from '../lib/types'
 
-type ExtraChargeType = 'extra_passenger' | 'extra_luggage'
+type ExtraChargeType = 'extra_passenger' | 'extra_luggage' | 'toll_parking'
 
 interface TripFees {
   passengerFee: number
@@ -108,6 +108,7 @@ const STOP_ALLOWED = new Set<BookingStatus>(['assigned', 'en_route', 'arrived', 
 const CHARGE_TYPE_LABEL: Record<ExtraChargeType, string> = {
   extra_passenger: 'Pasajero extra',
   extra_luggage: 'Equipaje extra',
+  toll_parking: 'Peaje / parking',
 }
 
 const INCIDENT_CATEGORIES: { value: string; label: string }[] = [
@@ -144,6 +145,8 @@ export function TripDetailScreen({ route, navigation }: Props) {
   const [showAddCharge, setShowAddCharge] = useState(false)
   const [chargeType, setChargeType] = useState<ExtraChargeType>('extra_passenger')
   const [chargeQty, setChargeQty] = useState(1)
+  const [chargeAmount, setChargeAmount] = useState('')
+  const [chargeError, setChargeError] = useState('')
   const [addingCharge, setAddingCharge] = useState(false)
   const [chargeDone, setChargeDone] = useState<{ amount: number; currency: string } | null>(null)
   const [showNoShow, setShowNoShow] = useState(false)
@@ -311,19 +314,30 @@ export function TripDetailScreen({ route, navigation }: Props) {
 
   async function confirmAddCharge() {
     if (!trip) return
+    const customAmount = chargeType === 'toll_parking' ? Number(chargeAmount.replace(',', '.')) : undefined
+    if (chargeType === 'toll_parking' && (!Number.isFinite(customAmount) || (customAmount ?? 0) <= 0)) {
+      setChargeError('Monto inválido')
+      return
+    }
+    if (chargeType === 'toll_parking' && (customAmount ?? 0) > 500) {
+      setChargeError('El monto máximo por cargo es 500. Para montos mayores, contacta a soporte.')
+      return
+    }
+    setChargeError('')
     setAddingCharge(true)
-    setError('')
     const result = await callDriverApi<{ amount?: number; currency?: string }>('add-charge', {
       bookingId: trip.id,
       type: chargeType,
       qty: chargeQty,
+      customAmount,
     })
     setAddingCharge(false)
     if (!result.success || result.amount == null) {
-      setError(result.error ?? 'No se pudo registrar el cargo')
+      setChargeError(result.error ?? 'No se pudo registrar el cargo')
     } else {
       setShowAddCharge(false)
       setChargeQty(1)
+      setChargeAmount('')
       setChargeDone({ amount: result.amount, currency: result.currency ?? 'USD' })
     }
   }
@@ -559,12 +573,14 @@ export function TripDetailScreen({ route, navigation }: Props) {
               <Text style={styles.secondaryActionTextDanger}>No-show</Text>
             </PressableScale>
           )}
-          {fees && (fees.passengerFee > 0 || fees.luggageFee > 0) && (
+          {fees && (
             <PressableScale
               style={styles.secondaryAction}
               onPress={() => {
-                setChargeType(fees.passengerFee > 0 ? 'extra_passenger' : 'extra_luggage')
+                setChargeType(fees.passengerFee > 0 ? 'extra_passenger' : fees.luggageFee > 0 ? 'extra_luggage' : 'toll_parking')
                 setChargeQty(1)
+                setChargeAmount('')
+                setChargeError('')
                 setChargeDone(null)
                 setShowAddCharge(true)
               }}
@@ -715,6 +731,7 @@ export function TripDetailScreen({ route, navigation }: Props) {
             {([
               ...(fees.passengerFee > 0 ? (['extra_passenger'] as const) : []),
               ...(fees.luggageFee > 0 ? (['extra_luggage'] as const) : []),
+              'toll_parking',
             ] satisfies ExtraChargeType[]).map((t) => (
               <PressableScale
                 key={t}
@@ -728,37 +745,61 @@ export function TripDetailScreen({ route, navigation }: Props) {
             ))}
           </View>
 
-          <SectionLabel>Cantidad</SectionLabel>
-          <View style={styles.qtyRow}>
-            <PressableScale
-              style={[styles.qtyButton, chargeQty <= 1 && styles.qtyButtonDisabled]}
-              onPress={() => setChargeQty((q) => Math.max(1, q - 1))}
-              disabled={chargeQty <= 1}
-              hitSlop={8}
-            >
-              <Ionicons name="remove" size={16} color={color.ink} />
-            </PressableScale>
-            <Text style={styles.qtyValue}>{chargeQty}</Text>
-            <PressableScale
-              style={[styles.qtyButton, chargeQty >= 10 && styles.qtyButtonDisabled]}
-              onPress={() => setChargeQty((q) => Math.min(10, q + 1))}
-              disabled={chargeQty >= 10}
-              hitSlop={8}
-            >
-              <Ionicons name="add" size={16} color={color.ink} />
-            </PressableScale>
-          </View>
+          {chargeType === 'toll_parking' ? (
+            <>
+              <SectionLabel>Monto</SectionLabel>
+              <View style={styles.cashInputWrap}>
+                <Text style={styles.cashSign}>{fees.currency}</Text>
+                <TextInput
+                  style={styles.cashInput}
+                  placeholder="0.00"
+                  placeholderTextColor={color.inkFaint}
+                  keyboardType="decimal-pad"
+                  value={chargeAmount}
+                  onChangeText={setChargeAmount}
+                />
+              </View>
+            </>
+          ) : (
+            <>
+              <SectionLabel>Cantidad</SectionLabel>
+              <View style={styles.qtyRow}>
+                <PressableScale
+                  style={[styles.qtyButton, chargeQty <= 1 && styles.qtyButtonDisabled]}
+                  onPress={() => setChargeQty((q) => Math.max(1, q - 1))}
+                  disabled={chargeQty <= 1}
+                  hitSlop={8}
+                >
+                  <Ionicons name="remove" size={16} color={color.ink} />
+                </PressableScale>
+                <Text style={styles.qtyValue}>{chargeQty}</Text>
+                <PressableScale
+                  style={[styles.qtyButton, chargeQty >= 10 && styles.qtyButtonDisabled]}
+                  onPress={() => setChargeQty((q) => Math.min(10, q + 1))}
+                  disabled={chargeQty >= 10}
+                  hitSlop={8}
+                >
+                  <Ionicons name="add" size={16} color={color.ink} />
+                </PressableScale>
+              </View>
+            </>
+          )}
 
           <Text style={styles.chargeTotalText}>
-            Total: {((chargeType === 'extra_passenger' ? fees.passengerFee : fees.luggageFee) * chargeQty).toFixed(2)}{' '}
+            Total:{' '}
+            {(chargeType === 'toll_parking'
+              ? Number(chargeAmount.replace(',', '.')) || 0
+              : (chargeType === 'extra_passenger' ? fees.passengerFee : fees.luggageFee) * chargeQty
+            ).toFixed(2)}{' '}
             {fees.currency}
           </Text>
+          {!!chargeError && <Text style={styles.chargeErrorText}>{chargeError}</Text>}
 
           <View style={styles.formActionsRow}>
             <Button
               label="Cancelar"
               variant="secondary"
-              onPress={() => setShowAddCharge(false)}
+              onPress={() => { setShowAddCharge(false); setChargeError('') }}
               disabled={addingCharge}
               style={styles.formActionButton}
             />
@@ -1007,6 +1048,7 @@ const styles = StyleSheet.create({
     marginTop: space.sm,
     marginBottom: space.lg,
   },
+  chargeErrorText: { color: color.danger, fontFamily: font.bodyMedium, fontSize: 12, marginTop: space.sm },
   formActionsRow: { flexDirection: 'row', gap: space.sm },
   formActionButton: { flex: 1 },
   categoryChips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.sm, marginBottom: space.lg },

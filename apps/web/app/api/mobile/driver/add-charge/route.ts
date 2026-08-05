@@ -22,18 +22,21 @@ export async function POST(request: Request) {
   let bookingId: string | undefined
   let type: ExtraChargeType | undefined
   let qty: number | undefined
+  let customAmount: number | undefined
   try {
     const body = await request.json()
     bookingId = body?.bookingId
     type = body?.type
     qty = body?.qty
+    customAmount = typeof body?.customAmount === 'number' ? body.customAmount : undefined
   } catch {
     return NextResponse.json({ success: false, error: 'JSON inválido' }, { status: 400 })
   }
-  if (!bookingId || !type || typeof qty !== 'number') {
+  const hasQty = type === 'toll_parking' ? true : typeof qty === 'number'
+  if (!bookingId || !type || !hasQty) {
     return NextResponse.json({ success: false, error: 'Faltan datos del cargo' }, { status: 400 })
   }
 
-  const result = await addDriverExtraCharge(user, bookingId, type, qty)
+  const result = await addDriverExtraCharge(user, bookingId, type, qty ?? 1, customAmount)
   return NextResponse.json(result, { status: result.success ? 200 : 400 })
 }

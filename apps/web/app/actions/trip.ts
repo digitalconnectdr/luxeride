@@ -417,12 +417,26 @@ export async function driverAddTripStopAction(
 
 // ─── Cargos extra del conductor (pasajero/equipaje adicional) ─────────────────
 
-export type ExtraChargeType = 'extra_passenger' | 'extra_luggage'
+export type ExtraChargeType = 'extra_passenger' | 'extra_luggage' | 'toll_parking'
 
-// El conductor agrega un cargo por pasajero o equipaje extra durante el viaje
-// (ej.: reservaron para 3 personas y llegaron 4). El monto unitario lo define
-// el operador en Configuración (settings.fees); si está en 0 el cargo está
-// desactivado. Se registra en booking_fees, suma al total y avisa por chat.
+const EXTRA_CHARGE_LABEL: Record<ExtraChargeType, string> = {
+  extra_passenger: 'Pasajero extra',
+  extra_luggage: 'Equipaje extra',
+  toll_parking: 'Peaje / parking',
+}
+const EXTRA_CHARGE_ICON: Record<ExtraChargeType, string> = {
+  extra_passenger: '👤',
+  extra_luggage: '🧳',
+  toll_parking: '🛣️',
+}
+
+// El conductor agrega un cargo extra durante el viaje. Dos modos:
+// - Pasajero/equipaje extra: monto UNITARIO fijo (lo define el operador en
+//   Configuración, settings.fees) × cantidad — ej. reservaron 3 y llegaron 4.
+// - Peaje/parking: monto LIBRE que declara el conductor (el costo real que
+//   pagó en el momento, no algo que el operador pueda fijar de antemano) —
+//   `qty` se ignora y se usa `customAmount` directo.
+// En ambos casos se registra en booking_fees, suma al total y avisa por chat.
 //
 // Núcleo compartido: recibe el usuario ya resuelto en vez de leerlo de las
 // cookies, para que tanto el server action (web) como la ruta API de la app
@@ -435,12 +449,12 @@ export async function addDriverExtraCharge(
   bookingId: string,
   type: ExtraChargeType,
   qty: number,
+  customAmount?: number,
 ): Promise<{ success: boolean; error?: string; amount?: number; currency?: string }> {
   if (!UUID_RE.test(bookingId)) return { success: false, error: 'Reserva inválida' }
-  if (type !== 'extra_passenger' && type !== 'extra_luggage') {
+  if (type !== 'extra_passenger' && type !== 'extra_luggage' && type !== 'toll_parking') {
     return { success: false, error: 'Tipo de cargo inválido' }
   }
-  const quantity = Math.min(10, Math.max(1, Math.round(qty)))
 
   const admin = createAdminClient()
   const { data: booking } = await admin
@@ -455,26 +469,42 @@ export async function addDriverExtraCharge(
     return { success: false, error: 'Ya no es posible agregar cargos a este viaje.' }
   }
 
-  const { data: company } = await admin
-    .from('companies')
-    .select('settings')
-    .eq('id', booking.company_id)
-    .single()
-  const fees = parseExtraFees(company?.settings)
-  const unit = type === 'extra_passenger' ? fees.extra_passenger_fee : fees.extra_luggage_fee
-  if (unit <= 0) {
-    return { success: false, error: 'El operador no tiene configurado este cargo.' }
+  let amount: number
+  let quantity = 1
+  if (type === 'toll_parking') {
+    if (typeof customAmount !== 'number' || !Number.isFinite(customAmount) || customAmount <= 0) {
+      return { success: false, error: 'Monto inválido' }
+    }
+    if (customAmount > 500) {
+      // Rechazar en vez de recortar en silencio: si el conductor pagó de
+      // verdad más de esto, un clamp silencioso lo dejaría cobrando menos
+      // de lo que gastó sin que se diera cuenta.
+      return { success: false, error: 'El monto máximo por cargo es 500. Para montos mayores, contacta a soporte.' }
+    }
+    amount = Math.round(customAmount * 100) / 100
+  } else {
+    const { data: company } = await admin
+      .from('companies')
+      .select('settings')
+      .eq('id', booking.company_id)
+      .single()
+    const fees = parseExtraFees(company?.settings)
+    const unit = type === 'extra_passenger' ? fees.extra_passenger_fee : fees.extra_luggage_fee
+    if (unit <= 0) {
+      return { success: false, error: 'El operador no tiene configurado este cargo.' }
+    }
+    quantity = Math.min(10, Math.max(1, Math.round(qty)))
+    amount = Math.round(unit * quantity * 100) / 100
   }
-
-  const amount = Math.round(unit * quantity * 100) / 100
   const newTotal = Math.round((Number(booking.total_amount ?? 0) + amount) * 100) / 100
 
-  const label = type === 'extra_passenger' ? 'Pasajero extra' : 'Equipaje extra'
+  const label = EXTRA_CHARGE_LABEL[type]
+  const description = type === 'toll_parking' ? label : `${label} × ${quantity}`
   const { error: feeErr } = await admin.from('booking_fees').insert({
     booking_id: booking.id,
     company_id: booking.company_id,
-    type: type === 'extra_passenger' ? 'extra_passenger_fee' : 'extra_luggage_fee',
-    description: `${label} × ${quantity}`,
+    type: type === 'extra_passenger' ? 'extra_passenger_fee' : type === 'extra_luggage' ? 'extra_luggage_fee' : 'toll_parking_fee',
+    description,
     amount,
   })
   if (feeErr) {
@@ -485,12 +515,12 @@ export async function addDriverExtraCharge(
   await admin.from('bookings').update({ total_amount: newTotal }).eq('id', booking.id)
 
   const currency = booking.currency ?? 'USD'
-  const icon = type === 'extra_passenger' ? '👤' : '🧳'
+  const icon = EXTRA_CHARGE_ICON[type]
   await admin.from('trip_messages').insert({
     booking_id: booking.id,
     company_id: booking.company_id,
     sender: 'driver',
-    body: `${icon} ${label} × ${quantity}: +${amount.toFixed(2)} ${currency}`,
+    body: `${icon} ${description}: +${amount.toFixed(2)} ${currency}`,
   })
 
   revalidatePath('/driver/trips')
@@ -501,9 +531,10 @@ export async function driverAddExtraChargeAction(
   bookingId: string,
   type: ExtraChargeType,
   qty: number,
+  customAmount?: number,
 ): Promise<{ success: boolean; error?: string; amount?: number; currency?: string }> {
   const user = await requireRole('driver')
-  return addDriverExtraCharge(user, bookingId, type, qty)
+  return addDriverExtraCharge(user, bookingId, type, qty, customAmount)
 }
 
 // Qué montos de cargo extra tiene configurados el operador y su minuto de

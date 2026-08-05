@@ -684,6 +684,8 @@ export const es: Dictionary = {
       desc: 'Se suma al total del viaje y se avisa al pasajero por el chat.',
       passenger: 'Pasajero extra',
       luggage: 'Equipaje extra',
+      tollParking: 'Peaje / parking',
+      tollParkingPlaceholder: '0.00',
       qty: 'Cantidad',
       total: 'Total del cargo',
       confirm: 'Confirmar cargo',

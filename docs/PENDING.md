@@ -4618,6 +4618,66 @@ para Whop Connect). Correr la migración 74 en Supabase (SQL abajo).
     comisión real todavía; el cron de arriba es el mecanismo puente
     (aviso manual) mientras tanto.
 
+## Paridad ejecutiva de la app del conductor vs mercado (2026-08-05)
+
+Auditoría de mercado (Blacklane/Wheely) + rediseño en curso de driver-mobile y
+passenger-mobile hacia "nivel ejecutivo". Construido y desplegado en esta
+sesión:
+
+- **Kit de componentes del conductor**: portadas 7 primitivas que faltaban
+  (ScreenHeader, TabHeader, MetaChip, MenuRow, GoldCard, Divider, Field,
+  LabeledField) desde `passenger-mobile/components/ui.tsx` — el kit pasó de
+  162 a 397 líneas. Las 4 pantallas de pestaña (Mis viajes, Ganancias,
+  Documentos, Perfil) migradas a `TabHeader`, eliminando 4 copias del mismo
+  bloque de estilos que ya habían empezado a divergir entre sí.
+- **Cobrar cargo extra desde la app nativa**: `driverAddExtraChargeAction`
+  solo existía en el portal web (`/driver/trips`) — el conductor en la app
+  nativa no tenía forma de cobrar pasajero/equipaje extra en ruta. Se
+  extrajo el núcleo a `addDriverExtraCharge(user, bookingId, type, qty,
+  customAmount?)` (mismo patrón que `advanceDriverTrip`: recibe el usuario
+  ya resuelto, compartido entre server action web y ruta API móvil por
+  bearer token) y se agregó la UI equivalente en `TripDetailScreen.tsx`.
+  Se sumó un tercer tipo, **peaje/parking**, con monto LIBRE (el conductor
+  declara el costo real, no algo que el operador pueda fijar de antemano) —
+  tope de $500 por cargo (por encima se RECHAZA con mensaje claro, nunca se
+  recorta en silencio — ver hallazgo de la 3ra revisión abajo), disponible
+  siempre (a diferencia de pasajero/equipaje extra, que solo aparecen si el
+  operador configuró un monto > 0 en Reglas de precio).
+- **Cortesía de espera antes de no-show**: el conductor podía marcar
+  "no-show" apenas llegaba, sin ningún mínimo de espera. Se agregó
+  `companies.settings.policy.no_show_grace_minutes` (Reglas de precio,
+  default 10 min, sin migración — es JSONB existente), validado SIEMPRE
+  server-side en `markDriverNoShow` (mismo patrón de núcleo compartido).
+  Countdown en vivo en ambas apps (web y nativa); el botón de no-show queda
+  oculto hasta que la cortesía termine. La app nativa no tenía ninguna
+  forma de marcar no-show — ahora existe.
+- **Meet & Greet con nombre real en el letrero**: `sign_name` existía en el
+  esquema desde el día 1 (migración `20260607000007_bookings.sql`) pero
+  ninguna pantalla lo leía ni escribía — el chofer solo veía un badge
+  genérico. Conectado end-to-end: wizard público + form admin capturan el
+  nombre (default: nombre del pasajero), visible de forma prominente ANTES
+  de llegar en la app nativa del conductor, en `/driver/trips` (ambas
+  vistas), en el detalle admin de la reserva, y como aviso de tranquilidad
+  para el pasajero en `/track/[id]`. Falta: capturarlo también en
+  `passenger-mobile` (NewBookingScreen) — hoy solo se puede declarar desde
+  la web.
+- Todo revisado por el agente `mobile-ux-reviewer` antes de embarcar, en 3
+  rondas — 5 hallazgos reales corregidos: cantidad del stepper de cargo
+  extra sin resetear al cancelar (riesgo de sobrecobro); countdown de
+  cortesía podía parpadear un frame visible mientras `fees` cargaba de
+  forma asíncrona; **el monto de peaje/parking sobre $500 se recortaba en
+  silencio** (severidad alta — el conductor declaraba $600 y quedaba
+  cobrado $500 sin ningún aviso) — ahora se RECHAZA con mensaje claro,
+  tanto server-side como en ambos clientes; el error de validación de ese
+  monto quedaba en un estado compartido invisible si el conductor había
+  hecho scroll (ahora tiene su propio estado y se renderiza junto al
+  panel); el input de monto reusaba el estilo de un textarea multilinea en
+  vez de un campo de moneda compacto de una sola línea.
+- **Pendiente de esta iniciativa**: rediseño visual pantalla por pantalla
+  de ambas apps nativas hacia "nivel ejecutivo" (esto fue paridad
+  funcional/de kit, no un rediseño visual completo), passenger-mobile:
+  skeletons en vez de spinners + jerarquía tipográfica.
+
 ## Datos operativos
 
 - Deploy: push a develop → preview (requiere login de Vercel salvo que se

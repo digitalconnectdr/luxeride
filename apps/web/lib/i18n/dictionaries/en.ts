@@ -683,6 +683,8 @@ export const en = {
       desc: 'It is added to the trip total and the passenger is notified in the chat.',
       passenger: 'Extra passenger',
       luggage: 'Extra luggage',
+      tollParking: 'Toll / parking',
+      tollParkingPlaceholder: '0.00',
       qty: 'Quantity',
       total: 'Charge total',
       confirm: 'Confirm charge',
