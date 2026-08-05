@@ -20,37 +20,53 @@ import { MapsProvider } from '@/components/maps/maps-provider'
 import { APPLE_WHITE_MAP_STYLES, APPLE_DARK_MAP_STYLES } from '@/lib/maps/config'
 import type { LatLng } from '@/lib/tracking/static-map-url'
 
-const REFRESH_INTERVAL_MS = 15_000
+// El sondeo pasó de ser la vía principal (15s) a una RED DE SEGURIDAD (30s):
+// las posiciones ahora llegan al instante por el canal de Broadcast, que sí
+// alcanza al pasajero sin sesión (ver lib/tracking/broadcast.ts). El sondeo
+// solo cubre el arranque y una eventual caída del websocket.
+const REFRESH_INTERVAL_MS = 30_000
 const STALE_AFTER_MS = 50_000
 const FIT_BOUNDS_PADDING = 48
-const GLIDE_MS = 1_100
+// El conductor reporta cada ~8s; animar el marcador exactamente durante el
+// intervalo real entre posiciones es lo que hace que se vea AVANZANDO en vez
+// de saltar y congelarse (antes: 1.1s de animación y 14s inmóvil).
+const DEFAULT_STEP_MS = 8_000
+const MIN_STEP_MS = 2_000
+const MAX_STEP_MS = 12_000
 
 function markerIcon(color: string, letter: string, textColor = '#ffffff'): google.maps.Icon {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><circle cx="15" cy="15" r="12.5" fill="${color}" stroke="#ffffff" stroke-width="2.5"/><text x="15" y="19.5" font-size="11" font-weight="700" text-anchor="middle" fill="${textColor}" font-family="system-ui,sans-serif">${letter}</text></svg>`
   return { url: `data:image/svg+xml;utf-8,${encodeURIComponent(svg)}`, scaledSize: new google.maps.Size(30, 30) }
 }
 
-function easeOutCubic(t: number) {
-  return 1 - Math.pow(1 - t, 3)
-}
-
-/** Anima suavemente el marcador del conductor entre su última posición y la
- *  nueva (en vez de teletransportarlo) — es el detalle que hace que el mapa
- *  se sienta "vivo" en vez de solo refrescado. */
-function useGlidingPosition(target: LatLng | null): LatLng | null {
+/** Anima el marcador del conductor entre su última posición y la nueva,
+ *  durante TODO el intervalo que se espera hasta la siguiente (no una fracción
+ *  de él). Con interpolación lineal y la duración correcta, el coche avanza de
+ *  forma continua como en Uber; con una animación corta se veía dar un tirón y
+ *  quedarse quieto el resto del tiempo.
+ *
+ *  `stepMs` se mide en vivo (tiempo real entre las dos últimas posiciones), así
+ *  que se adapta solo tanto si el conductor reporta cada 8s desde la app nativa
+ *  como si su señal llega irregular. */
+function useGlidingPosition(target: LatLng | null, stepMs: number): LatLng | null {
   const [pos, setPos] = useState<LatLng | null>(target)
   const fromRef = useRef<LatLng | null>(target)
   const rafRef = useRef<number | null>(null)
+  const stepRef = useRef(stepMs)
+  stepRef.current = stepMs
 
   useEffect(() => {
     if (!target) { setPos(null); fromRef.current = null; return }
     const from = fromRef.current ?? target
     if (from.lat === target.lat && from.lng === target.lng) { setPos(target); return }
     const start = performance.now()
+    const duration = stepRef.current
     const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / GLIDE_MS)
-      const e = easeOutCubic(t)
-      setPos({ lat: from.lat + (target.lat - from.lat) * e, lng: from.lng + (target.lng - from.lng) * e })
+      // Lineal a propósito: un vehículo entre dos puntos de GPS se mueve a
+      // velocidad ~constante. Una curva con desaceleración lo hace parecer que
+      // frena en cada punto, que es justo el efecto que queremos eliminar.
+      const t = Math.min(1, (now - start) / duration)
+      setPos({ lat: from.lat + (target.lat - from.lat) * t, lng: from.lng + (target.lng - from.lng) * t })
       if (t < 1) rafRef.current = requestAnimationFrame(tick)
       else fromRef.current = target
     }
@@ -60,6 +76,24 @@ function useGlidingPosition(target: LatLng | null): LatLng | null {
   }, [target?.lat, target?.lng])
 
   return pos
+}
+
+/** Mantiene al conductor centrado mientras avanza, conservando el zoom que el
+ *  usuario haya elegido. Se salta la PRIMERA posición para no pisar el encuadre
+ *  inicial del viaje completo (FitToTrip), que es el que da contexto al abrir. */
+function FollowDriver({ driverPos, enabled }: { driverPos: LatLng | null; enabled: boolean }) {
+  const map = useMap()
+  const seenFirstRef = useRef(false)
+
+  useEffect(() => {
+    if (!map || !driverPos) return
+    if (!seenFirstRef.current) { seenFirstRef.current = true; return }
+    if (!enabled) return
+    map.panTo(driverPos)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, enabled, driverPos?.lat, driverPos?.lng])
+
+  return null
 }
 
 function RoutePolylineLayer({ encoded, color, fallback }: { encoded?: string | null; color: string; fallback: LatLng[] }) {
@@ -124,6 +158,8 @@ export interface InteractiveLiveMapProps {
     pausedDesc: string
     shareOff?: string
     sharing?: string
+    /** Opcional: la vista del conductor no lo usa (centrarse en sí mismo no aporta). */
+    recenter?: string
   }
 }
 
@@ -148,7 +184,28 @@ export function InteractiveLiveMap({
   const [passengerPos, setPassengerPos] = useState<LatLng | null>(null)
   const [paused, setPaused] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [following, setFollowing] = useState(true)
+  const [stepMs, setStepMs] = useState(DEFAULT_STEP_MS)
   const watchIdRef = useRef<number | null>(null)
+  // Momento en que entró la última posición del conductor — con esto se mide
+  // el intervalo real y la animación dura exactamente lo que debe.
+  const lastDriverAtRef = useRef<number | null>(null)
+  // Espejo de driverPos legible dentro de callbacks sin volverlos a crear en
+  // cada movimiento (el sondeo lo compara para no contar posiciones repetidas).
+  const driverPosRef = useRef<LatLng | null>(null)
+
+  /** Registra una posición nueva del conductor venga de donde venga (broadcast
+   *  en vivo o sondeo de respaldo) y recalcula la duración de la animación. */
+  const applyDriverPos = useCallback((next: LatLng, recordedAt?: string | null) => {
+    const now = Date.now()
+    const prevAt = lastDriverAtRef.current
+    if (prevAt) setStepMs(Math.min(MAX_STEP_MS, Math.max(MIN_STEP_MS, now - prevAt)))
+    lastDriverAtRef.current = now
+    driverPosRef.current = next
+    setDriverPos(next)
+    const stamp = recordedAt ? new Date(recordedAt).getTime() : now
+    setPaused(Date.now() - stamp > STALE_AFTER_MS)
+  }, [])
 
   // ── Activar la sesión UNA vez (consume 1 unidad de cuota, no por sondeo) ──
   useEffect(() => {
@@ -167,11 +224,20 @@ export function InteractiveLiveMap({
   const refresh = useCallback(async () => {
     const res = await getLiveTripPositionsAction(bookingId)
     if (!res) return
-    setDriverPos(res.driverPos)
     setPassengerPos(res.passengerPos)
+
+    const prev = driverPosRef.current
+    const next = res.driverPos
+    // Solo cuenta como "posición nueva" si de verdad cambió: si no, cada sondeo
+    // de respaldo falsearía el intervalo medido y rompería la animación.
+    if (next && (!prev || prev.lat !== next.lat || prev.lng !== next.lng)) {
+      applyDriverPos(next, res.driverRecordedAt)
+      return
+    }
+
     const recordedAt = res.driverRecordedAt ? new Date(res.driverRecordedAt).getTime() : null
     setPaused(recordedAt === null || Date.now() - recordedAt > STALE_AFTER_MS)
-  }, [bookingId])
+  }, [bookingId, applyDriverPos])
 
   useEffect(() => {
     if (phase !== 'live') return
@@ -180,18 +246,30 @@ export function InteractiveLiveMap({
     return () => clearInterval(id)
   }, [phase, refresh])
 
-  // Realtime: acelera el refresco cuando la sesión SÍ tiene acceso de lectura
-  // (conductor). El pasajero (sin sesión) simplemente no recibe eventos y el
-  // polling de arriba sigue funcionando igual.
+  // Canal en vivo. Antes esto escuchaba `postgres_changes` sobre trip_locations,
+  // lo cual NUNCA le llegó al pasajero de la web: sin sesión, las políticas RLS
+  // de la tabla no le entregan eventos, así que dependía por completo del
+  // sondeo. Con Broadcast el servidor publica cada posición y el evento llega
+  // igual con o sin sesión — es lo que convierte el mapa en tiempo real de
+  // verdad. Ver lib/tracking/broadcast.ts.
   useEffect(() => {
     if (phase !== 'live') return
     const supabase = createClient()
     const channel = supabase
-      .channel(`trip-location-${bookingId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'trip_locations', filter: `booking_id=eq.${bookingId}` }, () => refresh())
+      .channel(`trip:${bookingId}`)
+      .on('broadcast', { event: 'driver_position' }, ({ payload }) => {
+        const p = payload as { lat?: number; lng?: number; recordedAt?: string }
+        if (typeof p?.lat !== 'number' || typeof p?.lng !== 'number') return
+        applyDriverPos({ lat: p.lat, lng: p.lng }, p.recordedAt)
+      })
+      .on('broadcast', { event: 'passenger_position' }, ({ payload }) => {
+        const p = payload as { lat?: number; lng?: number }
+        if (typeof p?.lat !== 'number' || typeof p?.lng !== 'number') return
+        setPassengerPos({ lat: p.lat, lng: p.lng })
+      })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [phase, bookingId, refresh])
+  }, [phase, bookingId, applyDriverPos])
 
   useEffect(() => {
     if (!allowPassengerShare) setSharing(false)
@@ -214,7 +292,7 @@ export function InteractiveLiveMap({
     return () => { navigator.geolocation.clearWatch(id) }
   }, [sharing, allowPassengerShare, bookingId])
 
-  const glidingDriverPos = useGlidingPosition(driverPos)
+  const glidingDriverPos = useGlidingPosition(driverPos, stepMs)
 
   if (phase === 'checking') {
     return <div className={`rounded-2xl border h-56 animate-pulse ${light ? 'border-[#e5e1d8] bg-[#faf8f3]' : 'border-white/[0.08] bg-white/[0.03]'}`} />
@@ -238,8 +316,13 @@ export function InteractiveLiveMap({
             streetViewControl={false}
             mapTypeControl={false}
             fullscreenControl={false}
+            // Si el usuario arrastra el mapa, deja de perseguir al conductor —
+            // nada más molesto que un mapa que te devuelve el encuadre mientras
+            // intentas mirar otra cosa. El botón de recentrar lo reactiva.
+            onDragstart={() => setFollowing(false)}
           >
             <FitToTrip pickup={pickup} dropoff={dropoff} driverPos={driverPos} />
+            <FollowDriver driverPos={driverPos} enabled={following} />
             <RoutePolylineLayer encoded={routePolyline} color={brandColor} fallback={[pickup, dropoff]} />
             <Marker position={pickup} icon={markerIcon(brandColor, 'A')} title={alt} />
             <Marker position={dropoff} icon={markerIcon('#ffffff', 'B', '#1d1b18')} />
@@ -247,6 +330,15 @@ export function InteractiveLiveMap({
             {passengerPos && <Marker position={passengerPos} icon={markerIcon('#3b82f6', 'P')} />}
           </Map>
         </MapsProvider>
+        {!following && driverPos && labels.recenter && (
+          <button
+            type="button"
+            onClick={() => setFollowing(true)}
+            className="absolute top-2.5 right-2.5 text-[10px] font-medium bg-black/55 backdrop-blur px-2.5 py-1 rounded-full text-white/90 hover:bg-black/70 transition-colors"
+          >
+            ◎ {labels.recenter}
+          </button>
+        )}
         <a
           href={href}
           target="_blank"

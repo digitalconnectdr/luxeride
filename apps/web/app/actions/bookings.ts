@@ -26,6 +26,7 @@ import { toPreferences, hasAnyPreference, type PassengerPreferences } from '@/li
 import { autoChargeDeferredCardInBackground } from '@/app/actions/payments'
 import { trackBookingFlight } from '@/lib/flights/refresh'
 import { geocodeBookingLocations } from '@/lib/maps/reverse-geocode'
+import { broadcastTripEvent } from '@/lib/tracking/broadcast'
 import { checkRateLimit, RATE_LIMIT_ERROR } from '@/lib/security/rate-limit'
 import { checkMonthlyBookingLimit } from '@/lib/plans/limits'
 import { getAppUrl } from '@/lib/app-url'
@@ -704,6 +705,11 @@ export async function updateBookingStatusAction(
     console.error('[updateBookingStatusAction]', error)
     return { success: false, error: 'Error al actualizar estado' }
   }
+
+  // Mismo canal en vivo que usa el conductor al avanzar el viaje (driver.ts):
+  // cuando el cambio lo hace el staff desde el panel, el pasajero también lo
+  // ve al instante en vez de esperar su próximo sondeo.
+  waitUntil(broadcastTripEvent(bookingId, 'status', { status: newStatus }))
 
   // "Tarjeta al finalizar" — si el pasajero declaró ese método al reservar y
   // todavía no hay un pago exitoso (p.ej. no eligió "pagar ahora"), se cobra

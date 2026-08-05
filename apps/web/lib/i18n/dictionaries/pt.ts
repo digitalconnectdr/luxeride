@@ -497,6 +497,7 @@ export const pt: Dictionary = {
       pausedDesc: 'Seu motorista pode estar usando outro app de navegação. O resto das informações da sua viagem continua atualizado.',
       shareOff: 'Compartilhar minha localização com o motorista',
       sharing: 'Compartilhando minha localização',
+      recenter: 'Centralizar no motorista',
     },
     lastUpdate: 'Última atualização',
     scheduledLabel: 'Agendado',

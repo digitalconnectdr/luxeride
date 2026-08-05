@@ -496,6 +496,7 @@ export const en = {
       pausedDesc: 'Your chauffeur may be using another navigation app. The rest of your trip info stays up to date.',
       shareOff: 'Share my location with the chauffeur',
       sharing: 'Sharing my location',
+      recenter: 'Center on chauffeur',
     },
     lastUpdate: 'Last update',
     scheduledLabel: 'Scheduled',

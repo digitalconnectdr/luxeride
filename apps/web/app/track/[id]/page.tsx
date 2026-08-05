@@ -152,17 +152,23 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   const isActive = ACTIVE.has(displayStatus)
   // Auto-refresh ESCALONADO por cercanía al viaje, para no saturar el sistema con
   // reservas hechas con días de antelación:
-  //   • Viaje en movimiento (en_route/arrived/in_progress) o a ≤2h → cada 15s
+  //   • Viaje en movimiento (en_route/arrived/in_progress) o a ≤2h → cada 30s
   //   • A ≤24h (capta la asignación del conductor el día previo)     → cada 60s
   //   • A más de 24h (reserva lejana, pending/assigned)              → sin polling
+  //
+  // El tramo en movimiento bajó de cada 15s a cada 30s A PROPÓSITO: los cambios
+  // de estado ahora llegan al instante por el canal en vivo (ver AutoRefresh),
+  // así que el sondeo pasó de ser la vía principal a una red de seguridad. La
+  // pantalla se siente MÁS rápida y además pesa la mitad.
   const hoursUntilTrip = (new Date(booking.scheduled_at).getTime() - Date.now()) / 3_600_000
   const inMotion = ['en_route', 'arrived', 'in_progress'].includes(displayStatus)
   let pollSeconds = 0
   if (!isTerminal && !isCompleted) {
-    if (inMotion || hoursUntilTrip <= 2) pollSeconds = 15
+    if (inMotion || hoursUntilTrip <= 2) pollSeconds = 30
     else if (hoursUntilTrip <= 24) pollSeconds = 60
   }
   const shouldPoll = pollSeconds > 0
+  const liveRefresh = !isTerminal && !isCompleted
 
   const stampByStatus: Record<string, string | null> = {
     assigned: affiliateTrip ? null : booking.dispatched_at,
@@ -202,7 +208,9 @@ export default async function TrackPage({ params }: { params: { id: string } }) 
   return (
     <MapsProvider>
     <div className="min-h-screen bg-[#08080a] text-white antialiased selection:bg-[var(--brand)]/30" style={{ ['--brand' as string]: brandColor }}>
-      {shouldPoll && <AutoRefresh seconds={pollSeconds} />}
+      {(shouldPoll || liveRefresh) && (
+        <AutoRefresh seconds={shouldPoll ? pollSeconds : 0} bookingId={liveRefresh ? booking.id : undefined} />
+      )}
 
       {/* Banda dorada superior */}
       <div className="h-px w-full" style={{ background: goldRule }} />

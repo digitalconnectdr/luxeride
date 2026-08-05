@@ -4,10 +4,12 @@
 // login — el UUID de la reserva actúa como capability URL, igual que el resto
 // de las acciones públicas del viaje (trip.ts).
 
+import { waitUntil } from '@vercel/functions'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/session'
 import type { SessionUser } from '@/lib/auth/session'
 import { consumeLiveTrackingQuota } from '@/lib/tracking/live-tracking-quota'
+import { broadcastTripEvent } from '@/lib/tracking/broadcast'
 import type { LatLng } from '@/lib/tracking/static-map-url'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -80,14 +82,23 @@ export async function reportDriverLocation(
 
   if (!isActive) return { success: false, error: 'Viaje no encontrado' }
 
+  const recordedAt = new Date().toISOString()
   const { error } = await admin.from('trip_locations').insert({
     booking_id: bookingId,
     company_id: booking.company_id,
     reporter: 'driver',
     latitude: lat,
     longitude: lng,
+    recorded_at: recordedAt,
   })
   if (error) return { success: false, error: 'Error al guardar ubicación' }
+
+  // Empuja la posición al mapa del pasajero AL INSTANTE. Sin esto, el pasajero
+  // web (sin sesión, sin acceso RLS a Realtime) solo la vería en su próximo
+  // sondeo — hasta 15s tarde, que es justo lo que hacía que el mapa se sintiera
+  // muerto comparado con Uber.
+  waitUntil(broadcastTripEvent(bookingId, 'driver_position', { lat, lng, recordedAt }))
+
   return { success: true }
 }
 
@@ -132,6 +143,12 @@ export async function reportPassengerLocationAction(
     longitude: lng,
   })
   if (error) return { success: false, error: 'Error al guardar ubicación' }
+
+  // Mismo canal, otro evento: el conductor ve moverse al pasajero en vivo (es
+  // el punto de "que ambos se identifiquen" — antes el conductor solo veía la
+  // posición del pasajero al recargar o al cambiar de estado).
+  waitUntil(broadcastTripEvent(bookingId, 'passenger_position', { lat, lng }))
+
   return { success: true }
 }
 

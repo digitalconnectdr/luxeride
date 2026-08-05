@@ -16,9 +16,9 @@
 // .env.example) — sin ella, react-native-maps no renderiza el mapa, pero
 // el resto de la pantalla (estado del viaje) sigue funcionando.
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, Image, Linking, Share } from 'react-native'
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { Marker, MarkerAnimated, AnimatedRegion, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
 import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { supabase } from '../lib/supabase'
@@ -77,6 +77,60 @@ export function TripTrackingScreen({ route, navigation }: Props) {
   const mapRef = useRef<MapView>(null)
   const fitDone = useRef(false)
 
+  // Marcador del conductor animado: sin esto el coche SALTABA de un punto de
+  // GPS al siguiente cada ~8s. `AnimatedRegion.timing` lo desplaza de forma
+  // continua durante todo el intervalo, que es lo que hace que se vea avanzando
+  // por la calle como en Uber. Mismo criterio que el mapa de la web
+  // (apps/web/components/trip/interactive-live-map.tsx).
+  const driverAnim = useRef(
+    new AnimatedRegion({ latitude: 0, longitude: 0, latitudeDelta: 0, longitudeDelta: 0 }),
+  ).current
+  const animPrimedRef = useRef(false)
+  const lastDriverAtRef = useRef<number | null>(null)
+  // Seguir al conductor con la cámara, pero SOLO mientras el pasajero no esté
+  // mirando otra parte del mapa: robarle el encuadre cada 8s mientras arrastra
+  // es peor que no seguirlo. Mismo criterio que la web.
+  const [following, setFollowing] = useState(true)
+  const followingRef = useRef(true)
+  const setFollow = useCallback((on: boolean) => {
+    followingRef.current = on
+    setFollowing(on)
+  }, [])
+
+  const applyDriverPos = useCallback((next: LatLng) => {
+    const now = Date.now()
+    const prevAt = lastDriverAtRef.current
+    lastDriverAtRef.current = now
+    setDriverPos(next)
+
+    const region = { ...next, latitudeDelta: 0, longitudeDelta: 0 }
+    const isFirst = !animPrimedRef.current
+    if (isFirst) {
+      // Primera posición: colocar sin animar (no hay punto anterior desde el
+      // que "venir", animarlo lo haría aparecer volando desde el ecuador).
+      animPrimedRef.current = true
+      driverAnim.setValue(region)
+    } else {
+      const step = Math.min(12_000, Math.max(2_000, prevAt ? now - prevAt : 8_000))
+      // `toValue` va solo para satisfacer al tipo: react-native-maps interseca
+      // con Animated.TimingAnimationConfig (que lo exige) pero su implementación
+      // lo reemplaza por el valor de cada coordenada del region. Sin él no
+      // compila; con él el comportamiento es exactamente el mismo.
+      driverAnim.timing({ ...region, toValue: 0, duration: step, useNativeDriver: false }).start()
+    }
+
+    // La primera posición NO mueve la cámara: el encuadre inicial del viaje
+    // completo (fitMapToTrip) es el que da contexto al abrir la pantalla, y
+    // recentrar encima lo cortaría a media animación.
+    if (!isFirst && followingRef.current) {
+      mapRef.current?.animateCamera({ center: next }, { duration: 600 })
+    }
+  }, [driverAnim])
+
+  // Parar la animación en curso al salir de la pantalla: sin esto queda un
+  // timer corriendo hasta 12s sobre un nodo ya desmontado.
+  useEffect(() => () => { driverAnim.stopAnimation(() => {}) }, [driverAnim])
+
   useEffect(() => {
     let cancelled = false
     async function load() {
@@ -98,12 +152,27 @@ export function TripTrackingScreen({ route, navigation }: Props) {
         dropoff: data.dropoff_location as TripBooking['dropoff'],
         routePolyline: (data.route_polyline as string | null) ?? null,
       })
+
+      // Última posición conocida del conductor. Sin esto, abrir la pantalla a
+      // mitad de viaje mostraba "Esperando la ubicación de tu conductor…" y un
+      // mapa sin coche hasta que llegara el siguiente INSERT por Realtime
+      // (hasta 8s de pantalla en blanco sobre algo que ya se sabía).
+      const { data: lastPos } = await supabase
+        .from('trip_locations')
+        .select('latitude, longitude')
+        .eq('booking_id', bookingId)
+        .eq('reporter', 'driver')
+        .order('recorded_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (cancelled || !lastPos) return
+      applyDriverPos({ latitude: lastPos.latitude, longitude: lastPos.longitude })
     }
     load()
     return () => {
       cancelled = true
     }
-  }, [bookingId])
+  }, [bookingId, applyDriverPos])
 
   // Conductor + vehículo asignados. Se vuelve a pedir cuando cambia el
   // estado del viaje: al pasar de "pendiente" a "asignado" es justo cuando
@@ -128,7 +197,7 @@ export function TripTrackingScreen({ route, navigation }: Props) {
         (payload) => {
           const row = payload.new as { latitude: number; longitude: number; reporter: string }
           if (row.reporter !== 'driver') return
-          setDriverPos({ latitude: row.latitude, longitude: row.longitude })
+          applyDriverPos({ latitude: row.latitude, longitude: row.longitude })
         },
       )
       .subscribe()
@@ -136,7 +205,7 @@ export function TripTrackingScreen({ route, navigation }: Props) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [bookingId])
+  }, [bookingId, applyDriverPos])
 
   // Estado del viaje en tiempo real: sin esto, el texto (StatusBadge, banner
   // de espera, etc.) se quedaba en lo que había al montar la pantalla — el
@@ -188,8 +257,10 @@ export function TripTrackingScreen({ route, navigation }: Props) {
     ? { ...pickupCoord, latitudeDelta: 0.05, longitudeDelta: 0.05 }
     : { latitude: 18.4861, longitude: -69.9312, latitudeDelta: 0.5, longitudeDelta: 0.5 }
 
-  function fitMapToTrip() {
-    if (fitDone.current || !mapRef.current) return
+  /** Encuadre del viaje completo. `once` lo limita al arranque (onMapReady /
+   *  onLayout se disparan varias veces); sin él, se puede invocar a demanda. */
+  function fitMapToTrip(once = true) {
+    if ((once && fitDone.current) || !mapRef.current) return
     const coords = [pickupCoord, dropoffCoord, driverPos].filter(Boolean) as LatLng[]
     if (coords.length < 2) return
     fitDone.current = true
@@ -197,6 +268,15 @@ export function TripTrackingScreen({ route, navigation }: Props) {
       edgePadding: { top: 80, right: 80, bottom: 80, left: 80 },
       animated: true,
     })
+  }
+
+  /** Tocar el marcador del conductor devuelve la vista del viaje completo.
+   *  Antes no hacía nada: `fitDone` ya estaba en true desde el encuadre
+   *  inicial, así que la única forma de recuperar la vista general no
+   *  funcionaba. Deja de seguir para que el encuadre no se pierda al segundo. */
+  function showWholeTrip() {
+    setFollow(false)
+    fitMapToTrip(false)
   }
 
   async function shareTrip() {
@@ -245,8 +325,10 @@ export function TripTrackingScreen({ route, navigation }: Props) {
         provider={PROVIDER_GOOGLE}
         initialRegion={initialRegion}
         customMapStyle={c.mapStyle}
-        onMapReady={fitMapToTrip}
-        onLayout={fitMapToTrip}
+        onMapReady={() => fitMapToTrip()}
+        onLayout={() => fitMapToTrip()}
+        // Si el pasajero arrastra el mapa, dejar de perseguir al conductor.
+        onPanDrag={() => setFollow(false)}
       >
         {routeCoords.length > 0 && <Polyline coordinates={routeCoords} strokeColor={c.gold} strokeWidth={4} />}
         {pickupCoord && (
@@ -260,13 +342,20 @@ export function TripTrackingScreen({ route, navigation }: Props) {
           </Marker>
         )}
         {driverPos && (
-          <Marker coordinate={driverPos} title="Tu conductor" onPress={fitMapToTrip}>
+          <MarkerAnimated coordinate={driverAnim} title="Tu conductor" onPress={showWholeTrip}>
             <View style={styles.driverMarker}>
               <Ionicons name="car-sport" size={18} color={c.onGold} />
             </View>
-          </Marker>
+          </MarkerAnimated>
         )}
       </MapView>
+
+      {driverPos && !following && (
+        <PressableScale style={styles.recenterBtn} onPress={() => setFollow(true)}>
+          <Ionicons name="locate" size={14} color={c.ink} />
+          <Text style={styles.recenterText}>Seguir al conductor</Text>
+        </PressableScale>
+      )}
 
       <ScrollView style={styles.sheet} contentContainerStyle={styles.sheetContent}>
         {!driverPos && (
@@ -415,6 +504,24 @@ const makeStyles = (c: Palette, shadow: ShadowSet) =>
       borderWidth: 2,
       borderColor: '#fff',
     },
+    // Flota sobre el mapa, justo encima de la hoja de detalle: reaparece solo
+    // cuando el pasajero arrastró el mapa y dejó de seguir al conductor.
+    recenterBtn: {
+      position: 'absolute',
+      alignSelf: 'center',
+      bottom: '54%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: space.md,
+      paddingVertical: 8,
+      borderRadius: radius.pill,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      ...shadow.floating,
+    },
+    recenterText: { color: c.ink, fontFamily: font.bodySemi, fontSize: 12 },
     sheet: {
       maxHeight: '52%',
       backgroundColor: c.bg,

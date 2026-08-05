@@ -3,6 +3,66 @@
 > Actualizado: 2026-08-05. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Tracking en vivo tipo Uber — Fase 1 (web) (2026-08-05)
+
+El usuario reportó que el mapa del pasajero "no muestra en vivo dónde está el
+conductor, solo un cambio de estado", y que sin eso LuxeRide siempre se verá
+inferior a Uber. Auditoría completa de las 5 capas (reporte GPS → tabla →
+lectura web → lectura app → bidireccional) antes de tocar nada.
+
+**Causa raíz (NO es el mapa)**: el conductor reporta GPS desde el navegador
+(`components/driver/live-location-reporter.tsx`). En cuanto abre Waze, el
+navegador congela esa pestaña y **no entra ni una posición más**. El pasajero
+ve el marcador clavado y a los 50s el banner "Ubicación en vivo pausada".
+Ningún navegador móvil (ni como PWA) permite GPS en segundo plano: es una
+limitación dura de la plataforma, no un bug corregible por código. **La app
+nativa del conductor ya lo resuelve** (`apps/driver-mobile/lib/locationReporter.ts`
+usa background location real con servicio en primer plano) pero nunca se ha
+instalado en un teléfono real.
+
+Fase 1 (esta sesión, solo web + app pasajero):
+
+- **`lib/tracking/broadcast.ts` (nuevo)**: publica posición y estado a un canal
+  de Supabase Realtime **Broadcast** vía HTTP. Por qué Broadcast y no
+  `postgres_changes`: el pasajero web no tiene sesión, así que las políticas
+  RLS de `trip_locations` nunca le entregaron eventos — la suscripción existía
+  desde julio pero para él era **código muerto** y siempre caía al sondeo.
+  Broadcast no pasa por RLS de tabla: llega con o sin sesión. El topic incluye
+  el UUID de la reserva, que ya ES el secreto que protege toda la página, así
+  que no amplía la superficie de exposición.
+- **Emisión**: `reportDriverLocation` y `reportPassengerLocationAction`
+  (live-tracking.ts) + `advanceDriverTrip` (driver.ts) y
+  `updateBookingStatusAction` (bookings.ts) publican al canal con `waitUntil`.
+- **`interactive-live-map.tsx`**: se suscribe al broadcast; el sondeo bajó de
+  15s a 30s y pasó a ser red de seguridad. La animación del marcador ahora dura
+  **el intervalo real medido entre posiciones** (antes: 1.1s de animación y 14s
+  congelado) y es **lineal**, no con desaceleración, para que el coche avance
+  continuo en vez de frenar en cada punto. El mapa **sigue al conductor**, deja
+  de seguirlo si el usuario arrastra, y aparece un botón "Centrar en el
+  conductor" para retomarlo.
+- **Estado instantáneo**: `AutoRefresh` acepta `bookingId` y refresca la página
+  al recibir el broadcast de estado. El sondeo del tramo "en movimiento" bajó
+  de 15s a 30s: la pantalla se siente **más** rápida y pesa la mitad.
+- **App nativa del pasajero** (`TripTrackingScreen.tsx`): el marcador pasó de
+  saltar a moverse con `AnimatedRegion` durante el intervalo real; el mapa sigue
+  al conductor (con `onPanDrag` para soltarlo y botón "Seguir al conductor");
+  se carga la última posición conocida al abrir (antes: "Esperando la ubicación
+  de tu conductor…" y mapa vacío hasta el siguiente evento); y tocar el
+  marcador vuelve a la vista del viaje completo (antes no hacía nada porque
+  `fitDone` ya estaba en true).
+- **Verificado y descartado**: se investigó la sospecha de que `router.refresh()`
+  mataba el toggle de "compartir mi ubicación". **Es falso**: Next.js App Router
+  preserva el estado de los componentes cliente por diseño, y `setSharing(false)`
+  solo se dispara al pasar a `in_progress` (correcto: ya vas dentro del carro).
+  No se tocó.
+
+**Fase 2 pendiente (requiere acción del usuario): activar la app nativa del
+conductor.** Es el único camino para que el GPS siga reportando con Waze
+encima, y por tanto para igualar de verdad la experiencia de Uber. El código
+ya está completo; falta correr `eas build` desde `apps/driver-mobile` (máximo
+2 builds/semana) y que los conductores instalen el APK. Mientras tanto, todo
+lo de la Fase 1 mejora la fluidez pero mantiene ese techo.
+
 ## ✅ Verificación directa en Supabase: migraciones 63, 81 y 85 SÍ están aplicadas (2026-08-05)
 
 El usuario pidió confirmar si las migraciones que el archivo marcaba como

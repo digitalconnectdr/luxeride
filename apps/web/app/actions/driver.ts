@@ -8,6 +8,7 @@ import { requireRole } from '@/lib/auth/session'
 import type { SessionUser } from '@/lib/auth/session'
 import { waitUntil } from '@vercel/functions'
 import { notifyBookingEventInBackground } from '@/lib/notifications'
+import { broadcastTripEvent } from '@/lib/tracking/broadcast'
 import { autoChargeDeferredCardInBackground } from '@/app/actions/payments'
 import { grantRewardsForBooking } from '@/lib/rewards/grant'
 import { getAppUrl } from '@/lib/app-url'
@@ -133,6 +134,11 @@ export async function advanceDriverTrip(
     console.error('[driverAdvanceTripAction]', error)
     return { success: false, error: 'Error al actualizar el viaje' }
   }
+
+  // El pasajero ve el cambio de estado al instante, sin esperar su próximo
+  // sondeo. Es la otra mitad de la queja de "los estados no se actualizan de
+  // forma inmediata": la posición ya viaja por este mismo canal.
+  waitUntil(broadcastTripEvent(bookingId, 'status', { status: next }))
 
   // "Tarjeta al finalizar" — mismo criterio que updateBookingStatusAction
   // (app/actions/bookings.ts): no-op si ya se cobró (pagó ahora) o si el
