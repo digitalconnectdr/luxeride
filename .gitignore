@@ -45,3 +45,8 @@ next-env.d.ts
 
 # Artefactos locales de Expo (no van al repo)
 apps/*/.expo/
+
+# Caches locales de skills/herramientas (no son parte del proyecto)
+.impeccable/
+apps/*/.impeccable/
+graphify-out/
