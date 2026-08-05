@@ -5,7 +5,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../lib/supabase'
 import { PressableScale } from '../components/PressableScale'
-import { Card, EmptyState, ScreenLoader, SectionLabel, StatusBadge } from '../components/ui'
+import { Card, EmptyState, ScreenLoader, SectionLabel, StatusBadge, TabHeader } from '../components/ui'
 import { color, font, radius, space } from '../lib/theme'
 import { ACTIVE_STATUSES, type AffiliateTrip, type DriverBooking, type TripsStackParamList } from '../lib/types'
 
@@ -172,9 +172,14 @@ export function TripsListScreen({ navigation }: Props) {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={false} onRefresh={loadTrips} tintColor={color.gold} />}
     >
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Mis viajes</Text>
-
+      <TabHeader
+        title="Mis viajes"
+        subtitle={
+          visibleTrips.length === 0
+            ? viewMode === 'today' ? 'Sin viajes activos' : 'Sin reservas próximas'
+            : `${visibleTrips.length} viaje${visibleTrips.length === 1 ? '' : 's'}`
+        }
+      >
         <View style={styles.viewToggle}>
           <PressableScale style={[styles.viewToggleButton, viewMode === 'today' && styles.viewToggleButtonActive]} onPress={() => setViewMode('today')}>
             <Text style={[styles.viewToggleText, viewMode === 'today' && styles.viewToggleTextActive]}>Hoy</Text>
@@ -183,13 +188,7 @@ export function TripsListScreen({ navigation }: Props) {
             <Text style={[styles.viewToggleText, viewMode === 'upcoming' && styles.viewToggleTextActive]}>Reservas</Text>
           </PressableScale>
         </View>
-
-        <Text style={styles.headerSubtitle}>
-          {visibleTrips.length === 0
-            ? viewMode === 'today' ? 'Sin viajes activos' : 'Sin reservas próximas'
-            : `${visibleTrips.length} viaje${visibleTrips.length === 1 ? '' : 's'}`}
-        </Text>
-      </View>
+      </TabHeader>
 
       {visibleTrips.length === 0 ? (
         <EmptyState icon="car-sport-outline" title={emptyCopy.title} subtitle={emptyCopy.subtitle} />
@@ -239,8 +238,6 @@ export function TripsListScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.bg },
   content: { padding: space.xl, paddingTop: space.lg, flexGrow: 1, gap: space.md },
-  header: { marginBottom: space.xs },
-  headerTitle: { color: color.ink, fontFamily: font.display, fontSize: 28 },
   viewToggle: {
     flexDirection: 'row',
     backgroundColor: color.surface,
@@ -255,7 +252,6 @@ const styles = StyleSheet.create({
   viewToggleButtonActive: { backgroundColor: color.gold },
   viewToggleText: { color: color.inkMuted, fontFamily: font.bodySemi, fontSize: 13 },
   viewToggleTextActive: { color: color.bg },
-  headerSubtitle: { color: color.inkFaint, fontFamily: font.body, fontSize: 13, marginTop: space.sm },
   cardNext: { borderColor: `${color.gold}66` },
   cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   bookingNumber: { color: color.inkFaint, fontFamily: font.bodySemi, fontSize: 11, letterSpacing: 1 },
