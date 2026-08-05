@@ -1,7 +1,33 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-08-02. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-08-05. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## ✅ Verificación directa en Supabase: migraciones 63, 81 y 85 SÍ están aplicadas (2026-08-05)
+
+El usuario pidió confirmar si las migraciones que el archivo marcaba como
+"pendiente de pegar" ya se habían corrido (el texto de este documento no
+siempre se actualiza después de que el usuario aplica una migración a mano).
+Se verificó con una consulta directa de solo lectura a Supabase (service
+role, sin tocar datos) en vez de confiar en el texto de este archivo:
+
+- **Migración 63** (`20260723000063_route_insights.sql`, pickup/dropoff
+  city+country): columnas `pickup_city`/`pickup_country`/`dropoff_city`/
+  `dropoff_country`/`booking_source` **existen en `bookings`** → aplicada.
+- **Migración 81** (`20260801000081_dispatch_risk_reassign.sql`, protocolo
+  de respaldo): se encontraron las 6 filas de plantillas
+  `driver_reassigned_reassurance` (email+sms) en `notification_templates`
+  → aplicada (el `INSERT` y el `cron.schedule` van en el mismo bloque SQL,
+  así que si las plantillas están, el pg_cron también se programó).
+- **Migración 85** (`20260804000085_driver_gender_favorite.sql`): columna
+  `drivers.gender` existe → aplicada (ya sabíamos esta por memoria de sesión).
+
+**Conclusión: no hay ninguna migración pendiente de aplicar ahora mismo.**
+Todo el trabajo con pieza de Supabase pendiente de esta lista ya está al
+día. Los textos "pendiente de pegar en Supabase" en las secciones de abajo
+quedan como historial de cuándo se escribió la migración, no como estado
+actual — para dudas futuras sobre si algo se aplicó, preferir una consulta
+directa a la base (como se hizo aquí) sobre el texto de este archivo.
 
 ## ✅ Polish: header del portal del conductor (2026-08-02)
 
