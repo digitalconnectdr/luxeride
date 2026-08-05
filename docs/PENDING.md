@@ -4702,9 +4702,8 @@ mínimo 2h) — el modelo "Por hora" nunca mira la distancia, así que el motor
 cobró literalmente 2 horas mínimas sin importar que el viaje real fueran
 ~21 horas de conducción.
 
-**Migración pendiente de aplicar** (`supabase/migrations/20260805000088_pricing_hourly_included_miles.sql`,
-presentada al usuario para pegar en el SQL Editor de Supabase — no
-aplicada automáticamente):
+**Migración aplicada** (`supabase/migrations/20260805000088_pricing_hourly_included_miles.sql`,
+confirmada por el usuario 2026-08-05, pegada a mano en el SQL Editor de Supabase):
 ```sql
 ALTER TABLE public.pricing_rules ADD COLUMN included_miles NUMERIC(8,2);
 ```
@@ -4737,10 +4736,12 @@ inline (`pricing-rule-row.tsx`). Vacío = sin tope. i18n en/es/pt, incluye
 una aclaración nueva en la ayuda del campo Modelo explicando que "Por hora"
 solo aplica a reservas tipo "Por horas".
 
-**Recomendación dada al usuario mientras la migración no está aplicada**:
-para el caso reportado (Mercedes E Class con solo una regla "Por hora"),
-crear una regla adicional "Por milla"/"Por km" con prioridad más alta para
-que los viajes punto-a-punto no dependan de la regla hourly.
+**Pendiente del usuario**: para el caso reportado (Mercedes E Class con
+solo una regla "Por hora"), sigue siendo recomendable crear una regla
+adicional "Por milla"/"Por km" para ese tipo de vehículo — con el filtro
+de `bookingType` ya desplegado, esa regla nueva no compite ni se confunde
+con la "Por hora" existente (cada una se usa solo para su tipo de reserva
+correspondiente).
 
 ## Datos operativos
 
