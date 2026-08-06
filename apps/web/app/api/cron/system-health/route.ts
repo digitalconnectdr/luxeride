@@ -3,12 +3,14 @@
 // cada corrida, para no saturar al super-admin con el mismo aviso repetido.
 // Protegido con CRON_SECRET. Programado en vercel.json.
 //
-// IMPORTANTE — límite de frecuencia: Vercel Cron en el plan Hobby solo
-// permite una invocación diaria por cron job. Si esto está en Hobby, este
-// cron corre 1 vez al día — útil para el email diario de capacidad de BD,
-// pero NO sirve como alerta en tiempo real de una caída. Para eso, apunta un
-// monitor externo gratuito (ej. UptimeRobot, cada 5 min) a /api/health — ese
-// endpoint SÍ corre fuera de Vercel y de verdad detecta si Vercel está caído.
+// IMPORTANTE — límite de frecuencia: en el plan Hobby, un cron programado a
+// más de 1 vez/día no se degrada solo — Vercel RECHAZA TODO EL DEPLOYMENT
+// (no solo este cron) con el error "Hobby accounts are limited to daily cron
+// jobs" (confirmado en vivo: bloqueó 2 deployments seguidos con
+// "*/15 * * * *" aquí). Por eso vercel.json lo tiene a diario. Para alertas
+// en tiempo real de una caída real, apunta un monitor externo gratuito
+// (ej. UptimeRobot, cada 5 min) a /api/health — ese endpoint SÍ corre fuera
+// de Vercel y de verdad detecta si Vercel está caído.
 
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
