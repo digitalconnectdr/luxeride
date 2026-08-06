@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Lightbulb,
   Globe,
+  Activity,
   LogOut,
   ChevronsLeft,
   ChevronsRight,
@@ -40,6 +41,7 @@ interface NavItem {
 
 const OVERVIEW_ITEMS: NavItem[] = [
   { href: '/super-admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/super-admin/system', label: 'Sistema', icon: Activity },
 ]
 
 const MANAGEMENT_ITEMS: NavItem[] = [

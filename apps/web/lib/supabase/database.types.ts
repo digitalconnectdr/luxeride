@@ -1695,6 +1695,38 @@ export type Database = {
       }
 
       // ── super_admin_notification_reads (última vez que se abrió la campana) ──
+      // ── system_health_checks (panel de monitoreo del super-admin) ────────────
+      system_health_checks: {
+        Row: {
+          service: string
+          status: 'ok' | 'degraded' | 'down' | 'unknown'
+          message: string | null
+          response_ms: number | null
+          meta: Json | null
+          checked_at: string
+          updated_at: string
+        }
+        Insert: {
+          service: string
+          status?: 'ok' | 'degraded' | 'down' | 'unknown' | undefined
+          message?: string | null | undefined
+          response_ms?: number | null | undefined
+          meta?: Json | null | undefined
+          checked_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Update: {
+          service?: string | undefined
+          status?: 'ok' | 'degraded' | 'down' | 'unknown' | undefined
+          message?: string | null | undefined
+          response_ms?: number | null | undefined
+          meta?: Json | null | undefined
+          checked_at?: string | undefined
+          updated_at?: string | undefined
+        }
+        Relationships: []
+      }
+
       super_admin_notification_reads: {
         Row: {
           user_id: string

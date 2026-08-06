@@ -1,7 +1,70 @@
 # LuxeRide — Estado y pendientes
 
-> Actualizado: 2026-08-05. Para retomar el trabajo, leer este archivo +
+> Actualizado: 2026-08-06. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
+
+## ✅ Panel de monitoreo de sistema — /super-admin/system (2026-08-06)
+
+El usuario preguntó si se podía agregar una pestaña al panel de super-admin
+para monitorear Supabase, capacidad de la base de datos, Vercel, GPS y todas
+las integraciones externas desde un solo lugar, sin cargar el sistema.
+Confirmó: sí, constrúyelo, y que avise por email/SMS si algo cae mientras no
+está mirando.
+
+**Diseño — chequeos bajo demanda, nunca un loop constante:**
+- `lib/monitoring/health.ts`: 11 funciones de chequeo, una por servicio.
+  Dos estrategias según si el servicio cobra por llamada: **ping barato en
+  vivo** (Supabase vía `SELECT` liviano, la propia URL de Vercel, Twilio
+  `accounts().fetch()`, Resend `domains.list()`, Stripe `balance.retrieve()`
+  — todos gratis/casi gratis) vs. **proxy por último uso real exitoso**
+  (Google Maps vía última `price_quotes`, OpenAI vía último
+  `ai_chat_messages`, AeroDataBox vía `flight_tracking_usage` del mes) para
+  no gastar dinero real solo por verificar que el servicio funciona. Whop
+  solo confirma credenciales configuradas — el SDK no tiene un endpoint de
+  ping verificado contra la documentación real, y no se arriesgó una llamada
+  sin confirmar (mismo cuidado que ya se tomó en `lib/whop/connect-server.ts`).
+- **GPS / tracking en vivo**: no llama a nada externo — cuenta cuántos
+  viajes `in_progress` tienen una posición de `trip_locations` (reportero
+  `driver`) en los últimos 5 minutos. Sin viajes activos = "operativo", no
+  "sin datos" (evita falsos positivos).
+- **Capacidad de BD**: función SQL `get_database_size_bytes()`
+  (SECURITY DEFINER, `pg_database_size()` no está expuesto por el cliente
+  REST de Supabase) vs. `SUPABASE_STORAGE_LIMIT_GB` (default 8, el incluido
+  en Pro).
+- **Alertas por transición, no por corrida**: `/api/cron/system-health`
+  (protegido con `CRON_SECRET`) compara el estado nuevo contra el guardado
+  en `system_health_checks` y solo dispara email+SMS cuando un servicio pasa
+  de funcionando a caído, o de caído a recuperado — nunca en cada ejecución,
+  para no saturar. Email vía `sendSuperAdminEmail` (ya existía); SMS nuevo:
+  `sendSuperAdminSms` + `getSuperAdminPhones()` en `lib/notifications`,
+  mismo patrón que `SUPER_ADMIN_EMAIL` pero con `SUPER_ADMIN_PHONE`.
+- **Botón "Verificar ahora"** (`runSystemHealthCheckAction`): corre los
+  mismos 11 chequeos pero SIN disparar alertas, para que un super-admin
+  curioseando no se auto-spamee.
+- **`/api/health` público y liviano** (sin auth, solo Supabase): pensado para
+  un monitor EXTERNO (ej. UptimeRobot, gratis, cada 5 min) — un chequeo que
+  corre DENTRO de Vercel no puede detectar que Vercel está caído, porque si
+  lo está, tampoco correría el chequeo. Esto sí lo detecta desde afuera.
+
+**Advertencia real, documentada en el código y en la página**: si el
+proyecto está en el plan Hobby de Vercel, los Cron Jobs solo corren una vez
+al día — insuficiente para alertar en tiempo real de una caída. Por eso se
+recomienda el monitor externo de arriba como complemento, no como opcional.
+
+**Pendiente de acción del usuario**:
+1. Aplicar la migración `20260806000089_system_health_monitoring.sql` en el
+   SQL Editor de Supabase (crea `system_health_checks` + la función RPC).
+2. Configurar `SUPER_ADMIN_PHONE` (y confirmar `SUPER_ADMIN_EMAIL`) en las
+   variables de entorno de Vercel — sin esto no hay a quién avisarle.
+3. Opcional pero recomendado: apuntar UptimeRobot (u otro monitor externo
+   gratuito) a `/api/health`.
+
+No se pudo verificar visualmente el render de `/super-admin/system` en esta
+sesión — la cuenta de prueba disponible (`owner@luxeride.com`) es
+`company_owner`, no `super_admin`, y correctamente fue redirigida fuera de
+la página (confirma que el guard de rol funciona). Sí se verificó en vivo:
+`/api/health` responde `{"ok":true}` contra Supabase real, `tsc` limpio,
+303/303 tests, `npm run build` exitoso con las 3 rutas nuevas compilando.
 
 ## ✅ Auditoría SEO/GEO/AEO/LLM del landing y los micrositios de operador (2026-08-05)
 

@@ -337,6 +337,29 @@ export function sendSuperAdminEmailInBackground(subject: string, body: string): 
   }))
 }
 
+/** Espejo de getSuperAdminEmails() para SMS — no hay teléfono en user_profiles,
+ * así que el único origen es la env SUPER_ADMIN_PHONE (lista separada por comas). */
+export function getSuperAdminPhones(): string[] {
+  const env = process.env.SUPER_ADMIN_PHONE
+  if (!env) return []
+  return [...new Set(env.split(',').map((p) => p.trim()).filter(Boolean))]
+}
+
+/** Envía un SMS de plataforma a todos los teléfonos de super-admin configurados. No lanza nunca. */
+export async function sendSuperAdminSms(body: string): Promise<{ sent: number }> {
+  const phones = getSuperAdminPhones()
+  let sent = 0
+  for (const to of phones) {
+    try {
+      const r = await sendSms(to, body)
+      if (r.ok) sent += 1
+    } catch (err) {
+      console.error('[sendSuperAdminSms]', err)
+    }
+  }
+  return { sent }
+}
+
 /**
  * Envía un email directo al operador (companies.email) sin pasar por el
  * sistema de templates — usado por alertas de Compliance Center donde el
