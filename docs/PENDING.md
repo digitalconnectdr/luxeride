@@ -66,6 +66,23 @@ la página (confirma que el guard de rol funciona). Sí se verificó en vivo:
 `/api/health` responde `{"ok":true}` contra Supabase real, `tsc` limpio,
 303/303 tests, `npm run build` exitoso con las 3 rutas nuevas compilando.
 
+**Actualización (misma noche) — migración aplicada + prueba end-to-end
+real contra la BD de producción**: corrí `/api/cron/system-health` en local
+con `CRON_SECRET` temporal, apuntando a la Supabase real. Resultado: la
+tabla y el RPC funcionan bien (11 servicios chequeados, capacidad de BD
+0.5% de 8GB), pero **encontré un bug real**: el chequeo de Resend llamaba a
+`domains.list()`, que requiere permisos de API key más amplios que "solo
+enviar" — el key de producción está (correctamente) restringido a enviar
+únicamente, así que el chequeo reportaba "caído" por un error de permisos,
+no por una caída real (falso positivo que hubiera disparado una alerta
+innecesaria). Corregido: igual que Google Maps/OpenAI, ahora mide el
+último email realmente enviado con éxito (`notifications` donde
+`channel='email' AND status='sent'`) en vez de hacer un ping activo.
+Vuelto a correr tras el fix: 0 servicios caídos, `resend` en estado
+correcto (`unknown` — "sin envíos registrados todavía", nunca dispara
+alerta por falta de datos). `tsc`, 303/303 tests y build re-verificados
+tras el fix.
+
 ## ✅ Auditoría SEO/GEO/AEO/LLM del landing y los micrositios de operador (2026-08-05)
 
 El usuario pidió revisar landing + micrositios `/book/[slug]` en SEO, GEO

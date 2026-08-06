@@ -183,18 +183,37 @@ export async function checkTwilio(): Promise<HealthCheckResult> {
   return { service: 'twilio', status: 'ok', responseMs: ms }
 }
 
-// ─── Resend (email) — lista de dominios, no envía nada, sin costo ─────────
+// ─── Resend (email) — proxy vía el último envío real exitoso, no un ping ───
+// activo: la key de producción está (correctamente) restringida a "solo
+// enviar", así que `domains.list()`/`apiKeys.list()` devuelven un error de
+// permisos que NO significa que Resend esté caído — solo que esa llamada no
+// está permitida. Mismo patrón que Google Maps/OpenAI: se mide uso real.
 
 export async function checkResend(): Promise<HealthCheckResult> {
   if (!isResendConfigured()) return { service: 'resend', status: 'unknown', message: 'No configurado' }
-  const { ms, error } = await timeIt(async () => {
-    const { Resend } = await import('resend')
-    const resend = new Resend(process.env.RESEND_API_KEY!)
-    const { error: rErr } = await resend.domains.list()
-    if (rErr) throw new Error(rErr.message)
+  const admin = createAdminClient()
+  const { ms, value, error } = await timeIt(async () => {
+    const { data, error: qErr } = await admin
+      .from('notifications')
+      .select('created_at')
+      .eq('channel', 'email')
+      .eq('status', 'sent')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (qErr) throw new Error(qErr.message)
+    return data?.created_at ?? null
   })
-  if (error) return { service: 'resend', status: 'down', message: error, responseMs: ms }
-  return { service: 'resend', status: 'ok', responseMs: ms }
+  if (error) return { service: 'resend', status: 'unknown', message: error, responseMs: ms }
+  const mins = minutesSince(value)
+  if (mins === null) return { service: 'resend', status: 'unknown', message: 'Sin envíos registrados todavía', responseMs: ms }
+  return {
+    service: 'resend',
+    status: mins > 1440 ? 'degraded' : 'ok',
+    message: mins > 1440 ? `Último envío exitoso hace ${Math.round(mins / 60)}h` : undefined,
+    responseMs: ms,
+    meta: { lastSuccessMinutesAgo: mins },
+  }
 }
 
 // ─── Stripe — balance.retrieve(), lectura pura, sin costo ──────────────────
