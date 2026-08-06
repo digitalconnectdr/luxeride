@@ -21,6 +21,8 @@ export default async function PaymentSuccessPage({
   // pública por identificador que /track/[id] (no expone nada sensible, solo
   // lo necesario para la conversión).
   let gaMeasurementId: string | undefined
+  let adsConversionId: string | undefined
+  let adsConversionLabel: string | undefined
   let totalAmount = 0
   let currency = 'USD'
 
@@ -40,8 +42,10 @@ export default async function PaymentSuccessPage({
         .select('settings')
         .eq('id', booking.company_id)
         .single()
-      gaMeasurementId =
-        (company?.settings as { tracking?: { ga_measurement_id?: string | null } } | null)?.tracking?.ga_measurement_id ?? undefined
+      const tracking = (company?.settings as { tracking?: { ga_measurement_id?: string | null; ads_conversion_id?: string | null; ads_conversion_label?: string | null } } | null)?.tracking
+      gaMeasurementId = tracking?.ga_measurement_id ?? undefined
+      adsConversionId = tracking?.ads_conversion_id ?? undefined
+      adsConversionLabel = tracking?.ads_conversion_label ?? undefined
     }
   }
 
@@ -50,6 +54,8 @@ export default async function PaymentSuccessPage({
       {bookingNumber && (
         <ConversionTracker
           gaMeasurementId={gaMeasurementId}
+          adsConversionId={adsConversionId}
+          adsConversionLabel={adsConversionLabel}
           transactionId={bookingNumber}
           value={totalAmount}
           currency={currency}

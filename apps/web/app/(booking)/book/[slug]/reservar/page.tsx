@@ -72,8 +72,10 @@ export default async function ReservarPage({ params }: { params: { slug: string 
     return { enabled: (g?.enabled ?? true) && !requiresDeposit, options: g?.options ?? [15, 18, 20, 25], defaultPct: g?.default_percentage ?? 20 }
   })()
 
-  const gaMeasurementId =
-    (company.settings as { tracking?: { ga_measurement_id?: string | null } } | null)?.tracking?.ga_measurement_id ?? undefined
+  const trackingSettings = (company.settings as { tracking?: { ga_measurement_id?: string | null; ads_conversion_id?: string | null; ads_conversion_label?: string | null } } | null)?.tracking
+  const gaMeasurementId = trackingSettings?.ga_measurement_id ?? undefined
+  const adsConversionId = trackingSettings?.ads_conversion_id ?? undefined
+  const adsConversionLabel = trackingSettings?.ads_conversion_label ?? undefined
 
   return (
     <div className="min-h-screen bg-[#08080a] text-white antialiased selection:bg-[var(--brand)]/30" style={{ ['--brand' as string]: brandColor }}>
@@ -135,6 +137,8 @@ export default async function ReservarPage({ params }: { params: { slug: string 
                 localeTag={LOCALE_TAGS[locale] ?? 'en-US'}
                 gratuity={gratuity}
                 gaMeasurementId={gaMeasurementId}
+                adsConversionId={adsConversionId}
+                adsConversionLabel={adsConversionLabel}
               />
             </div>
             {company.phone && (

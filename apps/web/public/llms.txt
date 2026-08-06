@@ -17,6 +17,9 @@
 - Cancellation and no-show policy engine, deposits and gratuities
 - Live GPS trip tracking shared with passengers, in-app chat, and post-trip ratings
 - Passenger preference profile: remembers each passenger's temperature, music, conversation style, and luggage-help needs, and hands it to the chauffeur before every trip | owned by the operator, not shared across operators
+- Configurable luggage capacity per vehicle type (carry-on, checked, extra-large bags): passengers declare their luggage at booking, and an overage fee is applied automatically only when the declared amount exceeds the selected vehicle's capacity
+- Airport pickup meet & greet protocol (chauffeur waits with a name sign inside arrivals) shown to the passenger before the chauffeur arrives, plus flight tracking that adjusts pickup time to actual landing
+- Configurable no-show grace period (courtesy minutes) before a no-show fee can be charged, and toll/parking charges logged by the chauffeur during the trip, always capped at the amount actually declared
 - Affiliate network: operators can send/receive trips with other LuxeRide operators, including pooled requests and bidding
 - Compliance Center: tracks license, permit, and insurance expiration dates for the operator's own records (an organizational tool | LuxeRide does not certify or guarantee regulatory compliance)
 - Each operator gets its own branded booking page, available in English, Spanish, and Portuguese
@@ -40,7 +43,7 @@
 
 - AI Growth Assistant Basic ($9/month, 150 AI generations included) or Plus ($19/month, 500 generations included; $3 per extra 50 generations): AI-personalized follow-up emails for abandoned price quotes (automatic), plus an on-demand generator for marketing content (social media captions, Google Business posts) using only the operator's own fleet, services and city | text only, no auto-publishing. Also includes a frequent-routes report (top corridors and cities by trip count and revenue, with a heatmap) at no extra cost | it does not use the AI generation quota. Powered by GPT-4o-mini. Included at no extra cost only on negotiated Enterprise plans.
 
-## Pricing (as of 2026-07-12)
+## Pricing (as of 2026-08-05)
 
 - Starter | $99/month: up to 6 vehicles and 6 chauffeurs, up to 150 bookings/month, 2 team members, 3% platform fee per completed trip
 - Professional | $299/month: up to 15 vehicles and 15 chauffeurs, unlimited bookings, 8 team members, corporate accounts, real-time dispatch, Partner Portals, 1.5% platform fee

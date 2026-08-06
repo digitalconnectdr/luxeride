@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('name, city, logo_url, tagline, primary_color, settings')
+    .select('name, city, logo_url, tagline, primary_color, settings, custom_domain, custom_domain_status')
     .eq('slug', params.slug)
     .single()
   if (!company) return { title: { absolute: 'Reservación' } }
@@ -62,7 +62,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const inCity = company.city ? ` en ${company.city}` : ''
   const title = `${company.name} | ${tagline || `Reserva tu traslado de lujo${cityPart}`}`
   const description = `Reserva en línea con ${company.name}: traslados al aeropuerto, chofer ejecutivo y transporte premium${inCity}. Cotización al instante, pago seguro y seguimiento en vivo.`
-  const url = `${getAppUrl()}/book/${params.slug}`
+  // El dominio propio verificado reemplaza al canónico de plataforma: el middleware
+  // reescribe internamente su "/" a esta misma página, así que la URL canónica
+  // debe apuntar a donde el navegador realmente está, no siempre a getAppUrl().
+  const url =
+    company.custom_domain_status === 'verified' && company.custom_domain
+      ? `https://${company.custom_domain}`
+      : `${getAppUrl()}/book/${params.slug}`
   return {
     // White-label: la pestaña muestra SOLO la marca del operador, nunca "| LuxeRide"
     title: { absolute: title },
@@ -95,7 +101,7 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
 
   const { data: company } = await admin
     .from('companies')
-    .select('id, name, slug, status, currency, primary_color, phone, email, city, logo_url, tagline, hero_image_url, about, stripe_connect_onboarded, active_payment_provider, whop_connect_company_id, whop_connect_onboarded, settings, google_place_id, compliance_score')
+    .select('id, name, slug, status, currency, primary_color, phone, email, city, logo_url, tagline, hero_image_url, about, stripe_connect_onboarded, active_payment_provider, whop_connect_company_id, whop_connect_onboarded, settings, google_place_id, compliance_score, custom_domain, custom_domain_status')
     .eq('slug', params.slug)
     .single()
   if (!company) return notFound()
@@ -170,7 +176,14 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
       ? (site.template as (typeof TEMPLATE_IDS)[number])
       : 'noir'
 
-  const shortUrl = `${getAppUrl()}/book/${company.slug}`
+  // Mismo criterio que el canonical de generateMetadata: si el operador tiene
+  // dominio propio verificado, la URL "real" del micrositio es esa, no la de
+  // plataforma — así el QR, el share y el @id del JSON-LD apuntan todos al
+  // mismo sitio que Google terminará indexando como canónico.
+  const shortUrl =
+    company.custom_domain_status === 'verified' && company.custom_domain
+      ? `https://${company.custom_domain}`
+      : `${getAppUrl()}/book/${company.slug}`
   const qrDataUrl = await QRCode.toDataURL(shortUrl, { width: 220, margin: 1, color: { dark: '#0a0a0c', light: '#ffffff' } })
 
   const jsonLd: Record<string, unknown> = {
@@ -183,6 +196,14 @@ export default async function OperatorMicrosite({ params, searchParams }: Props)
   if (company.email) jsonLd.email = company.email
   if (company.city) jsonLd.areaServed = company.city
   if (services.length) jsonLd.makesOffer = services.map((s) => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name: s.title, description: s.description ?? undefined } }))
+  if (googleReviews.rating && googleReviews.total) {
+    jsonLd.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: googleReviews.rating,
+      reviewCount: googleReviews.total,
+      bestRating: 5,
+    }
+  }
 
   // Encabezado de sección refinado: regla dorada + título serif vertical.
   const sectionHeading = (title: string) => (

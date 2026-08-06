@@ -507,6 +507,12 @@ export async function updateTrackingSettingsAction(
     return { success: false, error: 'El Measurement ID debe tener el formato G-XXXXXXXXXX' }
   }
 
+  const rawAdsId = (formData.get('ads_conversion_id') as string ?? '').trim()
+  if (rawAdsId && !/^AW-[0-9]{6,15}$/i.test(rawAdsId)) {
+    return { success: false, error: 'El ID de conversión de Google Ads debe tener el formato AW-XXXXXXXXX' }
+  }
+  const rawAdsLabel = (formData.get('ads_conversion_label') as string ?? '').trim()
+
   const admin = createAdminClient()
 
   const { data: company } = await admin
@@ -521,7 +527,12 @@ export async function updateTrackingSettingsAction(
   const currentTracking = (currentSettings.tracking as Record<string, unknown>) ?? {}
   const updatedSettings = {
     ...currentSettings,
-    tracking: { ...currentTracking, ga_measurement_id: rawId || null },
+    tracking: {
+      ...currentTracking,
+      ga_measurement_id: rawId || null,
+      ads_conversion_id: rawAdsId || null,
+      ads_conversion_label: rawAdsLabel || null,
+    },
   }
 
   const { error } = await admin

@@ -54,11 +54,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const admin = createAdminClient()
     const [{ data: companiesRaw }, { data: servicedTypes }] = await Promise.all([
-      admin.from('companies').select('id, slug, updated_at').eq('status', 'active').limit(1000),
+      admin.from('companies').select('id, slug, updated_at, custom_domain, custom_domain_status').eq('status', 'active').limit(1000),
       admin.from('vehicle_types').select('company_id').eq('is_active', true),
     ])
     const servicedIds = new Set((servicedTypes ?? []).map((v) => v.company_id))
-    const companies = (companiesRaw ?? []).filter((c) => servicedIds.has(c.id) && !SEO_EXCLUDED_SLUGS.has(c.slug))
+    // Un operador con dominio propio verificado ya no tiene canonical de
+    // plataforma (ver generateMetadata en book/[slug]/page.tsx) — listarlo aquí
+    // bajo BASE contradiría esa señal, así que se excluye del sitemap de la
+    // plataforma igual que SEO_EXCLUDED_SLUGS.
+    const companies = (companiesRaw ?? []).filter(
+      (c) => servicedIds.has(c.id) && !SEO_EXCLUDED_SLUGS.has(c.slug) && !(c.custom_domain_status === 'verified' && c.custom_domain),
+    )
 
     for (const c of companies) {
       entries.push({

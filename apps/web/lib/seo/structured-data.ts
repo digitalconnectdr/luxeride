@@ -34,12 +34,16 @@ export function buildLandingStructuredData(params: {
   const offers = plans
     .map((plan) => {
       const price = parsePrice(plan.price)
-      if (price === null) return null
+      // Precio "a medida" (Enterprise): antes se descartaba el plan entero del
+      // array de offers, dejándolo invisible para buscadores y LLMs que leen
+      // este JSON-LD — ahora se mantiene, sin price numérico.
       return {
         '@type': 'Offer',
         name: plan.name,
-        price: price.toFixed(2),
         priceCurrency: 'USD',
+        ...(price !== null
+          ? { price: price.toFixed(2) }
+          : { priceSpecification: { '@type': 'PriceSpecification', description: plan.price } }),
         description: [plan.desc, ...plan.features].join('. '),
         url: `${baseUrl}/#pricing`,
       }

@@ -166,6 +166,8 @@ export default async function SettingsPage({
     }
     tracking?: {
       ga_measurement_id?: string | null
+      ads_conversion_id?: string | null
+      ads_conversion_label?: string | null
     }
   }) ?? {}
 
@@ -939,6 +941,27 @@ export default async function SettingsPage({
           />
           <p className="text-[11px] text-sl-on-surface-muted mt-1">{t.gaMeasurementIdHint}</p>
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>{t.adsConversionIdLabel}<InfoTip text={t.adsConversionIdInfo} /></label>
+            <input
+              name="ads_conversion_id"
+              defaultValue={tracking.ads_conversion_id ?? ''}
+              placeholder="AW-XXXXXXXXX"
+              className={`${inputCls} font-mono`}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>{t.adsConversionLabelLabel}</label>
+            <input
+              name="ads_conversion_label"
+              defaultValue={tracking.ads_conversion_label ?? ''}
+              placeholder="AbCdEfGhIjK123"
+              className={`${inputCls} font-mono`}
+            />
+          </div>
+        </div>
+        <p className="text-[11px] text-sl-on-surface-muted -mt-2">{t.adsConversionHint}</p>
         <div className="flex justify-end pt-1">
           <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
             {t.saveTracking}

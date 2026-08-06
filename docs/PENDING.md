@@ -3,6 +3,58 @@
 > Actualizado: 2026-08-05. Para retomar el trabajo, leer este archivo +
 > docs/COMPETITIVE-ANALYSIS.md + docs/PHASE-2-MOBILE.md.
 
+## ✅ Auditoría SEO/GEO/AEO/LLM del landing y los micrositios de operador (2026-08-05)
+
+El usuario pidió revisar landing + micrositios `/book/[slug]` en SEO, GEO
+(generative engine), AEO (answer engine), LLM-crawlers y Google Ads, y
+corregir lo que estuviera mal. 3 agentes Explore en paralelo (landing,
+micrositio, infraestructura técnica) confirmaron 6 bugs reales, todos
+corregidos en esta sesión:
+
+- **Canonical roto para operadores con dominio propio verificado**: el
+  middleware reescribe (`rewrite`, no `redirect`) el `/` del dominio custom a
+  `/book/[slug]` internamente, pero `generateMetadata` nunca leía
+  `custom_domain`/`custom_domain_status` — el canonical, OG url, `@id`/`url`
+  del JSON-LD y hasta el QR/share del micrositio siempre apuntaban a la URL de
+  plataforma aunque el visitante estuviera en el dominio propio del operador.
+  Corregido en `app/(booking)/book/[slug]/page.tsx` (canonical + `shortUrl`):
+  ahora usan `https://${custom_domain}` cuando `custom_domain_status ===
+  'verified'`.
+- **Sitemap de plataforma seguía listando operadores con dominio propio**:
+  contradecía la señal de canonical de arriba. `app/sitemap.ts` ahora excluye
+  esos operadores igual que ya excluye `SEO_EXCLUDED_SLUGS`.
+- **Plan Enterprise invisible para buscadores/LLMs**: `parsePrice()` devuelve
+  `null` para "A medida"/precio variable, y el `.map()` de
+  `lib/seo/structured-data.ts` descartaba el plan entero del array de
+  `offers` del `SoftwareApplication`. Ahora se mantiene sin `price` numérico
+  (con `priceSpecification` describiendo el precio a medida).
+- **Sin `aggregateRating` en el JSON-LD `LocalBusiness` del micrositio**:
+  `googleReviews.rating`/`.total` ya se fetcheaban para el carrusel de
+  reseñas pero nunca llegaban al schema — ahora si hay rating se agrega.
+- **`llms.txt` desactualizado**: no mencionaba capacidad de equipaje,
+  protocolo de meet & greet, peajes/parking ni la cortesía de no-show
+  (features shippeadas después de la última actualización). Agregadas 3
+  líneas nuevas + fecha bumpeada.
+- **Sin conversión nativa de Google Ads, solo GA4**: se capturaba
+  UTM/gclid y se disparaba `purchase` en GA4, pero nunca un evento
+  `conversion` de Google Ads (`AW-.../label`) — el operador no podía
+  optimizar sus propias campañas de Ads directamente. `ConversionTracker`
+  ahora acepta `adsConversionId`/`adsConversionLabel` opcionales
+  (`companies.settings.tracking`, mismo patrón que `ga_measurement_id`,
+  configurable en Configuración → Google Ads) y dispara ambos eventos con el
+  mismo gtag.js. Wireado en los 4 call sites (`payment/success`,
+  `book/[slug]/reservar`, `book/[slug]/partners/[partnerSlug]`,
+  `embed/[slug]`) + i18n EN/ES/PT.
+
+**Deliberadamente NO tocado, requiere decisión del usuario**: las fotos de
+flota del landing siguen siendo stock de Unsplash (el código ya se
+autodocumenta como placeholder); hreflang/locale por operador en
+`/book/[slug]` no existe (arquitectura de routing nueva, fuera de alcance de
+un fix puntual).
+
+`tsc --noEmit` limpio, 303/303 tests, `npm run build` exitoso. Sin migración
+de Supabase — todo vive en `companies.settings.tracking` (JSONB existente).
+
 ## ✅ Tracking en vivo tipo Uber — Fase 1 (web) (2026-08-05)
 
 El usuario reportó que el mapa del pasajero "no muestra en vivo dónde está el

@@ -69,6 +69,9 @@ interface Props {
   partnerSlug?: string
   /** Google Ads: GA4 Measurement ID propio del operador (companies.settings.tracking). */
   gaMeasurementId?: string
+  /** Google Ads: ID/etiqueta de conversión nativa propia del operador (opcional, además de GA4). */
+  adsConversionId?: string
+  adsConversionLabel?: string
 }
 
 // ─── Progreso ────────────────────────────────────────────────────────────────
@@ -132,7 +135,7 @@ const MAX_LUGGAGE_EXTRA_PER_CATEGORY = 1
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = false, gratuity, dict, localeTag, partnerSlug, gaMeasurementId }: Props) {
+export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = false, gratuity, dict, localeTag, partnerSlug, gaMeasurementId, adsConversionId, adsConversionLabel }: Props) {
   const [step, setStep] = useState(0)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
@@ -608,6 +611,8 @@ export function BookingWizard({ company, vehicleTypes, onlinePaymentsEnabled = f
             Stripe/Whop antes); ese caso lo cubre payment/success/page.tsx. */}
         <ConversionTracker
           gaMeasurementId={gaMeasurementId}
+          adsConversionId={adsConversionId}
+          adsConversionLabel={adsConversionLabel}
           transactionId={confirmation.bookingNumber}
           value={selectedQuote ? selectedQuote.totalAmount - (promoState?.discountAmount ?? 0) + luggageOverageFee : 0}
           currency={selectedQuote?.currency ?? company.currency}
