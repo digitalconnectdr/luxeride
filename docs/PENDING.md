@@ -51,20 +51,11 @@ proyecto está en el plan Hobby de Vercel, los Cron Jobs solo corren una vez
 al día — insuficiente para alertar en tiempo real de una caída. Por eso se
 recomienda el monitor externo de arriba como complemento, no como opcional.
 
-**Pendiente de acción del usuario**:
-1. Aplicar la migración `20260806000089_system_health_monitoring.sql` en el
-   SQL Editor de Supabase (crea `system_health_checks` + la función RPC).
-2. Configurar `SUPER_ADMIN_PHONE` (y confirmar `SUPER_ADMIN_EMAIL`) en las
-   variables de entorno de Vercel — sin esto no hay a quién avisarle.
-3. Opcional pero recomendado: apuntar UptimeRobot (u otro monitor externo
-   gratuito) a `/api/health`.
-
-No se pudo verificar visualmente el render de `/super-admin/system` en esta
-sesión — la cuenta de prueba disponible (`owner@luxeride.com`) es
-`company_owner`, no `super_admin`, y correctamente fue redirigida fuera de
-la página (confirma que el guard de rol funciona). Sí se verificó en vivo:
-`/api/health` responde `{"ok":true}` contra Supabase real, `tsc` limpio,
-303/303 tests, `npm run build` exitoso con las 3 rutas nuevas compilando.
+**Pendiente de acción del usuario — TODO COMPLETADO**:
+1. ✅ Migración `20260806000089_system_health_monitoring.sql` aplicada en
+   Supabase (crea `system_health_checks` + la función RPC).
+2. ✅ `SUPER_ADMIN_EMAIL` y `SUPER_ADMIN_PHONE` configuradas en Vercel.
+3. ✅ UptimeRobot apuntando a `/api/health` (monitor externo cada 5 min).
 
 **Actualización (misma noche) — migración aplicada + prueba end-to-end
 real contra la BD de producción**: corrí `/api/cron/system-health` en local
@@ -82,6 +73,29 @@ Vuelto a correr tras el fix: 0 servicios caídos, `resend` en estado
 correcto (`unknown` — "sin envíos registrados todavía", nunca dispara
 alerta por falta de datos). `tsc`, 303/303 tests y build re-verificados
 tras el fix.
+
+**Actualización — bug de deploy en producción (cron cada 15 min) + cierre
+final**: el cron `system-health` se registró primero en `vercel.json` con
+`"*/15 * * * *"`. En el plan Hobby de Vercel, un cron a más de 1 vez/día no
+se degrada solo: **Vercel rechaza el DEPLOYMENT COMPLETO**, no solo ese
+cron ("Hobby accounts are limited to cron jobs that run once per day").
+Esto bloqueó en silencio 2 deployments seguidos — nada nuevo llegaba a
+producción y no había ningún error visible en la lista normal de
+Deployments (con los 7 filtros de estado activados, esos builds fallidos
+ni siquiera aparecían ahí). Se detectó por el check de GitHub en el commit
+("Vercel - Deployment failed", separado de CI Build/Lint que sí pasaban) y
+lo confirmó el propio usuario leyendo la documentación de Vercel. Fix:
+`vercel.json` cambiado a `"0 5 * * *"` (una vez al día, igual que los
+otros 12 crons), commit `3f17f0c`, push a develop→main. Confirmado en vivo:
+`/api/health` volvió a responder 200 ~5 min después del push.
+
+Con el deploy desbloqueado, el usuario entró con una cuenta `super_admin`
+real y confirmó visualmente `/super-admin/system`: capacidad de BD 0.5%
+(41.8 MB de 8GB), Supabase/Vercel/GPS/Google Maps/Tracking de vuelos en
+verde "Operativo", Twilio/Resend/Whop/Stripe/IA en gris "Sin datos" (no
+configurados o sin uso aún — no es una caída, comportamiento esperado).
+UptimeRobot ya en "Up", con el incidente (404, 45m47s) coincidiendo
+exactamente con la ventana del bug de deploy. Feature cerrada end-to-end.
 
 ## ✅ Auditoría SEO/GEO/AEO/LLM del landing y los micrositios de operador (2026-08-05)
 
