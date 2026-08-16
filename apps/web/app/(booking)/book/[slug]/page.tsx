@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   // SEO Publication Gate (Fase 1.5): un micrositio activo pero sin contenido
   // real (logo/descripción/contacto/flota) sigue funcionando para el operador,
-  // pero no se indexa hasta que esté completo — evita páginas thin en Google.
+  // pero no se indexa hasta que esté completo: evita páginas thin en Google.
   // Auditado contra producción 2026-08-16: la única empresa activa hoy
   // ("luxeride-platform") ya cumple estos 4 requisitos, cero regresión.
   const { count: activeVehicleTypes } = await admin
@@ -90,8 +90,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: { absolute: title },
     description,
     alternates: { canonical: url },
-    // noindex si la empresa está excluida a mano O si no está activa todavía —
-    // antes esto solo miraba SEO_EXCLUDED_SLUGS, así que un operador sin
+    // noindex si la empresa está excluida a mano O si no está activa todavía.
+    // Antes esto solo miraba SEO_EXCLUDED_SLUGS, así que un operador sin
     // reservas/flota/dueño (ej. "luxeride", detectado 2026-08-16) podía decir
     // "index, follow" mientras renderizaba <MicrositePending> con cero
     // contenido real. Ver LUXERIDE_OPTIMIZATION/00_BASELINE_AUDIT.md (gap G6).

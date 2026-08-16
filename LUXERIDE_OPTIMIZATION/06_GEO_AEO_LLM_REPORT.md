@@ -1,4 +1,4 @@
-# Fase 10 — GEO / AEO / LLM Report
+# Fase 10 - GEO / AEO / LLM Report
 
 Estado: **PENDING**. `llms.txt` ya existe y se mantiene actualizado (última
 pasada 2026-08-01). Falta: bloques de respuesta extraíble ("What is X?") en

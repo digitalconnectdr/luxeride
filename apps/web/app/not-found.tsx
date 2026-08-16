@@ -4,7 +4,7 @@ import { getDict, getLocale } from '@/lib/i18n/server'
 import { brand } from '@/lib/brand'
 
 // Antes no existía este archivo, así que Next usaba su 404 por defecto sin
-// override de metadata — heredaba robots:{index:true,follow:true} del
+// override de metadata, y heredaba robots:{index:true,follow:true} del
 // layout raíz. Efecto real observado: /track/[id] con un ID inexistente
 // devolvía DOS <meta name="robots"> contradictorios (el noindex de la
 // página + el index:true del 404 por defecto). Este archivo cierra el

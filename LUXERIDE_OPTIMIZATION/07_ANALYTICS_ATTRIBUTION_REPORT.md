@@ -1,4 +1,4 @@
-# Fase 16 — Analytics & Attribution Report
+# Fase 16 - Analytics & Attribution Report
 
 Estado: **PENDING**. GA4 ya wireado (`NEXT_PUBLIC_GA_MEASUREMENT_ID` en
 `app/layout.tsx`), UTM/gclid ya capturados y persistidos en

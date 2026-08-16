@@ -11,7 +11,7 @@ import { brand } from '@/lib/brand'
 // mismo patrón capability-URL que /track/[id] — no adivinable (UUID).
 
 export function generateMetadata(): Metadata {
-  // Capability-URL con datos de invitación (nombre de empresa) — nunca indexable.
+  // Capability-URL con datos de invitación (nombre de empresa), nunca indexable.
   return { title: getDict().affiliates.join.pageTitle, robots: { index: false, follow: false } }
 }
 
