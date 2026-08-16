@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('name, city, logo_url, tagline, primary_color, settings, custom_domain, custom_domain_status')
+    .select('name, city, logo_url, tagline, primary_color, settings, custom_domain, custom_domain_status, status')
     .eq('slug', params.slug)
     .single()
   if (!company) return { title: { absolute: 'Reservación' } }
@@ -74,7 +74,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: { absolute: title },
     description,
     alternates: { canonical: url },
-    robots: SEO_EXCLUDED_SLUGS.has(params.slug) ? { index: false, follow: false } : { index: true, follow: true },
+    // noindex si la empresa está excluida a mano O si no está activa todavía —
+    // antes esto solo miraba SEO_EXCLUDED_SLUGS, así que un operador sin
+    // reservas/flota/dueño (ej. "luxeride", detectado 2026-08-16) podía decir
+    // "index, follow" mientras renderizaba <MicrositePending> con cero
+    // contenido real. Ver LUXERIDE_OPTIMIZATION/00_BASELINE_AUDIT.md (gap G6).
+    robots:
+      SEO_EXCLUDED_SLUGS.has(params.slug) || company.status !== 'active'
+        ? { index: false, follow: false }
+        : { index: true, follow: true },
     openGraph: { title, description, url, type: 'website', siteName: company.name, images: company.logo_url ? [{ url: company.logo_url }] : undefined },
     // PWA branded: manifest dinámico + ícono/título de la "app" del operador (iOS).
     manifest: `/manifest/${params.slug}`,
