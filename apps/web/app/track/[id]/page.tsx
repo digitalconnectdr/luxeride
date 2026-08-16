@@ -17,7 +17,10 @@ import { MapsProvider } from '@/components/maps/maps-provider'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = getDict(getLocale()).tracking
-  return { title: `${t.title} · ${brand.name}` }
+  // Capability-URL con estado y ubicación en vivo del viaje — nunca indexable
+  // (antes dependía solo del disallow en robots.txt, que no evita que Google
+  // indexe la URL desnuda si la encuentra enlazada en otro lado).
+  return { title: `${t.title} · ${brand.name}`, robots: { index: false, follow: false } }
 }
 export const dynamic = 'force-dynamic'
 

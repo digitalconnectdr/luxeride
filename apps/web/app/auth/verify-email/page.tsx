@@ -1,6 +1,13 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { brand } from '@/lib/brand'
 import { getLocale, getDict } from '@/lib/i18n/server'
+
+// Ver nota en app/auth/signup/page.tsx — mismo gap G7, mismo fix.
+export function generateMetadata(): Metadata {
+  const t = getDict(getLocale()).auth.verifyEmail
+  return { title: `${t.title} | ${brand.name}`, robots: { index: false, follow: true } }
+}
 
 export default function VerifyEmailPage() {
   const t = getDict(getLocale()).auth.verifyEmail
