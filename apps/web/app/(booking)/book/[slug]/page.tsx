@@ -51,10 +51,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const admin = createAdminClient()
   const { data: company } = await admin
     .from('companies')
-    .select('name, city, logo_url, tagline, primary_color, settings, custom_domain, custom_domain_status, status')
+    .select('id, name, city, logo_url, tagline, about, phone, email, primary_color, settings, custom_domain, custom_domain_status, status')
     .eq('slug', params.slug)
     .single()
   if (!company) return { title: { absolute: 'Reservación' } }
+
+  // SEO Publication Gate (Fase 1.5): un micrositio activo pero sin contenido
+  // real (logo/descripción/contacto/flota) sigue funcionando para el operador,
+  // pero no se indexa hasta que esté completo — evita páginas thin en Google.
+  // Auditado contra producción 2026-08-16: la única empresa activa hoy
+  // ("luxeride-platform") ya cumple estos 4 requisitos, cero regresión.
+  const { count: activeVehicleTypes } = await admin
+    .from('vehicle_types')
+    .select('*', { count: 'exact', head: true })
+    .eq('company_id', company.id)
+    .eq('is_active', true)
+  const hasMinimumSeoContent =
+    Boolean(company.logo_url) &&
+    Boolean(company.about || company.tagline) &&
+    Boolean(company.phone || company.email) &&
+    (activeVehicleTypes ?? 0) > 0
 
   const site = ((company.settings as { site?: { i18n?: SiteI18n } } | null)?.site) ?? {}
   const tagline = resolveLocalizedField(site.i18n, locale, 'tagline', (company as { tagline?: string | null }).tagline ?? null)
@@ -80,7 +96,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // "index, follow" mientras renderizaba <MicrositePending> con cero
     // contenido real. Ver LUXERIDE_OPTIMIZATION/00_BASELINE_AUDIT.md (gap G6).
     robots:
-      SEO_EXCLUDED_SLUGS.has(params.slug) || company.status !== 'active'
+      SEO_EXCLUDED_SLUGS.has(params.slug) || company.status !== 'active' || !hasMinimumSeoContent
         ? { index: false, follow: false }
         : { index: true, follow: true },
     openGraph: { title, description, url, type: 'website', siteName: company.name, images: company.logo_url ? [{ url: company.logo_url }] : undefined },

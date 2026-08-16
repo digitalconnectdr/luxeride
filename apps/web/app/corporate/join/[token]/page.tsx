@@ -11,7 +11,8 @@ import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 export async function generateMetadata({ params }: { params: { token: string } }): Promise<Metadata> {
   const preview = await getCorporateInvitePreviewAction(params.token)
   const t = getDict().corporate.join
-  return { title: t.pageTitle.replace('{account}', preview?.accountName ?? '') }
+  // Capability-URL con datos de invitación (nombre de cuenta corporativa) — nunca indexable.
+  return { title: t.pageTitle.replace('{account}', preview?.accountName ?? ''), robots: { index: false, follow: false } }
 }
 
 export default async function CorporateJoinPage({ params }: { params: { token: string } }) {
