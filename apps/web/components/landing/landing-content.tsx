@@ -373,28 +373,25 @@ export function LandingPageContent({
       </section>
 
       {/* ── Programa de referidos ── */}
+      {/* Fase 2 (Home Optimization): antes esta sección tenía el kicker/título/
+          descripción completos + una grilla de 3 puntos — un pitch dirigido a
+          operadores ya clientes en medio del funnel de un visitante nuevo
+          evaluando el software. El detalle completo (niveles reales de
+          comisión) vive ahora en /referral-program; aquí queda solo un
+          teaser de una línea. */}
       <section className="border-t border-white/[0.06]">
-        <div className="max-w-4xl mx-auto px-6 py-24">
-          <Reveal className="text-center mb-10">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[#e9c176] mb-4">
-              {t.referralProgram.kicker}
-            </p>
-            <h2 className="font-playfair text-3xl sm:text-4xl font-semibold leading-snug text-balance">
-              {t.referralProgram.title}
-            </h2>
-            <p className="text-white/50 mt-4 text-sm max-w-2xl mx-auto leading-relaxed">
+        <div className="max-w-2xl mx-auto px-6 py-14 text-center">
+          <Reveal className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-5">
+            <p className="text-sm text-white/50">
+              <span className="text-[#e9c176] font-medium">{t.referralProgram.kicker}.</span>{' '}
               {withBrand(t.referralProgram.desc)}
             </p>
-          </Reveal>
-          <Reveal className="rounded-2xl border border-white/[0.08] bg-white/[0.02] px-6 py-8 sm:px-10">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-4">
-              {t.referralProgram.points.map((item) => (
-                <div key={item} className="flex items-start gap-2.5">
-                  <span className="text-[#e9c176] text-base mt-0.5 shrink-0">✓</span>
-                  <span className="text-[15px] text-white/80 leading-snug">{item}</span>
-                </div>
-              ))}
-            </div>
+            <Link
+              href="/referral-program"
+              className="shrink-0 text-sm font-semibold text-[#e9c176] hover:text-[#f3d9a4] transition-colors underline underline-offset-4"
+            >
+              {t.referralProgram.seeDetailsCta} →
+            </Link>
           </Reveal>
         </div>
       </section>
@@ -472,14 +469,24 @@ export function LandingPageContent({
                     </span>
                     <span className="text-sm text-white/40 ml-1">{plan.period}</span>
                   </p>
+                  {/* Fase 2 (Home Optimization): la lista completa de features
+                      (hasta 15 líneas en Starter) es demasiado densa para el
+                      home — se recorta a las primeras 6 aquí, sin tocar
+                      plan.features (dato protegido, se sigue usando completo
+                      en /pricing y en el JSON-LD de Offers). */}
                   <ul className="space-y-3 flex-1">
-                    {plan.features.map((f) => (
+                    {plan.features.slice(0, 6).map((f) => (
                       <li key={f} className="flex items-start gap-2.5">
                         <span className="text-[#e9c176] text-xs mt-0.5 shrink-0">✓</span>
                         <span className="text-[13px] text-white/60 leading-snug">{f}</span>
                       </li>
                     ))}
                   </ul>
+                  {plan.features.length > 6 && (
+                    <p className="text-[12px] text-white/35 mt-3">
+                      +{plan.features.length - 6} {t.pricingMoreFeaturesLabel}
+                    </p>
+                  )}
                   <Link
                     href="/auth/signup"
                     className={`mt-8 block text-center px-6 py-3.5 text-sm font-semibold rounded-full transition-all ${
@@ -494,7 +501,15 @@ export function LandingPageContent({
               )
             })}
           </RevealStagger>
-          <p className="text-center text-sm text-white/55 mt-10 max-w-2xl mx-auto">{t.pricingFooterNote}</p>
+          <div className="text-center mt-10">
+            <Link
+              href="/pricing"
+              className="text-sm font-semibold text-[#e9c176] hover:text-[#f3d9a4] transition-colors underline underline-offset-4"
+            >
+              {t.pricingSeeFullCta} →
+            </Link>
+            <p className="text-sm text-white/55 mt-4 max-w-2xl mx-auto">{t.pricingFooterNote}</p>
+          </div>
         </div>
       </section>
 

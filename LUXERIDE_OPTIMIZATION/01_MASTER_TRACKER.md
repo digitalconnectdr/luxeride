@@ -22,20 +22,32 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASE 1 CERRADA (1.1–1.5).** Ver `02_INDEXATION_REPORT.md` para el detalle completo.
 
+## Fase 2 - Home Optimization (HIGH, cerrada)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2.1 | 2 | Auditoría de claims: "certification" → "badge" | MEDIUM | **FIXED** | `lib/i18n/dictionaries/{en,es,pt}.ts` (`landing.trust.points`, `book.verifiedBadgeTooltip`) | LuxeRide Verified es un puntaje de cumplimiento interno, no una certificación de un tercero - llamarlo "certification" es un claim no verificable | Reemplazado por "badge"/"insignia"/"selo" en las 3 páginas donde aparecía (home + tooltip del micrositio) | tsc PASS | N/A | - | 2026-08-16 |
+| 2.2 | 2 | Auditoría de claims: "QuickBooks (coming soon)" desactualizado | MEDIUM | **FIXED** | `lib/i18n/dictionaries/{en,es,pt}.ts` (`landing.plans[0].features`) | La integración de QuickBooks Online ya está construida y validada end-to-end contra un sandbox real (sesión 2026-07-11), pero el copy del plan Starter seguía diciendo "próximamente" | Se quitó el paréntesis "(coming soon)"/"(próximamente)"/"(em breve)" | tsc PASS, verificado en navegador | N/A | - | 2026-08-16 |
+| 2.3 | 2 | Accesibilidad: `PaymentMethodsMarquee` duplica contenido para el scroll infinito | LOW | **FIXED** | `components/booking/payment-methods-marquee.tsx` | El track visual se duplica (`[...methods, ...methods]`) para el efecto de scroll continuo, sin `aria-hidden` - un lector de pantalla anunciaba cada método de pago pagado 2 veces | `<ul className="sr-only">` con la lista real + `aria-hidden="true"` en el track visual duplicado | tsc PASS, build PASS | N/A | - | 2026-08-16 |
+| 2.4 | 2 | `/pricing/` standalone (extraído del `#pricing` del home) | HIGH | **FIXED** | `app/pricing/page.tsx`, `lib/i18n/dictionaries/{en,es,pt}.ts` (`pricingPage`), `app/sitemap.ts`, `middleware.ts` | No existía `/pricing/` fuera del ancla del home (gap G3 de la Fase 0) | Página nueva que reusa el array `plans` COMPLETO sin modificarlo (dato protegido) + `pricingIncluded` + FAQ del landing, con metadata/JSON-LD propios (`buildLandingStructuredData` reusado, genera Offers desde `plans`) | tsc PASS, build PASS, vitest 303/303, verificado en navegador | Agregado a `RESERVED_SEGMENTS` en middleware (mismo bug de link-corto que en Fase 3) | - | 2026-08-16 |
+| 2.5 | 2 | Simplificar pricing del home + link a `/pricing/` | HIGH | **FIXED** | `components/landing/landing-content.tsx` | Cada tarjeta de plan mostraba hasta 15 líneas de features en el home - demasiado denso para un funnel de conversión | Recorte presentacional a las primeras 6 features (`plan.features.slice(0,6)`, sin tocar el array `plans`) + nota "+N more" + link "See full pricing" a `/pricing/` | tsc PASS, build PASS, vitest 303/303, verificado en navegador | N/A | - | 2026-08-16 |
+| 2.6 | 2 | Extraer programa de referidos a `/referral-program/` | HIGH | **FIXED** | `app/referral-program/page.tsx`, `lib/i18n/dictionaries/{en,es,pt}.ts` (`referralProgramPage`), `lib/referrals/tiers.ts`, `app/sitemap.ts`, `middleware.ts` | El pitch completo de "refiere y gana" vivía en medio del funnel del home, dirigido a operadores ya clientes en vez del visitante nuevo evaluando el software | Página nueva con tabla de niveles construida desde `REFERRAL_TIERS` (datos reales: 5%/8%/12%/15% en 1-3/4-6/7-11/12+ referidos activos, no inventados) + FAQ propia; el home queda con un teaser de una línea + link | tsc PASS, build PASS, vitest 303/303, verificado en navegador (niveles coinciden exactamente con el código) | Agregado a `RESERVED_SEGMENTS` en middleware | - | 2026-08-16 |
+
+**FASE 2 CERRADA (2.1–2.6).** Título/H1/subheadline del hero se auditaron y se dejaron sin cambios (ya cumplían con la Fase 0: título con señal de entidad, sin claims no verificables).
+
 ## Fase 3 - Money Pages (CRITICAL, cerrada)
 
 | ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 3.1 | 3 | 6 money pages standalone (`/limo-software`, `/black-car-software`, `/chauffeur-software`, `/airport-transfer-software`, `/limo-dispatch-software`, `/limo-booking-software`) | CRITICAL | **FIXED** | `app/<slug>/page.tsx` x6, `components/marketing/money-page-layout.tsx`, `lib/seo/structured-data.ts`, `lib/i18n/dictionaries/{en,es,pt}.ts` (`moneyPages`), `app/sitemap.ts`, `middleware.ts` | No existían páginas dedicadas por caso de uso; todo el SEO transaccional dependía del home genérico. Contenido de cada página derivado de features reales del código (no inventado): fleet/pricing/dispatch para limo-software, corporate accounts/QuickBooks para black-car, compliance/ratings para chauffeur, flight tracking/meet&greet/luggage para airport-transfer, dispatch board/auto-assign para limo-dispatch, booking engine/multi-idioma/widget para limo-booking - cada FAQ y caso de uso genuinamente distinto (sin doorway pages) | Layout compartido data-driven + `buildMoneyPageStructuredData` (WebPage+BreadcrumbList+FAQPage, reusa Organization/SoftwareApplication del landing) + metadata completa (canonical, OG, Twitter) + 6 entradas en sitemap | tsc PASS, build PASS, vitest 303/303, verificado en navegador (las 6 rutas, títulos correctos, contenido completo, JSON-LD presente) | Bug encontrado y corregido en el camino: `middleware.ts` reescribe cualquier segmento de 1 palabra no reservado a `/book/<slug>` (link corto de operador) - las 6 rutas nuevas devolvían 404 hasta agregarlas a `RESERVED_SEGMENTS`. Regresión verificada: el short-link real (`/luxeride-platform`) sigue funcionando | Capturas reales del producto pendientes de insertar (usuario compartió pantallazos por chat sin ruta de archivo accesible; contenido quedó 100% en texto, sin inventar nada) | 2026-08-16 |
 
-## Fases 2, 4-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
+## Fases 4-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
 |---|---|---|---|
-| 2 | Homepage: title/H1/subheadline/pricing resumido/referral fuera del funnel/claims auditados | HIGH | N/A |
 | 4 | Feature pages (`/features/*`) | HIGH | G2 |
 | 5 | Solution pages (`/solutions/*`) | HIGH | G2 |
-| 6 | `/pricing/` standalone | HIGH | G3 |
+| 6 | ~~`/pricing/` standalone~~ | ~~HIGH~~ | ya cerrado en Fase 2.4 |
 | 7 | Comparison engine (`/compare/*`) | HIGH | G2 |
 | 8 | `/about/`, `/security/`, `/faq/`, `/integrations/` | HIGH | G4 |
 | 9 | Entity SEO: `creator` explícito, BreadcrumbList, FAQ schema en páginas nuevas | MEDIUM | G10 |

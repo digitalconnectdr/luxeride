@@ -95,8 +95,18 @@ export function PaymentMethodsMarquee({ acceptsCardOnline, t, tone = 'dark', bra
         <p className={`text-base sm:text-lg font-medium max-w-md mx-auto ${taglineCls}`}>{t.paymentMethodsTagline}</p>
       </div>
 
+      {/* Lista real para lectores de pantalla — el track visual de abajo se
+          duplica para el scroll infinito, así que va aria-hidden entero para
+          no anunciar cada método de pago dos veces. */}
+      <ul className="sr-only">
+        {methods.map((m) => (
+          <li key={m.key}>{m.label}</li>
+        ))}
+      </ul>
+
       <div
         className="lux-marquee-group relative overflow-hidden"
+        aria-hidden="true"
         style={{
           maskImage: `linear-gradient(90deg, transparent, ${edgeFrom} 8%, ${edgeFrom} 92%, transparent)`,
           WebkitMaskImage: `linear-gradient(90deg, transparent, ${edgeFrom} 8%, ${edgeFrom} 92%, transparent)`,

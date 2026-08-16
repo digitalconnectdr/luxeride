@@ -108,7 +108,7 @@ export const en = {
           'Automatic monthly corporate invoicing',
           'Cancellation and no-show fees enforced by policy',
           'Revenue reports, CSV exports & full reconciliation',
-          'QuickBooks Online sync (coming soon)',
+          'QuickBooks Online sync',
         ],
       },
       {
@@ -165,7 +165,7 @@ export const en = {
         'Team roles and permission levels',
         'Audit trail for every critical action',
         'License, permit and insurance expiration tracking',
-        'Automatic "LuxeRide Verified" certification visible to your passengers',
+        'Automatic "LuxeRide Verified" badge visible to your passengers',
         'Payment and trip reconciliation',
         'Passenger-facing tracking pages',
         'Browser-based access | no installs required',
@@ -180,10 +180,13 @@ export const en = {
         'Your % rises by tier based on your active referrals',
         'No limit on how many companies you can refer',
       ],
+      seeDetailsCta: 'See how the tiers work',
     },
     pricingTitle: 'Plans built around your fleet, your team and your bookings',
     pricingSubtitle: 'The per-trip fee drops as you grow. Cancel anytime.',
     pricingNoSetupBadge: 'No setup fee | ever',
+    pricingMoreFeaturesLabel: 'more features in this plan',
+    pricingSeeFullCta: 'See full pricing & feature comparison',
     pricingIncludedTitle: 'Included in every plan',
     pricingIncluded: [
       'Your own branded booking page | in English, Spanish & Portuguese',
@@ -822,7 +825,7 @@ export const en = {
     contact: 'Contact us',
     whyTitle: 'The difference',
     verifiedBadgeLabel: 'LuxeRide Verified',
-    verifiedBadgeTooltip: 'This operator’s licenses, insurance and permits are current — automatic certification, verified by LuxeRide.',
+    verifiedBadgeTooltip: 'This operator’s licenses, insurance and permits are current — automatic badge, verified by LuxeRide.',
     stepsTitle: 'Book in 3 steps',
     reviewsTitle: 'What our clients say',
     paymentMethodsTitle: 'Payment methods',
@@ -3687,6 +3690,46 @@ export const en = {
       ctaSubtitle: 'Set up your booking page, pricing rules and payment methods in minutes.',
       ctaButton: 'Start free trial',
     },
+  },
+
+  pricingPage: {
+    metaTitle: 'Pricing | LuxeRide',
+    metaDescription:
+      'LuxeRide plans and pricing for limousine, black car, airport transfer and chauffeur companies — no setup fee, cancel anytime.',
+    breadcrumbLabel: 'Pricing',
+    h1: 'Plans built around your fleet, your team and your bookings',
+    subtitle: 'The per-trip fee drops as you grow. No setup fee, ever. Cancel anytime.',
+    faqTitle: 'Frequently asked questions',
+    ctaTitle: 'Ready to see it running on',
+    ctaAccent: 'your own fleet?',
+    ctaSubtitle: 'Start free, set up your first vehicle and pricing rule in minutes.',
+    ctaButton: 'Start free trial',
+  },
+
+  referralProgramPage: {
+    metaTitle: 'Referral Program | LuxeRide',
+    metaDescription:
+      'Refer other transportation companies to LuxeRide and earn a recurring commission that grows with your active referrals.',
+    breadcrumbLabel: 'Referral Program',
+    h1: 'Refer other transportation companies,',
+    h1Accent: 'earn recurring commission',
+    subtitle:
+      'Share your unique referral link. For every transportation company that joins through it, you earn a recurring commission during their first 12 months of activity — and your percentage rises automatically as you refer more.',
+    tiersTitle: 'Your commission grows with your active referrals',
+    tiersSubtitle: 'The tier is based on how many referred companies are currently active (within their first 12 months) — there is no limit on how many you can refer.',
+    tierNames: ['Starter Tier', 'Partner Tier', 'Ally Tier', 'Ambassador Tier'],
+    tierRangeSuffix: 'active referrals',
+    tierRangePlus: '+',
+    faqTitle: 'Frequently asked questions',
+    faq: [
+      { q: 'Is this a one-time payout or a recurring commission?', a: 'Recurring. You earn your commission percentage every month during each referred company\'s first 12 months of activity, not a one-time bonus.' },
+      { q: 'Is there a limit on how many companies I can refer?', a: 'No, there is no cap. Your commission tier rises automatically as your number of active referrals grows.' },
+      { q: 'What happens after a referred company\'s first 12 months?', a: 'The referral relationship for that specific company reaches its 12-month window and stops counting toward your recurring commission and tier — new referrals keep earning on their own 12-month window.' },
+    ],
+    ctaTitle: 'Get your',
+    ctaAccent: 'referral link',
+    ctaSubtitle: 'Sign in to your LuxeRide account and find your referral link under Referral Program.',
+    ctaButton: 'Sign in',
   },
 }
 

@@ -63,6 +63,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly' as const,
       priority: 0.8,
     })),
+    // Fase 2 SEO (home optimization) — pricing extraído del home + programa de referidos.
+    { url: `${BASE}/pricing`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${BASE}/referral-program`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
   ]
 
   try {
