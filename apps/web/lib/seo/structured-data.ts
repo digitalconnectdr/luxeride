@@ -91,3 +91,57 @@ export function buildLandingStructuredData(params: {
     ],
   }
 }
+
+// ── WebPage + BreadcrumbList + FAQPage combinado para money pages ─────────
+// Cada money page vende el mismo producto (LuxeRide) para un caso de uso
+// distinto: reusa la misma Organization/SoftwareApplication que el landing
+// (mismo @id, así los motores de búsqueda/IA entienden que es la misma
+// entidad) pero con su propio FAQPage y BreadcrumbList.
+export function buildMoneyPageStructuredData(params: {
+  baseUrl: string
+  pagePath: string // ej. '/limo-software'
+  pageTitle: string
+  pageDescription: string
+  breadcrumbItems: Array<{ name: string; path: string }>
+  faq: FaqForSchema[]
+}) {
+  const { baseUrl, pagePath, pageTitle, pageDescription, breadcrumbItems, faq } = params
+  const pageUrl = `${baseUrl}${pagePath}`
+
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebPage',
+        '@id': `${pageUrl}/#webpage`,
+        url: pageUrl,
+        name: pageTitle,
+        description: pageDescription,
+        isPartOf: { '@id': `${baseUrl}/#organization` },
+        breadcrumb: { '@id': `${pageUrl}/#breadcrumb` },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        '@id': `${pageUrl}/#breadcrumb`,
+        itemListElement: breadcrumbItems.map((item, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          name: item.name,
+          item: `${baseUrl}${item.path}`,
+        })),
+      },
+      {
+        '@type': 'FAQPage',
+        '@id': `${pageUrl}/#faq`,
+        mainEntity: faq.map((item) => ({
+          '@type': 'Question',
+          name: item.q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: item.a,
+          },
+        })),
+      },
+    ],
+  }
+}

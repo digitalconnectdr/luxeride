@@ -22,12 +22,17 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASE 1 CERRADA (1.1–1.5).** Ver `02_INDEXATION_REPORT.md` para el detalle completo.
 
-## Fases 2-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
+## Fase 3 - Money Pages (CRITICAL, cerrada)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 3.1 | 3 | 6 money pages standalone (`/limo-software`, `/black-car-software`, `/chauffeur-software`, `/airport-transfer-software`, `/limo-dispatch-software`, `/limo-booking-software`) | CRITICAL | **FIXED** | `app/<slug>/page.tsx` x6, `components/marketing/money-page-layout.tsx`, `lib/seo/structured-data.ts`, `lib/i18n/dictionaries/{en,es,pt}.ts` (`moneyPages`), `app/sitemap.ts`, `middleware.ts` | No existían páginas dedicadas por caso de uso; todo el SEO transaccional dependía del home genérico. Contenido de cada página derivado de features reales del código (no inventado): fleet/pricing/dispatch para limo-software, corporate accounts/QuickBooks para black-car, compliance/ratings para chauffeur, flight tracking/meet&greet/luggage para airport-transfer, dispatch board/auto-assign para limo-dispatch, booking engine/multi-idioma/widget para limo-booking - cada FAQ y caso de uso genuinamente distinto (sin doorway pages) | Layout compartido data-driven + `buildMoneyPageStructuredData` (WebPage+BreadcrumbList+FAQPage, reusa Organization/SoftwareApplication del landing) + metadata completa (canonical, OG, Twitter) + 6 entradas en sitemap | tsc PASS, build PASS, vitest 303/303, verificado en navegador (las 6 rutas, títulos correctos, contenido completo, JSON-LD presente) | Bug encontrado y corregido en el camino: `middleware.ts` reescribe cualquier segmento de 1 palabra no reservado a `/book/<slug>` (link corto de operador) - las 6 rutas nuevas devolvían 404 hasta agregarlas a `RESERVED_SEGMENTS`. Regresión verificada: el short-link real (`/luxeride-platform`) sigue funcionando | Capturas reales del producto pendientes de insertar (usuario compartió pantallazos por chat sin ruta de archivo accesible; contenido quedó 100% en texto, sin inventar nada) | 2026-08-16 |
+
+## Fases 2, 4-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
 |---|---|---|---|
 | 2 | Homepage: title/H1/subheadline/pricing resumido/referral fuera del funnel/claims auditados | HIGH | N/A |
-| 3 | 6 money pages (`/limo-software/` etc.) | CRITICAL | G1 |
 | 4 | Feature pages (`/features/*`) | HIGH | G2 |
 | 5 | Solution pages (`/solutions/*`) | HIGH | G2 |
 | 6 | `/pricing/` standalone | HIGH | G3 |

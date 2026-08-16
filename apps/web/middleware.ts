@@ -29,6 +29,9 @@ const RESERVED_SEGMENTS = new Set([
   'auth', 'api', 'track', 'payment', 'book', 'embed', 'review', 'quote',
   'manifest', 'icon', 'favicon', 'opengraph-image', 'demo', 'offline', 'sw.js',
   'privacy', 'terms', 'en', 'es', 'pt',
+  // Money pages (Fase 3 SEO)
+  'limo-software', 'black-car-software', 'chauffeur-software',
+  'airport-transfer-software', 'limo-dispatch-software', 'limo-booking-software',
 ])
 
 // Consulta directa a la REST API de Supabase (fetch plano, sin supabase-js) —

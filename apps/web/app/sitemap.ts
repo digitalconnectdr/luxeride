@@ -49,6 +49,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'yearly',
       priority: 0.3,
     },
+    // Money pages (Fase 3 SEO) — landings dedicadas por caso de uso.
+    ...[
+      'limo-software',
+      'black-car-software',
+      'chauffeur-software',
+      'airport-transfer-software',
+      'limo-dispatch-software',
+      'limo-booking-software',
+    ].map((slug) => ({
+      url: `${BASE}/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    })),
   ]
 
   try {
