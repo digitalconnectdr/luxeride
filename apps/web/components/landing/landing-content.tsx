@@ -482,42 +482,39 @@ export function LandingPageContent({
                   </p>
                   {/* Fase 2 (Home Optimization): la lista completa de features
                       (hasta 15 líneas en Starter) es demasiado densa para el
-                      home — se recorta a las primeras 6 aquí, sin tocar
-                      plan.features (dato protegido, se sigue usando completo
-                      en /pricing y en el JSON-LD de Offers).
+                      home, sin tocar plan.features (dato protegido, se sigue
+                      usando completo en /pricing y en el JSON-LD de Offers).
                       Cada plan (excepto Starter) arranca su array con "Todo
-                      lo de {plan anterior}" (índice 0) — esa línea se atenúa
-                      porque es heredada, y el resto se resalta porque es lo
-                      NUEVO de ese plan. Así entre más alto el plan, más
-                      texto resaltado se ve (más funciones propias). */}
-                  <ul className="space-y-3 flex-1">
-                    {plan.features.slice(0, 6).map((f, fi) => {
-                      const isInheritedLine = i > 0 && fi === 0
-                      return (
-                        <li key={f} className="flex items-start gap-2.5">
-                          <span
-                            className={`text-xs mt-0.5 shrink-0 ${isInheritedLine ? 'text-white/25' : 'text-[#e9c176]'}`}
-                          >
-                            ✓
-                          </span>
-                          <span
-                            className={
-                              isInheritedLine
-                                ? 'text-[12px] text-white/35 italic leading-snug'
-                                : 'text-[13px] text-white font-medium leading-snug'
-                            }
-                          >
-                            {f}
-                          </span>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                  {plan.features.length > 6 && (
-                    <p className="text-[12px] text-white/35 mt-3">
-                      +{plan.features.length - 6} {t.pricingMoreFeaturesLabel}
+                      lo de {plan anterior}" (índice 0) - esa línea se saca
+                      del checklist y se muestra como una etiqueta compacta
+                      aparte, para que el checklist visible sea 100% features
+                      NUEVAS de ese plan (resaltadas en dorado/negrita). Así
+                      entre más alto el plan, más funciones propias se ven. */}
+                  {i > 0 && (
+                    <p className="mb-3 inline-flex items-center gap-1.5 self-start text-[11px] font-medium text-white/45 bg-white/[0.04] border border-white/10 rounded-full px-3 py-1">
+                      <span className="text-white/30">✓</span>
+                      {plan.features[0]}
                     </p>
                   )}
+                  <ul className="space-y-3 flex-1">
+                    {(i > 0 ? plan.features.slice(1, 7) : plan.features.slice(0, 6)).map((f) => (
+                      <li key={f} className="flex items-start gap-2.5">
+                        <span className="text-xs mt-0.5 shrink-0 text-[#e9c176]">✓</span>
+                        <span className="text-[13px] text-white font-medium leading-snug">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {(() => {
+                    const shown = i > 0 ? 7 : 6
+                    const remaining = plan.features.length - shown
+                    return (
+                      remaining > 0 && (
+                        <p className="text-[12px] text-white/35 mt-3">
+                          +{remaining} {t.pricingMoreFeaturesLabel}
+                        </p>
+                      )
+                    )
+                  })()}
                   <Link
                     href="/auth/signup"
                     className={`mt-8 block text-center px-6 py-3.5 text-sm font-semibold rounded-full transition-all ${
