@@ -18,7 +18,9 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 | 1.3 | 1 | SEO Publication Gate para micrositios | CRITICAL | **FIXED** | `book/[slug]/page.tsx` | Cualquier empresa `status='active'` quedaba `index,follow` sin exigir contenido real | Gate computado (sin migración ni UI nueva): `noindex` si falta logo, descripción, contacto, o flota activa. Auditado contra producción antes de aplicar: la única empresa activa hoy ("luxeride-platform") cumple los 4 requisitos — cero regresión | tsc PASS, build PASS, vitest 303/303; impacto verificado contra DB real antes del cambio | — | — | 2026-08-16 |
 | 1.4 | 1 | Inventario completo de rutas con clasificación INDEX/NOINDEX/PRIVATE/CONDITIONAL | HIGH | **FIXED** | `02_INDEXATION_REPORT.md`, 5x `auth/*/page.tsx`, `track/[id]/page.tsx` | Auditando el layout raíz se encontró un gap más serio que el original: `robots:{index:true,follow:true}` es el default global, así que las 5 páginas de `/auth/*` (sin metadata propia) eran indexables de verdad, no solo con título genérico. `/track/[id]` (ubicación en vivo) tampoco tenía `robots` explícito | `noindex,follow` + título propio (reusando i18n existente) en las 5 páginas de auth; `noindex,follow` en `/track/[id]` | tsc PASS, build PASS, vitest 303/303 | — | — | 2026-08-16 |
 
-**FASE 1 CERRADA (1.1–1.4).** Ver `02_INDEXATION_REPORT.md` para el detalle completo.
+| 1.5 | 1 | `app/not-found.tsx` global (no existía) | HIGH | **FIXED** | `app/not-found.tsx`, i18n `notFound` (en/es/pt) | Sin este archivo, Next usa su 404 default sin override de metadata → hereda `index:true` del layout raíz. Efecto real observado en vivo: `/track/[id]` con ID inexistente devolvía DOS `<meta name="robots">` contradictorios | Página 404 propia con `noindex,nofollow` — cierra el hueco para cualquier 404 del sitio, no solo el caso puntual | tsc PASS, build PASS, vitest 303/303 | — | — | 2026-08-16 |
+
+**FASE 1 CERRADA (1.1–1.5).** Ver `02_INDEXATION_REPORT.md` para el detalle completo.
 
 ## Fases 2-27 — Backlog (no iniciadas, orden sugerido tras Fase 1)
 

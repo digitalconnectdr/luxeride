@@ -2731,6 +2731,12 @@ export const en = {
     body: 'No internet connection. Check your network and try again.',
   },
 
+  notFound: {
+    title: 'Page not found',
+    body: 'The link you followed doesn’t exist or is no longer available.',
+    backHome: 'Back to home',
+  },
+
   legal: {
     backToHome: '← Back to home',
     privacy: {

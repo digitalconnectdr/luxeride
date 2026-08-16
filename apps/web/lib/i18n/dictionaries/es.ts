@@ -2732,6 +2732,12 @@ export const es: Dictionary = {
     body: 'No hay conexión a internet. Revisa tu red e inténtalo de nuevo.',
   },
 
+  notFound: {
+    title: 'Página no encontrada',
+    body: 'El enlace que seguiste no existe o ya no está disponible.',
+    backHome: 'Volver al inicio',
+  },
+
   legal: {
     backToHome: '← Volver al inicio',
     privacy: {
