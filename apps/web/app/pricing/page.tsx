@@ -163,13 +163,32 @@ export default function PricingPage() {
                     <span className="font-playfair text-4xl font-semibold text-[#e9c176]">{plan.price}</span>
                     <span className="text-sm text-white/40 ml-1">{plan.period}</span>
                   </p>
+                  {/* Cada plan (excepto Starter) arranca su array con "Todo lo
+                      de {plan anterior}" (índice 0) — esa línea se atenúa
+                      porque es heredada, y el resto se resalta porque es lo
+                      NUEVO de ese plan frente al anterior. */}
                   <ul className="space-y-3 flex-1">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2.5">
-                        <span className="text-[#e9c176] text-xs mt-0.5 shrink-0">✓</span>
-                        <span className="text-[13px] text-white/60 leading-snug">{f}</span>
-                      </li>
-                    ))}
+                    {plan.features.map((f, fi) => {
+                      const isInheritedLine = i > 0 && fi === 0
+                      return (
+                        <li key={f} className="flex items-start gap-2.5">
+                          <span
+                            className={`text-xs mt-0.5 shrink-0 ${isInheritedLine ? 'text-white/25' : 'text-[#e9c176]'}`}
+                          >
+                            ✓
+                          </span>
+                          <span
+                            className={
+                              isInheritedLine
+                                ? 'text-[12px] text-white/35 italic leading-snug'
+                                : 'text-[13px] text-white font-medium leading-snug'
+                            }
+                          >
+                            {f}
+                          </span>
+                        </li>
+                      )
+                    })}
                   </ul>
                   <Link
                     href="/auth/signup"

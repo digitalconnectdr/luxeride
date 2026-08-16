@@ -66,6 +66,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Fase 2 SEO (home optimization) — pricing extraído del home + programa de referidos.
     { url: `${BASE}/pricing`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE}/referral-program`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+    // Feature pages (Fase 4 SEO) — una por capacidad central, ángulo técnico.
+    ...[
+      'booking-engine',
+      'dispatch',
+      'payments',
+      'fleet-management',
+      'corporate-accounts',
+      'reports',
+    ].map((slug) => ({
+      url: `${BASE}/features/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
   ]
 
   try {

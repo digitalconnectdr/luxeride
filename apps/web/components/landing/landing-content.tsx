@@ -374,24 +374,35 @@ export function LandingPageContent({
 
       {/* ── Programa de referidos ── */}
       {/* Fase 2 (Home Optimization): antes esta sección tenía el kicker/título/
-          descripción completos + una grilla de 3 puntos — un pitch dirigido a
+          descripción completos + una grilla de 3 puntos, un pitch dirigido a
           operadores ya clientes en medio del funnel de un visitante nuevo
           evaluando el software. El detalle completo (niveles reales de
-          comisión) vive ahora en /referral-program; aquí queda solo un
-          teaser de una línea. */}
+          comisión) vive ahora en /referral-program; aquí queda solo una
+          tarjeta teaser de una línea. */}
       <section className="border-t border-white/[0.06]">
-        <div className="max-w-2xl mx-auto px-6 py-14 text-center">
-          <Reveal className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-5">
-            <p className="text-sm text-white/50">
-              <span className="text-[#e9c176] font-medium">{t.referralProgram.kicker}.</span>{' '}
-              {withBrand(t.referralProgram.desc)}
-            </p>
-            <Link
-              href="/referral-program"
-              className="shrink-0 text-sm font-semibold text-[#e9c176] hover:text-[#f3d9a4] transition-colors underline underline-offset-4"
-            >
-              {t.referralProgram.seeDetailsCta} →
-            </Link>
+        <div className="max-w-4xl mx-auto px-6 py-14">
+          <Reveal>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6 rounded-2xl border border-white/10 bg-white/[0.02] px-6 py-6 sm:px-8">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <span className="shrink-0 w-11 h-11 rounded-full bg-[#e9c176]/10 border border-[#e9c176]/30 flex items-center justify-center text-[#e9c176] font-bold text-sm">
+                  15%
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] uppercase tracking-wider text-[#e9c176] font-semibold mb-1">
+                    {t.referralProgram.kicker}
+                  </p>
+                  <p className="text-sm text-white/70 leading-relaxed">
+                    {withBrand(t.referralProgram.teaserLine)}
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/referral-program"
+                className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-full border border-white/20 px-5 py-2.5 text-sm font-semibold text-white hover:border-[#e9c176]/60 hover:text-[#e9c176] transition-colors"
+              >
+                {t.referralProgram.seeDetailsCta} →
+              </Link>
+            </div>
           </Reveal>
         </div>
       </section>
@@ -473,14 +484,34 @@ export function LandingPageContent({
                       (hasta 15 líneas en Starter) es demasiado densa para el
                       home — se recorta a las primeras 6 aquí, sin tocar
                       plan.features (dato protegido, se sigue usando completo
-                      en /pricing y en el JSON-LD de Offers). */}
+                      en /pricing y en el JSON-LD de Offers).
+                      Cada plan (excepto Starter) arranca su array con "Todo
+                      lo de {plan anterior}" (índice 0) — esa línea se atenúa
+                      porque es heredada, y el resto se resalta porque es lo
+                      NUEVO de ese plan. Así entre más alto el plan, más
+                      texto resaltado se ve (más funciones propias). */}
                   <ul className="space-y-3 flex-1">
-                    {plan.features.slice(0, 6).map((f) => (
-                      <li key={f} className="flex items-start gap-2.5">
-                        <span className="text-[#e9c176] text-xs mt-0.5 shrink-0">✓</span>
-                        <span className="text-[13px] text-white/60 leading-snug">{f}</span>
-                      </li>
-                    ))}
+                    {plan.features.slice(0, 6).map((f, fi) => {
+                      const isInheritedLine = i > 0 && fi === 0
+                      return (
+                        <li key={f} className="flex items-start gap-2.5">
+                          <span
+                            className={`text-xs mt-0.5 shrink-0 ${isInheritedLine ? 'text-white/25' : 'text-[#e9c176]'}`}
+                          >
+                            ✓
+                          </span>
+                          <span
+                            className={
+                              isInheritedLine
+                                ? 'text-[12px] text-white/35 italic leading-snug'
+                                : 'text-[13px] text-white font-medium leading-snug'
+                            }
+                          >
+                            {f}
+                          </span>
+                        </li>
+                      )
+                    })}
                   </ul>
                   {plan.features.length > 6 && (
                     <p className="text-[12px] text-white/35 mt-3">
