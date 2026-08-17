@@ -100,6 +100,14 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASE 11 CERRADA (11.1).**
 
+## Fase 12 - Internal Linking (MEDIUM, cerrada)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 12.1 | 12 | Enlazar desde el home a las 29 páginas nuevas construidas en Fases 3-11 | MEDIUM | **FIXED** | `components/landing/landing-content.tsx`, `lib/i18n/dictionaries/{en,es,pt}.ts` (`landing.footerSoftwareHeading`/`footerSolutionsHeading`) | Descubierto por grep dirigido (`href="/limo-software\|/features/\|/solutions/\|/compare/\|/about\|...`) antes de tocar código: el home tenía cero enlaces hacia las 6 money pages, 4 solution pages y 3 compare pages de Fases 3/5/7 - el `relatedLinks` cruzado entre esas páginas (Fases 4-8) las conectaba entre sí, pero ninguna era alcanzable desde la home sin conocer la URL de antemano. Se confirmó con `Glob` que no existen páginas índice `/features`, `/solutions` ni `/compare` - el fix debía apuntar a sub-páginas reales, no inventar índices nuevos | Footer del home rediseñado de 4 a 6 columnas (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-6`): nueva columna "Software" (6 money pages), nueva columna "Soluciones" (4 solution pages + 3 compare pages), "Producto" y "Empresa" reorganizadas para incluir Pricing/FAQ/Resources/Referral Program y About/Security/Integrations respectivamente (antes vivían sueltas o no estaban en el footer). Cero páginas nuevas creadas - solo enlaces agregados a rutas ya existentes | tsc PASS (limpio), vitest 303/303 PASS, build PASS (exit 0) | Verificado en navegador: 23 enlaces del footer confirmados por inspección de DOM (6 Software + 7 Soluciones [4 solutions + 3 compare] + 4 Producto + 4 Empresa + 2 Legal), hrefs y labels en español correctos, sin overflow horizontal en móvil (375px, grid se apila a 2 columnas) | N/A | 2026-08-17 |
+
+**FASE 12 CERRADA (12.1).**
+
 ## Fases 6-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
@@ -110,7 +118,7 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 | 9 | ~~Entity SEO: `creator` explícito, BreadcrumbList, FAQ schema~~ | ~~MEDIUM~~ | ya cerrado en Fase 9 |
 | 10 | ~~AEO/GEO/LLM: bloques de respuesta extraíble en cada página nueva~~ | ~~HIGH~~ | ya cerrado en Fase 10 |
 | 11 | ~~Resource Center (5 calculadoras interactivas)~~ | ~~MEDIUM~~ | ya cerrado en Fase 11 |
-| 12 | Internal linking entre todo lo anterior | MEDIUM | (depende de Fases 3-8) |
+| 12 | ~~Internal linking entre todo lo anterior~~ | ~~MEDIUM~~ | ya cerrado en Fase 12 |
 | 13 | Fix metadata de `/auth/signup` | MEDIUM | G7 |
 | 14 | Google Ads readiness (landings + eventos) | HIGH | (depende de Fases 3, 6) |
 | 15 | Meta Pixel + CAPI desde cero | HIGH | G9 |

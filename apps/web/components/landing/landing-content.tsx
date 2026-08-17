@@ -668,8 +668,8 @@ export function LandingPageContent({
       {/* ── Footer ── */}
       <footer className="border-t border-white/[0.06]">
         <div className="max-w-[1400px] mx-auto px-6 py-16">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-10">
-            <div className="col-span-2 sm:col-span-1 pr-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-8 gap-y-10">
+            <div className="col-span-2 sm:col-span-3 lg:col-span-1 pr-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] flex items-center justify-center shrink-0">
                   <span className="text-[#141313] font-playfair font-bold text-xs leading-none">{brand.name.charAt(0)}</span>
@@ -681,25 +681,101 @@ export function LandingPageContent({
 
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-4">
+                {t.footerSoftwareHeading}
+              </p>
+              <ul className="space-y-2.5">
+                {[
+                  { label: dict.moneyPages.limoSoftware.breadcrumbLabel, href: '/limo-software' },
+                  { label: dict.moneyPages.blackCarSoftware.breadcrumbLabel, href: '/black-car-software' },
+                  { label: dict.moneyPages.chauffeurSoftware.breadcrumbLabel, href: '/chauffeur-software' },
+                  { label: dict.moneyPages.airportTransferSoftware.breadcrumbLabel, href: '/airport-transfer-software' },
+                  { label: dict.moneyPages.limoDispatchSoftware.breadcrumbLabel, href: '/limo-dispatch-software' },
+                  { label: dict.moneyPages.limoBookingSoftware.breadcrumbLabel, href: '/limo-booking-software' },
+                ].map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} className="text-[13px] text-white/60 hover:text-[#e9c176] transition-colors">
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-4">
+                {t.footerSolutionsHeading}
+              </p>
+              <ul className="space-y-2.5">
+                {[
+                  { label: dict.solutionPages.independentOperators.breadcrumbLabel, href: '/solutions/independent-operators' },
+                  { label: dict.solutionPages.growingFleets.breadcrumbLabel, href: '/solutions/growing-fleets' },
+                  { label: dict.solutionPages.hotelAndEventPartnerships.breadcrumbLabel, href: '/solutions/hotel-and-event-partnerships' },
+                  { label: dict.solutionPages.affiliateOverflowNetwork.breadcrumbLabel, href: '/solutions/affiliate-overflow-network' },
+                  { label: dict.comparePages.phoneBooking.breadcrumbLabel, href: '/compare/phone-booking' },
+                  { label: dict.comparePages.spreadsheets.breadcrumbLabel, href: '/compare/spreadsheets' },
+                  { label: dict.comparePages.rideHailingApps.breadcrumbLabel, href: '/compare/ride-hailing-apps' },
+                ].map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} className="text-[13px] text-white/60 hover:text-[#e9c176] transition-colors">
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-4">
                 {t.footerProductHeading}
               </p>
               <ul className="space-y-2.5">
-                <li>
-                  <a href="#features" className="text-[13px] text-white/60 hover:text-[#e9c176] transition-colors">
-                    {t.nav.platform}
-                  </a>
-                </li>
-                <li>
-                  <a href="#pricing" className="text-[13px] text-white/60 hover:text-[#e9c176] transition-colors">
-                    {t.nav.pricing}
-                  </a>
-                </li>
-                <li>
-                  <a href="#faq" className="text-[13px] text-white/60 hover:text-[#e9c176] transition-colors">
-                    {t.nav.faq}
-                  </a>
-                </li>
+                {[
+                  { label: dict.pricingPage.breadcrumbLabel, href: '/pricing' },
+                  { label: dict.infoPages.faq.breadcrumbLabel, href: '/faq' },
+                  { label: dict.resourceCenter.index.breadcrumbLabel, href: '/resources' },
+                  { label: dict.referralProgramPage.breadcrumbLabel, href: '/referral-program' },
+                ].map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} className="text-[13px] text-white/60 hover:text-[#e9c176] transition-colors">
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-4">
+                {t.footerCompanyHeading}
+              </p>
+              <ul className="space-y-2.5">
+                {[
+                  { label: dict.infoPages.about.breadcrumbLabel, href: '/about' },
+                  { label: dict.infoPages.security.breadcrumbLabel, href: '/security' },
+                  { label: dict.infoPages.integrations.breadcrumbLabel, href: '/integrations' },
+                ].map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} className="text-[13px] text-white/60 hover:text-[#e9c176] transition-colors">
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="https://digitalconnectdr.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex items-center gap-2 text-[13px] text-white/60 hover:text-[#e9c176] transition-colors"
+              >
+                <Image
+                  src="/logo-jprs.png"
+                  alt={brand.poweredBy}
+                  width={20}
+                  height={20}
+                  className="rounded-md shrink-0"
+                />
+                {brand.poweredBy}
+              </a>
             </div>
 
             <div>
@@ -718,27 +794,6 @@ export function LandingPageContent({
                   </Link>
                 </li>
               </ul>
-            </div>
-
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-4">
-                {t.footerCompanyHeading}
-              </p>
-              <a
-                href="https://digitalconnectdr.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-[13px] text-white/60 hover:text-[#e9c176] transition-colors"
-              >
-                <Image
-                  src="/logo-jprs.png"
-                  alt={brand.poweredBy}
-                  width={20}
-                  height={20}
-                  className="rounded-md shrink-0"
-                />
-                {brand.poweredBy}
-              </a>
             </div>
           </div>
 

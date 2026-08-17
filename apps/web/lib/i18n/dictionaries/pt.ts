@@ -348,6 +348,8 @@ export const pt: Dictionary = {
     footerProductHeading: 'Produto',
     footerLegalHeading: 'Legal',
     footerCompanyHeading: 'Empresa',
+    footerSoftwareHeading: 'Software',
+    footerSolutionsHeading: 'Soluções',
   },
 
   wizard: {

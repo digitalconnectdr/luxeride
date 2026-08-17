@@ -347,6 +347,8 @@ export const en = {
     footerProductHeading: 'Product',
     footerLegalHeading: 'Legal',
     footerCompanyHeading: 'Company',
+    footerSoftwareHeading: 'Software',
+    footerSolutionsHeading: 'Solutions',
   },
 
   wizard: {
