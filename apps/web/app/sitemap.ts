@@ -80,6 +80,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     })),
+    // Solution pages (Fase 5 SEO) — por perfil de operador, no por vertical ni por feature.
+    ...[
+      'independent-operators',
+      'growing-fleets',
+      'hotel-and-event-partnerships',
+      'affiliate-overflow-network',
+    ].map((slug) => ({
+      url: `${BASE}/solutions/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
   ]
 
   try {

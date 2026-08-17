@@ -52,11 +52,18 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASE 4 CERRADA (4.1).**
 
-## Fases 5-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
+## Fase 5 - Solution Pages (HIGH, cerrada)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 5.1 | 5 | 4 solution pages standalone (`/solutions/independent-operators`, `/solutions/growing-fleets`, `/solutions/hotel-and-event-partnerships`, `/solutions/affiliate-overflow-network`) | HIGH | **FIXED** | `app/solutions/<slug>/page.tsx` x4, `lib/i18n/dictionaries/{en,es,pt}.ts` (`solutionPages`), `app/sitemap.ts` | G2. Ángulo distinto a Fase 3 (vertical de negocio) y Fase 4 (mecánica técnica): estas páginas segmentan por perfil/etapa del operador, no por tipo de flota ni por feature. Dos de las cuatro cubren Partner Portals y Red de Afiliados - funciones reales y sofisticadas (pools, bidding, auto-farm, score de confiabilidad, ajuste de tarifa por partner) que no tenían NINGUNA página de SEO hasta ahora | Reusa `MoneyPageLayout` y `buildMoneyPageStructuredData` de Fase 3/4. Contenido grounded en código real: `independent-operators` (Starter: 6 vehículos/6 conductores/150 reservas/mes, sin inventar), `growing-fleets` (Professional + auto-assign compuesto + Operator Score), `hotel-and-event-partnerships` (`lib/partners/engine.ts`: ajuste de tarifa -50%/+50%, comisión % o fija, reporte "mark paid"), `affiliate-overflow-network` (pools, `resolveCounterOfferAction`, auto-farm filtrado por clase+zona, score de confiabilidad = 60% tasa de respuesta + 40% puntualidad) | tsc PASS, build PASS, vitest 303/303, verificado en navegador (las 4 rutas, títulos correctos, JSON-LD con WebPage+BreadcrumbList+FAQPage, relatedLinks cruzando a money/feature pages) | Rutas de 2 segmentos, igual que Fase 4: no caen en la reescritura de `middleware.ts`, no fue necesario tocar `RESERVED_SEGMENTS`. Regresión verificada: el short-link real (`/luxeride-platform`) sigue funcionando | - | 2026-08-16 |
+
+**FASE 5 CERRADA (5.1).**
+
+## Fases 6-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
 |---|---|---|---|
-| 5 | Solution pages (`/solutions/*`) - contenido EN/ES/PT ya escrito en `dict.solutionPages` (4 páginas: `independentOperators`, `growingFleets`, `hotelAndEventPartnerships`, `affiliateOverflowNetwork`, estas 2 últimas cubren Partner Portals y Red de Afiliados, funciones reales sin ninguna página de SEO hasta ahora); faltan las rutas `app/solutions/*/page.tsx`, sitemap y verificación - interrumpido por feedback del usuario en Fase 2.9 | HIGH | G2 |
 | 6 | ~~`/pricing/` standalone~~ | ~~HIGH~~ | ya cerrado en Fase 2.4 |
 | 7 | Comparison engine (`/compare/*`) | HIGH | G2 |
 | 8 | `/about/`, `/security/`, `/faq/`, `/integrations/` | HIGH | G4 |
