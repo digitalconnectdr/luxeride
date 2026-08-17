@@ -106,6 +106,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
+    // Resource Center (Fase 11 SEO) — calculadoras interactivas, sin benchmarks inventados.
+    { url: `${BASE}/resources`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
+    ...[
+      'limo-software-cost-calculator',
+      'fleet-profit-calculator',
+      'airport-transfer-pricing-calculator',
+      'driver-cost-calculator',
+      'booking-conversion-calculator',
+    ].map((slug) => ({
+      url: `${BASE}/resources/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
   ]
 
   try {

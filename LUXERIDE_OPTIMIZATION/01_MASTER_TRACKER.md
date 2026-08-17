@@ -92,6 +92,14 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASE 10 CERRADA (10.1).**
 
+## Fase 11 - Resource Center (MEDIUM, cerrada)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 11.1 | 11 | Arquitectura de `/resources/*` + 5 calculadoras interactivas | MEDIUM | **FIXED** | `app/resources/page.tsx`, `app/resources/{limo-software-cost-calculator,fleet-profit-calculator,airport-transfer-pricing-calculator,driver-cost-calculator,booking-conversion-calculator}/page.tsx`, `components/marketing/resource-center-layout.tsx`, `components/marketing/calculators/{calculator-ui,calculator-page-body,limo-software-cost-calculator,fleet-profit-calculator,airport-transfer-pricing-calculator,driver-cost-calculator,booking-conversion-calculator}.tsx`, `lib/i18n/dictionaries/{en,es,pt}.ts` (`resourceCenter`), `middleware.ts` (`RESERVED_SEGMENTS`), `app/sitemap.ts` | G5 ("No existe `/resources/` ni su arquitectura"). A diferencia de las Fases 3-10, este gap no tenía contenido definido en ningún documento del proyecto - se consultó al usuario vía AskUserQuestion antes de construir, dado el riesgo de "diseñar a ciegas" un tipo de contenido (blog, guías, glosario) que el usuario no había pedido. El usuario eligió: arquitectura completa + un número reducido de recursos de alta calidad, específicamente 5 calculadoras interactivas (no artículos), con la restricción explícita de no inventar benchmarks ni datos del mercado - solo fórmulas que operan sobre lo que el visitante escribe | 5 calculadoras 100% aritméticas sobre input del usuario, cero datos externos precargados: `limoSoftwareCostCalculator` (plan+comisión reales de LuxeRide vs. costo actual que el usuario declara), `fleetProfitCalculator` (ingresos/costo/margen puros), `airportTransferPricingCalculator` (base+distancia+fee aeropuerto+espera, mismos campos que el motor de precios real), `driverCostCalculator` (comisión % o tarifa fija, mismo modelo que el add-on real de nómina), `bookingConversionCalculator` (impacto en ingresos de una tasa de conversión objetivo que el usuario elige, no un benchmark sugerido). Layout nuevo (`ResourceCenterLayout`) porque una herramienta interactiva no encaja en las secciones fijas problema/solución/features/workflow de `MoneyPageLayout` - reutiliza el mismo header/footer/tema oscuro+dorado. `buildMoneyPageStructuredData` se reusó sin cambios para JSON-LD (WebPage+BreadcrumbList de 3 niveles+FAQPage) | tsc PASS (limpio), vitest 303/303 PASS, build PASS (exit 0) | Verificado en navegador: las 6 rutas cargan en ES con contenido correcto, la calculadora de costo de software recalcula en vivo y correctamente al cambiar vehículos (6→Starter $774; 20→Elite $662, verificado con la fórmula real de planes), la calculadora de costo de conductor cambia de campos correctamente al alternar entre comisión y tarifa fija (60 viajes × $40 = $2,400), JSON-LD completo con breadcrumb de 3 niveles (Home/Recursos/Calculadora), sin overflow horizontal en móvil (375px) | - | 2026-08-16 |
+
+**FASE 11 CERRADA (11.1).**
+
 ## Fases 6-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
@@ -101,7 +109,7 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 | 8 | ~~`/about/`, `/security/`, `/faq/`, `/integrations/`~~ | ~~HIGH~~ | ya cerrado en Fase 8 |
 | 9 | ~~Entity SEO: `creator` explícito, BreadcrumbList, FAQ schema~~ | ~~MEDIUM~~ | ya cerrado en Fase 9 |
 | 10 | ~~AEO/GEO/LLM: bloques de respuesta extraíble en cada página nueva~~ | ~~HIGH~~ | ya cerrado en Fase 10 |
-| 11 | Resource Center (infraestructura, sin contenido todavía) | MEDIUM | G5 |
+| 11 | ~~Resource Center (5 calculadoras interactivas)~~ | ~~MEDIUM~~ | ya cerrado en Fase 11 |
 | 12 | Internal linking entre todo lo anterior | MEDIUM | (depende de Fases 3-8) |
 | 13 | Fix metadata de `/auth/signup` | MEDIUM | G7 |
 | 14 | Google Ads readiness (landings + eventos) | HIGH | (depende de Fases 3, 6) |

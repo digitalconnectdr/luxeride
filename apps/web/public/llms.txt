@@ -91,6 +91,12 @@ Marketplace platforms like Uber Elite and Blacklane book the passenger inside th
 - [Compare: phone booking](/compare/phone-booking) | booking by phone/text vs. a real online booking engine
 - [Compare: spreadsheets](/compare/spreadsheets) | spreadsheets and group chats vs. a real dispatch board
 - [Compare: ride-hailing apps](/compare/ride-hailing-apps) | a marketplace app that owns the passenger vs. a platform the operator owns
+- [Resources](/resources) | free interactive calculators, no invented industry benchmarks
+- [Limo software cost calculator](/resources/limo-software-cost-calculator) | your fleet size and volume vs. LuxeRide's real plan pricing
+- [Fleet profit calculator](/resources/fleet-profit-calculator) | monthly revenue, cost per trip and profit margin from your own numbers
+- [Airport transfer pricing calculator](/resources/airport-transfer-pricing-calculator) | build a fare from base rate, distance, airport fee and wait time
+- [Driver cost calculator](/resources/driver-cost-calculator) | monthly driver payroll cost, commission or flat-per-trip
+- [Booking conversion calculator](/resources/booking-conversion-calculator) | revenue impact of a higher conversion rate on your booking page
 - [Privacy Policy](/privacy)
 - [Terms of Service](/terms)
 - Each active operator gets a public, branded booking page at getluxeride.vercel.app/<operator-slug> (short link) or /book/<operator-slug> | these are independent transportation businesses running on LuxeRide, not part of LuxeRide itself

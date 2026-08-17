@@ -36,6 +36,8 @@ const RESERVED_SEGMENTS = new Set([
   'pricing', 'referral-program',
   // Fase 8 SEO (info pages)
   'about', 'security', 'faq', 'integrations',
+  // Fase 11 SEO (resource center)
+  'resources',
 ])
 
 // Consulta directa a la REST API de Supabase (fetch plano, sin supabase-js) —
