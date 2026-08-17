@@ -92,6 +92,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     })),
+    // Comparison pages (Fase 7 SEO) — por categoría, sin nombrar competidores.
+    ...['phone-booking', 'spreadsheets', 'ride-hailing-apps'].map((slug) => ({
+      url: `${BASE}/compare/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
   ]
 
   try {

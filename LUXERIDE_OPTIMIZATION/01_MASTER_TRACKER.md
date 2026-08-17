@@ -60,12 +60,20 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASE 5 CERRADA (5.1).**
 
+## Fase 7 - Comparison Pages (HIGH, cerrada)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 7.1 | 7 | 3 comparison pages standalone (`/compare/phone-booking`, `/compare/spreadsheets`, `/compare/ride-hailing-apps`) | HIGH | **FIXED** | `app/compare/<slug>/page.tsx` x3, `lib/i18n/dictionaries/{en,es,pt}.ts` (`comparePages`), `app/sitemap.ts` | G2. Riesgo distinto a Fases 3-5: un motor de comparación clásico nombra competidores reales (Limo Anywhere, Moovs), pero sus features actuales no se pueden verificar en esta sesión - publicar afirmaciones no verificables violaría la regla maestra de nunca inventar. Se consultó al usuario vía AskUserQuestion antes de construir; eligió explícitamente "Por categoría, sin nombrar competidores" | Reusa `MoneyPageLayout`/`buildMoneyPageStructuredData` de Fases 3-5. En vez de LuxeRide-vs-competidor-nombrado, cada página compara contra una categoría genérica de método de operación: `phoneBooking` (reservar por teléfono/texto vs. motor de reservas online real), `spreadsheets` (hojas de cálculo/chats grupales vs. dispatch board real con auto-asignación compuesta), `rideHailingApps` (app de marketplace tipo ride-hailing que es dueña del pasajero vs. plataforma propia del operador - cita en su FAQ la escalada real de comisión 3%/1.5%/0.5% por plan). Cero menciones de terceros reales en ninguna de las 3 páginas | tsc PASS, vitest 303/303 PASS, build PASS (exit code 0), verificado en navegador: las 3 rutas cargan con títulos correctos, JSON-LD completo (WebPage+BreadcrumbList+FAQPage) en las 3, relatedLinks correctos (cruzan a money pages/feature pages/solution pages/pricing/referral-program), grep de body text confirma cero menciones de "Limo Anywhere"/"Moovs"/"Uber"/"Lyft" en ninguna página, sin overflow horizontal en móvil (375px) | Rutas de 2 segmentos, igual que Fases 4-5: no caen en la reescritura de `middleware.ts` | - | 2026-08-16 |
+
+**FASE 7 CERRADA (7.1).**
+
 ## Fases 6-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
 |---|---|---|---|
 | 6 | ~~`/pricing/` standalone~~ | ~~HIGH~~ | ya cerrado en Fase 2.4 |
-| 7 | Comparison engine (`/compare/*`) | HIGH | G2 |
+| 7 | ~~Comparison engine (`/compare/*`)~~ | ~~HIGH~~ | ya cerrado en Fase 7 |
 | 8 | `/about/`, `/security/`, `/faq/`, `/integrations/` | HIGH | G4 |
 | 9 | Entity SEO: `creator` explícito, BreadcrumbList, FAQ schema en páginas nuevas | MEDIUM | G10 |
 | 10 | AEO/GEO/LLM: bloques de respuesta extraíble en cada página nueva | HIGH | (depende de Fases 3-8) |
