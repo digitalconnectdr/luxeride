@@ -291,7 +291,11 @@ export async function signupAction(
   }
 
   revalidatePath('/', 'layout')
-  redirect(getDefaultRoute('company_owner'))
+  // ?welcome=1 dispara el evento GA4 'sign_up' en el dashboard (Fase 14,
+  // Google Ads readiness) - la única señal de "visita convertida" para
+  // campañas que apunten a las money pages; getDefaultRoute() siempre es
+  // '/admin/dashboard' para company_owner, el rol fijo de este flujo.
+  redirect(`${getDefaultRoute('company_owner')}?welcome=1`)
 }
 
 // ─── Logout ────────────────────────────────────────────────────────────────────

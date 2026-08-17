@@ -108,6 +108,22 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASE 12 CERRADA (12.1).**
 
+## Fase 13 - Metadata de `/auth/signup` (MEDIUM, cerrada sin cambios de código)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 13.1 | 13 | Verificar G7 (`/auth/signup` sin metadata propia, título no dice "Start Free Trial") | MEDIUM | **PASS** (ya resuelto) | `app/auth/signup/page.tsx` | G7 tenía 2 partes: (a) sin `generateMetadata()`/`robots` propio, (b) título genérico en vez de mensaje de conversión "Start Free Trial" | Investigado antes de tocar código: ambas partes ya estaban resueltas como efecto colateral de Fase 1.4 (commit `30d582e`, "noindex real en /auth/* y /track/[id]") - `generateMetadata()` ya exporta `title: `${t.title} | ${brand.name}`` + `robots: {index:false, follow:true}`, y `t.title` (`dict.auth.signup.title`) ya es "Start your free trial"/"Comienza tu prueba gratis"/"Comece seu teste grátis" en los 3 idiomas, confirmado en los 3 diccionarios | N/A - verificación de código existente, sin cambios | Confirmado por `git log -S` que el `generateMetadata()` actual data de la Fase 1, anterior a esta sesión de Fases 2-12 | Ninguno | - | 2026-08-17 |
+
+**FASE 13 CERRADA (13.1).**
+
+## Fase 14 - Google Ads Readiness: landings + eventos (HIGH, cerrada)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 14.1 | 14 | Señal de conversión de signup para el GA4/Google Ads de la PLATAFORMA (distinto del tracking per-operador ya existente) | HIGH | **FIXED** | `components/admin/dashboard/signup-conversion-event.tsx` (NUEVO), `app/admin/dashboard/page.tsx`, `app/actions/auth.ts` | Investigado antes de construir: el tracking de conversión Google Ads YA existe pero es **per-operador** (`components/booking/conversion-tracker.tsx`, dispara 'purchase'/'conversion' cuando UN CLIENTE reserva un viaje con la flota de un operador - construido sesión 2026-08-01). Las money/solution/compare pages de Fases 3-7 y `/pricing` (Fase 2.4) están dirigidas a captar OPERADORES nuevos (visitantes de Google Ads que se convierten en signup), no pasajeros - y ningún flujo disparaba una señal de conversión en el GA4 propio de LuxeRide (`NEXT_PUBLIC_GA_MEASUREMENT_ID`, `app/layout.tsx`) cuando ese signup ocurre. Sin esa señal, una campaña de Google Ads apuntando a las money pages no puede medir qué clic se convirtió en operador nuevo | `signupAction` (`app/actions/auth.ts`) redirige a `/admin/dashboard?welcome=1` solo tras un signup real exitoso (el rol es siempre `company_owner` en este flujo). Componente cliente nuevo `SignupConversionEvent` (sin script propio - reusa el `gtag` que el layout raíz ya carga en toda página) lee `?welcome=1`, dispara `gtag('event', 'sign_up', {method:'company_signup'})` (evento estándar de GA4, importable como conversión en Google Ads) y limpia el query param vía `router.replace` para no re-disparar en refrescos. Envuelto en `<Suspense>` en `admin/dashboard/page.tsx` (requerido por Next 14 para `useSearchParams`) | tsc PASS (limpio), vitest 303/303 PASS, build PASS (exit 0, ruta `/admin/dashboard` presente sin cambio de tamaño relevante) | Verificación en navegador no aplicable: el componente no renderiza nada visible (dispara un evento de analytics), y probar el disparo real requiere completar un signup con cuenta nueva - fuera de alcance crear datos de prueba en producción solo para esto | Landing readiness (money pages con CTA claro, `/pricing` standalone) ya estaba resuelto por Fases 2.4-8; este gap era específicamente la falta de evento de conversión, no de páginas | 2026-08-17 |
+
+**FASE 14 CERRADA (14.1).**
+
 ## Fases 6-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
@@ -119,8 +135,8 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 | 10 | ~~AEO/GEO/LLM: bloques de respuesta extraíble en cada página nueva~~ | ~~HIGH~~ | ya cerrado en Fase 10 |
 | 11 | ~~Resource Center (5 calculadoras interactivas)~~ | ~~MEDIUM~~ | ya cerrado en Fase 11 |
 | 12 | ~~Internal linking entre todo lo anterior~~ | ~~MEDIUM~~ | ya cerrado en Fase 12 |
-| 13 | Fix metadata de `/auth/signup` | MEDIUM | G7 |
-| 14 | Google Ads readiness (landings + eventos) | HIGH | (depende de Fases 3, 6) |
+| 13 | ~~Fix metadata de `/auth/signup`~~ | ~~MEDIUM~~ | ya cerrado en Fase 13 |
+| 14 | ~~Google Ads readiness (landings + eventos)~~ | ~~HIGH~~ | ya cerrado en Fase 14 |
 | 15 | Meta Pixel + CAPI desde cero | HIGH | G9 |
 | 16 | Auditoría de analytics (evitar tags duplicados) | MEDIUM | N/A |
 | 17-20 | Performance / Responsive / Accessibility / Security | se audita en su momento | N/A |

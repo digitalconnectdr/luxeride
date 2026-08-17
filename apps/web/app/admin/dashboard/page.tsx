@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Suspense } from 'react'
+import { SignupConversionEvent } from '@/components/admin/dashboard/signup-conversion-event'
 import {
   CheckCircle2,
   Circle,
@@ -204,6 +206,9 @@ export default async function AdminDashboardPage() {
   // blancas con borde fino, ancho completo y KPIs compactos en una fila.
   return (
     <div className="min-h-full bg-[#f6f4ef] p-6 lg:p-8">
+      <Suspense fallback={null}>
+        <SignupConversionEvent />
+      </Suspense>
       <div className="max-w-[1400px] mx-auto space-y-3">
 
       {/* Header */}
