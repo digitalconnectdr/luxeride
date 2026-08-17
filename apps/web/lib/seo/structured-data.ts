@@ -59,10 +59,12 @@ export function buildLandingStructuredData(params: {
         name: brand.name,
         url: baseUrl,
         logo: `${baseUrl}/icon.svg`,
-        parentOrganization: {
-          '@type': 'Organization',
-          name: brand.poweredBy,
-        },
+        parentOrganization: { '@id': `${baseUrl}/#creator` },
+      },
+      {
+        '@type': 'Organization',
+        '@id': `${baseUrl}/#creator`,
+        name: brand.poweredBy,
       },
       {
         '@type': 'SoftwareApplication',
@@ -75,6 +77,7 @@ export function buildLandingStructuredData(params: {
         url: baseUrl,
         offers,
         provider: { '@id': `${baseUrl}/#organization` },
+        creator: { '@id': `${baseUrl}/#creator` },
       },
       {
         '@type': 'FAQPage',

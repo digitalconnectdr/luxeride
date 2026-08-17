@@ -76,6 +76,14 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASE 8 CERRADA (8.1).**
 
+## Fase 9 - Entity SEO (MEDIUM, cerrada)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 9.1 | 9 | `creator` explícito + BreadcrumbList/FAQ schema en todas las páginas nuevas | MEDIUM | **FIXED** | `lib/seo/structured-data.ts` | G10 (baseline: "Sin BreadcrumbList en ninguna página"). La parte de BreadcrumbList+FAQPage ya había quedado resuelta como efecto colateral de Fases 3-8 (las 23 páginas nuevas usan `buildMoneyPageStructuredData`, que siempre emite ambos). Faltaba solo la parte de "creator explícito": el nodo `Organization` de LuxeRide tenía `parentOrganization: { name: brand.poweredBy }` como objeto anónimo sin `@id`, sin forma de referenciarlo desde otros nodos del grafo | Se le dio a JPRS Digital Connect su propio nodo `Organization` con `@id: {baseUrl}/#creator` en `buildLandingStructuredData`. El nodo `Organization` de LuxeRide referencia ese `@id` vía `parentOrganization`, y el nodo `SoftwareApplication` ahora también lo referencia vía la propiedad `creator` (antes ausente) - mismo dato (`brand.poweredBy = 'JPRS Digital Connect'`), pero ahora como entidad enlazable en el grafo en vez de un string inline, que es el patrón correcto de schema.org para "quién creó/opera este software" | tsc PASS (limpio), vitest 303/303 PASS, build PASS (exit 0, verificado explícitamente `/about`, `/security`, `/faq`, `/integrations` en el output con su tamaño de bundle) | Verificado en navegador (home, `/`): el grafo JSON-LD ahora tiene 2 nodos `Organization` distintos (LuxeRide y JPRS Digital Connect, cada uno con su `@id`), `Organization.parentOrganization` y `SoftwareApplication.creator` ambos apuntan al mismo `@id` de JPRS por referencia. `buildMoneyPageStructuredData` (usado por las 23 páginas de Fases 3-8) ya emitía `BreadcrumbList`+`FAQPage` desde que se creó en Fase 3, sin cambios necesarios ahí | Home page (`/`) no lleva `BreadcrumbList` propio - correcto, Google no lo recomienda para la página raíz | 2026-08-16 |
+
+**FASE 9 CERRADA (9.1).**
+
 ## Fases 6-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
@@ -83,7 +91,7 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 | 6 | ~~`/pricing/` standalone~~ | ~~HIGH~~ | ya cerrado en Fase 2.4 |
 | 7 | ~~Comparison engine (`/compare/*`)~~ | ~~HIGH~~ | ya cerrado en Fase 7 |
 | 8 | ~~`/about/`, `/security/`, `/faq/`, `/integrations/`~~ | ~~HIGH~~ | ya cerrado en Fase 8 |
-| 9 | Entity SEO: `creator` explícito, BreadcrumbList, FAQ schema en páginas nuevas | MEDIUM | G10 |
+| 9 | ~~Entity SEO: `creator` explícito, BreadcrumbList, FAQ schema~~ | ~~MEDIUM~~ | ya cerrado en Fase 9 |
 | 10 | AEO/GEO/LLM: bloques de respuesta extraíble en cada página nueva | HIGH | (depende de Fases 3-8) |
 | 11 | Resource Center (infraestructura, sin contenido todavía) | MEDIUM | G5 |
 | 12 | Internal linking entre todo lo anterior | MEDIUM | (depende de Fases 3-8) |
