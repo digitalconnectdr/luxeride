@@ -99,6 +99,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
+    // Info pages (Fase 8 SEO) — sin riesgo de terceros, contenido 100% propio.
+    ...['about', 'security', 'faq', 'integrations'].map((slug) => ({
+      url: `${BASE}/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
   ]
 
   try {

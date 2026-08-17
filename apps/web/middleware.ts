@@ -34,6 +34,8 @@ const RESERVED_SEGMENTS = new Set([
   'airport-transfer-software', 'limo-dispatch-software', 'limo-booking-software',
   // Fase 2 SEO (home optimization)
   'pricing', 'referral-program',
+  // Fase 8 SEO (info pages)
+  'about', 'security', 'faq', 'integrations',
 ])
 
 // Consulta directa a la REST API de Supabase (fetch plano, sin supabase-js) —

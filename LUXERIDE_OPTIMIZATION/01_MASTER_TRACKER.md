@@ -68,13 +68,21 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASE 7 CERRADA (7.1).**
 
+## Fase 8 - Info Pages (HIGH, cerrada)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 8.1 | 8 | 4 info pages standalone (`/about`, `/security`, `/faq`, `/integrations`) | HIGH | **FIXED** | `app/{about,security,faq,integrations}/page.tsx` x4, `lib/i18n/dictionaries/{en,es,pt}.ts` (`infoPages`), `middleware.ts` (`RESERVED_SEGMENTS`), `app/sitemap.ts` | G4. Cero riesgo de afirmaciones de terceros no verificables (a diferencia de Fase 7): contenido 100% propio de LuxeRide/JPRS Digital Connect. Rutas de 1 segmento (`/about`, no `/info/about`), así que caían en la reescritura de short-link de `middleware.ts` igual que el bug encontrado en Fase 3 - había que agregarlas a `RESERVED_SEGMENTS` antes de que existieran, no después | Reusa `MoneyPageLayout`/`buildMoneyPageStructuredData`. Contenido grounded 100% en código verificado: `about` (operado por JPRS Digital Connect, capacidades reales listadas, sin inventar fecha de fundación/tamaño de equipo/oficina); `security` (RLS de PostgreSQL confirmado en 41 archivos de migración, pagos nunca tocan servidores propios porque corren por Stripe, bitácora `booking_events` inmutable, `lib/compliance/engine.ts` bloquea dispatch por documentos vencidos, rate limiting Upstash, monitoreo `/api/health`+cron `system-health` - cero afirmaciones de certificaciones no obtenidas tipo SOC2/ISO); `integrations` (Stripe/Stripe Connect, QuickBooks Online vía OAuth2 por operador con nota de disponibilidad por país de Intuit en vez de afirmar cobertura universal, Google Maps Platform, AeroDataBox arquitectura provider-agnostic, Twilio, Resend, OpenAI GPT-4o-mini, GA4+Google Ads, Whop - confirmados en `package.json` y código real, firma electrónica excluida por ser funcionalidad interna, no integración de terceros); `faq` (FAQ general y más amplio que el teaser de 6 preguntas del landing, sin duplicar contenido - cubre onboarding/propiedad de datos/contrato mes-a-mes ya establecido como "cancel anytime, no setup fee" en el landing) | tsc PASS (limpio), vitest 303/303 PASS, build PASS (compiló exitosamente, warnings preexistentes de Edge Runtime en supabase-js no relacionados), verificado en navegador: las 4 rutas cargan con títulos correctos en EN y ES (vía selector de idioma), JSON-LD completo (WebPage+BreadcrumbList+FAQPage) en las 4, relatedLinks correctos cruzando entre sí y a money/feature pages, sin overflow horizontal en móvil (375px), regresión verificada: el short-link real (`/luxeride-platform`) sigue funcionando tras agregar los 4 slugs a `RESERVED_SEGMENTS` | - | 2026-08-16 |
+
+**FASE 8 CERRADA (8.1).**
+
 ## Fases 6-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
 |---|---|---|---|
 | 6 | ~~`/pricing/` standalone~~ | ~~HIGH~~ | ya cerrado en Fase 2.4 |
 | 7 | ~~Comparison engine (`/compare/*`)~~ | ~~HIGH~~ | ya cerrado en Fase 7 |
-| 8 | `/about/`, `/security/`, `/faq/`, `/integrations/` | HIGH | G4 |
+| 8 | ~~`/about/`, `/security/`, `/faq/`, `/integrations/`~~ | ~~HIGH~~ | ya cerrado en Fase 8 |
 | 9 | Entity SEO: `creator` explícito, BreadcrumbList, FAQ schema en páginas nuevas | MEDIUM | G10 |
 | 10 | AEO/GEO/LLM: bloques de respuesta extraíble en cada página nueva | HIGH | (depende de Fases 3-8) |
 | 11 | Resource Center (infraestructura, sin contenido todavía) | MEDIUM | G5 |
