@@ -65,7 +65,32 @@ Marketplace platforms like Uber Elite and Blacklane book the passenger inside th
 
 ## Pages
 
-- [Home / pricing](/) | product overview, pricing plans, FAQ
+- [Home](/) | product overview, pricing plans, FAQ
+- [Pricing](/pricing) | Starter/Professional/Elite/Enterprise plans, per-trip fee, FAQ
+- [Referral program](/referral-program) | recurring commission (up to 15%) for referring other transportation companies
+- [About](/about) | who builds and operates LuxeRide (JPRS Digital Connect), what runs in production today
+- [Security](/security) | row-level security per tenant, Stripe-only card handling, immutable booking event log, automated compliance enforcement
+- [Integrations](/integrations) | Stripe/Stripe Connect, QuickBooks Online, Google Maps Platform, AeroDataBox flight tracking, Twilio, Resend, OpenAI GPT-4o-mini, GA4/Google Ads, Whop
+- [FAQ](/faq) | onboarding, billing, data ownership, security and support questions
+- [Limo software](/limo-software) | general platform overview for limousine operators
+- [Black car software](/black-car-software) | corporate accounts and QuickBooks sync for black car operators
+- [Chauffeur software](/chauffeur-software) | compliance tracking and driver ratings for chauffeur services
+- [Airport transfer software](/airport-transfer-software) | flight tracking, meet & greet protocol, luggage capacity
+- [Limo dispatch software](/limo-dispatch-software) | real-time dispatch board and fair auto-assignment
+- [Limo booking software](/limo-booking-software) | online booking engine, multi-language, embeddable widget
+- [Feature: booking engine](/features/booking-engine) | how the online booking and pricing engine works
+- [Feature: dispatch](/features/dispatch) | composite auto-assignment (proximity, rotation, rating, reliability)
+- [Feature: payments](/features/payments) | Stripe Connect, policy engine, manual payment methods
+- [Feature: fleet management](/features/fleet-management) | luggage capacity, vehicle documents, LuxeRide Verified
+- [Feature: corporate accounts](/features/corporate-accounts) | credit lines, per-user limits, cost centers
+- [Feature: reports](/features/reports) | audit trail, UTM/gclid attribution, Operator Score
+- [Solutions: independent operators](/solutions/independent-operators) | Starter plan fit for a single owner-operator or small fleet
+- [Solutions: growing fleets](/solutions/growing-fleets) | Professional plan, composite auto-assign, Operator Score
+- [Solutions: hotel and event partnerships](/solutions/hotel-and-event-partnerships) | Partner Portals with adjusted rates and commission reporting
+- [Solutions: affiliate overflow network](/solutions/affiliate-overflow-network) | send/receive trips between LuxeRide operators, pools, bidding
+- [Compare: phone booking](/compare/phone-booking) | booking by phone/text vs. a real online booking engine
+- [Compare: spreadsheets](/compare/spreadsheets) | spreadsheets and group chats vs. a real dispatch board
+- [Compare: ride-hailing apps](/compare/ride-hailing-apps) | a marketplace app that owns the passenger vs. a platform the operator owns
 - [Privacy Policy](/privacy)
 - [Terms of Service](/terms)
 - Each active operator gets a public, branded booking page at getluxeride.vercel.app/<operator-slug> (short link) or /book/<operator-slug> | these are independent transportation businesses running on LuxeRide, not part of LuxeRide itself

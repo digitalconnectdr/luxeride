@@ -84,6 +84,14 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASE 9 CERRADA (9.1).**
 
+## Fase 10 - AEO/GEO/LLM: bloques de respuesta extraíble (HIGH, cerrada)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 10.1 | 10 | Bloques de respuesta extraíble en cada página nueva (Fases 3-8) para LLMs/answer engines | HIGH | **FIXED** | `public/llms.txt` | `llms.txt` (el archivo que rastreadores de LLMs como ChatGPT/Claude/Perplexity leen para entender el sitio) solo listaba Home/Privacy/Terms - ninguna de las 25 páginas nuevas construidas en Fases 2-8 (money/feature/solution/compare/info + pricing + referral-program) aparecía ahí, así que esos motores no tenían forma de descubrir ni citar ese contenido aunque ya estuviera publicado | La parte de "bloque de respuesta extraíble" propiamente dicha ya estaba resuelta desde Fase 3: cada página nueva expone su contenido como `FAQPage` JSON-LD vía `buildMoneyPageStructuredData` (preguntas y respuestas ya en formato pregunta-respuesta directamente citable). Lo que faltaba era la señal de descubrimiento: se reescribió la sección "## Pages" de `llms.txt`, agregando las 25 páginas nuevas con un resumen de una línea cada una (ej. `- [Compare: ride-hailing apps](/compare/ride-hailing-apps) \| a marketplace app that owns the passenger vs. a platform the operator owns`) | N/A (archivo estático en `public/`, sin código TypeScript involucrado - tsc/vitest no aplican) | Verificado sirviendo el archivo actualizado en `http://localhost/llms.txt` vía `fetch()`, confirmando las 25 entradas nuevas presentes con su URL y descripción | Al revisar el contenido existente de `/limo-booking-software` para escribir su línea en llms.txt, se confirmó que la afirmación de "widget embebible" ya estaba publicada desde Fase 3 (antes de esta sesión) - referencia adicional para la tarea de fondo ya reportada sobre `/embed/[slug]` faltante | 2026-08-16 |
+
+**FASE 10 CERRADA (10.1).**
+
 ## Fases 6-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
@@ -92,7 +100,7 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 | 7 | ~~Comparison engine (`/compare/*`)~~ | ~~HIGH~~ | ya cerrado en Fase 7 |
 | 8 | ~~`/about/`, `/security/`, `/faq/`, `/integrations/`~~ | ~~HIGH~~ | ya cerrado en Fase 8 |
 | 9 | ~~Entity SEO: `creator` explícito, BreadcrumbList, FAQ schema~~ | ~~MEDIUM~~ | ya cerrado en Fase 9 |
-| 10 | AEO/GEO/LLM: bloques de respuesta extraíble en cada página nueva | HIGH | (depende de Fases 3-8) |
+| 10 | ~~AEO/GEO/LLM: bloques de respuesta extraíble en cada página nueva~~ | ~~HIGH~~ | ya cerrado en Fase 10 |
 | 11 | Resource Center (infraestructura, sin contenido todavía) | MEDIUM | G5 |
 | 12 | Internal linking entre todo lo anterior | MEDIUM | (depende de Fases 3-8) |
 | 13 | Fix metadata de `/auth/signup` | MEDIUM | G7 |
