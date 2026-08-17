@@ -458,28 +458,56 @@ export function LandingPageContent({
             {t.plans.map((plan, i) => {
               const popular = i === 1
               const isLast = i === t.plans.length - 1
+              {/* Escalada visual real por tier (no solo Professional): cada
+                  card sube un peldaño de peso visual, sin tocar plan.price ni
+                  plan.features - es puro CSS derivado del índice. */}
+              const cardStyle = [
+                'bg-white/[0.025] border border-white/[0.08]',
+                'bg-gradient-to-b from-[#1a1712] to-[#12100d] border-2 border-[#e9c176]/60 shadow-[0_0_50px_rgba(233,193,118,0.12)]',
+                'bg-gradient-to-b from-[#171512] to-[#0f0e0c] border border-[#e9c176]/30 shadow-[0_0_28px_rgba(233,193,118,0.06)]',
+                'bg-[#0a0908] border border-white/15',
+              ][i]
+              {/* "Platform fee: X%" ya vive en plan.features (dato real, no
+                  inventado: 3% → 1.5% → 0.5% conforme sube el plan) - se
+                  extrae para mostrarlo junto al precio como el motivo
+                  económico concreto de subir de plan, en vez de quedar
+                  enterrado como un bullet más entre 15. Es la única línea
+                  con "%" en cada plan (Starter/Professional/Elite), así que
+                  detectarla por eso funciona igual en los 3 idiomas sin
+                  hardcodear el prefijo en inglés. */}
+              const feeLine = plan.features.find((f) => f.includes('%'))
+              const feeMatch = feeLine?.match(/([\d.]+%)/)
+              const inheritedLine = i > 0 ? plan.features[0] : null
+              const restFeatures = (i > 0 ? plan.features.slice(1) : plan.features).filter(
+                (f) => !f.startsWith('Platform fee:'),
+              )
+              const displayFeatures = restFeatures.slice(0, 6)
+              const accountedFor = (inheritedLine ? 1 : 0) + displayFeatures.length + (feeMatch ? 1 : 0)
+              const remaining = plan.features.length - accountedFor
               return (
-                <RevealItem
-                  key={plan.name}
-                  className={`relative rounded-3xl p-8 flex flex-col ${
-                    popular
-                      ? 'bg-gradient-to-b from-[#1a1712] to-[#12100d] border-2 border-[#e9c176]/60 shadow-[0_0_50px_rgba(233,193,118,0.12)]'
-                      : 'bg-white/[0.025] border border-white/[0.08]'
-                  }`}
-                >
+                <RevealItem key={plan.name} className={`relative rounded-3xl p-8 flex flex-col ${cardStyle}`}>
                   {popular && (
                     <span className="lux-badge-pulse absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 text-[10px] font-bold uppercase tracking-[0.2em] bg-gradient-to-br from-[#f3d9a4] to-[#c89b4f] text-[#141313] rounded-full">
                       {t.pricingPopular}
                     </span>
                   )}
                   <h3 className="font-playfair text-xl font-semibold">{plan.name}</h3>
-                  <p className="text-xs text-white/45 mt-2 leading-relaxed">{plan.desc}</p>
-                  <p className="mt-6 mb-7">
+                  {/* plan.desc es el "para quién es este plan" - el operador
+                      escanea esta línea primero para autoseleccionarse, así
+                      que pesa más que un subtítulo decorativo. */}
+                  <p className="text-[13px] text-white/70 font-medium mt-2 leading-relaxed">{plan.desc}</p>
+                  <p className="mt-6 mb-1 flex items-baseline flex-wrap gap-x-2 gap-y-1">
                     <span className="font-playfair text-4xl font-semibold text-[#e9c176]">
                       {plan.price}
                     </span>
-                    <span className="text-sm text-white/40 ml-1">{plan.period}</span>
+                    <span className="text-sm text-white/40">{plan.period}</span>
+                    {feeMatch && (
+                      <span className="text-[11px] font-semibold text-[#e9c176] bg-[#e9c176]/10 border border-[#e9c176]/25 rounded-full px-2.5 py-1">
+                        {feeMatch[1]} {t.pricingFeeLabel}
+                      </span>
+                    )}
                   </p>
+                  <div className="mb-6" />
                   {/* Fase 2 (Home Optimization): la lista completa de features
                       (hasta 15 líneas en Starter) es demasiado densa para el
                       home, sin tocar plan.features (dato protegido, se sigue
@@ -490,31 +518,25 @@ export function LandingPageContent({
                       aparte, para que el checklist visible sea 100% features
                       NUEVAS de ese plan (resaltadas en dorado/negrita). Así
                       entre más alto el plan, más funciones propias se ven. */}
-                  {i > 0 && (
+                  {inheritedLine && (
                     <p className="mb-3 inline-flex items-center gap-1.5 self-start text-[11px] font-medium text-white/45 bg-white/[0.04] border border-white/10 rounded-full px-3 py-1">
                       <span className="text-white/30">✓</span>
-                      {plan.features[0]}
+                      {inheritedLine}
                     </p>
                   )}
                   <ul className="space-y-3 flex-1">
-                    {(i > 0 ? plan.features.slice(1, 7) : plan.features.slice(0, 6)).map((f) => (
+                    {displayFeatures.map((f) => (
                       <li key={f} className="flex items-start gap-2.5">
                         <span className="text-xs mt-0.5 shrink-0 text-[#e9c176]">✓</span>
                         <span className="text-[13px] text-white font-medium leading-snug">{f}</span>
                       </li>
                     ))}
                   </ul>
-                  {(() => {
-                    const shown = i > 0 ? 7 : 6
-                    const remaining = plan.features.length - shown
-                    return (
-                      remaining > 0 && (
-                        <p className="text-[12px] text-white/35 mt-3">
-                          +{remaining} {t.pricingMoreFeaturesLabel}
-                        </p>
-                      )
-                    )
-                  })()}
+                  {remaining > 0 && (
+                    <p className="text-[12px] text-white/35 mt-3">
+                      +{remaining} {t.pricingMoreFeaturesLabel}
+                    </p>
+                  )}
                   <Link
                     href="/auth/signup"
                     className={`mt-8 block text-center px-6 py-3.5 text-sm font-semibold rounded-full transition-all ${
