@@ -26,12 +26,17 @@ const SHOWCASE_IMAGES = [
 // Flota por clase de vehículo (Unsplash, licencia libre | endpoint estable por slug).
 // Para usar fotos propias/oficiales: colocar archivos en public/vehicles/ y
 // cambiar estas URLs por '/vehicles/<archivo>.jpg'.
+// El endpoint /download de Unsplash devuelve un 302 en vez de la imagen -
+// el optimizador de imágenes de Next.js no sigue redirecciones, así que estas
+// URLs se rompían en producción (broken image icon). Reemplazadas por el
+// destino final estable en images.unsplash.com (mismas 5 fotos, misma
+// licencia Unsplash, sin el salto de redirección).
 const FLEET_IMAGES = [
-  'https://unsplash.com/photos/NjQmytqwDGs/download?force=true&w=900', // Sedán Mercedes negro
-  'https://unsplash.com/photos/9XVJ-Jq7Ke8/download?force=true&w=900', // Cadillac Escalade negra
-  'https://unsplash.com/photos/4Dofvf-eUMs/download?force=true&w=900', // SUV ejecutiva negra (Suburban)
-  'https://unsplash.com/photos/7I8qdKTHDp4/download?force=true&w=900', // Mercedes Sprinter
-  'https://unsplash.com/photos/FZ5MkHkeyKM/download?force=true&w=900', // Limusina stretch
+  'https://images.unsplash.com/photo-1592309905620-e5b59f6dcb98?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&w=900', // Sedán Mercedes negro
+  'https://images.unsplash.com/photo-1767749995462-9fe0890d5960?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&w=900', // Cadillac Escalade negra
+  'https://images.unsplash.com/photo-1780418474854-362762afda7a?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&w=900', // SUV ejecutiva negra (Suburban)
+  'https://images.unsplash.com/photo-1688619100853-cc0e3ae443ab?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&w=900', // Mercedes Sprinter
+  'https://images.unsplash.com/photo-1676107648535-931375db52e2?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&w=900', // Limusina stretch
 ]
 
 export function LandingPageContent({

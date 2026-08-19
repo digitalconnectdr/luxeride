@@ -10,12 +10,16 @@ export const metadata: Metadata = {
 // Demo aislado del rediseño premium del microsite del operador.
 // Empresa ficticia "Noir Chauffeurs". Fotos vía next/image (optimizadas).
 const BRAND = '#c9a24b'
-const u = (slug: string) => `https://unsplash.com/photos/${slug}/download?force=true&w=1600`
-const SEDAN = u('NjQmytqwDGs')
-const ESCALADE = u('9XVJ-Jq7Ke8')
-const SUV = u('4Dofvf-eUMs')
-const SPRINTER = u('7I8qdKTHDp4')
-const LIMO = u('FZ5MkHkeyKM')
+// El endpoint /download de Unsplash devuelve un 302, no la imagen - el
+// optimizador de Next.js no sigue redirecciones. u() ahora usa el ID final
+// estable de images.unsplash.com (verificado con petición HTTP real).
+const u = (photoId: string) =>
+  `https://images.unsplash.com/photo-${photoId}?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&w=1600`
+const SEDAN = u('1592309905620-e5b59f6dcb98')
+const ESCALADE = u('1767749995462-9fe0890d5960')
+const SUV = u('1780418474854-362762afda7a')
+const SPRINTER = u('1688619100853-cc0e3ae443ab')
+const LIMO = u('1676107648535-931375db52e2')
 
 const services = [
   { title: 'Traslados al aeropuerto', desc: 'Recogidas y entregas puntuales con seguimiento de vuelos en tiempo real. Tu chofer te espera, aunque tu vuelo cambie.', img: SPRINTER },
