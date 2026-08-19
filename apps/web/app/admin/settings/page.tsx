@@ -168,6 +168,8 @@ export default async function SettingsPage({
       ga_measurement_id?: string | null
       ads_conversion_id?: string | null
       ads_conversion_label?: string | null
+      meta_pixel_id?: string | null
+      meta_capi_token?: string | null
     }
   }) ?? {}
 
@@ -962,6 +964,43 @@ export default async function SettingsPage({
           </div>
         </div>
         <p className="text-[11px] text-sl-on-surface-muted -mt-2">{t.adsConversionHint}</p>
+        <div className="flex justify-end pt-1">
+          <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
+            {t.saveTracking}
+          </button>
+        </div>
+      </form>
+    </section>
+
+    {/* ── Meta Ads: Pixel + Conversions API ── */}
+    <section className="bg-white border border-sl-outline-variant rounded-2xl shadow-sm p-6">
+      <h2 className="text-sm font-semibold text-sl-on-surface mb-2">{t.metaTrackingTitle}</h2>
+      <p className="text-xs text-sl-on-surface-muted mb-5 max-w-[75ch]">{t.metaTrackingIntro}</p>
+      <form action={trackingAction} className="space-y-4">
+        <div>
+          <label className={labelCls}>{t.metaPixelIdLabel}<InfoTip text={t.metaPixelIdInfo} /></label>
+          <input
+            name="meta_pixel_id"
+            defaultValue={tracking.meta_pixel_id ?? ''}
+            placeholder="1234567890123456"
+            className={`${inputCls} font-mono`}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>{t.metaCapiTokenLabel}<InfoTip text={t.metaCapiTokenInfo} /></label>
+          <input
+            name="meta_capi_token"
+            type="password"
+            autoComplete="off"
+            placeholder={tracking.meta_capi_token ? t.metaCapiTokenSavedPlaceholder : t.metaCapiTokenEmptyPlaceholder}
+            className={`${inputCls} font-mono`}
+          />
+          <label className="flex items-center gap-2 mt-2 text-[11px] text-sl-on-surface-muted">
+            <input type="checkbox" name="clear_meta_capi_token" className="rounded border-sl-outline-variant" />
+            {t.metaCapiTokenClearLabel}
+          </label>
+        </div>
+        <p className="text-[11px] text-sl-on-surface-muted -mt-2">{t.metaTrackingHint}</p>
         <div className="flex justify-end pt-1">
           <button type="submit" className="px-4 py-2 text-sm font-medium bg-gold text-gray-900 rounded-lg hover:bg-gold/90 transition-colors">
             {t.saveTracking}

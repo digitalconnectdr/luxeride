@@ -1,8 +1,13 @@
 import type { Metadata } from 'next'
+import { randomUUID } from 'crypto'
+import { headers } from 'next/headers'
 import { getLocale, getDict } from '@/lib/i18n/server'
 import { LanguageSwitcher } from '@/components/i18n/language-switcher'
 import { createAdminClient } from '@/lib/supabase/server'
 import { ConversionTracker } from '@/components/booking/conversion-tracker'
+import { MetaPixelTracker } from '@/components/booking/meta-pixel-tracker'
+import { sendMetaPurchaseEventInBackground } from '@/lib/tracking/meta-capi'
+import { getAppUrl } from '@/lib/app-url'
 
 export const metadata: Metadata = { title: 'Payment' }
 export const dynamic = 'force-dynamic'
@@ -23,14 +28,18 @@ export default async function PaymentSuccessPage({
   let gaMeasurementId: string | undefined
   let adsConversionId: string | undefined
   let adsConversionLabel: string | undefined
+  let metaPixelId: string | undefined
   let totalAmount = 0
   let currency = 'USD'
+  // Mismo eventId para el Pixel del navegador y la Conversions API server-side
+  // - Meta deduplica ambos envíos por este id (ver lib/tracking/meta-capi.ts).
+  const metaEventId = randomUUID()
 
   if (bookingNumber) {
     const admin = createAdminClient()
     const { data: booking } = await admin
       .from('bookings')
-      .select('total_amount, currency, company_id')
+      .select('total_amount, currency, company_id, passenger_email, passenger_phone')
       .eq('booking_number', bookingNumber)
       .single()
 
@@ -42,10 +51,35 @@ export default async function PaymentSuccessPage({
         .select('settings')
         .eq('id', booking.company_id)
         .single()
-      const tracking = (company?.settings as { tracking?: { ga_measurement_id?: string | null; ads_conversion_id?: string | null; ads_conversion_label?: string | null } } | null)?.tracking
+      const tracking = (company?.settings as {
+        tracking?: {
+          ga_measurement_id?: string | null
+          ads_conversion_id?: string | null
+          ads_conversion_label?: string | null
+          meta_pixel_id?: string | null
+          meta_capi_token?: string | null
+        }
+      } | null)?.tracking
       gaMeasurementId = tracking?.ga_measurement_id ?? undefined
       adsConversionId = tracking?.ads_conversion_id ?? undefined
       adsConversionLabel = tracking?.ads_conversion_label ?? undefined
+      metaPixelId = tracking?.meta_pixel_id ?? undefined
+
+      if (tracking?.meta_pixel_id && tracking?.meta_capi_token) {
+        const h = headers()
+        sendMetaPurchaseEventInBackground({
+          pixelId: tracking.meta_pixel_id,
+          accessToken: tracking.meta_capi_token,
+          eventId: metaEventId,
+          eventSourceUrl: `${getAppUrl()}/payment/success?booking=${bookingNumber}`,
+          value: totalAmount,
+          currency,
+          clientIp: h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+          userAgent: h.get('user-agent') ?? undefined,
+          email: booking.passenger_email,
+          phone: booking.passenger_phone,
+        })
+      }
     }
   }
 
@@ -57,6 +91,14 @@ export default async function PaymentSuccessPage({
           adsConversionId={adsConversionId}
           adsConversionLabel={adsConversionLabel}
           transactionId={bookingNumber}
+          value={totalAmount}
+          currency={currency}
+        />
+      )}
+      {bookingNumber && metaPixelId && (
+        <MetaPixelTracker
+          pixelId={metaPixelId}
+          eventId={metaEventId}
           value={totalAmount}
           currency={currency}
         />

@@ -124,6 +124,14 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASE 14 CERRADA (14.1).**
 
+## Fase 15 - Meta Pixel + Conversions API desde cero (HIGH, cerrada)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 15.1 | 15 | Construir Meta Pixel + Conversions API por operador (no existía nada, `09_META_ADS_READINESS.md`: estado `BLOCKED`) | HIGH | **FIXED** | `lib/tracking/meta-capi.ts` (NUEVO), `components/booking/meta-pixel-tracker.tsx` (NUEVO), `app/payment/success/page.tsx`, `app/actions/settings.ts`, `app/admin/settings/page.tsx`, `lib/i18n/dictionaries/{en,es,pt}.ts` (`adminSettings`) | G9: cero resultados de "Meta Pixel"/"Conversions API"/"fbq" en todo `apps/web`. Mismo problema que motivó `ConversionTracker` (Google Ads) en sesión 2026-08-01: cada operador corre sus propias campañas y necesita medir SUS conversiones, no las de LuxeRide - patrón por-operador ya establecido, no plataforma | Espejo del patrón de `ConversionTracker`/`ga_measurement_id`/`ads_conversion_id` ya existente, pero para Meta: (1) `companies.settings.tracking` (JSONB, sin migración) gana `meta_pixel_id` y `meta_capi_token`; (2) `MetaPixelTracker` (cliente) carga `fbevents.js` y dispara `fbq('track','Purchase',...)` con un `eventId` compartido; (3) `lib/tracking/meta-capi.ts` envía el MISMO evento server-side a la Graph API de Meta (`sendMetaPurchaseEventInBackground`, vía `waitUntil` de Vercel, mismo patrón que `sendSuperAdminEmailInBackground`) con email/teléfono del pasajero hasheados en SHA-256 (spec de Meta) para mejorar el match rate - Meta deduplica ambos envíos por `eventId`, así no se cuenta la conversión dos veces; la CAPI sigue funcionando aunque el navegador del visitante bloquee el Pixel (ad blockers/Safari ITP). Wireado en `/payment/success` (mismo punto donde ya vive `ConversionTracker`). UI nueva en `/admin/settings` (sección "Meta Ads") con el mismo patrón de formulario que la sección de Google Ads ya existente - el token de CAPI es un secreto: nunca se re-renderiza en el HTML (placeholder "Token guardado" + checkbox explícito para borrarlo), a diferencia de los IDs de GA4/Ads que no son secretos | tsc PASS (limpio), vitest 303/303 PASS, build PASS (exit 0, `/payment/success` compilada) | Verificación en navegador limitada: `/admin/settings` confirmado sin errores (redirige correctamente a login), pero no hay credenciales de prueba en este entorno para completar el flujo con sesión real (limitación ya documentada en sesiones previas) - probar el formulario y el disparo real de eventos con una cuenta real de Meta Business queda pendiente del usuario | Actualizar `09_META_ADS_READINESS.md` de `BLOCKED` a `PARTIAL` (infraestructura lista, activación es opt-in por operador, igual que QuickBooks/GA4) | 2026-08-17 |
+
+**FASE 15 CERRADA (15.1).**
+
 ## Fases 6-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
@@ -137,6 +145,7 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 | 12 | ~~Internal linking entre todo lo anterior~~ | ~~MEDIUM~~ | ya cerrado en Fase 12 |
 | 13 | ~~Fix metadata de `/auth/signup`~~ | ~~MEDIUM~~ | ya cerrado en Fase 13 |
 | 14 | ~~Google Ads readiness (landings + eventos)~~ | ~~HIGH~~ | ya cerrado en Fase 14 |
+| 15 | ~~Meta Pixel + Conversions API desde cero~~ | ~~HIGH~~ | ya cerrado en Fase 15 |
 | 15 | Meta Pixel + CAPI desde cero | HIGH | G9 |
 | 16 | Auditoría de analytics (evitar tags duplicados) | MEDIUM | N/A |
 | 17-20 | Performance / Responsive / Accessibility / Security | se audita en su momento | N/A |

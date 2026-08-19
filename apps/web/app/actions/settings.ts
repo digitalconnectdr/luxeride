@@ -513,6 +513,17 @@ export async function updateTrackingSettingsAction(
   }
   const rawAdsLabel = (formData.get('ads_conversion_label') as string ?? '').trim()
 
+  const rawMetaPixelId = (formData.get('meta_pixel_id') as string ?? '').trim()
+  if (rawMetaPixelId && !/^\d{10,20}$/.test(rawMetaPixelId)) {
+    return { success: false, error: 'El Pixel ID de Meta debe ser numérico (10-20 dígitos)' }
+  }
+  // El token de Conversions API es un secreto — nunca se re-renderiza en el
+  // formulario (ver admin/settings/page.tsx), así que un campo vacío aquí
+  // significa "sin cambios", no "borrar". clear_meta_capi_token es el único
+  // camino explícito para quitarlo.
+  const rawMetaCapiToken = (formData.get('meta_capi_token') as string ?? '').trim()
+  const clearMetaCapiToken = formData.get('clear_meta_capi_token') === 'on'
+
   const admin = createAdminClient()
 
   const { data: company } = await admin
@@ -525,13 +536,22 @@ export async function updateTrackingSettingsAction(
 
   const currentSettings = (company.settings as Record<string, unknown>) ?? {}
   const currentTracking = (currentSettings.tracking as Record<string, unknown>) ?? {}
+
+  // Cada form de /admin/settings solo envía sus propios campos (GA/Ads en
+  // uno, Meta en otro) — formData.has() evita que guardar uno borre el otro.
+  const nextMetaCapiToken = clearMetaCapiToken
+    ? null
+    : rawMetaCapiToken || (currentTracking.meta_capi_token as string | null | undefined) || null
+
   const updatedSettings = {
     ...currentSettings,
     tracking: {
       ...currentTracking,
-      ga_measurement_id: rawId || null,
-      ads_conversion_id: rawAdsId || null,
-      ads_conversion_label: rawAdsLabel || null,
+      ...(formData.has('ga_measurement_id') ? { ga_measurement_id: rawId || null } : {}),
+      ...(formData.has('ads_conversion_id') ? { ads_conversion_id: rawAdsId || null } : {}),
+      ...(formData.has('ads_conversion_label') ? { ads_conversion_label: rawAdsLabel || null } : {}),
+      ...(formData.has('meta_pixel_id') ? { meta_pixel_id: rawMetaPixelId || null } : {}),
+      ...(formData.has('meta_capi_token') ? { meta_capi_token: nextMetaCapiToken } : {}),
     },
   }
 
