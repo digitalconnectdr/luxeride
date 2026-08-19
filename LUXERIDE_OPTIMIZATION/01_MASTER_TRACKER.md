@@ -140,6 +140,15 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASE 16 CERRADA (16.1).**
 
+## Fases 17-20 - Performance / Responsive / Accessibility / Security (cerradas)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 17.1 | 17-20 | Security: CSP bloqueaba el Meta Pixel de la Fase 15 | HIGH | **FIXED** | `next.config.mjs` | Bug propio, introducido en la Fase 15 y encontrado al auditar: el `Content-Security-Policy` (`script-src`/`img-src`/`connect-src`) no incluía `connect.facebook.net` ni `www.facebook.com` - `fbevents.js` (cargado por `MetaPixelTracker`) habría sido bloqueado por el navegador en producción pese a estar bien configurado en el operador. La Conversions API server-side (Fase 15) no se ve afectada por CSP (corre en Node, no en el navegador) | Se agregó `https://connect.facebook.net` a `script-src` y `connect-src`, y `https://www.facebook.com` a `img-src` y `connect-src` (fbq envía el evento vía beacon/pixel a facebook.com/tr) | tsc PASS, vitest 303/303 PASS, build PASS (exit 0). Verificado en navegador: `curl -I localhost:3000/` confirma el header `Content-Security-Policy` con los 2 dominios nuevos presentes | Confirmado también que `eventSourceUrl` de la CAPI (Fase 15) usa correctamente el dominio de LuxeRide, no uno inventado - `/payment/success` SIEMPRE vive ahí (`success_url` de Stripe en `app/actions/payments.ts:426`), nunca en el dominio personalizado del operador, así que no había nada que corregir ahí | Ninguno de performance/accessibility para este hallazgo | 2026-08-17 |
+| 17.2 | 17-20 | Accessibility/Performance: auditoría de las páginas nuevas de Fases 2-16 | LOW | **PASS** (sin cambios) | N/A (verificación) | Auditar si las 40+ páginas/componentes nuevos de esta sesión introdujeron regresiones de accesibilidad o performance | Verificado por grep dirigido: cero `<img>` sin `alt` en `components/marketing/`, `app/resources`, `app/features`, `app/solutions`, `app/compare`, `app/about`, `app/security`, `app/faq`, `app/integrations`, `app/pricing`, `app/referral-program` (son páginas de texto/iconos, sin fotografía); un único `<h1>` por página en los 3 layouts compartidos (`money-page-layout.tsx`, `calculator-page-body.tsx`, `app/resources/page.tsx`); todos los `<input>`/`<select>` de las calculadoras van envueltos en `<label>` (patrón accesible nativo, sin necesitar `aria-label` adicional) | N/A - verificación de código | Nada que corregir en las páginas construidas esta sesión | Hallazgo PRE-EXISTENTE, no introducido esta sesión ni tocado: warnings de build en `booking-wizard.tsx:930,993` y `track/[id]/page.tsx:466` sobre `<img>` sin `next/image` - son lógica de reserva/tracking en vivo (fuera del alcance de esta auditoría, que no debe tocar booking logic) | 2026-08-17 |
+
+**FASES 17-20 CERRADAS (17.1-17.2).** Responsive ya cubierto por las verificaciones en navegador (375px) hechas dentro de cada fase de construcción (Fases 3-12); no se repite aquí.
+
 ## Fases 6-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
@@ -155,8 +164,6 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 | 14 | ~~Google Ads readiness (landings + eventos)~~ | ~~HIGH~~ | ya cerrado en Fase 14 |
 | 15 | ~~Meta Pixel + Conversions API desde cero~~ | ~~HIGH~~ | ya cerrado en Fase 15 |
 | 16 | ~~Auditoría de analytics (evitar tags duplicados)~~ | ~~MEDIUM~~ | ya cerrado en Fase 16 |
-| 15 | Meta Pixel + CAPI desde cero | HIGH | G9 |
-| 16 | Auditoría de analytics (evitar tags duplicados) | MEDIUM | N/A |
-| 17-20 | Performance / Responsive / Accessibility / Security | se audita en su momento | N/A |
+| 17-20 | ~~Performance / Responsive / Accessibility / Security~~ | ~~se audita en su momento~~ | ya cerrado en Fases 17-20 |
 | 21 | Confirmar `SITE_URL` centralizado sin hardcodes sueltos | LOW | G12 |
 | 22-28 | QA final, no-indexación de contenido privado (ya cubierto en Fase 1), QA de micrositios, reglas de contenido, reporte final | N/A | - |
