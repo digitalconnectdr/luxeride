@@ -64,7 +64,13 @@ export function ConversionTracker({
 
     if (gaMeasurementId) {
       window.gtag('config', gaMeasurementId)
+      // send_to es obligatorio aquí: sin él, gtag.js reenvía el evento a
+      // TODOS los destinos configurados en esta página, incluido el GA4
+      // propio de LuxeRide (app/layout.tsx) cuando ambos coexisten - el
+      // 'purchase' de un pasajero de un operador terminaba contaminando
+      // las métricas de la plataforma (Fase 16, auditoría de analytics).
       window.gtag('event', 'purchase', {
+        send_to: gaMeasurementId,
         transaction_id: transactionId,
         value,
         currency,

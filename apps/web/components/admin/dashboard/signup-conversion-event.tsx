@@ -9,7 +9,7 @@
 // Ads al importar conversiones) y se limpia el query param para no repetir
 // el conteo en refrescos posteriores del dashboard.
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 declare global {
@@ -22,9 +22,14 @@ declare global {
 export function SignupConversionEvent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  // Mismo guard que ConversionTracker (components/booking/conversion-tracker.tsx)
+  // - sin él, el doble-invoke de efectos en dev (React Strict Mode) dispara
+  // 'sign_up' dos veces antes de que router.replace() limpie ?welcome=1.
+  const fired = useRef(false)
 
   useEffect(() => {
-    if (searchParams.get('welcome') !== '1') return
+    if (searchParams.get('welcome') !== '1' || fired.current) return
+    fired.current = true
 
     if (window.gtag) {
       window.gtag('event', 'sign_up', { method: 'company_signup' })

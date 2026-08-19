@@ -132,6 +132,14 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASE 15 CERRADA (15.1).**
 
+## Fase 16 - Auditoría de Analytics: tags duplicados (MEDIUM, cerrada)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 16.1 | 16 | Auditar todo el código que llama `gtag`/`fbq` en busca de tags duplicados o eventos mal dirigidos | MEDIUM | **FIXED** | `components/booking/conversion-tracker.tsx`, `components/admin/dashboard/signup-conversion-event.tsx` | Inventario completo (solo 4 archivos en todo `apps/web` tocan `gtag`/`fbq`/`dataLayer`: `app/layout.tsx`, `conversion-tracker.tsx`, `meta-pixel-tracker.tsx`, `signup-conversion-event.tsx` - sin GTM ni Universal Analytics legacy en paralelo). Bug real encontrado: en `/payment/success`, cuando el GA4 propio de la plataforma (`app/layout.tsx`) Y el GA4 de un operador (`ConversionTracker`) coexisten en la misma página, ambos comparten la misma instancia de `gtag.js` - el evento `'purchase'` se disparaba SIN `send_to`, así que gtag.js lo reenviaba a TODOS los destinos configurados, no solo al del operador. Cada reserva de un pasajero de CUALQUIER operador terminaba también contabilizada como `'purchase'` en el GA4 propio de LuxeRide, contaminando las métricas de la plataforma con ingresos que no le pertenecen | (1) Se agregó `send_to: gaMeasurementId` al evento `'purchase'` de `ConversionTracker` - mismo patrón que el evento `'conversion'` de Google Ads, que ya lo tenía correctamente scopeado. (2) `SignupConversionEvent` (Fase 14) no tenía guard de re-disparo (`ConversionTracker` sí lo tiene) - se agregó el mismo patrón `useRef` para evitar doble conteo por el double-invoke de efectos en React Strict Mode | tsc PASS (limpio), vitest 303/303 PASS, build PASS (exit 0) | Verificado por lectura de código + grep exhaustivo de los 4 archivos que tocan analytics - no se encontró GTM paralelo, ni Universal Analytics legacy, ni doble carga de script (el `if (!window.gtag)` de `ConversionTracker` ya evita cargar `gtag.js` dos veces cuando el layout raíz ya lo cargó) | Gap de cobertura (no de duplicación, fuera de alcance de esta fase): `MetaPixelTracker` (Fase 15) solo vive en `/payment/success` - las reservas SIN pago online (confirmadas directo en `booking-wizard.tsx`, que sí dispara `ConversionTracker` ahí mismo) no disparan Meta Pixel/CAPI. Extenderlo requeriría tocar 3 páginas más (`reservar`, `partners/[partnerSlug]`, `embed/[slug]`) y la lógica de creación de reserva - se deja documentado, no se expande el alcance de una auditoría MEDIUM de duplicados | 2026-08-17 |
+
+**FASE 16 CERRADA (16.1).**
+
 ## Fases 6-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
@@ -146,6 +154,7 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 | 13 | ~~Fix metadata de `/auth/signup`~~ | ~~MEDIUM~~ | ya cerrado en Fase 13 |
 | 14 | ~~Google Ads readiness (landings + eventos)~~ | ~~HIGH~~ | ya cerrado en Fase 14 |
 | 15 | ~~Meta Pixel + Conversions API desde cero~~ | ~~HIGH~~ | ya cerrado en Fase 15 |
+| 16 | ~~Auditoría de analytics (evitar tags duplicados)~~ | ~~MEDIUM~~ | ya cerrado en Fase 16 |
 | 15 | Meta Pixel + CAPI desde cero | HIGH | G9 |
 | 16 | Auditoría de analytics (evitar tags duplicados) | MEDIUM | N/A |
 | 17-20 | Performance / Responsive / Accessibility / Security | se audita en su momento | N/A |
