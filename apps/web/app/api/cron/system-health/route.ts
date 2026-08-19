@@ -16,6 +16,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { runAllHealthChecks, SERVICE_LABELS, type HealthStatus } from '@/lib/monitoring/health'
 import { sendSuperAdminEmail, sendSuperAdminSms } from '@/lib/notifications'
+import { getAppUrl } from '@/lib/app-url'
 import type { Json } from '@/lib/supabase/database.types'
 
 export const runtime = 'nodejs'
@@ -61,7 +62,7 @@ export async function GET(request: Request) {
   if (wentDown.length > 0) {
     const lines = wentDown.map((r) => `• ${SERVICE_LABELS[r.service] ?? r.service}${r.message ? `: ${r.message}` : ''}`)
     const subject = `🔴 LuxeRide: ${wentDown.length} servicio(s) caído(s)`
-    const body = `Se detectó una caída en:\n\n${lines.join('\n')}\n\nRevisa el panel: ${process.env.NEXT_PUBLIC_APP_URL ?? ''}/super-admin/system`
+    const body = `Se detectó una caída en:\n\n${lines.join('\n')}\n\nRevisa el panel: ${getAppUrl()}/super-admin/system`
     const [{ sent: emailSent }, { sent: smsSent }] = await Promise.all([
       sendSuperAdminEmail(subject, body),
       sendSuperAdminSms(`LuxeRide: ${wentDown.length} servicio(s) caído(s) — ${wentDown.map((r) => SERVICE_LABELS[r.service] ?? r.service).join(', ')}. Revisa tu email.`),

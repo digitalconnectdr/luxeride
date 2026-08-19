@@ -149,6 +149,14 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASES 17-20 CERRADAS (17.1-17.2).** Responsive ya cubierto por las verificaciones en navegador (375px) hechas dentro de cada fase de construcción (Fases 3-12); no se repite aquí.
 
+## Fase 21 - `SITE_URL` centralizado (LOW, cerrada)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 21.1 | 21 | G12: confirmar que todo el código usa `getAppUrl()` sin hardcodes sueltos de dominio | LOW | **FIXED** | `app/api/cron/system-health/route.ts` | `getAppUrl()` (`lib/app-url.ts`) ya existe y tiene 101 usos en todo `apps/web` - amplia adopción confirmada. Un solo caso leía `process.env.NEXT_PUBLIC_APP_URL` directo, sin pasar por el helper (sin su tolerancia a falta de protocolo/barra final ni su fallback a `localhost:3000`): el cuerpo del email de alerta de caída del sistema en el cron `system-health` | Se reemplazó la lectura directa de la env var por `getAppUrl()`, mismo patrón que los otros 101 usos | tsc PASS (limpio), vitest 303/303 PASS, build PASS (exit 0) | Auditado también: las menciones literales de `getluxeride.vercel.app` en `middleware.ts` (comentario) y en `lib/i18n/dictionaries/{en,es,pt}.ts` (copy de la feature de dominio personalizado, ej. "en vez de getluxeride.vercel.app") son intencionales - texto de producto mostrado al usuario explicando el dominio por defecto, no lógica de ruteo/metadata que deba resolverse dinámicamente. Cero ocurrencias sueltas de `localhost:3000` fuera de `lib/app-url.ts` | Ninguno | 2026-08-17 |
+
+**FASE 21 CERRADA (21.1).**
+
 ## Fases 6-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
@@ -165,5 +173,5 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 | 15 | ~~Meta Pixel + Conversions API desde cero~~ | ~~HIGH~~ | ya cerrado en Fase 15 |
 | 16 | ~~Auditoría de analytics (evitar tags duplicados)~~ | ~~MEDIUM~~ | ya cerrado en Fase 16 |
 | 17-20 | ~~Performance / Responsive / Accessibility / Security~~ | ~~se audita en su momento~~ | ya cerrado en Fases 17-20 |
-| 21 | Confirmar `SITE_URL` centralizado sin hardcodes sueltos | LOW | G12 |
+| 21 | ~~Confirmar `SITE_URL` centralizado sin hardcodes sueltos~~ | ~~LOW~~ | ya cerrado en Fase 21 |
 | 22-28 | QA final, no-indexación de contenido privado (ya cubierto en Fase 1), QA de micrositios, reglas de contenido, reporte final | N/A | - |
