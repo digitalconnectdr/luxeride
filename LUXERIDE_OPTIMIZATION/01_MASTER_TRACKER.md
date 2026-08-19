@@ -157,6 +157,18 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 
 **FASE 21 CERRADA (21.1).**
 
+## Fases 22-28 - QA Final y Cierre (cerradas)
+
+| ID | Phase | Task | Priority | Status | Files | Issue | Implementation | Tests | Result | Pending | Date |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 22.1 | 22-28 | QA final de regresión sobre las 21 fases | N/A | **PASS** | N/A (verificación) | Confirmar que el árbol de trabajo queda limpio y consistente tras 21 fases de cambios acumulados | `git status --porcelain` limpio, `git log` confirma las 21 fases commiteadas y pusheadas a `develop`+`main` en orden | tsc PASS (limpio), vitest 303/303 PASS (22 archivos), build PASS (exit 0) - los tres, en su última corrida de esta sesión (Fase 21) | Sin deuda pendiente de commits/push | N/A | 2026-08-17 |
+| 22.2 | 22-28 | No-indexación de contenido privado (re-verificación, ya cubierto en Fase 1) | N/A | **PASS** | N/A (verificación) | Confirmar que ninguna fase posterior (2-21) rompió el trabajo de la Fase 1 | Re-verificados por lectura directa de código: `/auth/signup`, `/auth/login`, `/quote/[id]`, `/review/[id]`, `/affiliate/join/[token]`, `/corporate/join/[token]`, `/track/[id]` - los 7 mantienen `robots: {index:false}` intacto | N/A - verificación de código | Sin regresiones | N/A | 2026-08-17 |
+| 22.3 | 22-28 | QA de micrositios de operadores | N/A | **PASS** | N/A (verificación) | Confirmar que el trabajo de SEO/AEO/GEO/Ads (casi 100% en la web propia de LuxeRide) no afectó la lógica de los micrositios (`/book/[slug]`, `/payment/success`, wizard de reserva) | Única fase que tocó código de micrositios fue la 15 (Meta Pixel/CAPI, opt-in por operador, sin tocar booking logic) - confirmado que `booking-wizard.tsx` no fue modificado en ninguna fase de esta sesión (solo leído para el análisis de Fase 16) | tsc/vitest/build ya cubren esto - sin tests de booking rotos | Ver aclaración enviada al usuario sobre el alcance plataforma-vs-micrositios | N/A | 2026-08-17 |
+| 22.4 | 22-28 | Reglas de contenido: cero estadísticas/claims inventados | CRITICAL | **PASS** | N/A (verificación) | Regla maestra de la sesión completa: nunca inventar benchmarks, clientes, certificaciones o datos de industria | Grep dirigido sobre las 25+ páginas nuevas en busca de patrones típicos de contenido inventado (`certified by`, `#1`, `trusted by N`, `industry leader`, `99.X% uptime`, `N,000+ operators`) - cero resultados. El único match (`Guaranteed Ride`) es el nombre real de una feature del producto (auto-reasignación de conductor), no un claim de marketing | N/A - verificación de código | Consistente con las decisiones explícitas del usuario en Fases 7 y 11 (sin nombrar competidores, sin inventar benchmarks en las calculadoras) | N/A | 2026-08-17 |
+| 22.5 | 22-28 | Reporte final | N/A | **DONE** | `LUXERIDE_OPTIMIZATION/01_MASTER_TRACKER.md` (este archivo) | Consolidar el estado de las 21 fases en un solo lugar navegable | Este tracker ES el reporte final - cada fase documenta issue/implementación/tests/resultado/pendientes. Resumen ejecutivo entregado al usuario en el chat al cierre de la sesión | N/A | 25 páginas nuevas, 2 bugs de seguridad/privacidad encontrados y corregidos en las propias auditorías (Fases 16 y 17), 0 estadísticas inventadas | N/A | 2026-08-17 |
+
+**FASES 22-28 CERRADAS (22.1-22.5). PROYECTO SEO/GEO/AEO/LLM: FASES 1-21 COMPLETAS.**
+
 ## Fases 6-27 - Backlog (no iniciadas, orden sugerido tras Fase 1)
 
 | Fase | Tema | Prioridad sugerida | Gap relacionado |
@@ -174,4 +186,4 @@ Prioridades: `CRITICAL` · `HIGH` · `MEDIUM` · `LOW`
 | 16 | ~~Auditoría de analytics (evitar tags duplicados)~~ | ~~MEDIUM~~ | ya cerrado en Fase 16 |
 | 17-20 | ~~Performance / Responsive / Accessibility / Security~~ | ~~se audita en su momento~~ | ya cerrado en Fases 17-20 |
 | 21 | ~~Confirmar `SITE_URL` centralizado sin hardcodes sueltos~~ | ~~LOW~~ | ya cerrado en Fase 21 |
-| 22-28 | QA final, no-indexación de contenido privado (ya cubierto en Fase 1), QA de micrositios, reglas de contenido, reporte final | N/A | - |
+| 22-28 | ~~QA final, no-indexación de contenido privado, QA de micrositios, reglas de contenido, reporte final~~ | ~~N/A~~ | ya cerrado en Fases 22-28 |
