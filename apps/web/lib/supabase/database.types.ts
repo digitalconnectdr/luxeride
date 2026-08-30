@@ -1727,6 +1727,43 @@ export type Database = {
         Relationships: []
       }
 
+      landing_page_visits: {
+        Row: {
+          id: string
+          visited_at: string
+          path: string | null
+          city: string | null
+          region: string | null
+          country: string | null
+          country_code: string | null
+          lat: number | null
+          lng: number | null
+        }
+        Insert: {
+          id?: string | undefined
+          visited_at?: string | undefined
+          path?: string | null | undefined
+          city?: string | null | undefined
+          region?: string | null | undefined
+          country?: string | null | undefined
+          country_code?: string | null | undefined
+          lat?: number | null | undefined
+          lng?: number | null | undefined
+        }
+        Update: {
+          id?: string | undefined
+          visited_at?: string | undefined
+          path?: string | null | undefined
+          city?: string | null | undefined
+          region?: string | null | undefined
+          country?: string | null | undefined
+          country_code?: string | null | undefined
+          lat?: number | null | undefined
+          lng?: number | null | undefined
+        }
+        Relationships: []
+      }
+
       super_admin_notification_reads: {
         Row: {
           user_id: string

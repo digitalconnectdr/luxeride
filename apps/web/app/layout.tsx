@@ -6,6 +6,7 @@ import { Toaster } from 'sonner'
 import { Providers } from './providers'
 import { getAppUrl } from '@/lib/app-url'
 import { brand } from '@/lib/brand'
+import { VisitorGeoBeacon } from '@/components/tracking/visitor-geo-beacon'
 
 // Google Analytics 4 — solo se inyecta si hay measurement ID configurado
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
@@ -96,6 +97,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="bg-le-bg font-sans text-le-on-surface dark:bg-sl-bg dark:text-sl-on-surface antialiased">
+        <VisitorGeoBeacon />
         {/* Google Analytics 4 (placeholder-safe: sin GA_ID no carga nada) */}
         {GA_ID && (
           <>

@@ -11,6 +11,8 @@ export interface SignupLabels {
   companyNamePlaceholder: string
   companyUrlLabel: string
   companySlugPlaceholder: string
+  companyCityLabel: string
+  companyCityPlaceholder: string
   accountSectionLabel: string
   firstNameLabel: string
   firstNamePlaceholder: string
@@ -167,6 +169,19 @@ export function SignupForm({ labels }: { labels: SignupLabels }) {
               {state?.fieldErrors?.company_slug && (
                 <p className="text-xs text-error">{state.fieldErrors.company_slug[0]}</p>
               )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="company_city" className="block text-sm font-medium text-sl-on-surface">
+                {labels.companyCityLabel}
+              </label>
+              <input
+                id="company_city"
+                name="company_city"
+                type="text"
+                className={inputCls}
+                placeholder={labels.companyCityPlaceholder}
+              />
             </div>
 
             {/* Campos del paso 2, ocultos como hidden (no display:none) para

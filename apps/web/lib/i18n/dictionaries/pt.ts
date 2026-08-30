@@ -908,6 +908,8 @@ export const pt: Dictionary = {
       companyNamePlaceholder: 'Elite Chauffeur Services',
       companyUrlLabel: 'URL da empresa',
       companySlugPlaceholder: 'elite-chauffeur',
+      companyCityLabel: 'Cidade (opcional)',
+      companyCityPlaceholder: 'São Paulo',
       accountSectionLabel: 'Sua conta',
       firstNameLabel: 'Nome',
       firstNamePlaceholder: 'James',

@@ -19,6 +19,7 @@ import {
   Lightbulb,
   Globe,
   Activity,
+  Map as MapIcon,
   LogOut,
   ChevronsLeft,
   ChevronsRight,
@@ -41,6 +42,7 @@ interface NavItem {
 
 const OVERVIEW_ITEMS: NavItem[] = [
   { href: '/super-admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/super-admin/geography', label: 'Geografía', icon: MapIcon },
   { href: '/super-admin/system', label: 'Sistema', icon: Activity },
 ]
 

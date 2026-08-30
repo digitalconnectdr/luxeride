@@ -907,6 +907,8 @@ export const en = {
       companyNamePlaceholder: 'Elite Chauffeur Services',
       companyUrlLabel: 'Company URL',
       companySlugPlaceholder: 'elite-chauffeur',
+      companyCityLabel: 'City (optional)',
+      companyCityPlaceholder: 'Miami, FL',
       accountSectionLabel: 'Your account',
       firstNameLabel: 'First name',
       firstNamePlaceholder: 'James',
