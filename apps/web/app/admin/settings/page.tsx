@@ -8,6 +8,7 @@ import {
   updateTrackingSettingsAction,
 } from '@/app/actions/settings'
 import { HourChipsField } from '@/components/admin/hour-chips-field'
+import { CompanyCityCountryFields } from '@/components/admin/company-city-country-fields'
 import { updateDispatchWeightsAction } from '@/app/actions/dispatch-settings'
 import { parseDispatchWeights } from '@/lib/dispatch/scoring'
 import {
@@ -68,16 +69,6 @@ const TIMEZONES = [
 ]
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'DOP', 'MXN', 'COP', 'ARS', 'BRL']
-
-const COUNTRIES = [
-  { code: 'US', name: 'United States' },
-  { code: 'DO', name: 'Dominican Republic' },
-  { code: 'MX', name: 'Mexico' },
-  { code: 'PR', name: 'Puerto Rico' },
-  { code: 'ES', name: 'Spain' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'CA', name: 'Canada' },
-]
 
 const inputCls =
   'w-full text-sm bg-sl-bg border border-sl-outline-variant rounded-lg px-3 py-2 ' +
@@ -259,18 +250,14 @@ export default async function SettingsPage({
             <label className={labelCls}>{t.address}</label>
             <input name="address" defaultValue={company.address ?? ''} className={inputCls} />
           </div>
-          <div>
-            <label className={labelCls}>{t.city}</label>
-            <input name="city" defaultValue={company.city ?? ''} className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>{t.country}</label>
-            <select name="country" defaultValue={company.country ?? 'US'} className={inputCls}>
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>{c.name}</option>
-              ))}
-            </select>
-          </div>
+          <CompanyCityCountryFields
+            cityLabel={t.city}
+            countryLabel={t.country}
+            cityDefault={company.city ?? ''}
+            countryDefault={company.country ?? 'US'}
+            inputCls={inputCls}
+            labelCls={labelCls}
+          />
           <div>
             <label className={labelCls}>{t.timezone}</label>
             <select name="timezone" defaultValue={company.timezone ?? 'America/New_York'} className={inputCls}>

@@ -30,8 +30,11 @@ const SignupSchema = z.object({
     .regex(/^[a-z0-9-]+$/, 'Slug can only contain lowercase letters, numbers, and hyphens'),
   // La ciudad del NEGOCIO (no la del visitante) - opcional, alimenta el mapa
   // de "Geografía" de super-admin (companies.city, ya existía en el schema
-  // pero nunca se pedía en el registro).
+  // pero nunca se pedía en el registro). Solo llega no-vacía si el usuario
+  // seleccionó una sugerencia real de Google Places (ver
+  // components/maps/city-autocomplete-input.tsx) - nunca texto libre.
   company_city: z.string().optional(),
+  company_country: z.string().optional(),
   // Owner
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
@@ -129,6 +132,7 @@ export async function signupAction(
     company_name: formData.get('company_name') as string,
     company_slug: formData.get('company_slug') as string,
     company_city: (formData.get('company_city') as string) || undefined,
+    company_country: (formData.get('company_country') as string) || undefined,
     first_name: formData.get('first_name') as string,
     last_name: formData.get('last_name') as string,
     email: formData.get('email') as string,
@@ -174,6 +178,7 @@ export async function signupAction(
       name: parsed.data.company_name,
       slug: parsed.data.company_slug,
       city: parsed.data.company_city || null,
+      country: parsed.data.company_country || 'US',
       status: 'trial',
       plan: 'free',
     })

@@ -4,6 +4,9 @@ import { useRef, useState } from 'react'
 import { useFormState } from 'react-dom'
 import Link from 'next/link'
 import { signupAction } from '@/app/actions/auth'
+import { MapsProvider } from '@/components/maps/maps-provider'
+import { CityAutocompleteInput } from '@/components/maps/city-autocomplete-input'
+import { COUNTRIES } from '@/lib/geo/countries'
 
 export interface SignupLabels {
   companySectionLabel: string
@@ -13,6 +16,7 @@ export interface SignupLabels {
   companySlugPlaceholder: string
   companyCityLabel: string
   companyCityPlaceholder: string
+  companyCountryLabel: string
   accountSectionLabel: string
   firstNameLabel: string
   firstNamePlaceholder: string
@@ -85,6 +89,7 @@ export function SignupForm({ labels }: { labels: SignupLabels }) {
   const [companyName, setCompanyName] = useState('')
   const [companySlug, setCompanySlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
+  const [companyCountry, setCompanyCountry] = useState('US')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -171,18 +176,38 @@ export function SignupForm({ labels }: { labels: SignupLabels }) {
               )}
             </div>
 
-            <div className="space-y-1.5">
-              <label htmlFor="company_city" className="block text-sm font-medium text-sl-on-surface">
-                {labels.companyCityLabel}
-              </label>
-              <input
-                id="company_city"
-                name="company_city"
-                type="text"
-                className={inputCls}
-                placeholder={labels.companyCityPlaceholder}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label htmlFor="company_country" className="block text-sm font-medium text-sl-on-surface">
+                  {labels.companyCountryLabel}
+                </label>
+                <select
+                  id="company_country"
+                  value={companyCountry}
+                  onChange={(e) => setCompanyCountry(e.target.value)}
+                  className={inputCls}
+                >
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="company_city" className="block text-sm font-medium text-sl-on-surface">
+                  {labels.companyCityLabel}
+                </label>
+                <MapsProvider>
+                  <CityAutocompleteInput
+                    name="company_city"
+                    country={companyCountry}
+                    placeholder={labels.companyCityPlaceholder}
+                    className={inputCls}
+                  />
+                </MapsProvider>
+              </div>
             </div>
+            {/* company_country viaja siempre - no depende de si eligieron ciudad */}
+            <input type="hidden" name="company_country" value={companyCountry} />
 
             {/* Campos del paso 2, ocultos como hidden (no display:none) para
             que sigan viajando en el submit final sin bloquear la validación
