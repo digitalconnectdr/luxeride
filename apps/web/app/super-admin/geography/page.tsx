@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import { requireRole } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/server'
-import { GeographyMaps, type CityCount } from '@/components/super-admin/geography-maps'
-import { InfoTip } from '@/components/ui/info-tip'
+import { GeographyTabs, type CityCount, type NameCount, type VisitorStats, type CompanyStats } from '@/components/super-admin/geography-maps'
 
 export const metadata: Metadata = { title: 'Geografía | Super Admin' }
 export const dynamic = 'force-dynamic'
@@ -39,37 +38,69 @@ function aggregateByCity<T extends { city: string | null; country: string | null
     .sort((a, b) => b.count - a.count)
 }
 
+function aggregateByField<T>(rows: T[], field: (row: T) => string | null): NameCount[] {
+  const byName = new Map<string, number>()
+  for (const row of rows) {
+    const name = field(row)
+    if (!name) continue
+    byName.set(name, (byName.get(name) ?? 0) + 1)
+  }
+  return [...byName.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+}
+
 export default async function GeographyPage() {
   await requireRole('super_admin')
 
   const admin = createAdminClient()
   const sinceIso = new Date(Date.now() - VISITS_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
+  const since24hIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const since7dIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const since30dIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-  const [{ data: visits }, { data: companies }] = await Promise.all([
+  const [{ data: visits }, { data: companiesWithCity }, { count: totalCompaniesCount }] = await Promise.all([
     admin
       .from('landing_page_visits')
-      .select('city, country, lat, lng')
+      .select('city, country, path, lat, lng, visited_at')
       .gte('visited_at', sinceIso)
       .order('visited_at', { ascending: false })
       .limit(VISITS_ROW_CAP),
     admin
       .from('companies')
-      .select('city, country')
+      .select('city, country, status')
       .not('city', 'is', null),
+    admin.from('companies').select('id', { count: 'exact', head: true }),
   ])
 
-  const visitorCities = aggregateByCity(visits ?? [], (acc, row) => {
-    if (row.lat != null && row.lng != null) {
-      acc.latSum += row.lat
-      acc.lngSum += row.lng
-      acc.latN += 1
-    }
-  })
+  const visitRows = visits ?? []
+  const companyRows = companiesWithCity ?? []
 
-  const companyCities = aggregateByCity(companies ?? [], () => {})
+  const visitorStats: VisitorStats = {
+    cities: aggregateByCity(visitRows, (acc, row) => {
+      if (row.lat != null && row.lng != null) {
+        acc.latSum += row.lat
+        acc.lngSum += row.lng
+        acc.latN += 1
+      }
+    }),
+    countries: aggregateByField(visitRows, (r) => r.country).slice(0, 8),
+    topPaths: aggregateByField(visitRows, (r) => r.path).slice(0, 8),
+    total: visitRows.length,
+    last24h: visitRows.filter((r) => r.visited_at >= since24hIso).length,
+    last7d: visitRows.filter((r) => r.visited_at >= since7dIso).length,
+    last30d: visitRows.filter((r) => r.visited_at >= since30dIso).length,
+  }
 
-  const totalVisits = visitorCities.reduce((s, c) => s + c.count, 0)
-  const totalCompanies = companyCities.reduce((s, c) => s + c.count, 0)
+  const companyStats: CompanyStats = {
+    cities: aggregateByCity(companyRows, () => {}),
+    countries: aggregateByField(companyRows, (r) => r.country).slice(0, 8),
+    total: companyRows.length,
+    totalAllCompanies: totalCompaniesCount ?? 0,
+    active: companyRows.filter((r) => r.status === 'active').length,
+    trial: companyRows.filter((r) => r.status === 'trial').length,
+    suspended: companyRows.filter((r) => r.status === 'suspended').length,
+  }
 
   return (
     <div className="p-8 max-w-[1400px] mx-auto space-y-6">
@@ -80,60 +111,7 @@ export default async function GeographyPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520] flex items-center">
-            Visitantes del landing (últimos {VISITS_WINDOW_DAYS} días)
-            <InfoTip text="Cada carga de una página pública de marketing (home, money/solution/compare/info/resource pages, pricing, referral) - no incluye el panel admin, ni el flujo de reserva de los micrositios de operadores. Cuenta visitas, no visitantes únicos: alguien que ve 3 páginas suma 3." />
-          </p>
-          <p className="text-2xl font-playfair font-semibold text-[#1d1b18] mt-1">
-            {totalVisits} <span className="text-sm font-sans font-normal text-[#75716a]">visitas · {visitorCities.length} ciudades</span>
-          </p>
-        </div>
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8a6520] flex items-center">
-            Empresas registradas (con ciudad declarada)
-            <InfoTip text="Empresas cuya ciudad está llena en Configuración → Información de la empresa. No es el total de empresas - las que no llenaron ese campo no aparecen aquí." />
-          </p>
-          <p className="text-2xl font-playfair font-semibold text-[#1d1b18] mt-1">
-            {totalCompanies} <span className="text-sm font-sans font-normal text-[#75716a]">empresas · {companyCities.length} ciudades</span>
-          </p>
-        </div>
-      </div>
-
-      <GeographyMaps visitorCities={visitorCities} companyCities={companyCities} />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <CityRankTable title="Top ciudades por visitas" cities={visitorCities} unit="visitas" />
-        <CityRankTable title="Top ciudades por empresas" cities={companyCities} unit="empresas" />
-      </div>
-    </div>
-  )
-}
-
-function CityRankTable({ title, cities, unit }: { title: string; cities: CityCount[]; unit: string }) {
-  const top = cities.slice(0, 15)
-  return (
-    <div className="bg-white border border-[#e5e1d8] rounded-xl p-5">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75716a] mb-3">{title}</p>
-      {top.length === 0 ? (
-        <p className="text-sm text-[#75716a]">Sin datos todavía.</p>
-      ) : (
-        <ul className="space-y-2">
-          {top.map((c, i) => (
-            <li key={`${c.city}-${c.country}`} className="flex items-center justify-between text-sm">
-              <span className="text-[#1d1b18]">
-                <span className="text-[#75716a] font-mono text-xs mr-2">{i + 1}.</span>
-                {c.city}
-                {c.country && <span className="text-[#75716a]"> · {c.country}</span>}
-              </span>
-              <span className="font-playfair font-semibold text-[#8a6520]">
-                {c.count} <span className="text-xs font-sans font-normal text-[#75716a]">{unit}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
+      <GeographyTabs visitorStats={visitorStats} companyStats={companyStats} visitsWindowDays={VISITS_WINDOW_DAYS} />
     </div>
   )
 }
