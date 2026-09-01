@@ -213,3 +213,51 @@ export async function rejectCompanyAction(
   revalidatePath('/super-admin/companies')
   return { success: true }
 }
+
+/**
+ * Extiende trial_ends_at `days` días desde max(hoy, vencimiento actual) - el
+ * control del super-admin sobre la auto-suspensión de trials vencidos (ver
+ * app/api/cron/subscription-alerts, que suspende status='trial' cuando
+ * trial_ends_at ya pasó). Si la empresa ya fue auto-suspendida por esto
+ * mismo (suspended + nunca tuvo subscription_ends_at, o sea nunca pagó), la
+ * reactiva a 'trial' - así el operador recupera acceso a su micrositio
+ * público de inmediato, sin esperar el próximo login.
+ */
+export async function extendTrialAction(
+  companyId: string,
+  days: number,
+): Promise<CompanyActionResult> {
+  await requireRole('super_admin')
+
+  const safeDays = Math.min(90, Math.max(1, Math.floor(days) || 7))
+  const admin = createAdminClient()
+
+  const { data: company } = await admin
+    .from('companies')
+    .select('trial_ends_at, status, subscription_ends_at')
+    .eq('id', companyId)
+    .single()
+
+  if (!company) return { success: false, error: 'Empresa no encontrada' }
+
+  const current = company.trial_ends_at ? new Date(company.trial_ends_at) : null
+  const base = current && current > new Date() ? current : new Date()
+  const newEnd = new Date(base.getTime() + safeDays * 24 * 60 * 60 * 1000)
+
+  const updates: { trial_ends_at: string; status?: 'trial' } = {
+    trial_ends_at: newEnd.toISOString(),
+  }
+  // Solo reactiva si estaba suspendida por vencimiento de trial (nunca pagó)
+  // - una empresa suspendida por otro motivo (ej. pago fallido tras haber
+  // sido cliente activo) no debe reactivarse sola por esto.
+  if (company.status === 'suspended' && !company.subscription_ends_at) {
+    updates.status = 'trial'
+  }
+
+  const { error } = await admin.from('companies').update(updates).eq('id', companyId)
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/super-admin/subscriptions')
+  revalidatePath('/super-admin/companies')
+  return { success: true }
+}

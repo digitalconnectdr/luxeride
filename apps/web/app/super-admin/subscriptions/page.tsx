@@ -6,6 +6,7 @@ import {
   RenewButtons,
   PlanSelect,
   ApproveRejectButtons,
+  ExtendTrialButtons,
 } from '@/components/super-admin/subscription-controls'
 import type { CompanyPlan, CompanyStatus } from '@/lib/supabase/database.types'
 
@@ -43,8 +44,15 @@ export default async function SubscriptionsPage() {
     .order('created_at', { ascending: false })
 
   const all = companies ?? []
-  const pending = all.filter((c) => c.status === 'trial')
-  const clients = all.filter((c) => c.status !== 'trial')
+  // "Pendientes" = nunca llegó a ser cliente pagando: en trial, o ya
+  // auto-suspendida por vencimiento del trial (ver app/api/cron/subscription-alerts)
+  // sin haber tenido nunca una suscripción activa. Una empresa suspendida
+  // DESPUÉS de haber pagado (ej. falló el cobro) queda en "Clientes", donde
+  // ya tiene su propio flujo de renovación (RenewButtons).
+  const isNeverPaidTrial = (c: (typeof all)[number]) =>
+    c.status === 'trial' || (c.status === 'suspended' && !c.subscription_ends_at)
+  const pending = all.filter(isNeverPaidTrial)
+  const clients = all.filter((c) => !isNeverPaidTrial(c))
 
   // Métricas rápidas
   const active = clients.filter((c) => c.status === 'active')
@@ -99,15 +107,29 @@ export default async function SubscriptionsPage() {
           </p>
         ) : (
           <div className="divide-y divide-[#f0ede5]">
-            {pending.map((c) => (
+            {pending.map((c) => {
+              const trialDays = daysLeft(c.trial_ends_at)
+              const isAutoSuspended = c.status === 'suspended'
+              return (
               <div key={c.id} className="px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
                 <div className="min-w-0">
-                  <Link
-                    href={`/super-admin/companies/${c.id}`}
-                    className="text-sm font-semibold text-[#1d1b18] hover:text-bronze transition-colors"
-                  >
-                    {c.name}
-                  </Link>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Link
+                      href={`/super-admin/companies/${c.id}`}
+                      className="text-sm font-semibold text-[#1d1b18] hover:text-bronze transition-colors"
+                    >
+                      {c.name}
+                    </Link>
+                    {isAutoSuspended ? (
+                      <span className="inline-flex items-center rounded-full bg-orange-100 text-orange-700 px-2 py-0.5 text-[10px] font-semibold">
+                        Prueba vencida
+                      </span>
+                    ) : trialDays !== null && trialDays <= 5 ? (
+                      <span className="inline-flex items-center rounded-full bg-yellow-100 text-yellow-700 px-2 py-0.5 text-[10px] font-semibold">
+                        {trialDays < 0 ? 'vencida' : trialDays === 0 ? 'vence hoy' : `vence en ${trialDays}d`}
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="text-xs text-[#75716a] mt-0.5">
                     /{c.slug}
                     {c.email && ` · ${c.email}`}
@@ -116,9 +138,13 @@ export default async function SubscriptionsPage() {
                     {fmtDate(c.created_at)}
                   </p>
                 </div>
-                <ApproveRejectButtons companyId={c.id} />
+                <div className="flex items-center gap-3 flex-wrap">
+                  <ExtendTrialButtons companyId={c.id} />
+                  <ApproveRejectButtons companyId={c.id} />
+                </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

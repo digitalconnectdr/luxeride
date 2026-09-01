@@ -1,9 +1,17 @@
-// ── Cron diario: suscripciones/pruebas por vencer ─────────────────────────────
+// ── Cron diario: suscripciones/pruebas por vencer + auto-suspensión ────────
 // Avisa por email al super-admin (digest de todas las empresas) Y a cada
 // empresa afectada directamente (antes solo se enteraba el super-admin — la
 // propia empresa no recibía ningún aviso de su propia suscripción/prueba por
 // vencer; el popup en el panel ya existe pero solo dispara ≤5 días, ver
 // app/admin/layout.tsx). Ventana: 7 días para ambos.
+//
+// Además, un trial cuyo trial_ends_at ya pasó se pasa a status='suspended'
+// automáticamente (bloquea el micrositio público, ver book/[slug]/page.tsx
+// company.status !== 'active') - antes un trial no vencía nunca de verdad.
+// El super-admin conserva control total desde /super-admin/subscriptions:
+// puede extender el plazo (extendTrialAction, reactiva sola si fue
+// suspendida por esto) antes o después de que corra este cron.
+//
 // Protegido con CRON_SECRET. Programado en vercel.json.
 
 import { NextResponse } from 'next/server'
@@ -35,6 +43,31 @@ export async function GET(request: Request) {
   const admin = createAdminClient()
   const today = new Date().toISOString().slice(0, 10)
   const limit = new Date(Date.now() + WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10)
+  const appUrl = getAppUrl()
+
+  // ── Auto-suspensión: trials cuyo trial_ends_at ya pasó ─────────────────────
+  // Va primero para que el resto del cron (avisos "por vencer") ya no vuelva
+  // a contar estas empresas como "trial" - a esta altura quedaron 'suspended'.
+  const { data: expiredTrials } = await admin
+    .from('companies')
+    .select('id, name, slug, trial_ends_at')
+    .eq('status', 'trial')
+    .not('trial_ends_at', 'is', null)
+    .lt('trial_ends_at', today)
+
+  let suspendedCount = 0
+  const suspendedRows: string[] = []
+  for (const c of expiredTrials ?? []) {
+    const { error } = await admin.from('companies').update({ status: 'suspended' }).eq('id', c.id)
+    if (error) continue
+    suspendedCount += 1
+    suspendedRows.push(`• ${c.name} (/${c.slug}) | prueba venció el ${new Date(c.trial_ends_at!).toLocaleDateString('es-DO')}`)
+    await sendOperatorEmail(
+      c.id,
+      'Tu período de prueba terminó',
+      `Tu período de prueba de LuxeRide terminó el ${new Date(c.trial_ends_at!).toLocaleDateString('es-DO')} y tu cuenta quedó suspendida temporalmente - tu página de reservas no acepta reservas nuevas hasta que la reactives.\n\nElige un plan para reactivarla: ${appUrl}/admin/settings#subscription`,
+    )
+  }
 
   // Suscripciones activas por vencer
   const { data: subs } = await admin
@@ -60,20 +93,20 @@ export async function GET(request: Request) {
   const trialRows = (trials ?? []).map((c) => `• ${c.name} (/${c.slug}) | prueba termina en ${daysUntil(c.trial_ends_at!)} día(s) [${new Date(c.trial_ends_at!).toLocaleDateString('es-DO')}]`)
 
   const total = subRows.length + trialRows.length
-  if (total === 0) {
-    return NextResponse.json({ ok: true, total: 0, sent: 0 })
+  if (total === 0 && suspendedCount === 0) {
+    return NextResponse.json({ ok: true, total: 0, sent: 0, suspendedCount: 0 })
   }
 
-  const appUrl = getAppUrl()
   const body = [
-    `Hay ${total} empresa(s) con suscripción o prueba por vencer en los próximos ${WINDOW_DAYS} días.`,
+    total > 0 ? `Hay ${total} empresa(s) con suscripción o prueba por vencer en los próximos ${WINDOW_DAYS} días.` : '',
     subRows.length ? `\nSuscripciones por vencer (${subRows.length}):\n${subRows.join('\n')}` : '',
     trialRows.length ? `\nPruebas por terminar (${trialRows.length}):\n${trialRows.join('\n')}` : '',
+    suspendedRows.length ? `\nPruebas vencidas y suspendidas automáticamente hoy (${suspendedRows.length}):\n${suspendedRows.join('\n')}` : '',
     `\nGestiónalas en: ${appUrl}/super-admin/subscriptions`,
   ].filter(Boolean).join('\n')
 
   const { sent } = await sendSuperAdminEmail(
-    `Suscripciones por vencer: ${total} empresa(s)`,
+    `Suscripciones: ${total} por vencer, ${suspendedCount} suspendida(s) hoy`,
     body,
   )
 
@@ -97,5 +130,5 @@ export async function GET(request: Request) {
     if (result.sent) companyEmailsSent += 1
   }
 
-  return NextResponse.json({ ok: true, total, sent, companyEmailsSent })
+  return NextResponse.json({ ok: true, total, sent, companyEmailsSent, suspendedCount })
 }
