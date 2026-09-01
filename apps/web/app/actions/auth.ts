@@ -172,6 +172,16 @@ export async function signupAction(
   }
 
   // 2. Create the company
+  // trial_ends_at: antes nunca se establecía en ningún lugar del código -
+  // el signup promete "14 days free" (dict.auth.signup.subtitle) pero esa
+  // cuenta regresiva no estaba conectada a nada, así que el cron de avisos
+  // (app/api/cron/subscription-alerts) y el banner del panel
+  // (app/admin/layout.tsx, SUBSCRIPTION_WARNING_DAYS) nunca se disparaban -
+  // sus consultas siempre encontraban cero trials por vencer. 14 días debe
+  // coincidir con esa misma copy si algún día cambia.
+  const TRIAL_DURATION_DAYS = 14
+  const trialEndsAt = new Date(Date.now() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000)
+
   const { data: company, error: companyError } = await admin
     .from('companies')
     .insert({
@@ -181,6 +191,7 @@ export async function signupAction(
       country: parsed.data.company_country || 'US',
       status: 'trial',
       plan: 'free',
+      trial_ends_at: trialEndsAt.toISOString(),
     })
     .select('id')
     .single()

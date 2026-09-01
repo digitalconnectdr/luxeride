@@ -20,6 +20,14 @@ export interface SubscriptionExpiryPopupLabels {
   suspended: string
   cta: string
   close: string
+  // Variantes para status === 'trial' - "tu suscripción vence" no aplica a
+  // quien nunca ha pagado. No hay cron que suspenda el trial automáticamente
+  // al vencer (solo avisa por email/panel) - el corte real lo hace un
+  // super-admin a mano en /super-admin/subscriptions, así que trialExpired
+  // sí puede verse por un tiempo real si nadie actúa.
+  trialExpiringSoon: string // con placeholder {days}
+  trialExpiringToday: string
+  trialExpired: string
 }
 
 const EXIT_MS = 200
@@ -28,11 +36,13 @@ export function SubscriptionExpiryPopup({
   companyId,
   daysLeft,
   suspended,
+  isTrial,
   labels,
 }: {
   companyId: string
   daysLeft: number | null
   suspended: boolean
+  isTrial?: boolean
   labels: SubscriptionExpiryPopupLabels
 }) {
   const [visible, setVisible] = useState(false)
@@ -75,10 +85,10 @@ export function SubscriptionExpiryPopup({
   const message = suspended
     ? labels.suspended
     : isExpired
-    ? labels.expired
+    ? (isTrial ? labels.trialExpired : labels.expired)
     : daysLeft === 0
-    ? labels.expiringToday
-    : labels.expiringSoon.replace('{days}', String(daysLeft))
+    ? (isTrial ? labels.trialExpiringToday : labels.expiringToday)
+    : (isTrial ? labels.trialExpiringSoon : labels.expiringSoon).replace('{days}', String(daysLeft))
 
   return (
     <div

@@ -56,6 +56,7 @@ export default async function AdminLayout({
   let companyName = 'Dashboard'
   let logoUrl: string | null = null
   let subscriptionDaysLeft: number | null = null
+  let trialDaysLeft: number | null = null
   let companyStatus: string | null = null
   let affiliateNetworkEnabled = false
   let isExternalAffiliate = false
@@ -69,7 +70,7 @@ export default async function AdminLayout({
       const [{ data, error }, { data: addonRows }] = await Promise.all([
         admin
           .from('companies')
-          .select('name, logo_url, status, subscription_ends_at, affiliate_network_enabled, is_external_affiliate, primary_color, plan, custom_domain')
+          .select('name, logo_url, status, subscription_ends_at, trial_ends_at, affiliate_network_enabled, is_external_affiliate, primary_color, plan, custom_domain')
           .eq('id', user.company_id)
           .single(),
         admin
@@ -92,6 +93,10 @@ export default async function AdminLayout({
         if (data.subscription_ends_at) {
           const msLeft = new Date(data.subscription_ends_at).getTime() - Date.now()
           subscriptionDaysLeft = Math.floor(msLeft / 86_400_000)
+        }
+        if (data.trial_ends_at) {
+          const msLeft = new Date(data.trial_ends_at).getTime() - Date.now()
+          trialDaysLeft = Math.floor(msLeft / 86_400_000)
         }
 
         // ── Servicios adicionales activos — para ocultar del menu lo que la
@@ -165,9 +170,15 @@ export default async function AdminLayout({
   const settingsDict = dict.admin.settings
   const referralsDict = dict.admin.referrals
   const isSuspended = companyStatus === 'suspended'
+  const isTrialStatus = companyStatus === 'trial'
+  // Durante el trial no hay subscription_ends_at todavía (eso solo se llena
+  // cuando ya pagó, ver lib/billing/subscriptions.ts) - se usa trial_ends_at
+  // en su lugar, con su propio texto ("tu prueba gratis termina", no "tu
+  // suscripción vence").
+  const popupDaysLeft = isTrialStatus ? trialDaysLeft : subscriptionDaysLeft
   const showSubscriptionPopup =
     isOwner &&
-    (isSuspended || (subscriptionDaysLeft !== null && subscriptionDaysLeft <= SUBSCRIPTION_WARNING_DAYS))
+    (isSuspended || (popupDaysLeft !== null && popupDaysLeft <= SUBSCRIPTION_WARNING_DAYS))
 
   const userName = `${user.profile.first_name} ${user.profile.last_name}`
   const userInitials = userName
@@ -222,8 +233,9 @@ export default async function AdminLayout({
       {showSubscriptionPopup && user.company_id && (
         <SubscriptionExpiryPopup
           companyId={user.company_id}
-          daysLeft={subscriptionDaysLeft}
+          daysLeft={popupDaysLeft}
           suspended={isSuspended}
+          isTrial={isTrialStatus}
           labels={{
             expiringSoon: settingsDict.subscriptionPopupExpiringSoon,
             expiringToday: settingsDict.subscriptionPopupExpiringToday,
@@ -231,6 +243,9 @@ export default async function AdminLayout({
             suspended: settingsDict.subscriptionPopupSuspended,
             cta: settingsDict.subscriptionPopupCta,
             close: settingsDict.subscriptionPopupClose,
+            trialExpiringSoon: settingsDict.subscriptionPopupTrialExpiringSoon,
+            trialExpiringToday: settingsDict.subscriptionPopupTrialExpiringToday,
+            trialExpired: settingsDict.subscriptionPopupTrialExpired,
           }}
         />
       )}
